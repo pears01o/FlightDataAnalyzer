@@ -15268,17 +15268,14 @@ class Roll400To1000FtMax(KeyPointValueNode):
 
     def derive(self,
                roll=P('Roll'),
-               alt_aal=P('Altitude AAL For Flight Phases'),
-               init_climb=S('Initial Climb')):
+               alt_aal=P('Altitude AAL For Flight Phases')):
 
-        alt_band = np.ma.masked_outside(alt_aal.array, 400, 1000)
-        alt_climb_sections = valid_slices_within_array(alt_band, init_climb)
         self.create_kpvs_within_slices(
             roll.array,
-            alt_climb_sections,
+            alt_aal.slices_from_to(400, 1000),
             max_abs_value
         )
-
+        
 
 class RollAbove1000FtMax(KeyPointValueNode):
     '''

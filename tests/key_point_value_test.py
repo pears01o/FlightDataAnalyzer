@@ -15808,7 +15808,7 @@ class TestRoll400To1000FtMax(unittest.TestCase):
 
     def setUp(self):
         self.node_class = Roll400To1000FtMax
-        self.operational_combinations = [('Roll', 'Altitude AAL For Flight Phases', 'Initial Climb')]
+        self.operational_combinations = [('Roll', 'Altitude AAL For Flight Phases')]
         self.function = max_abs_value
 
     def test_can_operate(self):

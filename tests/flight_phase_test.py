@@ -1941,7 +1941,6 @@ class TestRejectedTakeoff(unittest.TestCase):
     This was later increased to 0.15g and the test amended to match that
     scaling, hence the *1.5 factors.
     '''
-    @unittest.skip('Being fixed')
     def test_can_operate(self):
         expected = [('Acceleration Longitudinal Offset Removed', 
                      'Eng (*) All Running', 'Grounded')]
@@ -2079,7 +2078,6 @@ class TestRejectedTakeoff(unittest.TestCase):
         node.derive(accel_lon, eng_running, grounded)
         self.assertEqual(len(node), 0)
 
-    @unittest.skip('Being fixed')
     def test_derive_flight_without_rejected_takeoff_2(self):
         accel_lon = load(os.path.join(
             test_data_path,

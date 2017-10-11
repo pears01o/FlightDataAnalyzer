@@ -373,7 +373,7 @@ from analysis_engine.key_point_values import (
     EngTorqueDuringMaximumContinuousPowerMax,
     EngTorqueDuringTakeoff5MinRatingMax,
     EngTorqueDuringTaxiMax,
-    EngTorqueExceeding100,
+    EngTorqueExceeding100Percent,
     EngTorqueFor5SecDuringGoAround5MinRatingMax,
     EngTorqueFor5SecDuringMaximumContinuousPowerMax,
     EngTorqueFor5SecDuringTakeoff5MinRatingMax,
@@ -11011,11 +11011,11 @@ class TestEngTorqueDuringGoAround5MinRatingMax(unittest.TestCase, CreateKPVsWith
         self.assertTrue(False, msg='Test not implemented.')
 
 
-class TestEngTorqueExceeding100(unittest.TestCase):
+class TestEngTorqueExceeding100Percent(unittest.TestCase):
     
     
     def setUp(self):
-        self.node_class = EngTorqueExceeding100
+        self.node_class = EngTorqueExceeding100Percent
         
         
     def test_derive_exceeding_one_second_period(self):
@@ -11023,7 +11023,7 @@ class TestEngTorqueExceeding100(unittest.TestCase):
         eng_avg_torque = P(name='Eng (*) Avg Torque', 
                            array=np.ma.array([95, 96, 97, 98, 99, 100, 99, 98]))
         
-        kpv = EngTorqueExceeding100()
+        kpv = EngTorqueExceeding100Percent()
         kpv.derive(eng_avg_torque)
         
         self.assertEqual(len(kpv), 0)
@@ -11033,7 +11033,7 @@ class TestEngTorqueExceeding100(unittest.TestCase):
         eng_avg_torque = P(name='Eng (*) Avg Torque', 
                            array=np.ma.array([95, 96, 97, 98, 99, 100, 101, 99, 98]))
         
-        kpv = EngTorqueExceeding100()
+        kpv = EngTorqueExceeding100Percent()
         kpv.derive(eng_avg_torque)
         
         self.assertEqual(len(kpv), 0)
@@ -11044,7 +11044,7 @@ class TestEngTorqueExceeding100(unittest.TestCase):
                            array=np.ma.array([95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 104,
                                               103, 104, 105, 104, 103, 102, 101, 100, 99, 98]))
     
-        kpv = EngTorqueExceeding100()
+        kpv = EngTorqueExceeding100Percent()
         kpv.derive(eng_avg_torque)
     
         self.assertEqual(len(kpv), 1)
@@ -11059,7 +11059,7 @@ class TestEngTorqueExceeding100(unittest.TestCase):
                                               103, 102, 101, 100, 99, 98, 99, 100, 101, 102, 
                                               103, 104, 105, 104, 103, 102, 101, 100, 99, 98]))
     
-        kpv = EngTorqueExceeding100()
+        kpv = EngTorqueExceeding100Percent()
         kpv.derive(eng_avg_torque)
     
         self.assertEqual(len(kpv), 2)
@@ -11074,7 +11074,7 @@ class TestEngTorqueExceeding100(unittest.TestCase):
         eng_avg_torque = P(name='Eng (*) Avg Torque', 
                            array=np.ma.array([95, 96, 97, 98, 99, 98, 97, 96]))
     
-        kpv = EngTorqueExceeding100()
+        kpv = EngTorqueExceeding100Percent()
         kpv.derive(eng_avg_torque)
         
         self.assertEqual(len(kpv), 0)
@@ -11086,7 +11086,7 @@ class TestEngTorqueExceeding100(unittest.TestCase):
                                array=np.ma.masked_greater_equal([95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 
                                                   103, 104, 105, 104, 103, 102, 101, 100, 99, 98], 100))
         
-        kpv = EngTorqueExceeding100()
+        kpv = EngTorqueExceeding100Percent()
         kpv.derive(eng_avg_torque)
 
         self.assertEqual(len(kpv), 0)

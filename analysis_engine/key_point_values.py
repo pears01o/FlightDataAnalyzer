@@ -8847,7 +8847,7 @@ class EngTorqueLimitExceedanceWithOneEngineInoperativeDuration(KeyPointValueNode
                 self.create_kpvs_from_slice_durations(phase_slices, self.frequency)
 
 
-class EngTorqueExceeding100(KeyPointValueNode):
+class EngTorqueExceeding100Percent(KeyPointValueNode):
     '''
     Measures the duration of Eng (*) Torque Avg exceeding 100. 
     '''

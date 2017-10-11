@@ -93,6 +93,7 @@ from analysis_engine.library import (air_track,
                                      slices_of_runs,
                                      slices_between,
                                      slices_from_to,
+                                     slices_from_ktis,
                                      slices_not,
                                      slices_or,
                                      slices_remove_small_slices,
@@ -7525,96 +7526,96 @@ class TrackDeviationFromRunway(DerivedParameterNode):
             ##return
 
 
-##class V2Lookup(DerivedParameterNode):
-    ##'''
-    ##Takeoff Safety Speed (V2) can be derived for different aircraft.
+class V2Lookup(DerivedParameterNode):
+    '''
+    Takeoff Safety Speed (V2) can be derived for different aircraft.
 
-    ##In cases where values cannot be derived solely from recorded parameters, we
-    ##can make use of a look-up table to determine values for velocity speeds.
+    In cases where values cannot be derived solely from recorded parameters, we
+    can make use of a look-up table to determine values for velocity speeds.
 
-    ##For V2, looking up a value requires the weight and flap (lever detents)
-    ##at liftoff.
+    For V2, looking up a value requires the weight and flap (lever detents)
+    at liftoff.
 
-    ##Flap is used as the first dependency to avoid interpolation of flap detents
-    ##when flap is recorded at a lower frequency than airspeed.
-    ##'''
+    Flap is used as the first dependency to avoid interpolation of flap detents
+    when flap is recorded at a lower frequency than airspeed.
+    '''
 
-    ##units = ut.KT
+    units = ut.KT
 
-    ##@classmethod
-    ##def can_operate(cls, available,
-                    ##model=A('Model'), series=A('Series'), family=A('Family'),
-                    ##engine_series=A('Engine Series'), engine_type=A('Engine Type')):
+    @classmethod
+    def can_operate(cls, available,
+                    model=A('Model'), series=A('Series'), family=A('Family'),
+                    engine_series=A('Engine Series'), engine_type=A('Engine Type')):
 
-        ##core = all_of((
-            ##'Airspeed',
-            ##'Liftoff',
-            ##'Climb Start',
-            ##'Model',
-            ##'Series',
-            ##'Family',
-            ##'Engine Type',
-            ##'Engine Series',
-        ##), available)
+        core = all_of((
+            'Airspeed',
+            'Liftoff',
+            'Climb Start',
+            'Model',
+            'Series',
+            'Family',
+            'Engine Type',
+            'Engine Series',
+        ), available)
 
-        ##flap = any_of((
-            ##'Flap Lever',
-            ##'Flap Lever (Synthetic)',
-        ##), available)
+        flap = any_of((
+            'Flap Lever',
+            'Flap Lever (Synthetic)',
+        ), available)
 
-        ##attrs = (model, series, family, engine_type, engine_series)
-        ##return core and flap and lookup_table(cls, 'v2', *attrs)
+        attrs = (model, series, family, engine_type, engine_series)
+        return core and flap and lookup_table(cls, 'v2', *attrs)
 
-    ##def derive(self,
-               ##flap_lever=M('Flap Lever'),
-               ##flap_synth=M('Flap Lever (Synthetic)'),
-               ##airspeed=P('Airspeed'),
-               ##weight_liftoffs=KPV('Gross Weight At Liftoff'),
-               ##liftoffs=KTI('Liftoff'),
-               ##climb_starts=KTI('Climb Start'),
-               ##model=A('Model'),
-               ##series=A('Series'),
-               ##family=A('Family'),
-               ##engine_type=A('Engine Type'),
-               ##engine_series=A('Engine Series')):
+    def derive(self,
+               flap_lever=M('Flap Lever'),
+               flap_synth=M('Flap Lever (Synthetic)'),
+               airspeed=P('Airspeed'),
+               weight_liftoffs=KPV('Gross Weight At Liftoff'),
+               liftoffs=KTI('Liftoff'),
+               climb_starts=KTI('Climb Start'),
+               model=A('Model'),
+               series=A('Series'),
+               family=A('Family'),
+               engine_type=A('Engine Type'),
+               engine_series=A('Engine Series')):
 
-        ### Prepare a zeroed, masked array based on the airspeed:
-        ##self.array = np_ma_masked_zeros_like(airspeed.array, np.int)
+        # Prepare a zeroed, masked array based on the airspeed:
+        self.array = np_ma_masked_zeros_like(airspeed.array, np.int)
 
-        ### Determine interesting sections of flight which we want to use for V2.
-        ### Due to issues with how data is recorded, use five superframes before
-        ### liftoff until the start of the climb:
-        ##starts = deepcopy(liftoffs)
-        ##for start in starts:
-            ##start.index = max(start.index - 5 * 64 * self.hz, 0)
-        ##phases = slices_from_ktis(starts, climb_starts)
+        # Determine interesting sections of flight which we want to use for V2.
+        # Due to issues with how data is recorded, use five superframes before
+        # liftoff until the start of the climb:
+        starts = deepcopy(liftoffs)
+        for start in starts:
+            start.index = max(start.index - 5 * 64 * self.hz, 0)
+        phases = slices_from_ktis(starts, climb_starts)
 
-        ### Initialise the velocity speed lookup table:
-        ##attrs = (model, series, family, engine_type, engine_series)
-        ##table = lookup_table(self, 'v2', *attrs)
+        # Initialise the velocity speed lookup table:
+        attrs = (model, series, family, engine_type, engine_series)
+        table = lookup_table(self, 'v2', *attrs)
 
-        ##for phase in phases:
+        for phase in phases:
 
-            ##if weight_liftoffs:
-                ##weight_liftoff = weight_liftoffs.get_first(within_slice=phase)
-                ##index, weight = weight_liftoff.index, weight_liftoff.value
-            ##else:
-                ##index, weight = liftoffs.get_first(within_slice=phase).index, None
+            if weight_liftoffs:
+                weight_liftoff = weight_liftoffs.get_first(within_slice=phase)
+                index, weight = weight_liftoff.index, weight_liftoff.value
+            else:
+                index, weight = liftoffs.get_first(within_slice=phase).index, None
 
-            ##if index is None:
-                ##continue
+            if index is None:
+                continue
 
-            ##detent = (flap_lever or flap_synth).array[index]
+            detent = (flap_lever or flap_synth).array[index]
 
-            ##try:
-                ##self.array[phase] = table.v2(detent, weight)
-            ##except (KeyError, ValueError) as error:
-                ##self.warning("Error in '%s': %s", self.name, error)
-                ### Where the aircraft takes off with flap settings outside the
-                ### documented V2 range, we need the program to continue without
-                ### raising an exception, so that the incorrect flap at takeoff
-                ### can be detected.
-                ##continue
+            try:
+                self.array[phase] = table.v2(detent, weight)
+            except (KeyError, ValueError) as error:
+                self.warning("Error in '%s': %s", self.name, error)
+                # Where the aircraft takes off with flap settings outside the
+                # documented V2 range, we need the program to continue without
+                # raising an exception, so that the incorrect flap at takeoff
+                # can be detected.
+                continue
 
 
 ########################################

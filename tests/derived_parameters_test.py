@@ -62,7 +62,9 @@ from analysis_engine.derived_parameters import (
     AccelerationAcrossTrack,
     AccelerationAlongTrack,
     AccelerationForwards,
+    AccelerationLateralOffsetRemoved,
     AccelerationLateralSmoothed,
+    AccelerationLongitudinalOffsetRemoved,
     AccelerationSideways,
     AccelerationVertical,
     AccelerationNormalOffsetRemoved,
@@ -4122,21 +4124,103 @@ class TestAOA(unittest.TestCase):
         self.assertAlmostEqual(aoa.array[0], -1.404)
         self.assertAlmostEqual(aoa.array[1], 0.257)
 
+
+class TestAccelerationLateralOffsetRemoved(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = AccelerationLateralOffsetRemoved
+        self.acc_lateral=P('Acceleration Lateral', array=np.ma.array([1]*20 + [1.5]*20 + [1]*10), frequency=1.0)
+    
+    def test_can_operate(self):
+        opts = AccelerationLateralOffsetRemoved.get_operational_combinations()
+        self.assertEqual(opts, [('Acceleration Lateral',), ('Acceleration Lateral', 'Acceleration Lateral Offset')])
+    
+    def test_derive_positive_offset(self):
+        self.acc_lat_offset = KPV([KeyPointValue(index=0, value=1.2, name='Acceleration Lateral Offset')])
+        
+        acc = AccelerationLateralOffsetRemoved()
+        acc.derive(self.acc_lateral, self.acc_lat_offset)
+        assert_array_equal(acc.array, self.acc_lateral.array - self.acc_lat_offset[0].value)
+        
+    def test_derive_negative_offset(self):
+        self.acc_lat_offset = KPV([KeyPointValue(index=0, value=-1.2, name='Acceleration Lateral Offset')])
+        
+        acc = AccelerationLateralOffsetRemoved()
+        acc.derive(self.acc_lateral, self.acc_lat_offset)
+        assert_array_equal(acc.array, self.acc_lateral.array - self.acc_lat_offset[0].value)        
+        
+    def test_derive_no_offset(self):
+        self.acc_lat_offset = KPV([KeyPointValue(index=0, value=0.0, name='Acceleration Lateral Offset')])
+        
+        acc = AccelerationLateralOffsetRemoved()
+        acc.derive(self.acc_lateral, self.acc_lat_offset)
+        assert_array_equal(acc.array, self.acc_lateral.array - self.acc_lat_offset[0].value)
+        
+
+class TestAccelerationLongitudinalOffsetRemoved(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = AccelerationLongitudinalOffsetRemoved
+        self.acc_long=P('Acceleration Longitudinal', array=np.ma.array([1]*20 + [1.5]*20 + [1]*10), frequency=1.0)
+    
+    def test_can_operate(self):
+        opts = AccelerationLongitudinalOffsetRemoved.get_operational_combinations()
+        self.assertEqual(opts, [('Acceleration Longitudinal', 'Acceleration Longitudinal Offset')])
+    
+    def test_derive_positive_offset(self):
+        self.acc_long_offset = KPV([KeyPointValue(index=0, value=1.2, name='Acceleration Longitudinal Offset')])
+        
+        acc = AccelerationLongitudinalOffsetRemoved()
+        acc.derive(self.acc_long, self.acc_long_offset)
+        assert_array_equal(acc.array, self.acc_long.array - self.acc_long_offset[0].value)
+        
+    def test_derive_negative_offset(self):
+        self.acc_long_offset = KPV([KeyPointValue(index=0, value=-1.2, name='Acceleration Longitudinal Offset')])
+        
+        acc = AccelerationLongitudinalOffsetRemoved()
+        acc.derive(self.acc_long, self.acc_long_offset)
+        assert_array_equal(acc.array, self.acc_long.array - self.acc_long_offset[0].value)        
+        
+    def test_derive_no_offset(self):
+        self.acc_long_offset = KPV([KeyPointValue(index=0, value=0.0, name='Acceleration Longitudinal Offset')])
+        
+        acc = AccelerationLongitudinalOffsetRemoved()
+        acc.derive(self.acc_long, self.acc_long_offset)
+        assert_array_equal(acc.array, self.acc_long.array - self.acc_long_offset[0].value)
+        
+
 class TestAccelerationNormalOffsetRemoved(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = AccelerationNormalOffsetRemoved
+        self.acc_normal=P('Acceleration Normal', array=np.ma.array([1]*20 + [1.5]*20 + [1]*10), frequency=1.0)
     
     def test_can_operate(self):
         opts = AccelerationNormalOffsetRemoved.get_operational_combinations()
         self.assertEqual(opts, [('Acceleration Normal',), ('Acceleration Normal', 'Acceleration Normal Offset')])
     
-    def test_derive(self):
+    def test_derive_positive_offset(self):
         self.acc_norm_offset = KPV([KeyPointValue(index=0, value=1.2, name='Acceleration Normal Offset')])
-        acceleration_normal=P('Acceleration Normal', array=np.ma.array([1]*20 + [1.5]*20 + [1]*10), frequency=1.0)
+        
         acc = AccelerationNormalOffsetRemoved()
-        acc.derive(acceleration_normal, self.acc_norm_offset)
-        assert_array_equal(acc.array, acceleration_normal.array - self.acc_norm_offset[0].value + 1.0)
+        acc.derive(self.acc_normal, self.acc_norm_offset)
+        assert_array_equal(acc.array, self.acc_normal.array - self.acc_norm_offset[0].value + 1.0)
         # could as well be acceleration_normal.array - 0.2
         
-# Also Accelerations Lateral and Longitudinal are not tested yet.
+    def test_derive_negative_offset(self):
+        self.acc_norm_offset = KPV([KeyPointValue(index=0, value=-1.2, name='Acceleration Normal Offset')])
+        
+        acc = AccelerationNormalOffsetRemoved()
+        acc.derive(self.acc_normal, self.acc_norm_offset)
+        assert_array_equal(acc.array, self.acc_normal.array - self.acc_norm_offset[0].value + 1.0)        
+        
+    def test_derive_no_offset(self):
+        self.acc_norm_offset = KPV([KeyPointValue(index=0, value=0.0, name='Acceleration Normal Offset')])
+        
+        acc = AccelerationNormalOffsetRemoved()
+        acc.derive(self.acc_normal, self.acc_norm_offset)
+        assert_array_equal(acc.array, self.acc_normal.array - self.acc_norm_offset[0].value + 1.0)
+        
 
 class TestAileron(unittest.TestCase):
 

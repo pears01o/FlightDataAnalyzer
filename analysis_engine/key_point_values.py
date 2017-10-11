@@ -449,24 +449,23 @@ class AccelerationLateralOffset(KeyPointValueNode):
         AccelerationNormalOffset. The more complex slicing statement ensures we
         only accumulate error estimates when taxiing in a straight line.
         '''
-        total_sum = 0.0
-        total_count = 0
-        straights = slices_and(
-            [s.slice for s in list(taxiing)],
-            slices_not([s.slice for s in list(turns)]),
-        )
+        straights = slices_and([s.slice for s in list(taxiing)],
+            slices_not([s.slice for s in list(turns)]),)
+    
+        '''
+        Get the unmasked data within the taxiing in a straight line phase and
+        compute the average for this section(s) if there are enough samples.
+        '''    
+        unmasked_data = []
         for straight in straights:
-            unmasked_data = np.ma.compressed(acc_lat.array[straight])
-            count = len(unmasked_data)
-            if count:
-                total_count += count
-                total_sum += np.sum(unmasked_data)
-        if total_count > 20:
-            delta = total_sum / float(total_count)
+            unmasked_data.extend(np.ma.compressed(acc_lat.array[straight]))
+        if len(unmasked_data) > 20:
+            delta = np.sum(unmasked_data) / float(len(unmasked_data))
             self.create_kpv(0, delta)
             if abs(delta) > ACCEL_LAT_OFFSET_LIMIT:
                 self.warning("Acceleration Lateral offset '%s' greater than limit '%s'",
-                             delta, ACCEL_LAT_OFFSET_LIMIT)
+                             delta, ACCEL_LAT_OFFSET_LIMIT)            
+        
 
 class AccelerationLateralFor5SecMax(KeyPointValueNode):
     '''
@@ -495,12 +494,12 @@ class AccelerationLateralFor5SecMax(KeyPointValueNode):
 class AccelerationLongitudinalOffset(KeyPointValueNode):
     '''
     Longitudinal accelerometer datum offset.
-
+    
     We use all the taxiing phases and assume that
     the accelerations and decelerations will roughly balance out over the
     duration of the taxi phase.
     '''
-
+    
     units = ut.G
 
     def derive(self,
@@ -512,26 +511,27 @@ class AccelerationLongitudinalOffset(KeyPointValueNode):
         AccelerationNormalOffset. We use all the taxiing phase and assume that
         the accelerations and decelerations will roughly balance out over the
         duration of the taxi phase.
-    
+   
         Note: using mobile sections which are not Fast in place of taxiing in
         order to aviod circular dependancy with Taxiing, Rejected Takeoff and
         Acceleration Longitudinal Offset Removed
         '''
-        total_sum = 0.0
-        total_count = 0
+    
         taxis = slices_and_not(mobiles.get_slices(), fasts.get_slices())
+        
+        '''
+        Get the unmasked data within the taxis slices provided and compute
+        the average for this section(s) if there are enough samples.
+        '''        
+        unmasked_data = []
         for taxi in taxis:
-            unmasked_data = np.ma.compressed(acc_lon.array[taxi])
-            count = len(unmasked_data)
-            if count:
-                total_count += count
-                total_sum += np.sum(unmasked_data)
-        if total_count > 20:
-            delta = total_sum / float(total_count)
+            unmasked_data.extend(np.ma.compressed(acc_lon.array[taxi]))
+        if len(unmasked_data) > 20:
+            delta = np.sum(unmasked_data) / float(len(unmasked_data))        
             self.create_kpv(0, delta)
             if abs(delta) > ACCEL_LON_OFFSET_LIMIT:
                 self.warning("Acceleration Longitudinal offset '%s' greater than limit '%s'",
-                             delta, ACCEL_LON_OFFSET_LIMIT)
+                             delta, ACCEL_LON_OFFSET_LIMIT)            
 
 
 class AccelerationLongitudinalDuringTakeoffMax(KeyPointValueNode):
@@ -941,25 +941,25 @@ class AccelerationNormalOffset(KeyPointValueNode):
     @classmethod
     def can_operate(cls, available):
         return all_of(('Acceleration Normal', 'Taxiing'), available)
-
+    
     def derive(self,
                acc_norm=P('Acceleration Normal'),
                taxiing = S('Taxiing')):
-
-        total_sum = 0.0
-        total_count = 0
-        for taxi in taxiing:
-            unmasked_data = np.ma.compressed(acc_norm.array[taxi.slice])
-            count = len(unmasked_data)
-            if count:
-                total_count += count
-                total_sum += np.sum(unmasked_data)
-        if total_count > 20:
-            delta = total_sum / float(total_count) - 1.0
+        
+        '''
+        Get the unmasked data within the taxiing slices provided and compute
+        the average for this section(s) if there are enough samples.
+        '''        
+        unmasked_data = []
+        for taxi in taxiing.get_slices():
+            unmasked_data.extend(np.ma.compressed(acc_norm.array[taxi]))
+        if len(unmasked_data) > 20:
+            delta = np.sum(unmasked_data) / float(len(unmasked_data)) - 1.0
             self.create_kpv(0, delta + 1.0)
             if abs(delta) > ACCEL_NORM_OFFSET_LIMIT:
                 self.warning("Acceleration Normal offset '%s' greater than limit '%s'",
-                             delta, ACCEL_NORM_OFFSET_LIMIT)                
+                             delta, ACCEL_NORM_OFFSET_LIMIT)             
+
 
 class AccelerationNormalWhileAirborneMax(KeyPointValueNode):
     '''

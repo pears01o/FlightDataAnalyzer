@@ -448,11 +448,18 @@ class Configuration(MultistateDerivedParameterNode):
         self.array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
                                  values_mapping=self.values_mapping)
 
+        # Check if A330 or A340-300/500 and derive CONF 1* or CONF 2* from flap lever position and flap relief state
+        is_a340 = series and series.value in ('A340-300', 'A340-500')
+        is_a330 = family and family.value in ('A330')
+        
+        
         for (state, (s, f, a)) in six.iteritems(angles):
             condition = (flap.array == f)
+            # Check if star config on a340 or a330 so that aileron can be ignored in config lookup
+            is_star_config = (is_a340 or is_a330) and [s,f] in ([20,8], [23,14], [24,17])
             if s is not None:
                 condition &= (slat.array == s)
-            if a is not None:
+            if (a is not None) and not is_star_config:
                 condition &= (flaperon.array == a)
             self.array[condition] = state
 
@@ -460,10 +467,6 @@ class Configuration(MultistateDerivedParameterNode):
         nearest_neighbour_mask_repair(self.array, copy=False,
                                           repair_gap_size=(30 * self.hz),
                                           direction='backward')
-        
-        # Check if A330 or A340-300/500 and derive CONF 1* or CONF 2* from flap lever position and flap relief state
-        is_a340 = series and series.value in ('A340-300', 'A340-500')
-        is_a330 = family and family.value in ('A330')
 
         if (is_a340 or is_a330) and relief and lever:
             self.array[(lever.array == "Lever 2") & (relief.array == "Engaged")] = '1*'

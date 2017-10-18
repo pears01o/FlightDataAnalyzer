@@ -7437,12 +7437,12 @@ class ILSLocalizerDeviation1500To1000FtMax(KeyPointValueNode):
                 max_abs_value)
 
 
-class ILSGlideslope10SecBeforeCapture(KeyPointValueNode):
+class ILSGlideslope10SecBeforeEstablished(KeyPointValueNode):
     '''
-    Glideslope dot value 10 seconds from glideslope capture.  
+    Glideslope dot value 10 seconds from glideslope established.  
     '''
 
-    name = 'ILS Glideslope 10 Sec Before Capture'
+    name = 'ILS Glideslope 10 Sec Before Established'
     units = ut.DOTS
     
     can_operate = aeroplane_only

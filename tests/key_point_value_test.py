@@ -468,7 +468,7 @@ from analysis_engine.key_point_values import (
     IANFinalApproachCourseDeviationMax,
     IANGlidepathDeviationMax,
     ILSFrequencyDuringApproach,
-    ILSGlideslope10SecBeforeCapture,
+    ILSGlideslope10SecBeforeEstablished,
     ILSGlideslopeDeviation1000To500FtMax,
     ILSGlideslopeDeviation1500To1000FtMax,
     ILSGlideslopeDeviation500To200FtMax,
@@ -7645,10 +7645,10 @@ class TestILSGlideslopeDeviation1500To1000FtMax(unittest.TestCase, ILSTest):
         self.assertAlmostEqual(kpv[0].value, -1.1995736)
 
 
-class TestILSGlideslope10SecBeforeCapture(unittest.TestCase):
+class TestILSGlideslope10SecBeforeEstablished(unittest.TestCase):
         
     def setUp(self):
-        self.node_class = ILSGlideslope10SecBeforeCapture
+        self.node_class = ILSGlideslope10SecBeforeEstablished
 
 
     def test_derive_positive_dot(self):
@@ -7660,7 +7660,7 @@ class TestILSGlideslope10SecBeforeCapture(unittest.TestCase):
 
         ils_established = buildsection('ILS Glideslope Established', 30, 60)
 
-        kpv = ILSGlideslope10SecBeforeCapture()
+        kpv = ILSGlideslope10SecBeforeEstablished()
         kpv.derive(ils_glideslope, ils_established)
 
         self.assertEqual(len(kpv),1)
@@ -7678,7 +7678,7 @@ class TestILSGlideslope10SecBeforeCapture(unittest.TestCase):
         ils_glideslope.array[20] = -ils_glideslope.array[20]
         ils_established = buildsections('ILS Glideslope Established', [30,50], [40, 60])
 
-        kpv = ILSGlideslope10SecBeforeCapture()
+        kpv = ILSGlideslope10SecBeforeEstablished()
         kpv.derive(ils_glideslope, ils_established)
 
         self.assertEqual(len(kpv),2)
@@ -7698,7 +7698,7 @@ class TestILSGlideslope10SecBeforeCapture(unittest.TestCase):
         ils_glideslope.array = -ils_glideslope.array
         ils_established = buildsection('ILS Glideslope Established', 30, 60)
 
-        kpv = ILSGlideslope10SecBeforeCapture()
+        kpv = ILSGlideslope10SecBeforeEstablished()
         kpv.derive(ils_glideslope, ils_established)
 
         self.assertEqual(len(kpv),1)
@@ -7716,7 +7716,7 @@ class TestILSGlideslope10SecBeforeCapture(unittest.TestCase):
         ils_glideslope.array[40] = np.ma.masked
         ils_established = buildsection('ILS Glideslope Established', 50, 60)
 
-        kpv = ILSGlideslope10SecBeforeCapture()
+        kpv = ILSGlideslope10SecBeforeEstablished()
         kpv.derive(ils_glideslope, ils_established)
 
         self.assertEqual(len(kpv),0)

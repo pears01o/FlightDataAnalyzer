@@ -5692,6 +5692,29 @@ class HeightAtRunwayChange(KeyPointValueNode):
                 if value:
                     self.create_kpv(index, value)
 
+class HeightSelectedOnApproachMin(KeyPointValueNode):
+    '''
+    This KPV detects the lowest altitude set on the Mode Control 
+    Panel (MCP) during an approach, in case the pilot inadvertently 
+    selects an altitude less than a safe approach height above 
+    the airfield. 
+    
+    If the pilot selects zero altitude the difference is negative, but
+    these are returned as KPV=0 as a setting at or below the airfield
+    elevation is equally dangerous, and not more dangerous at higher 
+    airports.
+    '''
+    
+    units = ut.FT
+    
+    def derive(self, alt_mcp=P('Altitude Selected (MCP)'),
+               apps=App('Approach Information')):
+        
+        for app in apps:
+            sel_ht = alt_mcp.array[app.slice] - app.airport['elevation']
+            sel_ht_index = np.ma.argmin(sel_ht)
+            sel_ht_value = max(sel_ht[sel_ht_index], 0.0)
+            self.create_kpv(sel_ht_index + app.slice.start, sel_ht_value)
 
 
 ##############################################################################
@@ -18722,6 +18745,3 @@ class DriftAtTouchdown(KeyPointValueNode):
 
     def derive(self, drift=P('Drift'), touchdown=KTI('Touchdown')):
         self.create_kpvs_at_ktis(drift.array, touchdown)
-
-
-       

@@ -462,6 +462,7 @@ from analysis_engine.key_point_values import (
     HeightLoss35To1000Ft,
     HeightLossLiftoffTo35Ft,
     HeightMinsToTouchdown,
+    HeightSelectedOnApproachMin,
     HoverHeightDuringOffshoreTakeoffMax,
     HoverHeightDuringOnshoreTakeoffMax,
     IANFinalApproachCourseDeviationMax,
@@ -7023,6 +7024,40 @@ class TestHeightAtRunwayChange(unittest.TestCase):
         self.assertEqual(node[0].index, 30)
         self.assertAlmostEqual(node[0].value, 355.56, places=2)
 
+
+class TestHeightSelectedOnApproachMin(unittest.TestCase):
+    def setUp(self):
+        self.node_class = HeightSelectedOnApproachMin
+
+    def test_can_operate(self):
+        opts = self.node_class.get_operational_combinations()
+        self.assertEqual(opts, [('Altitude Selected (MCP)', 'Approach Information')])
+    
+    def test_basic(self):
+        alt_mcp = P(name='Altitude Selected (MCP)', 
+                    array=np.ma.array([1000,150,250]))
+        apps = App('Approach Information',
+                       items=[ApproachItem('LANDING', 
+                                           slice(0, 3),
+                                           airport={u'elevation': 35, 
+                                                    u'name': u'Test'}
+                                           )])
+        node = self.node_class()
+        node.derive(alt_mcp, apps)
+        self.assertEqual(node[0].value, 115) # 150-35
+    
+    def test_not_negative(self):
+        alt_mcp = P(name='Altitude Selected (MCP)', 
+                    array=np.ma.array([1000,150,250]))
+        apps = App('Approach Information',
+                       items=[ApproachItem('LANDING', 
+                                           slice(0, 3),
+                                           airport={u'elevation': 350, 
+                                                    u'name': u'Test'}
+                                           )])
+        node = self.node_class()
+        node.derive(alt_mcp, apps)
+        self.assertEqual(node[0].value, 0) # 150-350 = -200
 
 ##############################################################################
 # Collective

@@ -18745,3 +18745,90 @@ class DriftAtTouchdown(KeyPointValueNode):
 
     def derive(self, drift=P('Drift'), touchdown=KTI('Touchdown')):
         self.create_kpvs_at_ktis(drift.array, touchdown)
+    
+        
+##############################################################################
+# Engine Derate calculations
+
+class EngN1TakeoffDerate(KeyPointValueNode):
+    '''
+    Specific to CFM56-5B engines
+    '''
+    units = ut.PERCENT
+    
+    name = 'Eng N1 Takeoff Derate'
+    
+    @classmethod
+    def can_operate(cls, available, engine_series=A('Engine Series')):
+        return engine_series and engine_series.value == 'CFM56-5B' and all_deps(cls, available)
+
+    def derive(self, eng_n1=P('Eng (*) N1 Avg'),
+               tat=P('TAT'), mach=P('Mach'),
+               sage_toffs=KTI('SAGE Takeoff')):
+
+        for toff in sage_toffs:
+            index = toff.index
+            if mach.array[index] > 0.3:
+                # takeoff point mis-identified; ignore
+                continue
+            n1 = eng_n1.array[index]
+            if n1 < 85 or n1 > 100:
+                self.warning("Engine N1 '%s' outside range in takeoff derate computation", n1)
+                continue
+            theta = (tat.array[index] + 273.15) / 288.15
+            corr_n1 = n1 / np.sqrt(theta)
+            derate = 100.0 - corr_n1
+            self.create_kpv(index, derate)
+
+
+class EngThrustTakeoffDerate(KeyPointValueNode):
+    '''
+    Specific to CFM56-5B engines
+    '''
+
+    units = ut.LBF
+
+    def derive(self, mach=P('Mach'),
+               n1_derates=KPV('Eng N1 Takeoff Derate')):
+
+        def corrected_parameter_power_management(corr_n1, mach_toff):
+            fnk = -34422.1945 \
+                - 3.591798057 * mach_toff \
+                - 221.3236997 * mach_toff * corr_n1 \
+                + 663.3754542 * corr_n1
+            return fnk
+        
+        for n1 in n1_derates:
+            index = n1.index
+            corr_n1 = 100.0 - n1.value
+            mach_toff = mach.array[index]
+            fnk_90 = corrected_parameter_power_management(90.0, mach_toff)
+            fnk = corrected_parameter_power_management(corr_n1, mach_toff)
+            derate = 100.0 * (1.0 - fnk / fnk_90)
+            self.create_kpv(index, derate)
+
+    
+class EngTakeoffFlexTemp(KeyPointValueNode):
+    '''
+    '''
+
+    units = ut.CELSIUS
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(['Flex Temp', 'SAGE Takeoff'], available) or \
+               all_of(['Eng (1) Flex Temp', 'Eng (2) Flex Temp', 'SAGE Takeoff'], available)
+    
+    def derive(self, sage_toffs=KTI('SAGE Takeoff'),
+               flex=P('Flex Temp'),
+               flex_1=P('Eng (1) Flex Temp'), flex_2=P('Eng (2) Flex Temp'),
+               ):
+        
+        if flex:
+            self.create_kpvs_at_ktis(flex.array, sage_toffs)
+        elif flex_1 and flex_2:
+            for toff in sage_toffs:
+                index = toff.index
+                value = (flex_1.array[index] + flex_2.array[index]) / 2.0
+                self.create_kpv(index, value)
+

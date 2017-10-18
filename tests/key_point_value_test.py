@@ -313,6 +313,7 @@ from analysis_engine.key_point_values import (
     EngN1For5SecDuringMaximumContinuousPowerMax,
     EngN1For5SecDuringTakeoff5MinRatingMax,
     EngN1OverThresholdDuration,
+    EngN1TakeoffDerate,
     EngN1WithThrustReversersDeployedMax,
     EngN1WithThrustReversersInTransitMax,
     EngN2CyclesDuringFinalApproach,
@@ -366,6 +367,8 @@ from analysis_engine.key_point_values import (
     EngTPRFor5SecDuringGoAround5MinRatingMax,
     EngTPRFor5SecDuringMaximumContinuousPowerMax,
     EngTPRFor5SecDuringTakeoff5MinRatingMax,
+    EngTakeoffFlexTemp,
+    EngThrustTakeoffDerate,
     EngTorque500To50FtMax,
     EngTorque500To50FtMin,
     EngTorqueAbove100KtsMax,
@@ -11466,7 +11469,98 @@ class TestEngVibNpMax(unittest.TestCase, CreateKPVsWithinSlicesTest):
     def test_derive(self):
         self.assertTrue(False, msg='Test Not Implemented')
 
+##############################################################################
+# Engine Derate calculations
 
+class TestEngN1TakeoffDerate(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = EngN1TakeoffDerate
+        
+    def test_can_operate(self):
+        self.assertFalse(self.node_class.can_operate([]))
+        self.assertFalse(self.node_class.can_operate(['Eng (*) N1 Avg', 'TAT', 'Mach', 'SAGE Takeoff']))
+        self.assertFalse(self.node_class.can_operate(['Eng (*) N1 Avg', 'TAT', 'Mach', 'SAGE Takeoff', 'Engine Series'],
+                                                     A('Engine Series', value='RB199')))
+        self.assertTrue(self.node_class.can_operate(['Eng (*) N1 Avg', 'TAT', 'Mach', 'SAGE Takeoff', 'Engine Series'],
+                                                    A('Engine Series', value='CFM56-5B')))
+        
+    def test_derive(self):
+        toff =  KTI('SAGE Takeoff',
+                    items=[KeyTimeInstance(5, 'SAGE Takeoff')])
+        eng_n1 = P('Eng (*) N1 Avg', array=np.ma.array([87.25]*10))
+        tat = P('TAT', array=np.ma.array([39.5]*10))
+        mach = P('Mach', array=np.ma.array([0.22]*10))
+        node = self.node_class()
+        node.derive(eng_n1, tat, mach, toff)
+        self.assertEqual(len(node), 1)
+        self.assertAlmostEqual(node[0].value, 16.24, places=2)
+
+    def test_out_of_range(self):
+        toff =  KTI('SAGE Takeoff',
+                    items=[KeyTimeInstance(5, 'SAGE Takeoff')])
+        eng_n1 = P('Eng (*) N1 Avg', array=np.ma.array([84.0]*10))
+        tat = P('TAT', array=np.ma.array([39.5]*10))
+        node = self.node_class()
+        node.derive(eng_n1, tat, toff)
+        self.assertEqual(len(node), 0)
+
+    def test_overspeed(self):
+        toff =  KTI('SAGE Takeoff',
+                    items=[KeyTimeInstance(5, 'SAGE Takeoff')])
+        eng_n1 = P('Eng (*) N1 Avg', array=np.ma.array([87.25]*10))
+        tat = P('TAT', array=np.ma.array([39.5]*10))
+        mach = P('Mach', array=np.ma.array([0.32]*10))
+        node = self.node_class()
+        node.derive(eng_n1, tat, mach, toff)
+        self.assertEqual(len(node), 0)
+
+
+class TestEngThrustTakeoffDerate(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = EngThrustTakeoffDerate
+
+    def test_can_operate(self):
+        opts = self.node_class.get_operational_combinations()
+        self.assertEqual(opts, [('Mach', 'Eng N1 Takeoff Derate')])
+        
+    def test_derive(self):
+        mach = P('Mach', array=np.ma.array([0.252]*10))
+        eng_dr = KPV('Eng N1 Takeoff Derate', 
+                     items=[KeyPointValue(index=5, value=16.238)])
+        node = self.node_class()
+        node.derive(mach, eng_dr)
+        self.assertEqual(len(node), 1)
+        self.assertAlmostEqual(node[0].value, 18.705, places=2)    
+
+class TestEngTakeoffFlexTemp(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = EngTakeoffFlexTemp
+        
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(['Flex Temp', 'SAGE Takeoff']))
+        self.assertTrue(self.node_class.can_operate(['Eng (1) Flex Temp', 'Eng (2) Flex Temp', 'SAGE Takeoff']))
+    
+    def test_derive(self):
+        toff =  KTI('SAGE Takeoff',
+                    items=[KeyTimeInstance(5, 'SAGE Takeoff')])
+        eng_flex = P('Flex Temp', array=np.ma.array(range(10), dtype=float))
+        node = self.node_class()
+        node.derive(toff, eng_flex, None, None)
+        self.assertEqual(node[0].value, 5.0)    
+        
+    def test_derive_two_sources(self):
+        toff =  KTI('SAGE Takeoff',
+                    items=[KeyTimeInstance(5, 'SAGE Takeoff')])
+        eng_flex_1 = P('Eng (1) Flex Temp', array=np.ma.array(range(10), dtype=float))
+        eng_flex_2 = P('Eng (2) Flex Temp', array=np.ma.array(range(10), dtype=float) + 1.0)
+        node = self.node_class()
+        node.derive(toff, None, eng_flex_1, eng_flex_2)
+        self.assertEqual(node[0].value, 5.5)    
+        
+        
 ##############################################################################
 # Engine: Warnings
 

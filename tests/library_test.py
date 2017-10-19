@@ -16,6 +16,7 @@ import types
 import unittest
 import yaml
 
+from  collections import Counter
 from datetime import datetime
 from math import sqrt
 from mock import patch
@@ -6888,6 +6889,141 @@ class TestStraighten(unittest.TestCase):
         result = straighten(np.ma.array([0.0]), np.ma.array([-200.0]), 45.0, False)
         self.assertEqual(result[0], -180.0)
 
+
+class TestSmoothSignal(unittest.TestCase):
+    def setUp(self):
+        signal = load(os.path.join(test_data_path, 'ae-1165-flap_angle.nod'))
+        _slices = runs_of_ones(np.logical_and(signal.array>=0.7,
+                                              signal.array<=2.3))
+        self.signal_to_smooth = signal.array[_slices[2]]
+
+    def test_smooth_signal_flat(self):
+        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+                                        window_len=5, window='flat')
+        expected  = [0.9667899999999998,]*2 + \
+            [0.96679, 0.984368, 1.037102,] + \
+            [1.0546799999999998,]*57 + \
+            [1.072258, 1.124992, 1.195304, 1.2656159999999999, 1.335928,
+             1.3886619999999998, 1.423818, 1.476552, 1.546864,
+             1.6171760000000002, 1.6874880000000003, 1.7402220000000004,
+             1.7753780000000001, 1.828112, 1.8984240000000001, 1.968736,
+             2.0390479999999997, 2.091782,] + [2.1093599999999997,]*2 + \
+            [2.126938, 2.1269379999999996]
+        self.assertTrue(expected == list(smoothed_signal.data))
+
+    def test_smooth_signal_hanning(self):
+        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+                                        window_len=5, window='hanning')
+        expected = Counter({
+            1.0546799999999998: 59,
+            2.1093599999999997: 4,
+            0.94481749999999987: 2,
+            1.4062399999999999: 2,
+            1.7578: 2,
+            2.0873874999999997: 1,
+            1.1645424999999998: 1,
+            1.4282124999999999: 1,
+            1.5161024999999999: 1,
+            2.1313324999999996: 1,
+            1.8676624999999998: 1,
+            1.0327074999999999: 1,
+            0.8788999999999999: 1,
+            1.0766524999999998: 1,
+            1.2963775: 1,
+            1.3842674999999998: 1,
+            1.7358275000000001: 1,
+            1.6479374999999998: 1,
+            1.9994974999999999: 1,
+            1.7797725: 1
+        })
+        self.assertTrue(expected == Counter(list(smoothed_signal)))
+
+    def test_smooth_signal_hamming(self):
+        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+                                        window_len=5, window='hamming')
+        expected = Counter({
+            1.0546799999999998: 57,
+            0.9487411607142856: 2,
+            2.1093599999999997: 2,
+            1.642444375: 1,
+            1.9940043750000001: 1,
+            2.1305477678571427: 1,
+            1.1700356249999999: 1,
+            1.5215956249999998: 1,
+            1.8731556249999999: 1,
+            2.0787554464285716: 1,
+            1.0578189285714283: 1,
+            1.4093789285714282: 1,
+            1.7609389285714285: 1,
+            2.1062210714285712: 1,
+            1.0240754464285713: 1,
+            1.3756354464285714: 1,
+            1.7271954464285713: 1,
+            0.89459464285714285: 1,
+            1.0852845535714286: 1,
+            2.1124989285714282: 1,
+            1.4368445535714285: 1,
+            1.7884045535714284: 1,
+            1.0515410714285713: 1,
+            1.4031010714285712: 1,
+            1.7546610714285713: 1,
+            1.2908843749999999: 1
+        })
+        self.assertTrue(expected == Counter(list(smoothed_signal)))
+
+    def test_smooth_signal_bartlett(self):
+        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+                                        window_len=5, window='bartlett')
+        expected = Counter({
+            1.0546799999999998: 59,
+            2.1093599999999997: 4,
+            0.94481749999999987: 2,
+            1.4062399999999999: 2,
+            1.7578: 2,
+            2.0873874999999997: 1,
+            1.1645424999999998: 1,
+            1.4282124999999999: 1,
+            1.5161024999999999: 1,
+            2.1313324999999996: 1,
+            1.8676625: 1,
+            1.0327074999999999: 1,
+            0.87889999999999979: 1,
+            1.0766524999999998: 1,
+            1.2963774999999997: 1,
+            1.3842675: 1,
+            1.7358275000000001: 1,
+            1.6479374999999998: 1,
+            1.9994974999999997: 1,
+            1.7797725: 1
+        })
+        self.assertTrue(expected == Counter(list(smoothed_signal)))
+
+    def test_smooth_signal_blackman(self):
+        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+                                        window_len=5, window='blackman')
+        expected = Counter({
+            1.0546799999999998: 59,
+            2.1093599999999997: 4,
+            1.4062399999999999: 2,
+            1.7578: 2,
+            0.94900273809523794: 2,
+            1.7755872619047619: 1,
+            1.6521227380952381: 1,
+            1.7400127380952382: 1,
+            1.5119172619047618: 1,
+            0.86215904761904749: 1,
+            1.8634772619047619: 1,
+            2.0915727380952376: 1,
+            2.1271472619047618: 1,
+            1.0724672619047617: 1,
+            1.1603572619047617: 1,
+            1.036892738095238: 1,
+            2.0036827380952378: 1,
+            1.4240272619047618: 1,
+            1.300562738095238: 1,
+            1.3884527380952381: 1
+        })
+        self.assertTrue(expected == Counter(list(smoothed_signal)))
 
 class TestSmoothTrack(unittest.TestCase):
     def test_smooth_track_latitude(self):

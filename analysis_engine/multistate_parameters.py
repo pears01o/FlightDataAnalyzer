@@ -50,6 +50,7 @@ from analysis_engine.library import (
     slices_from_to,
     slices_remove_small_gaps,
     slices_remove_small_slices,
+    smooth_signal,
     step_values,
     vstack_params_where_state,
 )
@@ -1164,7 +1165,10 @@ class Flap(MultistateDerivedParameterNode):
             self.array[alt_aal.array > 1000.0] = 40
             self.frequency, self.offset = alt_aal.frequency, alt_aal.offset
             return
-
+        if 'B737' in family_name:
+            _slices = runs_of_ones(np.logical_and(flap.array>=0.9, flap.array<=2.1))
+            for s in _slices:
+                flap.array[s] = smooth_signal(flap.array[s], window_len=5, window='flat')
         self.values_mapping, self.array, self.frequency, self.offset = calculate_flap(
             'lever', flap, model, series, family)
 
@@ -1284,6 +1288,11 @@ class FlapExcludingTransition(MultistateDerivedParameterNode):
 
     def derive(self, flap_angle=P('Flap Angle'),
                model=A('Model'), series=A('Series'), family=A('Family')):
+        family_name = family.value if family else None
+        if "B737" in family_name:
+            _slices = runs_of_ones(np.logical_and(flap_angle.array>=0.9, flap_angle.array<=2.1))
+            for s in _slices:
+                flap_angle.array[s] = smooth_signal(flap_angle.array[s], window_len=5, window='flat')
         self.values_mapping, self.array, self.frequency, self.offset = calculate_flap(
             'excluding', flap_angle, model, series, family)
 

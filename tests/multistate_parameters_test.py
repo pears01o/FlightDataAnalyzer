@@ -11,7 +11,10 @@ from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.aircrafttables.constants import AVAILABLE_CONF_STATES
 from flightdatautilities import masked_array_testutils as ma_test
 from flight_phase_test import buildsection, buildsections
-from analysis_engine.library import unique_values
+from analysis_engine.library import (
+    unique_values,
+    runs_of_ones,
+)
 from analysis_engine.node import (
     aeroplane,
     Attribute,
@@ -1633,6 +1636,28 @@ class TestFlap(unittest.TestCase, NodeTest):
         self.assertEqual(node.offset, 0)
         ma_test.assert_masked_array_equal(node.array, np.ma.array((0, 0, 15, 15, 15, 0, 30, 30, 30, 0, 15, 15, 15, 0, 30, 30, 30, 0)))
 
+    def test_derive__flap_1_2(self):
+        _am = A('Model', 'B737-448(F)')
+        _as = A('Series', 'B737-400')
+        _fr = A('Frame', '737-i')
+        _af = A('Family', 'B737 Classic')
+    
+        flap_angle = load(os.path.join(test_data_path, 'ae-1165-flap_angle.nod'))
+        node = self.node_class()
+        node.derive(flap_angle, _am, _as, _af, _fr, None, None, None, None) 
+        self.assertEqual(node.units, ut.DEGREE)
+        self.assertIsInstance(node.array, MappedArray)
+        # Should be 4 slices @ flap 1, 4 slices @ flap 2 and 3 slices @ flap 5 
+        flap1slices = runs_of_ones(node.array == 1)
+        flap2slices = runs_of_ones(node.array == 2)
+        flap5slices = runs_of_ones(node.array == 5)
+        self.assertEqual(len(flap1slices),4)
+        self.assertEqual(len(flap2slices),4)
+        self.assertEqual(len(flap5slices),3)
+        # Interested in flap transition around index 7500 & 7700 
+        # it should go 1 - 2 - 5 (before fix, flap 2 was missed).        
+        self.assertTrue(flap1slices[2].stop == flap2slices[2].start)
+        self.assertTrue(flap2slices[2].stop == flap5slices[1].start)
 
 class TestFlapExcludingTransition(unittest.TestCase, NodeTest):
 
@@ -1673,6 +1698,28 @@ class TestFlapExcludingTransition(unittest.TestCase, NodeTest):
         self.assertIsInstance(node.array, MappedArray)
         self.assertEqual(node.frequency, 4)
         self.assertEqual(node.array.raw.tolist(), [0] * 95 + [40] * 8 + [None])
+
+    def test_derive__flap_1_2(self):
+        _am = A('Model', 'B737-448(F)')
+        _as = A('Series', 'B737-400')
+        _af = A('Family', 'B737 Classic')
+    
+        flap_angle = load(os.path.join(test_data_path, 'ae-1165-flap_angle.nod'))
+        node = self.node_class()
+        node.derive(flap_angle, _am, _as, _af) 
+        self.assertEqual(node.units, ut.DEGREE)
+        self.assertIsInstance(node.array, MappedArray)
+        # Should be 4 slices @ flap 1, 4 slices @ flap 2 and 3 slices @ flap 5 
+        flap1slices = runs_of_ones(node.array == 1)
+        flap2slices = runs_of_ones(node.array == 2)
+        flap5slices = runs_of_ones(node.array == 5)
+        self.assertEqual(len(flap1slices),4)
+        self.assertEqual(len(flap2slices),4)
+        self.assertEqual(len(flap5slices),3)
+        # Interested in flap transition around index 7500 & 7700 
+        # it should go 1 - 2 - 5 (before fix, flap 2 was missed).
+        self.assertTrue(flap1slices[2].stop == flap2slices[2].start)
+        self.assertTrue(flap2slices[2].stop == flap5slices[1].start)
 
 
 class TestFlapIncludingTransition(unittest.TestCase, NodeTest):

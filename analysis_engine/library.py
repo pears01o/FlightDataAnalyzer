@@ -6951,6 +6951,62 @@ def smooth_track_cost_function(lat_s, lon_s, lat, lon, ac_type, hz):
     return cost
 
 
+def smooth_signal(array, window_len=11, window='hanning'):
+    """
+    Smooth the data using a window with requested size.
+    
+    This method is based on the convolution of a scaled window with the signal.
+    The signal is prepared by introducing reflected copies of the signal 
+    (with the window size) in both ends so that transient parts are minimized
+    in the begining and end part of the output signal.
+    
+    input:
+        array: the input signal array to be smoothed
+        window_len: the dimension of the smoothing window and should be an odd 
+                    integer
+        window: the type of window from: 
+            'flat' - window will produce a moving average smoothing.
+            'hanning'
+            'hamming'
+            'bartlett'
+            'blackman'
+
+    output:
+        the smoothed signal
+
+    Method from http://scipy-cookbook.readthedocs.io/items/SignalSmooth.html
+    """
+    if array.ndim != 1:
+        raise ValueError("smooth only accepts 1 dimension arrays.")
+
+    if array.size < window_len:
+        return array
+
+    if window_len < 3:
+        return array
+
+    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+        raise ValueError("Window is one of 'flat', 'hanning', 'hamming', "
+                         "'bartlett', 'blackman'")
+
+    s=np.r_[array[window_len-1:0:-1], array, array[-2:-window_len-1:-1]]
+    if window == 'flat': #moving average
+        w = np.ones(window_len, np.float64)
+    else:
+        win_func = getattr(np, window, None)
+        w = win_func(window_len)
+    out = np.convolve(w/w.sum(), s, mode='valid')
+    # Trim the extra elements of the array to make the returned array the same
+    # length. The example suggest using:
+    #    "return y[(window_len/2-1):-(window_len/2)]" 
+    # This left the array size 1 element too big , the excess has been trim 
+    # off the end of the array. 
+    if out.size > array.size:
+        extra = out.size - array.size
+        extra_start = window_len/2-1
+    return np.ma.MaskedArray(out[extra_start:-(extra-extra_start)], array.mask)
+
+
 def smooth_track(lat, lon, ac_type, hz):
     """
     Input:

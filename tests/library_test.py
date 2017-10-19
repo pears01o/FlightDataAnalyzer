@@ -6898,132 +6898,73 @@ class TestSmoothSignal(unittest.TestCase):
         self.signal_to_smooth = signal.array[_slices[2]]
 
     def test_smooth_signal_flat(self):
+        expected = [
+            0.9668, 0.9668, 0.9844, 1.0371, 1.0547, 1.0723, 1.125, 1.1953,
+            1.2656, 1.3359, 1.3887, 1.4238, 1.4766, 1.5469, 1.6172, 1.6875,
+            1.7402, 1.7754, 1.8281, 1.8984, 1.9687, 2.039, 2.0918, 2.1094,
+            2.1269, 2.1269,            
+        ]
         smoothed_signal = smooth_signal(self.signal_to_smooth, 
                                         window_len=5, window='flat')
-        expected  = [0.9667899999999998,]*2 + \
-            [0.96679, 0.984368, 1.037102,] + \
-            [1.0546799999999998,]*57 + \
-            [1.072258, 1.124992, 1.195304, 1.2656159999999999, 1.335928,
-             1.3886619999999998, 1.423818, 1.476552, 1.546864,
-             1.6171760000000002, 1.6874880000000003, 1.7402220000000004,
-             1.7753780000000001, 1.828112, 1.8984240000000001, 1.968736,
-             2.0390479999999997, 2.091782,] + [2.1093599999999997,]*2 + \
-            [2.126938, 2.1269379999999996]
-        self.assertTrue(expected == list(smoothed_signal.data))
+        uniques = [i for i in sorted(Counter(list(smoothed_signal)))]
+        self.assertEqual(len(uniques), len(expected))
+        for u, e in zip(uniques, expected):
+            self.assertAlmostEqual(u, e, places=2)
 
     def test_smooth_signal_hanning(self):
+        expected = [
+            0.8789, 0.9448, 1.0327, 1.0547, 1.0767, 1.1645, 1.2964, 1.3843,
+            1.4062, 1.4282, 1.5161, 1.6479, 1.7358, 1.7578, 1.7798, 1.8677,
+            1.9995, 2.0874, 2.1094, 2.1313,
+        ]
         smoothed_signal = smooth_signal(self.signal_to_smooth, 
                                         window_len=5, window='hanning')
-        expected = Counter({
-            1.0546799999999998: 59,
-            2.1093599999999997: 4,
-            0.94481749999999987: 2,
-            1.4062399999999999: 2,
-            1.7578: 2,
-            2.0873874999999997: 1,
-            1.1645424999999998: 1,
-            1.4282124999999999: 1,
-            1.5161024999999999: 1,
-            2.1313324999999996: 1,
-            1.8676624999999998: 1,
-            1.0327074999999999: 1,
-            0.8788999999999999: 1,
-            1.0766524999999998: 1,
-            1.2963775: 1,
-            1.3842674999999998: 1,
-            1.7358275000000001: 1,
-            1.6479374999999998: 1,
-            1.9994974999999999: 1,
-            1.7797725: 1
-        })
-        self.assertTrue(expected == Counter(list(smoothed_signal)))
+
+        uniques = [i for i in sorted(Counter(list(smoothed_signal)))]
+        self.assertEqual(len(uniques), len(expected))
+        for u, e in zip(uniques, expected):
+            self.assertAlmostEqual(u, e, places=2)
 
     def test_smooth_signal_hamming(self):
+        expected = [
+            0.8946, 0.9487, 1.0241, 1.0515, 1.0547, 1.0578, 1.0853, 1.17,
+            1.2909, 1.3756, 1.4031, 1.4094, 1.4368, 1.5216, 1.6424, 1.7272,
+            1.7547, 1.7609, 1.7884, 1.8732, 1.994, 2.0788, 2.1062, 2.1094,
+            2.1125, 2.1305,
+        ]
         smoothed_signal = smooth_signal(self.signal_to_smooth, 
                                         window_len=5, window='hamming')
-        expected = Counter({
-            1.0546799999999998: 57,
-            0.9487411607142856: 2,
-            2.1093599999999997: 2,
-            1.642444375: 1,
-            1.9940043750000001: 1,
-            2.1305477678571427: 1,
-            1.1700356249999999: 1,
-            1.5215956249999998: 1,
-            1.8731556249999999: 1,
-            2.0787554464285716: 1,
-            1.0578189285714283: 1,
-            1.4093789285714282: 1,
-            1.7609389285714285: 1,
-            2.1062210714285712: 1,
-            1.0240754464285713: 1,
-            1.3756354464285714: 1,
-            1.7271954464285713: 1,
-            0.89459464285714285: 1,
-            1.0852845535714286: 1,
-            2.1124989285714282: 1,
-            1.4368445535714285: 1,
-            1.7884045535714284: 1,
-            1.0515410714285713: 1,
-            1.4031010714285712: 1,
-            1.7546610714285713: 1,
-            1.2908843749999999: 1
-        })
-        self.assertTrue(expected == Counter(list(smoothed_signal)))
+        uniques = [i for i in sorted(Counter(list(smoothed_signal)))]
+        self.assertEqual(len(uniques), len(expected))
+        for u, e in zip(uniques, expected):
+            self.assertAlmostEqual(u, e, places=2)
 
     def test_smooth_signal_bartlett(self):
+        expected = [
+            0.8789, 0.9448, 1.0327, 1.0547, 1.0767, 1.1645, 1.2964, 1.3843,
+            1.4062, 1.4282, 1.5161, 1.6479, 1.7358, 1.7578, 1.7798, 1.8677,
+            1.9995, 2.0874, 2.1094, 2.1313,
+        ]
         smoothed_signal = smooth_signal(self.signal_to_smooth, 
                                         window_len=5, window='bartlett')
-        expected = Counter({
-            1.0546799999999998: 59,
-            2.1093599999999997: 4,
-            0.94481749999999987: 2,
-            1.4062399999999999: 2,
-            1.7578: 2,
-            2.0873874999999997: 1,
-            1.1645424999999998: 1,
-            1.4282124999999999: 1,
-            1.5161024999999999: 1,
-            2.1313324999999996: 1,
-            1.8676625: 1,
-            1.0327074999999999: 1,
-            0.87889999999999979: 1,
-            1.0766524999999998: 1,
-            1.2963774999999997: 1,
-            1.3842675: 1,
-            1.7358275000000001: 1,
-            1.6479374999999998: 1,
-            1.9994974999999997: 1,
-            1.7797725: 1
-        })
-        self.assertTrue(expected == Counter(list(smoothed_signal)))
+        uniques = [i for i in sorted(Counter(list(smoothed_signal)))]
+        self.assertEqual(len(uniques), len(expected))
+        for u, e in zip(uniques, expected):
+            self.assertAlmostEqual(u, e, places=2)
 
     def test_smooth_signal_blackman(self):
+        expected = [
+            0.8622, 0.949, 1.0369, 1.0547, 1.0725, 1.1604, 1.3006, 1.3885,
+            1.4062, 1.424, 1.5119, 1.6521, 1.74, 1.7578, 1.7756, 1.8635,
+            2.0037, 2.0916, 2.1094, 2.1271,
+        ]
         smoothed_signal = smooth_signal(self.signal_to_smooth, 
                                         window_len=5, window='blackman')
-        expected = Counter({
-            1.0546799999999998: 59,
-            2.1093599999999997: 4,
-            1.4062399999999999: 2,
-            1.7578: 2,
-            0.94900273809523794: 2,
-            1.7755872619047619: 1,
-            1.6521227380952381: 1,
-            1.7400127380952382: 1,
-            1.5119172619047618: 1,
-            0.86215904761904749: 1,
-            1.8634772619047619: 1,
-            2.0915727380952376: 1,
-            2.1271472619047618: 1,
-            1.0724672619047617: 1,
-            1.1603572619047617: 1,
-            1.036892738095238: 1,
-            2.0036827380952378: 1,
-            1.4240272619047618: 1,
-            1.300562738095238: 1,
-            1.3884527380952381: 1
-        })
-        self.assertTrue(expected == Counter(list(smoothed_signal)))
+        uniques = [i for i in sorted(Counter(list(smoothed_signal)))]
+        self.assertEqual(len(uniques), len(expected))
+        for u, e in zip(uniques, expected):
+            self.assertAlmostEqual(u, e, places=2)
+
 
 class TestSmoothTrack(unittest.TestCase):
     def test_smooth_track_latitude(self):

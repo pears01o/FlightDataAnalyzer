@@ -5526,8 +5526,10 @@ class TestSpeedbrake(unittest.TestCase):
             return A('Family', value)
         self.assertTrue(Speedbrake.can_operate(('Spoiler (L) (4)', 'Spoiler (R) (4)'),
                                                family=A('Family', 'B737 Classic')))
-        self.assertTrue(Speedbrake.can_operate(('Spoiler (L) (4)', 'Spoiler (R) (4)'),
+        self.assertFalse(Speedbrake.can_operate(('Spoiler (L) (4)', 'Spoiler (R) (4)'),
                                                family=A('Family', 'B737 NG')))
+        self.assertTrue(Speedbrake.can_operate(('Spoiler (L) (3)', 'Spoiler (R) (3)'),
+                                                    family=A('Family', 'B737 MAX')))        
         self.assertTrue(Speedbrake.can_operate(('Spoiler (L) (3)', 'Spoiler (R) (3)'),
                                                family=A('Family', 'A320')))
         self.assertTrue(Speedbrake.can_operate(('Spoiler (L) (7)', 'Spoiler (R) (7)'),

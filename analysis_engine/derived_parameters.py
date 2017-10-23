@@ -6727,8 +6727,10 @@ class Speedbrake(DerivedParameterNode):
                 'Spoiler (R) (4)' in available
             ) or
             family_name in ('B737 NG', 'B737 MAX') and (
-                'Spoiler (L) (3)' in available and
-                'Spoiler (R) (3)' in available
+                ('Spoiler (L) (3)' in available and
+                    'Spoiler (R) (3)' in available) or
+                ('Spoiler (L) (4)' in available and
+                    'Spoiler (R) (4)' in available)
             ) or
             family_name == 'Global' and (
                 'Spoiler (L) (5)' in available and
@@ -6823,7 +6825,10 @@ class Speedbrake(DerivedParameterNode):
         elif family_name in ('B737 Classic',):
             self.merge_spoiler(spoiler_l4, spoiler_r4)
         elif family_name in ('B737 NG', 'B737 MAX'):
-            self.merge_spoiler(spoiler_l3, spoiler_r3)
+            if spoiler_l3 and spoiler_r3:
+                self.merge_spoiler(spoiler_l3, spoiler_r3)
+            else:
+                self.merge_spoiler(spoiler_l4, spoiler_r4)
         elif family_name == 'Global':
             self.merge_spoiler(spoiler_l5, spoiler_r5)
         elif family_name == 'B787':

@@ -18,7 +18,7 @@ from flightdatautilities import api, units as ut
 
 from analysis_engine import settings
 from analysis_engine.exceptions import AFRMissmatchError
-from analysis_engine.node import A, aeroplane, ApproachNode, KPV, P, S, helicopter
+from analysis_engine.node import A, aeroplane, ApproachNode, KPV, P, S, helicopter, M, KTI
 
 
 from analysis_engine.library import (
@@ -27,12 +27,18 @@ from analysis_engine.library import (
     filter_runway_heading,
     ils_established,
     index_at_value,
+    is_index_within_slice,
     runs_of_ones,
     peak_curvature,
     shift_slices,
     latitudes_and_longitudes,
     nearest_runway,
+    #find_rig_approach,
+    #valid_between,
+    repair_mask,
 )
+
+from flightdataprofiles.helicopter.library import find_rig_approach, valid_between
 
 from flightdatautilities.geometry import great_circle_distance__haversine
 
@@ -273,13 +279,29 @@ class ApproachInformation(ApproachNode):
                lon_land=KPV('Longitude At Touchdown'),
                precision=A('Precise Positioning'),
                fast=S('Fast'),
+               
+               lat1=P('Latitude Smoothed'),
+               lon1=P('Longitude Smoothed'),
+               u=P('Airspeed'),
+               gspd=P('Groundspeed'),
+               height_from_rig=P('Altitude ADH'),
+               hdot=P('Vertical Speed'),
+               roll=P('Roll'),
+               heading=P('Heading'),
+               heading_countinuous = P('Heading Continuous'),
+               #heading=P('Heading (FO)'),
+               distance_land=P('Distance To Landing'),
+               tdwns=KTI('Touchdown'),   
+               
+               offshore=M('Offshore'),
+               takeoff=S('Takeoff')
                ):
 
         precise = bool(getattr(precision, 'value', False))
 
         alt = alt_agl if ac_type == helicopter else alt_aal
 
-        app_slices = app.get_slices()
+        app_slices = sorted(app.get_slices())
 
         for index, _slice in enumerate(app_slices):
             # a) The last approach is assumed to be landing:
@@ -287,7 +309,8 @@ class ApproachInformation(ApproachNode):
                 approach_type = 'LANDING'
                 landing = True
             # b) We have a touch and go if Altitude AAL reached zero:
-            elif np.ma.any(alt.array[_slice] <= 0):
+            #elif np.ma.any(alt.array[_slice] <= 0):
+            elif np.ma.any(alt.array[_slice.start:_slice.stop+(5*alt.frequency)] <= 0):
                 if ac_type == aeroplane:
                     approach_type = 'TOUCH_AND_GO'
                     landing = False
@@ -402,9 +425,174 @@ class ApproachInformation(ApproachNode):
                 self.error("Airport %s: contains no runways", airport['code'])
 
             # Simple determination of heliport.
-            # This function may be expanded to cater for rig approaches in future.
             heliport = is_heliport(ac_type, airport, landing_runway)
+            
+            sorted_tdwns = sorted(tdwns, key=lambda touchdown: touchdown.index)
+            sorted_takeoffs = sorted(takeoff.get_slices(), key=lambda tkoff: tkoff.start)
+                        
+            for touchdown, tkoff in zip(sorted_tdwns,sorted_takeoffs):
+                # If both the takeoff and touchdown point are offshore then we consider
+                # the approach to be a 'SHUTTLING APPROACH'. Else we continue to look for
+                # an 'AIRBORNE RADAR DIRECT/OVERHEAD APPROACH' or a 'STANDARD APPROACH'
+                #
+                # A couple of seconds are added to the end of the slice as some flights used
+                # to test this had the touchdown a couple of seconds outside the approach slice 
+                if is_index_within_slice(touchdown.index, slice(_slice.start, _slice.stop+5*alt.frequency)):
+                    if offshore.array[touchdown.index] == 'Offshore' and tkoff.start < touchdown.index:
+                        if offshore.array[tkoff.start] == 'Offshore':
+                            approach_type = 'SHUTTLING APPROACH'
+                        else:
+                            Vy = 80.0 # Type dependent?
+                
+                            # conditions_defs is a dict of condition name : expression to evaluate pairs, listed this way for clarity
+                            condition_defs={'Below 120 kts' : lambda p : p['Airspeed'] < 120,
+                                                'Below Vy+5' : lambda p : p['Airspeed'] < Vy+5.0,
+                                                'Over Vy' : lambda p : p['Airspeed'] > Vy,
+                                                'Over Vy-5' : lambda p : p['Airspeed'] > Vy-5.0,
+                                                'Below 70 gspd' : lambda p : p['Groundspeed'] < 72,
+                                                'Below 60 gspd' : lambda p : p['Groundspeed'] < 60,
+                                                #'Below Vy-10' : lambda p : p['Airspeed'] < Vy-10.0,
+                                                #'Over Vy-10' : lambda p : p['Airspeed'] > Vy-10.0,
+                                                #'Above 30 gspd' : lambda p : p['Groundspeed'] > 30,
+                        
+                                                'Over 900 ft' : lambda p : p['Altitude ADH'] > 900,
+                                                'Over 200 ft' : lambda p : p['Altitude ADH'] > 200, 
+                                                'Below 1750 ft': lambda p : p['Altitude ADH'] < 1750,
+                                                'Below 1100 ft' : lambda p : p['Altitude ADH'] < 1100,
+                                                'Over 350 ft' : lambda p : p['Altitude ADH'] > 350,
+                                                'Below 700 ft' : lambda p : p['Altitude ADH'] < 700,
+                                                'ROD < 700 fpm' : lambda p : p['Vertical Speed'] > -700,
+                                                'ROD > 200 fpm' : lambda p : p['Vertical Speed'] < -200,
+                                                'Not climbing' : lambda p : p['Vertical Speed'] < 200,
+                                                #'Over 400 ft' : lambda p : p['Altitude ADH'] > 400,
+                                                #'Below 1500 ft': lambda p : p['Altitude ADH'] < 1500,
+                                                #'Below 1300 ft': lambda p : p['Altitude ADH'] < 1300,                                                
+                
+                                                'Roll below 25 deg' : lambda p : valid_between(p['Roll'], -25.0, 25.0),
+                                                'Wings Level' : lambda p : valid_between(p['Roll'], -10.0, 10.0),
+                                                'Within 20 deg of final heading' : lambda p : np.ma.abs(p['head_off_final']) < 20.0,
+                                                #'Within 45 deg of downwind leg' : 'valid_between(np.ma.abs(head_off_final), 135.0, 225.0)',
+                                                #'15 deg off final heading' : lambda p : np.ma.abs(np.ma.abs(p['head_off_two_miles'])-15.0) < 5.0,
+                                                #'Heading towards oil rig' : lambda p : np.ma.abs(p['head_off_two_miles']) < 6.0,
+                                                
+                                                'Beyond 0.7 NM' : lambda p : p['Distance To Landing'] > 0.7,
+                                                'Within 0.8 NM' : lambda p : p['Distance To Landing'] < 0.8,
+                                                'Beyond 1.5 NM' : lambda p : p['Distance To Landing'] > 1.5,
+                                                'Within 2.0 NM' : lambda p : p['Distance To Landing'] < 2.0,
+                                                'Within 3.0 NM' : lambda p : p['Distance To Landing'] < 3.0,
+                                                'Beyond 3.0 NM' : lambda p : p['Distance To Landing'] > 3.0,
+                                                'Within 10.0 NM' : lambda p : p['Distance To Landing'] < 10.0,
+                                                #'Within 1.5 NM' : lambda p : p['Distance To Landing'] < 1.5,
+                                                }
+                        
+                            # Phase map is a dict of the flight phases with the list of conditions which must be
+                            # satisfied for the phase to be active.
+                            phase_map={'Circuit':['Below 120 kts',
+                                                  'Over Vy',
+                                                  'Below 1100 ft',
+                                                  'Over 900 ft',
+                                                  'Roll below 25 deg', # includes downwind turn
+                                                  ],
+                                       'Level within 2NM':['Below Vy+5',
+                                                           'Over Vy-5',
+                                                           'Below 1100 ft',
+                                                           'Over 900 ft',
+                                                           'Wings Level',
+                                                           'Within 20 deg of final heading',
+                                                           'Within 2.0 NM',
+                                                           'Beyond 1.5 NM',
+                                                           ],      
+                                       'Initial Descent':['Wings Level',
+                                                          'Within 20 deg of final heading',
+                                                          'ROD < 700 fpm',
+                                                          'ROD > 200 fpm',
+                                                          'Beyond 0.7 NM',
+                                                          'Over 350 ft',
+                                                          ],
+                                       'Final Approach':['Wings Level',
+                                                         'Within 20 deg of final heading',
+                                                         'ROD < 700 fpm',
+                                                         'Within 0.8 NM',
+                                                         'Below 60 gspd',
+                                                         'Below 700 ft',
+                                                         ],
+                                       
+                                       # Phases for ARDA/AROA
+                                       #
+                                       # All heading conditions are commented out as the pilots usually 
+                                       # go outside the boundaries; the other conditions seem to be 
+                                       # enough to detect them
+                                       'ARDA/AROA 10 to 3':['Within 10.0 NM',
+                                                       'Beyond 3.0 NM',
+                                                       'Below 1750 ft', 
+                                                       'Not climbing',
+                                                       #'Heading towards oil rig',
+                                                       ],
+                                       'ARDA/AROA Level within 3NM':['Below 70 gspd',
+                                                           'Over 200 ft',
+                                                           'Wings Level',
+                                                           'Within 3.0 NM',
+                                                           'Beyond 1.5 NM',
+                                                           #'Within 20 deg of final heading',
+                                                           ],   
+                                       'ARDA/AROA Final':['Not climbing',
+                                                     'Within 2.0 NM',
+                                                     #'15 deg off final heading'
+                                                     ],
+                                       }
+                            
+                            """
+                            #Phases that can be used to tighten the conditions for ARDA/AROA
+                        
+                            'Radar Heading Change':['15 deg off final heading', 'Within 1.5 NM', 'Beyond 0.7 NM'],
+                            'Low Approach':['Below Vy+5', 'Below 700 ft', 'Over 350 ft', 'Within 20 deg of final heading', 'Wings Level'],
+                            'Low Circuit':['Below 120 kts', 'Over Vy-5', 'Below 700 ft', 'Over 350 ft', 'Roll below 25 deg']
+                            """                            
+                            
+                            approach_map = {'Standard approach':['Circuit',
+                                                                 'Level within 2NM',
+                                                                 'Initial Descent',
+                                                                 'Final Approach'
+                                                                 ],
+                                            'Airborne Radar Direct/Overhead Approach':['ARDA/AROA 10 to 3',
+                                                                                       'ARDA/AROA Level within 3NM',
+                                                                                       'ARDA/AROA Final'
+                                                                                       ],
+                                            }
+                                                        
+                            # Making sure the approach slice contains enough information to be able
+                            # to properly identify ARDA/AROA approaches (the procedure starts from 10NM 
+                            # before touchdown)
+                            
+                            app_slice = slice(index_at_value(distance_land.array, 11, _slice=slice(0,touchdown.index)), touchdown.index)
+                            
+                            heading_repaired = repair_mask(heading.array[app_slice], 
+                                                           frequency=heading.frequency,
+                                                           repair_duration=np.ma.count_masked(heading.array[app_slice]),
+                                                           copy=True,
+                                                           extrapolate=True)
+                            
+                            param_arrays = {
+                                    'Airspeed': u.array[app_slice],
+                                    'Groundspeed': gspd.array[app_slice],
+                                    'Altitude ADH': height_from_rig.array[app_slice],
+                                    'Vertical Speed': hdot.array[app_slice],
+                                    'Roll': roll.array[app_slice],
+                                    'Distance To Landing': distance_land.array[app_slice],
+                                    'Heading': heading_repaired,
+                                    'Latitude': lat1.array[app_slice],
+                                    'Longitude': lon1.array[app_slice],
+                            }
+                    
+                            longest_approach_type, longest_approach_durn, longest_approach_slice = find_rig_approach(condition_defs,
+                                                                                                                     phase_map, approach_map,
+                                                                                                                     Vy, None, param_arrays,
+                                                                                                                     debug=False)
 
+                            if longest_approach_type is not None:
+                                approach_type = longest_approach_type.upper()
+                                _slice = slice(_slice.start + longest_approach_slice.start, _slice.stop + longest_approach_slice.stop)
+        
             if heliport:
                 self.create_approach(
                     approach_type,
@@ -567,6 +755,7 @@ class ApproachInformation(ApproachNode):
                 if ils_gs_estab:
                     gs_est = slice(ils_gs_estab, ils_gs_end+1)
 
+
             '''
             # These statements help set up test cases.
             print()
@@ -597,3 +786,5 @@ class ApproachInformation(ApproachNode):
                 lowest_lon=lowest_lon,
                 lowest_hdg=lowest_hdg,
             )
+            
+        print('Helpful breakpoint for debugging')

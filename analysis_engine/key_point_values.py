@@ -18831,4 +18831,3 @@ class EngTakeoffFlexTemp(KeyPointValueNode):
                 index = toff.index
                 value = (flex_1.array[index] + flex_2.array[index]) / 2.0
                 self.create_kpv(index, value)
-

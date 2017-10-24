@@ -8209,3 +8209,256 @@ def nearest_runway(airport, heading, ilsfreq=None, latitude=None, longitude=None
 def mb2ft(mb):
     '''Convert millibars into feet'''
     return (1-pow((mb/1013.25),0.190284))*145366.45
+
+
+def valid_between(param_1,lower,upper):
+    return 1-np.ma.getmaskarray(np.ma.masked_outside(param_1,lower,upper))
+
+
+def find_rig_approach(condition_defs, phase_map, approach_map,
+                      Vy,
+                      this_hdf_file,
+                      param_arrays,
+                      debug=False,
+                      lat_oil_rig=None,
+                      lon_oil_rig=None):
+
+    '''
+    Core part of rig approach detection algorithm.
+
+    param_arrays is a dictionary of parameter name : array, where the keys are:
+    ['Airspeed'] - airspeed in knots
+    ['Altitude ADH'] - altitude with respect to the deck height in feet
+    ['Distance To Landing'] - track distnace to next landing in NM
+    ['Heading'] - heading (continuous) in degrees
+    ['Latitude'] - latitude in degrees
+    ['Longitude'] - longitude in degrees
+    ['Roll'] - roll attitude in degrees
+    ['Vertical Speed'] - vertical speed in ft/min
+    '''
+    def build_map_array(condition_names, phase_map):
+        n_conditions = len(condition_names)
+        n_phases = len(phase_map)
+        phase_mappings = np.ma.zeros((n_phases, n_conditions))
+
+        for ix_phase, phase in enumerate(phase_map):
+            for ix_condition, condition  in enumerate(condition_names):
+                # This code just checks that the required conditions are available.
+                # an easy (trust me!) mistake to make.
+                for check in phase_map[phase]:
+                    if check not in condition_names:
+                        raise ValueError('%s requires missing: %s' %(phase, check))
+                # Now we know it's going to work, populate this line of the array.
+                if condition in phase_map[phase]:
+                    phase_mappings[ix_phase, ix_condition] = 1
+        return phase_mappings
+
+    def document_condition(message, index, phase_mappings, d, conditions, causes, condition_names, name):
+        tell_me = {'begin': ' starts when this is first met: ',
+                   'end'  : ' ends when this is no longer met: ',
+                   'never': ' is never true. Closest still has not met ',
+                   }
+        missed_conditions = np.ma.logical_and(1-conditions.transpose()[index], phase_mappings[d])
+        causes[index] = []
+        for n, valid in enumerate(missed_conditions):
+            if valid:
+                causes[index].append(name+tell_me[message]+condition_names[n])
+
+    def head_diff(h, h0):
+        # Allows us to use Heading Continuous to avoid 360 deg jumps, while still viewing the
+        # data as values around zero for the approach heading.
+        turns = int((h[-1]-h0+180)/360)
+        return (h-h0) - (360.0*turns)
+
+    m_per_nm = 1852
+
+    # Local names
+    u = param_arrays['Airspeed']
+    lat = param_arrays['Latitude']
+    lon = param_arrays['Longitude']
+    heading = param_arrays['Heading']
+    height = param_arrays['Altitude ADH']
+    roll = param_arrays['Roll']
+    distance = param_arrays['Distance To Landing']
+
+    duration = len(u)
+    two_miles = index_at_value(distance, 2.0, _slice=slice(None, None, -1))
+
+    # Use the latitude and longitude of the oil rig if provided. 
+    # Otherwise use the landing latitude/longitude
+    if lon_oil_rig is not None and lat_oil_rig is None:
+        lat_oil_rig = lat[-1]
+    elif lat_oil_rig is not None and lon_oil_rig is None:
+        lon_oil_rig = lon[-1]
+    elif lat_oil_rig is None and lon_oil_rig is None:
+        lat_oil_rig = lat[-1]
+        lon_oil_rig = lon[-1]
+
+    head_two_miles, _ = bearing_and_distance(lat[two_miles], lon[two_miles], lat_oil_rig, lon_oil_rig)
+    param_arrays['head_off_two_miles'] = head_diff(heading, head_two_miles)
+    param_arrays['head_final'] = np.ma.median(heading[-30:])
+    param_arrays['head_off_final'] = head_diff(heading, param_arrays['head_final'])
+
+    # Debug plots
+    if debug:
+        y_loc = -450
+        import matplotlib.pyplot as plt
+        plt.switch_backend('TkAgg')
+        plt.title(this_hdf_file)
+
+        plt.plot(lon, lat)
+        plt.plot(lon[two_miles],lat[two_miles], marker='o', color='r')
+        plt.plot(lon[-1],lat[-1], marker='o', color='g')
+        plt.show()
+        plt.clf()
+        
+        plt.plot(u, label='u')
+        plt.plot(heading, label='heading')
+        plt.plot(param_arrays['Groundspeed'], label='groundspeed')
+        plt.plot(height, label='height')
+        plt.plot(distance, label='d')
+        plt.legend()
+        plt.show()
+        plt.clf()
+        
+        plt.plot(height)
+        plt.plot(u)
+        plt.plot(param_arrays['head_off_two_miles'])
+
+
+    #========================================================================
+    # Define all the conditional elements individually
+    #========================================================================
+    # It is convenient to have a list of names available
+    condition_names = [c for c in condition_defs]
+
+    # We build the list of true and false results for each condition across the entire data set...
+    arrays = [f(param_arrays) for f in condition_defs.values()]
+
+    conditions=np.ma.concatenate(arrays)
+    # ...then reshape the conditions array to be the number of named conditions by the length of the arrays supplied.
+    num_condition_names = len(condition_names)
+    conditions = conditions.reshape(num_condition_names,
+                                    len(conditions)/num_condition_names)
+
+    #========================================================================
+    # Define the phases and which conditions have to be met for each phase
+    #========================================================================
+    phase_mappings = build_map_array(condition_names, phase_map)
+
+    #========================================================================
+    # Define the types of approach by the phases they contain
+    #========================================================================
+    approach_type_mappings = build_map_array(phase_map, approach_map).transpose()
+
+    #========================================================================
+    # Work out which approach type we are in...
+    #========================================================================
+
+    #...first work out which phases are satisfied
+
+    # How many conditions are satisfied for each phase at each sample point?
+    number_of_conditions_met = np.ma.dot(phase_mappings, conditions).transpose()
+    # How many conditions were specified for each phase?
+    phase_mapping_totals = np.sum(phase_mappings, axis=1)
+    # So when were all the condiitons for each phase fully satisfied?
+    complete_phases = np.ma.masked_where(number_of_conditions_met < phase_mapping_totals,
+                                         number_of_conditions_met)
+
+    # Track the cause for incomplete phase conditions in the sample before the start
+    # and after the end of each satisfied phase - we will need this later for documentation and debugging
+    causes = {}
+    for d, name in enumerate(phase_map):
+        phases_meet_all_conditions = np.ma.clump_unmasked(complete_phases.transpose()[d])
+        if phases_meet_all_conditions:
+            for phase_meets_all_conditions in phases_meet_all_conditions:
+                if debug:
+                    print(name, phases_meet_all_conditions)
+                begin = phase_meets_all_conditions.start
+                if begin > 1:
+                    document_condition('begin', begin-1, phase_mappings, d, conditions, causes, condition_names, name)
+
+                end = phase_meets_all_conditions.stop
+                if end < duration:
+                    document_condition('end', end, phase_mappings, d, conditions, causes, condition_names, name)
+
+                if debug:
+                    plt.plot([begin,end],[y_loc,y_loc],label=name)
+                    y_loc+=100
+
+        else:
+            # We didn't enter that phase satisfactorily. Report why (for the first closest match only) to aid debugging.
+            nearly_idx = np.ma.argmax(complete_phases.transpose()[d].data)
+            document_condition('never', nearly_idx, phase_mappings, d, conditions, causes, condition_names, name)
+
+    if debug:
+        import pprint
+        pprint.pprint(causes)
+
+
+    #...second work out which approach types are satisfied <<< VERY SIMILAR TO ABOVE >>>
+    number_of_phases_met = np.ma.dot(complete_phases.mask, approach_type_mappings)
+    approach_type_totals = np.sum(approach_type_mappings, axis=0)
+    complete_approaches = np.ma.masked_where(number_of_phases_met < approach_type_totals,
+                                             number_of_phases_met)
+
+    longest_approach_type = None
+    longest_approach_durn = 0
+    half_mile = index_at_value(distance, 0.5, _slice=slice(None, None, -1))
+    if debug:
+        print(half_mile)
+
+    # If ARDA/AROA is detected, this takes priority and we return this instead of checking if
+    # this is indeed the longest slice. Else, we check if the conditions for the Standard 
+    # Approach are met and return this instead. If the conditions are not met for both the 
+    # ARDA/AROA and Standard Approach, we return None
+    is_arda_aroa = False
+    for d, name in enumerate(approach_map):
+        slices_this_approach_type = np.ma.clump_masked(complete_approaches.transpose()[d])
+        if slices_this_approach_type:
+            max_durn = 0
+            max_durn_slice = None
+            for this_slice in slices_this_approach_type:
+                # I'm only going to be interested in approaches that encompass the half mile point
+                # this avoids lengthy periods in the circuit from "beating" last minute dashes
+                # for the rig.
+                if not is_index_within_slice(half_mile, this_slice):
+                    continue
+                if name == 'Airborne Radar Direct/Overhead Approach':
+                    longest_approach_type = name
+                    longest_approach_durn = slices_duration([this_slice], 1.0)
+                    longest_approach_slice = this_slice
+                    is_arda_aroa = True
+                    break
+                elif is_arda_aroa == False:
+                    longest_approach_durn = slices_duration([this_slice], 1.0)
+                    longest_approach_type = name
+                    longest_approach_slice = this_slice                    
+            if debug:
+                if max_durn_slice:
+                    print(name,'longest period', max_durn, 'sec, from', max_durn_slice.start,'to', max_durn_slice.stop)
+                else:
+                    print(name, 'not met at half mile point')
+                    
+        break
+        
+    if debug:
+        print('\n'+'Longest slice overall was type', longest_approach_type, longest_approach_durn, 'sec')
+
+        try:
+            print('Start from', longest_approach_slice.start, 'as phase',causes[longest_approach_slice.start-1][0])
+        except:
+            print('started')
+
+        try:
+            print('End at', longest_approach_slice.stop, 'as phase',causes[longest_approach_slice.stop][0])
+        except:
+            print('finished')
+        print('---------------------------------')
+        legend = plt.legend(loc='upper right')
+        plt.show()
+
+    if longest_approach_type:
+        return longest_approach_type, longest_approach_durn, longest_approach_slice
+    else:
+        return None, None, None

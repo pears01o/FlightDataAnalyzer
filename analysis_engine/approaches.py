@@ -33,12 +33,10 @@ from analysis_engine.library import (
     shift_slices,
     latitudes_and_longitudes,
     nearest_runway,
-    #find_rig_approach,
-    #valid_between,
+    find_rig_approach,
+    valid_between,
     repair_mask,
 )
-
-from flightdataprofiles.helicopter.library import find_rig_approach, valid_between
 
 from flightdatautilities.geometry import great_circle_distance__haversine
 
@@ -591,7 +589,7 @@ class ApproachInformation(ApproachNode):
 
                             if longest_approach_type is not None:
                                 approach_type = longest_approach_type.upper()
-                                _slice = slice(_slice.start + longest_approach_slice.start, _slice.stop + longest_approach_slice.stop)
+                                _slice = slice(app_slice.start + longest_approach_slice.start, app_slice.stop)
         
             if heliport:
                 self.create_approach(

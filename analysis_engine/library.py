@@ -8424,7 +8424,7 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
                 # for the rig.
                 if not is_index_within_slice(half_mile, this_slice):
                     continue
-                if name == 'Airborne Radar Direct/Overhead Approach':
+                if name == 'Airborne_Radar_Direct_Or_Overhead_Approach':
                     longest_approach_type = name
                     longest_approach_durn = slices_duration([this_slice], 1.0)
                     longest_approach_slice = this_slice
@@ -8440,7 +8440,8 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
                 else:
                     print(name, 'not met at half mile point')
                     
-        break
+        if is_arda_aroa:
+            break
         
     if debug:
         print('\n'+'Longest slice overall was type', longest_approach_type, longest_approach_durn, 'sec')

@@ -278,19 +278,16 @@ class ApproachInformation(ApproachNode):
                precision=A('Precise Positioning'),
                fast=S('Fast'),
                
-               lat1=P('Latitude Smoothed'),
-               lon1=P('Longitude Smoothed'),
+               lat_smoothed=P('Latitude Smoothed'),
+               lon_smoothed=P('Longitude Smoothed'),
                u=P('Airspeed'),
                gspd=P('Groundspeed'),
                height_from_rig=P('Altitude ADH'),
                hdot=P('Vertical Speed'),
                roll=P('Roll'),
                heading=P('Heading'),
-               heading_countinuous = P('Heading Continuous'),
-               #heading=P('Heading (FO)'),
                distance_land=P('Distance To Landing'),
-               tdwns=KTI('Touchdown'),   
-               
+               tdwns=KTI('Touchdown'), 
                offshore=M('Offshore'),
                takeoff=S('Takeoff')
                ):
@@ -438,7 +435,7 @@ class ApproachInformation(ApproachNode):
                 if is_index_within_slice(touchdown.index, slice(_slice.start, _slice.stop+5*alt.frequency)):
                     if offshore and offshore.array[touchdown.index] == 'Offshore' and tkoff.start < touchdown.index:
                         if offshore.array[tkoff.start] == 'Offshore':
-                            approach_type = 'SHUTTLING APPROACH'
+                            approach_type = 'SHUTTLING_APPROACH'
                         else:
                             Vy = 80.0 # Type dependent?
                 
@@ -547,12 +544,12 @@ class ApproachInformation(ApproachNode):
                             'Low Circuit':['Below 120 kts', 'Over Vy-5', 'Below 700 ft', 'Over 350 ft', 'Roll below 25 deg']
                             """                            
                             
-                            approach_map = {'Standard approach':['Circuit',
+                            approach_map = {'Standard_Approach':['Circuit',
                                                                  'Level within 2NM',
                                                                  'Initial Descent',
                                                                  'Final Approach'
                                                                  ],
-                                            'Airborne Radar Direct/Overhead Approach':['ARDA/AROA 10 to 3',
+                                            'Airborne_Radar_Direct_Or_Overhead_Approach':['ARDA/AROA 10 to 3',
                                                                                        'ARDA/AROA Level within 3NM',
                                                                                        'ARDA/AROA Final'
                                                                                        ],
@@ -578,8 +575,8 @@ class ApproachInformation(ApproachNode):
                                     'Roll': roll.array[app_slice],
                                     'Distance To Landing': distance_land.array[app_slice],
                                     'Heading': heading_repaired,
-                                    'Latitude': lat1.array[app_slice],
-                                    'Longitude': lon1.array[app_slice],
+                                    'Latitude': lat_smoothed.array[app_slice],
+                                    'Longitude': lon_smoothed.array[app_slice],
                             }
                     
                             longest_approach_type, longest_approach_durn, longest_approach_slice = find_rig_approach(condition_defs,
@@ -784,5 +781,3 @@ class ApproachInformation(ApproachNode):
                 lowest_lon=lowest_lon,
                 lowest_hdg=lowest_hdg,
             )
-            
-        print('Helpful breakpoint for debugging')

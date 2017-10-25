@@ -436,7 +436,7 @@ class ApproachInformation(ApproachNode):
                 # A couple of seconds are added to the end of the slice as some flights used
                 # to test this had the touchdown a couple of seconds outside the approach slice 
                 if is_index_within_slice(touchdown.index, slice(_slice.start, _slice.stop+5*alt.frequency)):
-                    if offshore.array[touchdown.index] == 'Offshore' and tkoff.start < touchdown.index:
+                    if offshore and offshore.array[touchdown.index] == 'Offshore' and tkoff.start < touchdown.index:
                         if offshore.array[tkoff.start] == 'Offshore':
                             approach_type = 'SHUTTLING APPROACH'
                         else:

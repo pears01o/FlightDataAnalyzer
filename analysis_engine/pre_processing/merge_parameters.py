@@ -4,7 +4,7 @@ import numpy as np
 
 from flightdatautilities import units as ut
 
-from analysis_engine.library import any_deps, blend_two_parameters
+from analysis_engine.library import any_deps, blend_two_parameters, any_of, blend_parameters
 from analysis_engine.node import DerivedParameterNode, P, A
 from analysis_engine.derived_parameters import CoordinatesStraighten
 

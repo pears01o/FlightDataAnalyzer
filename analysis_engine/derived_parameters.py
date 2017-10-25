@@ -5164,6 +5164,7 @@ class LatitudeSmoothed(DerivedParameterNode, CoordinatesSmoothed):
             self.array = track_linking(lat.array, lat_adj)
         else:
             self.array = lat.array
+            
 
 class LongitudeSmoothed(DerivedParameterNode, CoordinatesSmoothed):
     """

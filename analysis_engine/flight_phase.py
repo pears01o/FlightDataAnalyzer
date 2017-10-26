@@ -2133,3 +2133,25 @@ class TwoDegPitchTo35Ft(FlightPhaseNode):
                                     end=takeoff.stop_edge)
                 else:
                     self.warning('%s not created as slice less than 1 sample' % self.name)
+
+
+class ShuttlingApproach(FlightPhaseNode):
+    '''
+    Flight phase for the shuttling approach
+    '''
+    
+    def derive(self, approaches=App('Approach Information')):
+        for approach in approaches:
+            if approach.type == 'SHUTTLING_APPROACH':
+                self.create_section(approach.slice, name='Shuttling Approach')
+               
+                
+class AirborneRadarApproach(FlightPhaseNode):
+    '''
+    Flight phase for airborne radar approaches (ARDA/AROA)
+    '''
+    
+    def derive(self, approaches=App('Approach Information')):
+        for approach in approaches:
+            if approach.type == 'AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH':
+                self.create_section(approach.slice, name='Airborne Radar Approach')

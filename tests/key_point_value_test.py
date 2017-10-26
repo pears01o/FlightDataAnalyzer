@@ -95,6 +95,7 @@ from analysis_engine.key_point_values import (
     Airspeed20FtToTouchdownMax,
     Airspeed2NMToOffshoreTouchdown,
     AirspeedAbove500FtMin,
+    AirspeedAbove500FtMinOffshoreSpecialProcedure,
     AirspeedAt200FtDuringOnshoreApproach,
     AirspeedAtAPGoAroundEngaged,
     AirspeedWhileAPHeadingEngagedMin,
@@ -422,7 +423,8 @@ from analysis_engine.key_point_values import (
     GrossWeightDelta60SecondsInFlightMax,
     Groundspeed20FtToTouchdownMax,
     Groundspeed20SecToOffshoreTouchdownMax,
-    Groundspeed0_8NMToOffshoreTouchdown,
+    Groundspeed0_8NMToOffshoreTouchdownSpecialProcedure,
+    Groundspeed0_8NMToOffshoreTouchdownStandardApproach,
     GroundspeedAtLiftoff,
     GroundspeedAtTOGA,
     GroundspeedAtTouchdown,
@@ -450,7 +452,8 @@ from analysis_engine.key_point_values import (
     HeadingDeviationFromRunwayAt50FtDuringLanding,
     HeadingDeviationFromRunwayAtTOGADuringTakeoff,
     HeadingDeviationFromRunwayDuringLandingRoll,
-    HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMax,
+    HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxSpecialProcedure,
+    HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxStandardApproach,
     HeadingDuringLanding,
     HeadingDuringTakeoff,
     HeadingRateWhileAirborneMax,
@@ -2814,18 +2817,105 @@ class TestAirspeedAbove500FtMin(unittest.TestCase):
             []
         )
         opts = self.node_class.get_operational_combinations(ac_type=helicopter)
-        self.assertEqual(opts, [('Airspeed', 'Altitude AGL For Flight Phases')])
+        self.assertEqual(opts, [('Airspeed', 'Altitude AGL For Flight Phases', 'Approach Information')])
 
     def test_derive(self):
-        alt = P('Altitude AGL For Flight Phases', np.ma.array(np.linspace(200, 1000, 20)))
-        spd = P('Airspeed', np.ma.array(np.linspace(90, 100, 20)))
+        alt = P('Altitude AGL For Flight Phases', np.tile(np.ma.array(np.linspace(200, 1000, 40)),2))
+        spd = P('Airspeed', np.tile(np.ma.array(np.linspace(90, 100, 40)),2))
 
+        approaches = App() 
+        approaches.create_approach('AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH', 
+                                   slice(25, 29, None), 
+                                   runway_change=False,
+                                   offset_ils=False,                                   
+                                   airport=None, 
+                                   landing_runway=None,
+                                   approach_runway=None,
+                                   gs_est=None,
+                                   loc_est=None,
+                                   ils_freq=None,
+                                   turnoff=None,
+                                   lowest_lat=-19.92955434, 
+                                   lowest_lon=115.385025548, 
+                                   lowest_hdg=206.713600159)
+        
+        approaches.create_approach('LANDING', 
+                                   slice(32, 38, None), 
+                                   runway_change=False,
+                                   offset_ils=False,                                   
+                                   airport=None, 
+                                   landing_runway=None,
+                                   approach_runway=None,
+                                   gs_est=None,
+                                   loc_est=None,
+                                   ils_freq=None,
+                                   turnoff=None, 
+                                   lowest_lat=-20.863417177, 
+                                   lowest_lon=115.404442795, 
+                                   lowest_hdg=208.701438904)
+        
         node = self.node_class()
-        node.derive(spd, alt)
+        node.derive(spd, alt, approaches)
 
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 8)
-        self.assertAlmostEqual(node[0].value, 94.21, places=1)
+        self.assertEqual(node[0].index, 55)
+        self.assertAlmostEqual(node[0].value, 93.84, places=1)
+        
+        
+class TestAirspeedAbove500FtMinOffshoreSpecialProcedure(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = AirspeedAbove500FtMinOffshoreSpecialProcedure
+
+    def test_can_operate(self):
+        self.assertEqual(
+            self.node_class.get_operational_combinations(ac_type=aeroplane),
+            []
+        )
+        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
+        self.assertEqual(opts, [('Airspeed', 'Altitude AGL For Flight Phases', 'Approach Information')])
+
+    def test_derive(self):
+        alt = P('Altitude AGL For Flight Phases', np.tile(np.ma.array(np.linspace(200, 1000, 40)),2))
+        spd = P('Airspeed', np.tile(np.ma.array(np.linspace(90, 100, 40)),2))
+
+        approaches = App() 
+        approaches.create_approach('AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH', 
+                                   slice(25, 29, None), 
+                                   runway_change=False,
+                                   offset_ils=False,                                   
+                                   airport=None, 
+                                   landing_runway=None,
+                                   approach_runway=None,
+                                   gs_est=None,
+                                   loc_est=None,
+                                   ils_freq=None,
+                                   turnoff=None,
+                                   lowest_lat=-19.92955434, 
+                                   lowest_lon=115.385025548, 
+                                   lowest_hdg=206.713600159)
+        
+        approaches.create_approach('LANDING', 
+                                   slice(32, 38, None), 
+                                   runway_change=False,
+                                   offset_ils=False,                                   
+                                   airport=None, 
+                                   landing_runway=None,
+                                   approach_runway=None,
+                                   gs_est=None,
+                                   loc_est=None,
+                                   ils_freq=None,
+                                   turnoff=None, 
+                                   lowest_lat=-20.863417177, 
+                                   lowest_lon=115.404442795, 
+                                   lowest_hdg=208.701438904)
+        
+        node = self.node_class()
+        node.derive(spd, alt, approaches)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 15)
+        self.assertAlmostEqual(node[0].value, 93.84, places=1)        
 
 
 class TestAirspeedAt200FtDuringOnshoreApproach(unittest.TestCase, NodeTest):
@@ -12683,16 +12773,16 @@ class TestHeadingDeviationFromRunwayDuringLandingRoll(unittest.TestCase, NodeTes
         self.assertTrue(False, msg='Test not implemented.')
 
 
-class TestHeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMax(unittest.TestCase):
+class TestHeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxSpecialProcedure(unittest.TestCase):
 
     def setUp(self):
-        self.node_class = HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMax
+        self.node_class = HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxSpecialProcedure
 
     def test_attributes(self):
         node = self.node_class()
         self.assertEqual(
             node.name,
-            'Heading Variation 1.5 NM To 1.0 NM From Offshore Touchdown Max'
+            'Heading Variation 1.5 NM To 1.0 NM From Offshore Touchdown Max Special Procedure'
         )
         self.assertEqual(node.units, 'deg')
 
@@ -12701,11 +12791,11 @@ class TestHeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMax(unittest.TestCase
             ac_type=aeroplane), [])
         opts = self.node_class.get_operational_combinations(ac_type=helicopter)
         self.assertEqual(len(opts), 1)
-        self.assertEqual(len(opts[0]), 3)
+        self.assertEqual(len(opts[0]), 4)
         self.assertIn('Heading Continuous', opts[0])
         self.assertIn('Distance To Touchdown', opts[0])
         self.assertIn('Offshore Touchdown', opts[0])
-
+        self.assertIn('Approach Information', opts[0])
 
     def test_derive(self):
 
@@ -12718,29 +12808,229 @@ class TestHeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMax(unittest.TestCase
         ]))
 
         dtts = DistanceToTouchdown('Distance To Touchdown',
-                   items=[KeyTimeInstance(4, '0.8 NM To Touchdown'),
+                   items=[KeyTimeInstance(14, '0.8 NM To Touchdown'),
+                          KeyTimeInstance(13, '1.0 NM To Touchdown'),
+                          KeyTimeInstance(3, '1.5 NM To Touchdown'),
+                          KeyTimeInstance(2, '2.0 NM To Touchdown')])
+
+        tdwns = KTI(name='Offshore Touchdown', items=[KeyTimeInstance(index=20, name='Offshore Touchdown')])
+        
+        approaches = App() 
+        approaches.create_approach('AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH', 
+                                       slice(19, 29, None), 
+                                           runway_change=False,
+                                           offset_ils=False,                                   
+                                           airport=None, 
+                                           landing_runway=None,
+                                           approach_runway=None,
+                                           gs_est=None,
+                                           loc_est=None,
+                                           ils_freq=None,
+                                           turnoff=None,
+                                           lowest_lat=-19.92955434, 
+                                           lowest_lon=115.385025548, 
+                                           lowest_hdg=206.713600159)
+    
+        approaches.create_approach('LANDING', 
+                                       slice(30, 36, None), 
+                                           runway_change=False,
+                                           offset_ils=False,                                   
+                                           airport=None, 
+                                           landing_runway=None,
+                                           approach_runway=None,
+                                           gs_est=None,
+                                           loc_est=None,
+                                           ils_freq=None,
+                                           turnoff=None, 
+                                           lowest_lat=-20.863417177, 
+                                           lowest_lon=115.404442795, 
+                                           lowest_hdg=208.701438904)        
+
+        node = self.node_class()
+        node.derive(heading, dtts, tdwns, approaches)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 13)
+        self.assertEqual(node[0].value, 11)
+        
+    def test_derive_no_special_procedures(self):
+    
+        heading = P('Heading Continuous', np.ma.array([
+            -210, -209, -207, -206, -204, -201, -200, -199, -198, -197,
+            -197, -196, -195, -195, -195, -194, -193, -193, -193, -193,
+            -193, -193, -193, -193, -193, -193, -193, -193, -194, -194,
+            -195, -195, -195, -195, -196, -197, -198, -200, -202, -204,
+            -205, -207, -209, -211, -211, -210, -211, -211
+        ]))
+    
+        dtts = DistanceToTouchdown('Distance To Touchdown',
+                                   items=[KeyTimeInstance(14, '0.8 NM To Touchdown'),
+                                          KeyTimeInstance(13, '1.0 NM To Touchdown'),
+                                          KeyTimeInstance(3, '1.5 NM To Touchdown'),
+                                          KeyTimeInstance(2, '2.0 NM To Touchdown')])
+    
+        tdwns = KTI(name='Offshore Touchdown', items=[KeyTimeInstance(index=20, name='Offshore Touchdown')])
+            
+        approaches = App() 
+        approaches.create_approach('LANDING', 
+                                   slice(30, 36, None), 
+                                   runway_change=False,
+                                   offset_ils=False,                                   
+                                   airport=None, 
+                                   landing_runway=None,
+                                   approach_runway=None,
+                                   gs_est=None,
+                                   loc_est=None,
+                                   ils_freq=None,
+                                   turnoff=None, 
+                                   lowest_lat=-20.863417177, 
+                                   lowest_lon=115.404442795, 
+                                   lowest_hdg=208.701438904)        
+    
+        node = self.node_class()
+        node.derive(heading, dtts, tdwns, approaches)
+    
+        self.assertEqual(len(node), 0)
+            
+
+class TestHeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxStandardApproach(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxStandardApproach
+
+    def test_attributes(self):
+        node = self.node_class()
+        self.assertEqual(
+            node.name,
+            'Heading Variation 1.5 NM To 1.0 NM From Offshore Touchdown Max Standard Approach'
+        )
+        self.assertEqual(node.units, 'deg')
+
+    def test_can_operate(self):
+        self.assertEqual(self.node_class.get_operational_combinations(
+            ac_type=aeroplane), [])
+        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
+        self.assertEqual(len(opts), 1)
+        self.assertEqual(len(opts[0]), 4)
+        self.assertIn('Heading Continuous', opts[0])
+        self.assertIn('Distance To Touchdown', opts[0])
+        self.assertIn('Offshore Touchdown', opts[0])
+        self.assertIn('Approach Information', opts[0])
+
+    def test_derive_no_offshore_touchdown(self):
+
+        heading = P('Heading Continuous', np.ma.array([
+            -210, -209, -207, -206, -204, -201, -200, -199, -198, -197,
+            -197, -196, -195, -195, -195, -194, -193, -193, -193, -193,
+            -193, -193, -193, -193, -193, -193, -193, -193, -194, -194,
+            -195, -195, -195, -195, -196, -197, -198, -200, -202, -204,
+            -205, -207, -209, -211, -211, -210, -211, -211
+        ]))
+
+        dtts = DistanceToTouchdown('Distance To Touchdown',
+                   items=[KeyTimeInstance(14, '0.8 NM To Touchdown'),
+                          KeyTimeInstance(13, '1.0 NM To Touchdown'),
+                          KeyTimeInstance(3, '1.5 NM To Touchdown'),
+                          KeyTimeInstance(2, '2.0 NM To Touchdown')])
+
+        tdwns = KTI(name='Offshore Touchdown', items=[KeyTimeInstance(index=20, name='Offshore Touchdown')])
+        
+        approaches = App() 
+        approaches.create_approach('AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH', 
+                                       slice(19, 29, None), 
+                                           runway_change=False,
+                                           offset_ils=False,                                   
+                                           airport=None, 
+                                           landing_runway=None,
+                                           approach_runway=None,
+                                           gs_est=None,
+                                           loc_est=None,
+                                           ils_freq=None,
+                                           turnoff=None,
+                                           lowest_lat=-19.92955434, 
+                                           lowest_lon=115.385025548, 
+                                           lowest_hdg=206.713600159)
+    
+        approaches.create_approach('LANDING', 
+                                       slice(30, 36, None), 
+                                           runway_change=False,
+                                           offset_ils=False,                                   
+                                           airport=None, 
+                                           landing_runway=None,
+                                           approach_runway=None,
+                                           gs_est=None,
+                                           loc_est=None,
+                                           ils_freq=None,
+                                           turnoff=None, 
+                                           lowest_lat=-20.863417177, 
+                                           lowest_lon=115.404442795, 
+                                           lowest_hdg=208.701438904)        
+
+        node = self.node_class()
+        node.derive(heading, dtts, tdwns, approaches)
+
+        self.assertEqual(len(node), 0)
+        
+    def test_derive_one_offshore_touchdown(self):
+
+        heading = P('Heading Continuous', np.ma.array([
+            -210, -209, -207, -206, -204, -201, -200, -199, -198, -197,
+            -197, -196, -195, -195, -195, -194, -193, -193, -193, -193,
+            -193, -193, -193, -193, -193, -193, -193, -193, -194, -194,
+            -195, -195, -195, -195, -196, -197, -198, -200, -202, -204,
+            -205, -207, -209, -211, -211, -210, -211, -211
+        ]))
+
+        dtts = DistanceToTouchdown('Distance To Touchdown',
+                   items=[KeyTimeInstance(14, '0.8 NM To Touchdown'),
                           KeyTimeInstance(13, '1.0 NM To Touchdown'),
                           KeyTimeInstance(3, '1.5 NM To Touchdown'),
                           KeyTimeInstance(2, '2.0 NM To Touchdown'),
-                          KeyTimeInstance(37, '0.8 NM To Touchdown'),
-                          KeyTimeInstance(38, '1.0 NM To Touchdown'),
-                          KeyTimeInstance(27, '1.5 NM To Touchdown'),
-                          KeyTimeInstance(28, '2.0 NM To Touchdown')])
+                          KeyTimeInstance(24, '0.8 NM To Touchdown'),
+                          KeyTimeInstance(23, '1.0 NM To Touchdown'),
+                          KeyTimeInstance(17, '1.5 NM To Touchdown'),
+                          KeyTimeInstance(16, '2.0 NM To Touchdown')])
 
-        tdwns = KTI(name='Offshore Touchdown', items=[
-            KeyTimeInstance(index=20, name='Offshore Touchdown'),
-            KeyTimeInstance(index=45, name='Offshore Touchdown'),
-            ])
+        tdwns = KTI(name='Offshore Touchdown', items=[KeyTimeInstance(index=32, name='Offshore Touchdown')])
+        
+        approaches = App() 
+        approaches.create_approach('AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH', 
+                                       slice(19, 29, None), 
+                                           runway_change=False,
+                                           offset_ils=False,                                   
+                                           airport=None, 
+                                           landing_runway=None,
+                                           approach_runway=None,
+                                           gs_est=None,
+                                           loc_est=None,
+                                           ils_freq=None,
+                                           turnoff=None,
+                                           lowest_lat=-19.92955434, 
+                                           lowest_lon=115.385025548, 
+                                           lowest_hdg=206.713600159)
+    
+        approaches.create_approach('LANDING', 
+                                       slice(30, 36, None), 
+                                           runway_change=False,
+                                           offset_ils=False,                                   
+                                           airport=None, 
+                                           landing_runway=None,
+                                           approach_runway=None,
+                                           gs_est=None,
+                                           loc_est=None,
+                                           ils_freq=None,
+                                           turnoff=None, 
+                                           lowest_lat=-20.863417177, 
+                                           lowest_lon=115.404442795, 
+                                           lowest_hdg=208.701438904)        
 
         node = self.node_class()
-        node.derive(heading, dtts, tdwns)
+        node.derive(heading, dtts, tdwns, approaches)
 
-        self.assertEqual(len(node), 2)
-        self.assertEqual(node[0].index, 13)
-        self.assertEqual(node[0].value, 11)
-        self.assertEqual(node[1].index, 38)
-        self.assertEqual(node[1].value, 9)
-
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 23)
+        self.assertEqual(node[0].value, 0)        
+        
 
 class TestHeadingVariation300To50Ft(unittest.TestCase):
 
@@ -14165,14 +14455,14 @@ class TestGroundspeed20SecToOffshoreTouchdownMax(unittest.TestCase):
         self.assertEqual(node[1].value, 16)
 
 
-class TestGroundspeed0_8NMToOffshoreTouchdown (unittest.TestCase):
+class TestGroundspeed0_8NMToOffshoreTouchdownSpecialProcedure(unittest.TestCase):
 
     def setUp(self):
-        self.node_class = Groundspeed0_8NMToOffshoreTouchdown
+        self.node_class = Groundspeed0_8NMToOffshoreTouchdownSpecialProcedure
 
     def test_attributes(self):
         node = self.node_class()
-        self.assertEqual(node.name, 'Groundspeed 0.8 NM To Offshore Touchdown')
+        self.assertEqual(node.name, 'Groundspeed 0.8 NM To Offshore Touchdown Special Procedure')
         self.assertEqual(node.units, 'kt')
 
     def test_can_operate(self):
@@ -14180,37 +14470,226 @@ class TestGroundspeed0_8NMToOffshoreTouchdown (unittest.TestCase):
             ac_type=aeroplane), [])
         opts = self.node_class.get_operational_combinations(ac_type=helicopter)
         self.assertEqual(len(opts), 1)
-        self.assertEqual(len(opts[0]), 3)
+        self.assertEqual(len(opts[0]), 4)
         self.assertIn('Groundspeed', opts[0])
         self.assertIn('Distance To Touchdown', opts[0])
         self.assertIn('Offshore Touchdown', opts[0])
+        self.assertIn('Approach Information', opts[0])
 
     def test_derive(self):
+        
         gnd_spd = np.linspace(57, 2, 25).tolist()
         gnd_spd += np.linspace(111, 7, 11).tolist()
-        groundspeed = P('Airspeed', np.ma.array(gnd_spd))
-
-        touchdown = KTI('Offshore Touchdown', items=[KeyTimeInstance(24, 'Offshore Touchdown'),
-                                                     KeyTimeInstance(35, 'Offshore Touchdown')])
+        groundspeed = P('Groundspeed', np.ma.array(gnd_spd))
+    
+        touchdown = KTI('Offshore Touchdown', items=[KeyTimeInstance(23, 'Offshore Touchdown')])
         dtts = DistanceToTouchdown('Distance To Touchdown',
-                   items=[KeyTimeInstance(16, '0.8 NM To Touchdown'),
-                          KeyTimeInstance(15, '1.0 NM To Touchdown'),
-                          KeyTimeInstance(14, '1.5 NM To Touchdown'),
-                          KeyTimeInstance(13, '2.0 NM To Touchdown'),
-                          KeyTimeInstance(32, '0.8 NM To Touchdown'),
-                          KeyTimeInstance(31, '1.0 NM To Touchdown'),
-                          KeyTimeInstance(30, '1.5 NM To Touchdown'),
-                          KeyTimeInstance(29, '2.0 NM To Touchdown'),
-                          KeyTimeInstance(37, '0.8 NM To Touchdown'),])
-
+                                   items=[KeyTimeInstance(16, '0.8 NM To Touchdown'),
+                                          KeyTimeInstance(15, '1.0 NM To Touchdown'),
+                                          KeyTimeInstance(14, '1.5 NM To Touchdown'),
+                                          KeyTimeInstance(13, '2.0 NM To Touchdown')])
+        
+        approaches = App() 
+        approaches.create_approach('AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH', 
+                                       slice(19, 29, None), 
+                                       runway_change=False,
+                                       offset_ils=False,                                   
+                                       airport=None, 
+                                       landing_runway=None,
+                                       approach_runway=None,
+                                       gs_est=None,
+                                       loc_est=None,
+                                       ils_freq=None,
+                                       turnoff=None,
+                                       lowest_lat=-19.92955434, 
+                                       lowest_lon=115.385025548, 
+                                       lowest_hdg=206.713600159)
+    
+        approaches.create_approach('LANDING', 
+                                       slice(34, 36, None), 
+                                       runway_change=False,
+                                       offset_ils=False,                                   
+                                       airport=None, 
+                                       landing_runway=None,
+                                       approach_runway=None,
+                                       gs_est=None,
+                                       loc_est=None,
+                                       ils_freq=None,
+                                       turnoff=None, 
+                                       lowest_lat=-20.863417177, 
+                                       lowest_lon=115.404442795, 
+                                       lowest_hdg=208.701438904)
+            
         node = self.node_class()
-        node.derive(groundspeed, dtts, touchdown)
+        node.derive(groundspeed, dtts, touchdown, approaches)
 
-        self.assertEqual(len(node), 2)
+        self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].index, 16.0, places=1)
         self.assertAlmostEqual(node[0].value, 20.3, places=1)
-        self.assertAlmostEqual(node[1].index, 32.0, places=1)
-        self.assertAlmostEqual(node[1].value, 38.2, places=1)
+        
+    def test_derive_no_special_procedure(self):
+        
+        gnd_spd = np.linspace(57, 2, 25).tolist()
+        gnd_spd += np.linspace(111, 7, 11).tolist()
+        groundspeed = P('Groundspeed', np.ma.array(gnd_spd))
+    
+        touchdown = KTI('Offshore Touchdown', items=[KeyTimeInstance(23, 'Offshore Touchdown')])
+        dtts = DistanceToTouchdown('Distance To Touchdown',
+                                   items=[KeyTimeInstance(16, '0.8 NM To Touchdown'),
+                                          KeyTimeInstance(15, '1.0 NM To Touchdown'),
+                                          KeyTimeInstance(14, '1.5 NM To Touchdown'),
+                                          KeyTimeInstance(13, '2.0 NM To Touchdown')])
+        
+        approaches = App() 
+        approaches.create_approach('LANDING', 
+                                       slice(34, 36, None), 
+                                       runway_change=False,
+                                       offset_ils=False,                                   
+                                       airport=None, 
+                                       landing_runway=None,
+                                       approach_runway=None,
+                                       gs_est=None,
+                                       loc_est=None,
+                                       ils_freq=None,
+                                       turnoff=None, 
+                                       lowest_lat=-20.863417177, 
+                                       lowest_lon=115.404442795, 
+                                       lowest_hdg=208.701438904)
+            
+        node = self.node_class()
+        node.derive(groundspeed, dtts, touchdown, approaches)
+
+        self.assertEqual(len(node), 0)
+        
+        
+class TestGroundspeed0_8NMToOffshoreTouchdownStandardApproach(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = Groundspeed0_8NMToOffshoreTouchdownStandardApproach
+
+    def test_attributes(self):
+        node = self.node_class()
+        self.assertEqual(node.name, 'Groundspeed 0.8 NM To Offshore Touchdown Standard Approach')
+        self.assertEqual(node.units, 'kt')
+
+    def test_can_operate(self):
+        self.assertEqual(self.node_class.get_operational_combinations(
+            ac_type=aeroplane), [])
+        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
+        self.assertEqual(len(opts), 1)
+        self.assertEqual(len(opts[0]), 4)
+        self.assertIn('Groundspeed', opts[0])
+        self.assertIn('Distance To Touchdown', opts[0])
+        self.assertIn('Offshore Touchdown', opts[0])
+        self.assertIn('Approach Information', opts[0])
+
+    def test_derive_offshore_standard_landing(self):
+        
+        gnd_spd = np.linspace(57, 2, 25).tolist()
+        gnd_spd += np.linspace(111, 7, 11).tolist()
+        groundspeed = P('Groundspeed', np.ma.array(gnd_spd))
+    
+        touchdown = KTI('Offshore Touchdown', items=[KeyTimeInstance(33, 'Offshore Touchdown')])
+        dtts = DistanceToTouchdown('Distance To Touchdown',
+                                   items=[KeyTimeInstance(16, '0.8 NM To Touchdown'),
+                                          KeyTimeInstance(15, '1.0 NM To Touchdown'),
+                                          KeyTimeInstance(14, '1.5 NM To Touchdown'),
+                                          KeyTimeInstance(13, '2.0 NM To Touchdown'),
+                                          KeyTimeInstance(25, '0.8 NM To Touchdown'),
+                                          KeyTimeInstance(26, '1.0 NM To Touchdown'),
+                                          KeyTimeInstance(27, '1.5 NM To Touchdown'),
+                                          KeyTimeInstance(28, '2.0 NM To Touchdown')])
+        
+        approaches = App() 
+        approaches.create_approach('AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH', 
+                                       slice(19, 29, None), 
+                                       runway_change=False,
+                                       offset_ils=False,                                   
+                                       airport=None, 
+                                       landing_runway=None,
+                                       approach_runway=None,
+                                       gs_est=None,
+                                       loc_est=None,
+                                       ils_freq=None,
+                                       turnoff=None,
+                                       lowest_lat=-19.92955434, 
+                                       lowest_lon=115.385025548, 
+                                       lowest_hdg=206.713600159)
+    
+        approaches.create_approach('LANDING', 
+                                       slice(30, 36, None), 
+                                       runway_change=False,
+                                       offset_ils=False,                                   
+                                       airport=None, 
+                                       landing_runway=None,
+                                       approach_runway=None,
+                                       gs_est=None,
+                                       loc_est=None,
+                                       ils_freq=None,
+                                       turnoff=None, 
+                                       lowest_lat=-20.863417177, 
+                                       lowest_lon=115.404442795, 
+                                       lowest_hdg=208.701438904)
+            
+        node = self.node_class()
+        node.derive(groundspeed, dtts, touchdown, approaches)
+
+        self.assertEqual(len(node), 1)
+        self.assertAlmostEqual(node[0].index, 25.0, places=1)
+        self.assertAlmostEqual(node[0].value, 111.0, places=1)
+        
+    def test_derive_no_offshore_touchdown(self):
+        
+        gnd_spd = np.linspace(57, 2, 25).tolist()
+        gnd_spd += np.linspace(111, 7, 11).tolist()
+        groundspeed = P('Groundspeed', np.ma.array(gnd_spd))
+    
+        touchdown = KTI('Offshore Touchdown', items=[KeyTimeInstance(23, 'Offshore Touchdown')])
+        dtts = DistanceToTouchdown('Distance To Touchdown',
+                                   items=[KeyTimeInstance(16, '0.8 NM To Touchdown'),
+                                          KeyTimeInstance(15, '1.0 NM To Touchdown'),
+                                          KeyTimeInstance(14, '1.5 NM To Touchdown'),
+                                          KeyTimeInstance(13, '2.0 NM To Touchdown'),
+                                          KeyTimeInstance(25, '0.8 NM To Touchdown'),
+                                          KeyTimeInstance(26, '1.0 NM To Touchdown'),
+                                          KeyTimeInstance(27, '1.5 NM To Touchdown'),
+                                          KeyTimeInstance(28, '2.0 NM To Touchdown')])
+        
+        approaches = App() 
+        approaches.create_approach('AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH', 
+                                       slice(19, 29, None), 
+                                       runway_change=False,
+                                       offset_ils=False,                                   
+                                       airport=None, 
+                                       landing_runway=None,
+                                       approach_runway=None,
+                                       gs_est=None,
+                                       loc_est=None,
+                                       ils_freq=None,
+                                       turnoff=None,
+                                       lowest_lat=-19.92955434, 
+                                       lowest_lon=115.385025548, 
+                                       lowest_hdg=206.713600159)
+    
+        approaches.create_approach('LANDING', 
+                                       slice(30, 36, None), 
+                                       runway_change=False,
+                                       offset_ils=False,                                   
+                                       airport=None, 
+                                       landing_runway=None,
+                                       approach_runway=None,
+                                       gs_est=None,
+                                       loc_est=None,
+                                       ils_freq=None,
+                                       turnoff=None, 
+                                       lowest_lat=-20.863417177, 
+                                       lowest_lon=115.404442795, 
+                                       lowest_hdg=208.701438904)
+            
+        node = self.node_class()
+        node.derive(groundspeed, dtts, touchdown, approaches)
+
+        self.assertEqual(len(node), 0)     
 
 
 class TestGroundspeedBelow100FtMax(unittest.TestCase):

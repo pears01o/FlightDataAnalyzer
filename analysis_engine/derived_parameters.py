@@ -8283,6 +8283,43 @@ class AirspeedMinusAirspeedSelectedFor3Sec(DerivedParameterNode):
 
 
 ########################################
+# Airspeed Minus Airspeed Selected (FMS)
+
+class AirspeedMinusAirspeedSelectedFMS(DerivedParameterNode):
+    '''
+    Airspeed relative to Airspeed Selected (FMS) during approach.
+    '''
+    units = ut.KT
+    name = 'Airspeed Minus Airspeed Selected (FMS)'
+
+    def derive(self,
+               airspeed=P('Airspeed'),
+               fms=P('Airspeed Selected (FMS)'),
+               approaches=S('Approach And Landing')):
+        # Prepare a zored, masked array based on the airspeed:
+        self.array = np_ma_masked_zeros_like(airspeed.array)
+
+        # Determine the section of flight where data must be valid:
+        phases = [approach.slice for approach in approaches]
+
+        for phase in phases:
+            self.array[phase] = airspeed.array[phase] - fms.array[phase]
+
+
+class AirspeedMinusAirspeedSelectedFMSFor3Sec(DerivedParameterNode):
+    '''
+    Airspeed relative to Airspeed Selected (FMS) over a 3 second window.
+    '''
+    align_frequency = 2
+    align_offset = 0
+    units = ut.KT
+    name = 'Airspeed Minus Airspeed Selected (FMS) For 3 Sec'
+
+    def derive(self, speed=P('Airspeed Minus Airspeed Selected (FMS)')):
+        self.array = second_window(speed.array, self.frequency, 3)
+
+
+########################################
 # Airspeed Minus V2
 
 

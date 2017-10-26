@@ -119,7 +119,9 @@ from analysis_engine.key_point_values import (
     AirspeedMax,
     AirspeedMinsToTouchdown,
     AirspeedMinusAirspeedSelectedFor3Sec500To20FtMax,
+    AirspeedMinusAirspeedSelectedFor3Sec500To20FtMin,
     AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMax,
+    AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMin,
     AirspeedMinusFlapManoeuvreSpeedWithFlapDuringDescentMin,
     AirspeedMinusMinimumAirspeedAbove10000FtMin,
     AirspeedMinusMinimumAirspeed35To10000FtMin,
@@ -3866,30 +3868,244 @@ class TestAirspeedMinusMinimumAirspeedDuringGoAroundMin(unittest.TestCase, Creat
 ########################################
 # Airspeed: Minus Airspeed Selected
 
-class TestAirspeedMinusAirspeedSelectedFor3Sec1000To500FtMax(unittest.TestCase, NodeTest):
-
+class TestAirspeedMinusAirspeedSelectedFor3Sec1000To500FtMax(unittest.TestCase,
+                                                             NodeTest):
     def setUp(self):
         self.node_class = AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMax
-        self.operational_combinations = [('Airspeed Minus Airspeed Selected For 3 Sec', 'Altitude AAL For Flight Phases', 'HDF Duration')]
-        self.function = max_value
-        self.second_param_method_calls = [('slices_from_to', (1000, 500), {})]
+        self.operational_combinations = [
+            ('Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+             ),
+            ('Airspeed Minus Airspeed Selected For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+             ),
+            ('Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+             'Airspeed Minus Airspeed Selected For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+            )]
+        self.air_rel_fms = P(
+            name='Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+            array=np.ma.array(list(np.linspace(40, 0, 30)) +
+                              list(np.linspace(1, 100, 20))),
+            frequency=2,
+        )
+        self.air_rel = P(
+            name='Airspeed Minus Airspeed Selected For 3 Sec',
+            array=np.ma.array(list(np.linspace(20, -10, 30)) +
+                              list(np.linspace(-8, 9, 20))),
+            frequency=2,
+        )
+        self.aal = P(
+            name='Altitude AAL For Flight Phases',
+            array=np.ma.array(np.linspace(1100, 400, 50)),
+            frequency=2,
+        )
+        self.duration = A('HDF Duration', value=50)
 
-    @unittest.skip('Test Not Implemented')
-    def test_derive(self):
-        self.assertTrue(False, msg='Test Not Implemented')
+    def test_derive_no_fms(self):
+        node = self.node_class()
+        node.derive(self.air_rel, None, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 11)
+        self.assertAlmostEqual(node[0].value, 9, places=0)
+
+    def test_derive_fms(self):
+        node = self.node_class()
+        node.derive(None, self.air_rel_fms, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 38)
+        self.assertAlmostEqual(node[0].value, 43, places=0)
+
+    def test_derive_both(self):
+        # should match test_derive_fms result
+        node = self.node_class()
+        node.derive(self.air_rel, self.air_rel_fms, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 38)
+        self.assertAlmostEqual(node[0].value, 43, places=0)
 
 
-class TestAirspeedMinusAirspeedSelectedFor3Sec500To20FtMax(unittest.TestCase, NodeTest):
+class TestAirspeedMinusAirspeedSelectedFor3Sec1000To500FtMin(unittest.TestCase,
+                                                             NodeTest):
+    def setUp(self):
+        self.node_class = AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMin
+        self.operational_combinations = [
+            ('Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+             ),
+            ('Airspeed Minus Airspeed Selected For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+             ),
+            ('Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+             'Airspeed Minus Airspeed Selected For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+            )]
+        self.air_rel_fms = P(
+            name='Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+            array=np.ma.array(list(np.linspace(40, 0, 30)) +
+                              list(np.linspace(1, 100, 20))),
+            frequency=2,
+        )
+        self.air_rel = P(
+            name='Airspeed Minus Airspeed Selected For 3 Sec',
+            array=np.ma.array(list(np.linspace(20, -10, 30)) +
+                              list(np.linspace(-8, 9, 20))),
+            frequency=2,
+        )
+        self.aal = P(
+            name='Altitude AAL For Flight Phases',
+            array=np.ma.array(np.linspace(1100, 400, 50)),
+            frequency=2,
+        )
+        self.duration = A('HDF Duration', value=50)
 
+    def test_derive_no_fms(self):
+        node = self.node_class()
+        node.derive(self.air_rel, None, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 29)
+        self.assertAlmostEqual(node[0].value, -10, places=0)
+
+    def test_derive_fms(self):
+        node = self.node_class()
+        node.derive(None, self.air_rel_fms, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 29)
+        self.assertAlmostEqual(node[0].value, 0, places=0)
+
+    def test_derive_both(self):
+        # should match test_derive_fms result
+        node = self.node_class()
+        node.derive(self.air_rel, self.air_rel_fms, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 29)
+        self.assertAlmostEqual(node[0].value, 0, places=0)
+
+
+class TestAirspeedMinusAirspeedSelectedFor3Sec500To20FtMax(unittest.TestCase,
+                                                           NodeTest):
     def setUp(self):
         self.node_class = AirspeedMinusAirspeedSelectedFor3Sec500To20FtMax
-        self.operational_combinations = [('Airspeed Minus Airspeed Selected For 3 Sec', 'Altitude AAL For Flight Phases', 'HDF Duration')]
-        self.function = max_value
-        self.second_param_method_calls = [('slices_from_to', (500, 20), {})]
+        self.operational_combinations = [
+            ('Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+             ),
+            ('Airspeed Minus Airspeed Selected For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+             ),
+            ('Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+             'Airspeed Minus Airspeed Selected For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+            )]
+        self.air_rel_fms = P(
+            name='Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+            array=np.ma.array(list(np.linspace(40, 0, 30)) +
+                              list(np.linspace(1, 100, 20))),
+            frequency=2,
+        )
+        self.air_rel = P(
+            name='Airspeed Minus Airspeed Selected For 3 Sec',
+            array=np.ma.array(list(np.linspace(20, -10, 30)) +
+                              list(np.linspace(-8, 9, 20))),
+            frequency=2,
+        )
+        self.aal = P(
+            name='Altitude AAL For Flight Phases',
+            array=np.ma.array(np.linspace(600, 0, 50)),
+            frequency=2,
+        )
+        self.duration = A('HDF Duration', value=50)
 
-    @unittest.skip('Test Not Implemented')
-    def test_derive(self):
-        self.assertTrue(False, msg='Test Not Implemented')
+    def test_derive_no_fms(self):
+        node = self.node_class()
+        node.derive(self.air_rel, None, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 12)
+        self.assertAlmostEqual(node[0].value, 8, places=0)
+
+    def test_derive_fms(self):
+        node = self.node_class()
+        node.derive(None, self.air_rel_fms, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 44)
+        self.assertAlmostEqual(node[0].value, 74, places=0)
+
+    def test_derive_both(self):
+        # should match test_derive_fms result
+        node = self.node_class()
+        node.derive(self.air_rel, self.air_rel_fms, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 44)
+        self.assertAlmostEqual(node[0].value, 74, places=0)
+
+
+class TestAirspeedMinusAirspeedSelectedFor3Sec500To20FtMin(unittest.TestCase,
+                                                           NodeTest):
+    def setUp(self):
+        self.node_class = AirspeedMinusAirspeedSelectedFor3Sec500To20FtMin
+        self.operational_combinations = [
+            ('Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+             ),
+            ('Airspeed Minus Airspeed Selected For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+             ),
+            ('Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+             'Airspeed Minus Airspeed Selected For 3 Sec',
+             'Altitude AAL For Flight Phases',
+             'HDF Duration'
+            )]
+        self.air_rel_fms = P(
+            name='Airspeed Minus Airspeed Selected (FMS) For 3 Sec',
+            array=np.ma.array(list(np.linspace(40, 0, 30)) +
+                              list(np.linspace(1, 100, 20))),
+            frequency=2,
+        )
+        self.air_rel = P(
+            name='Airspeed Minus Airspeed Selected For 3 Sec',
+            array=np.ma.array(list(np.linspace(20, -10, 30)) +
+                              list(np.linspace(-8, 9, 20))),
+            frequency=2,
+        )
+        self.aal = P(
+            name='Altitude AAL For Flight Phases',
+            array=np.ma.array(np.linspace(600, 0, 50)),
+            frequency=2,
+        )
+        self.duration = A('HDF Duration', value=50)
+
+    def test_derive_no_fms(self):
+        node = self.node_class()
+        node.derive(self.air_rel, None, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 29)
+        self.assertAlmostEqual(node[0].value, -10, places=0)
+
+    def test_derive_fms(self):
+        node = self.node_class()
+        node.derive(None, self.air_rel_fms, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 29)
+        self.assertAlmostEqual(node[0].value, 0, places=0)
+
+    def test_derive_both(self):
+        # should match test_derive_fms result
+        node = self.node_class()
+        node.derive(self.air_rel, self.air_rel_fms, self.aal, self.duration)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 29)
+        self.assertAlmostEqual(node[0].value, 0, places=0)
 
 
 ########################################

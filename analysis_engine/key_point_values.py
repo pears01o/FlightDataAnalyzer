@@ -2609,15 +2609,28 @@ class AirspeedMinusAirspeedSelectedFor3Sec500To20FtMax(KeyPointValueNode):
     '''
     Difference between IAS and selected airspeed during approach between 
     500 ft AAL and 20ft AAL.
+
+    For aircraft with 'Airspeed Selected (FMS)', this paramater will be used
+    instead of 'Airspeed Selected'.
     '''
 
     units = ut.KT
 
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Altitude AAL For Flight Phases', 'HDF Duration'),
+                      available) and \
+               any_of(('Airspeed Minus Airspeed Selected For 3 Sec',
+                       'Airspeed Minus Airspeed Selected (FMS) For 3 Sec'),
+                      available)
+
     def derive(self,
-               spd_rel=P('Airspeed Minus Airspeed Selected For 3 Sec'),
+               spd_sel=P('Airspeed Minus Airspeed Selected For 3 Sec'),
+               spd_fms=P('Airspeed Minus Airspeed Selected (FMS) For 3 Sec'),
                alt_aal=P('Altitude AAL For Flight Phases'),
                duration=A('HDF Duration')):
 
+        spd_rel = spd_fms or spd_sel
         hdf_duration = duration.value * self.frequency if duration else None
         self.create_kpvs_within_slices(
             spd_rel.array,
@@ -2627,25 +2640,108 @@ class AirspeedMinusAirspeedSelectedFor3Sec500To20FtMax(KeyPointValueNode):
         )
 
 
-class AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMax(KeyPointValueNode):
+class AirspeedMinusAirspeedSelectedFor3Sec500To20FtMin(KeyPointValueNode):
     '''
-    Difference between IAS and selected airspeed during approach for 3 sec 
-    between 1000 ft AAL and 500ft AAL.
+    Difference between IAS and selected airspeed during approach between 
+    500 ft AAL and 20ft AAL.
+
+    For aircraft with 'Airspeed Selected (FMS)', this paramater will be used
+    instead of 'Airspeed Selected'.
     '''
 
     units = ut.KT
 
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Altitude AAL For Flight Phases', 'HDF Duration'),
+                      available) and \
+               any_of(('Airspeed Minus Airspeed Selected For 3 Sec',
+                       'Airspeed Minus Airspeed Selected (FMS) For 3 Sec'),
+                      available)
+
     def derive(self,
-               spd_rel=P('Airspeed Minus Airspeed Selected For 3 Sec'),
+               spd_sel=P('Airspeed Minus Airspeed Selected For 3 Sec'),
+               spd_fms=P('Airspeed Minus Airspeed Selected (FMS) For 3 Sec'),
                alt_aal=P('Altitude AAL For Flight Phases'),
                duration=A('HDF Duration')):
 
+        spd_rel = spd_fms or spd_sel
+        hdf_duration = duration.value * self.frequency if duration else None
+        self.create_kpvs_within_slices(
+            spd_rel.array,
+            trim_slices(alt_aal.slices_from_to(500, 20), 3, self.frequency,
+                        hdf_duration),
+            min_value,
+        )
+
+
+class AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMax(KeyPointValueNode):
+    '''
+    Difference between IAS and selected airspeed during approach for 3 sec 
+    between 1000 ft AAL and 500ft AAL.
+
+    For aircraft with 'Airspeed Selected (FMS)', this paramater will be used
+    instead of 'Airspeed Selected'.
+    '''
+
+    units = ut.KT
+
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Altitude AAL For Flight Phases', 'HDF Duration'),
+                      available) and \
+               any_of(('Airspeed Minus Airspeed Selected For 3 Sec',
+                       'Airspeed Minus Airspeed Selected (FMS) For 3 Sec'),
+                      available)
+
+    def derive(self,
+               spd_sel=P('Airspeed Minus Airspeed Selected For 3 Sec'),
+               spd_fms=P('Airspeed Minus Airspeed Selected (FMS) For 3 Sec'),
+               alt_aal=P('Altitude AAL For Flight Phases'),
+               duration=A('HDF Duration')):
+
+        spd_rel = spd_fms or spd_sel
         hdf_duration = duration.value * self.frequency if duration else None
         self.create_kpvs_within_slices(
             spd_rel.array,
             trim_slices(alt_aal.slices_from_to(1000, 500), 3, self.frequency,
                         hdf_duration),
             max_value,
+        )
+
+
+class AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMin(KeyPointValueNode):
+    '''
+    Difference between IAS and selected airspeed during approach for 3 sec 
+    between 1000 ft AAL and 500ft AAL.
+
+    For aircraft with 'Airspeed Selected (FMS)', this paramater will be used
+    instead of 'Airspeed Selected'.
+    '''
+
+    units = ut.KT
+
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Altitude AAL For Flight Phases', 'HDF Duration'),
+                      available) and \
+               any_of(('Airspeed Minus Airspeed Selected For 3 Sec',
+                       'Airspeed Minus Airspeed Selected (FMS) For 3 Sec'),
+                      available)
+
+    def derive(self,
+               spd_sel=P('Airspeed Minus Airspeed Selected For 3 Sec'),
+               spd_fms=P('Airspeed Minus Airspeed Selected (FMS) For 3 Sec'),
+               alt_aal=P('Altitude AAL For Flight Phases'),
+               duration=A('HDF Duration')):
+
+        spd_rel = spd_fms or spd_sel
+        hdf_duration = duration.value * self.frequency if duration else None
+        self.create_kpvs_within_slices(
+            spd_rel.array,
+            trim_slices(alt_aal.slices_from_to(1000, 500), 3, self.frequency,
+                        hdf_duration),
+            min_value,
         )
 
 

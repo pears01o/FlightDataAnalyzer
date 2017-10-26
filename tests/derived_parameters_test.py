@@ -74,6 +74,8 @@ from analysis_engine.derived_parameters import (
     AimingPointRange,
     AircraftEnergy,
     AirspeedMinusAirspeedSelectedFor3Sec,
+    AirspeedMinusAirspeedSelectedFMS,
+    AirspeedMinusAirspeedSelectedFMSFor3Sec,
     AirspeedMinusFlapManoeuvreSpeed,
     AirspeedMinusFlapManoeuvreSpeedFor3Sec,
     AirspeedMinusMinimumAirspeed,
@@ -7512,6 +7514,63 @@ class TestFlapManoeuvreSpeed(unittest.TestCase, NodeTest):
 
 ##############################################################################
 # Relative Airspeeds
+
+########################################
+# Airspeed Minus Airspeed Selected (FMS)
+
+
+class TestAirspeedMinusAirspeedSelectedFMS(unittest.TestCase):
+    def setUp(self):
+        self.node_class = AirspeedMinusAirspeedSelectedFMS
+        self.airspeed = P('Airspeed', np.ma.repeat(102, 2000))
+        self.air_sel = P('Airspeed Selected (FMS)', 
+                         np.ma.repeat((90, 120), 1000))
+        self.approaches = buildsection('Approach And Landing', 500, 999.5)
+        self.assertEqual(self.node_class.name,
+                         'Airspeed Minus Airspeed Selected (FMS)',)
+
+    def test_can_operate(self):
+        o = self.node_class.get_operational_combinations()
+        self.assertEqual([('Airspeed',
+                           'Airspeed Selected (FMS)',
+                           'Approach And Landing',)], o)
+
+    def test_derive(self):
+        node = self.node_class()
+        node.derive(self.airspeed, self.air_sel, self.approaches)
+        expected = np.ma.repeat((0, 12, 0, 0), 500)
+        expected[expected == 0] = np.ma.masked
+        ma_test.assert_masked_array_equal(node.array, expected)
+
+class TestAirspeedMinusAirspeedSelectedFMSFor3Sec(unittest.TestCase):
+    def setUp(self):
+        self.node_class = AirspeedMinusAirspeedSelectedFMSFor3Sec
+        self.airspeed = P(
+            'Airspeed Minus Airspeed Selected (FMS)',
+            array=np.ma.repeat((100, 110, 120, 100), (6, 7, 1, 6)),
+            frequency=2,
+        )
+        self.assertEqual(self.node_class.name,
+                         'Airspeed Minus Airspeed Selected (FMS) For 3 Sec',)
+
+    def test_can_operate(self):
+        o = self.node_class.get_operational_combinations()
+        self.assertEqual([('Airspeed Minus Airspeed Selected (FMS)',)], o)
+
+    def test_derive_basic(self):
+        node = self.node_class()
+        node.get_derived([self.airspeed])
+        expected = np.ma.repeat((100, 110, 100), (6, 8, 6))
+        expected[-6:] = np.ma.masked
+        ma_test.assert_masked_array_equal(node.array, expected)
+
+    def test_derive_align(self):
+        self.airspeed.frequency = 1
+        node = self.node_class()
+        node.get_derived([self.airspeed])
+        expected = np.ma.repeat((100, 105, 110, 100), (11, 1, 16, 12))
+        expected[-7:] = np.ma.masked
+        ma_test.assert_masked_array_equal(node.array, expected)
 
 
 ########################################

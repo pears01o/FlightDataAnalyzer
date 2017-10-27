@@ -1790,7 +1790,7 @@ class AirspeedAbove500FtMin(KeyPointValueNode):
         
         app_slices = []
         for approach in approaches:
-            if approach.type in ['SHUTTLING_APPROACH','AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH']:
+            if approach.type in ['SHUTTLING','AIRBORNE_RADAR']:
                 app_slices.append(approach.slice)
         
         for alt_agl_slice in alt_agl.slices_above(500):
@@ -1817,7 +1817,7 @@ class AirspeedAbove500FtMinOffshoreSpecialProcedure(KeyPointValueNode):
         
         app_slices = []
         for approach in approaches:
-            if approach.type in ['SHUTTLING_APPROACH','AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH']:
+            if approach.type in ['SHUTTLING','AIRBORNE_RADAR']:
                 app_slices.append(approach.slice)
         
         for alt_agl_slice in alt_agl.slices_above(500):
@@ -12361,9 +12361,7 @@ class HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxStandardApproach(KeyPo
                             phase = slice(start_kti.index, stop_kti.index+1)
                             heading_delta = np.ma.ptp(heading.array[phase])
                             self.create_kpv(phase.stop-1, heading_delta)
-                            
-        print()
-                            
+
 
 class HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxSpecialProcedure(KeyPointValueNode):
     '''
@@ -12382,7 +12380,7 @@ class HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxSpecialProcedure(KeyPo
                approaches=App('Approach Information')):
         
         for approach in approaches:
-            if approach.type in ['SHUTTLING_APPROACH', 'AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH']:
+            if approach.type in ['SHUTTLING', 'AIRBORNE_RADAR']:
                 for tdwn in offshore_twn:
                     if is_index_within_slice(tdwn.index, slice(approach.slice.start, approach.slice.stop+10)):
                         start_kti = dtts.get_previous(tdwn.index, name='1.5 NM To Touchdown')
@@ -13310,7 +13308,7 @@ class Groundspeed0_8NMToOffshoreTouchdownSpecialProcedure(KeyPointValueNode):
                approaches=App('Approach Information')):
         
         for approach in approaches:
-            if approach.type in ['SHUTTLING_APPROACH','AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH']:
+            if approach.type in ['SHUTTLING','AIRBORNE_RADAR']:
                 for tdwn in touchdown:
                     if is_index_within_slice(tdwn.index, slice(approach.slice.start, approach.slice.stop+10)):
                         dist_to_touchdown = dtts.get_previous(tdwn.index, name='0.8 NM To Touchdown')
@@ -13343,9 +13341,7 @@ class Groundspeed0_8NMToOffshoreTouchdownStandardApproach(KeyPointValueNode):
                         dist_to_touchdown = dtts.get_previous(tdwn.index, name='0.8 NM To Touchdown')
                         if dist_to_touchdown:
                             self.create_kpvs_at_ktis(groundspeed.array, [dist_to_touchdown])
-                            
-        print()
-                            
+
 
 class GroundspeedVacatingRunway(KeyPointValueNode):
     '''

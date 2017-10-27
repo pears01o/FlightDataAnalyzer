@@ -2142,7 +2142,7 @@ class ShuttlingApproach(FlightPhaseNode):
     
     def derive(self, approaches=App('Approach Information')):
         for approach in approaches:
-            if approach.type == 'SHUTTLING_APPROACH':
+            if approach.type == 'SHUTTLING':
                 self.create_section(approach.slice, name='Shuttling Approach')
                
                 
@@ -2153,5 +2153,5 @@ class AirborneRadarApproach(FlightPhaseNode):
     
     def derive(self, approaches=App('Approach Information')):
         for approach in approaches:
-            if approach.type == 'AIRBORNE_RADAR_DIRECT_OR_OVERHEAD_APPROACH':
+            if approach.type == 'AIRBORNE_RADAR':
                 self.create_section(approach.slice, name='Airborne Radar Approach')

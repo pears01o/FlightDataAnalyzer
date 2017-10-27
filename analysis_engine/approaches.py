@@ -435,7 +435,7 @@ class ApproachInformation(ApproachNode):
                 if is_index_within_slice(touchdown.index, slice(_slice.start, _slice.stop+5*alt.frequency)) and type_landing == False:
                     if offshore and offshore.array[touchdown.index] == 'Offshore' and tkoff.start < touchdown.index:
                         if offshore.array[tkoff.start] == 'Offshore':
-                            approach_type = 'SHUTTLING_APPROACH'
+                            approach_type = 'SHUTTLING'
                         else:
                             Vy = 80.0 # Type dependent?
                 
@@ -496,7 +496,7 @@ class ApproachInformation(ApproachNode):
                                                            'Within 20 deg of final heading',
                                                            'Within 2.0 NM',
                                                            'Beyond 1.5 NM',
-                                                           ],      
+                                                           ],
                                        'Initial Descent':['Wings Level',
                                                           'Within 20 deg of final heading',
                                                           'ROD < 700 fpm',
@@ -529,11 +529,11 @@ class ApproachInformation(ApproachNode):
                                                            'Within 3.0 NM',
                                                            'Beyond 1.5 NM',
                                                            #'Within 20 deg of final heading',
-                                                           ],   
+                                                           ],
                                        'ARDA/AROA Final':['Not climbing',
-                                                     'Within 2.0 NM',
-                                                     #'15 deg off final heading'
-                                                     ],
+                                                          'Within 2.0 NM',
+                                                          #'15 deg off final heading'
+                                                          ],
                                        }
                             
                             """
@@ -544,17 +544,14 @@ class ApproachInformation(ApproachNode):
                             'Low Circuit':['Below 120 kts', 'Over Vy-5', 'Below 700 ft', 'Over 350 ft', 'Roll below 25 deg']
                             """                            
                             
-                            approach_map = {'Standard_Approach':['Circuit',
-                                                                 'Level within 2NM',
-                                                                 'Initial Descent',
-                                                                 'Final Approach'
-                                                                 ],
-                                            'Airborne_Radar_Direct_Or_Overhead_Approach':['ARDA/AROA 10 to 3',
-                                                                                       'ARDA/AROA Level within 3NM',
-                                                                                       'ARDA/AROA Final'
-                                                                                       ],
-                                            }
-                                                        
+                            approach_map = {'RIG': ['Circuit',
+                                                    'Level within 2NM',
+                                                    'Initial Descent',
+                                                    'Final Approach'],
+                                            'AIRBORNE_RADAR': ['ARDA/AROA 10 to 3',
+                                                               'ARDA/AROA Level within 3NM',
+                                                               'ARDA/AROA Final']}
+
                             # Making sure the approach slice contains enough information to be able
                             # to properly identify ARDA/AROA approaches (the procedure starts from 10NM 
                             # before touchdown)

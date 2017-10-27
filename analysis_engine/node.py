@@ -2259,7 +2259,7 @@ class ApproachNode(ListNode):
         :raises ValueError: If _type is invalid.
         '''
         if _type not in ('APPROACH', 'LANDING', 'GO_AROUND', 'TOUCH_AND_GO', 'SHUTTLING',
-                         'AIRBORNE_RADAR', 'STANDARD_APPROACH'):
+                         'AIRBORNE_RADAR', 'RIG'):
             raise ValueError("Unknown approach type: '%s'." % _type)
 
     slice_attrgetters = {'start': attrgetter('slice.start'),

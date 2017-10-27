@@ -12352,7 +12352,7 @@ class HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxStandardApproach(KeyPo
                approaches=App('Approach Information')):
         
         for approach in approaches:
-            if approach.type in ['APPROACH', 'LANDING', 'GO_AROUND', 'TOUCH_AND_GO', 'STANDARD_APPROACH']:
+            if approach.type in ['APPROACH', 'LANDING', 'GO_AROUND', 'TOUCH_AND_GO', 'RIG']:
                 for tdwn in offshore_twn:
                     if is_index_within_slice(tdwn.index, slice(approach.slice.start, approach.slice.stop+10)):
                         start_kti = dtts.get_previous(tdwn.index, name='1.5 NM To Touchdown')
@@ -13335,7 +13335,7 @@ class Groundspeed0_8NMToOffshoreTouchdownStandardApproach(KeyPointValueNode):
                approaches=App('Approach Information')):
         
         for approach in approaches:
-            if approach.type in ['APPROACH', 'LANDING', 'GO_AROUND', 'TOUCH_AND_GO', 'STANDARD_APPROACH']:
+            if approach.type in ['APPROACH', 'LANDING', 'GO_AROUND', 'TOUCH_AND_GO', 'RIG']:
                 for tdwn in touchdown:
                     if is_index_within_slice(tdwn.index, slice(approach.slice.start, approach.slice.stop+10)):
                         dist_to_touchdown = dtts.get_previous(tdwn.index, name='0.8 NM To Touchdown')

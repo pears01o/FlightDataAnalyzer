@@ -235,6 +235,8 @@ class Holding(FlightPhaseNode):
         # Three minutes should include two turn segments.
         turn_rate = rate_of_change(hdg, 3 * 60)
         for height_band in height_bands:
+            if height_band.start >= height_band.stop:
+                continue
             # We know turn rate will be positive because Heading Increasing only
             # increases.
             turn_bands = np.ma.clump_unmasked(

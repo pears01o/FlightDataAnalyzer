@@ -590,7 +590,6 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
     # open HDF for reading
     with hdf_file(hdf_path) as hdf:
         hdf.start_datetime = segment_info['Start Datetime']
-        param_names = hdf.valid_lfl_param_names() if reprocess else hdf.valid_param_names()
         hook = hooks.PRE_FLIGHT_ANALYSIS
         if hook:
             logger.info("Performing PRE_FLIGHT_ANALYSIS action '%s' with options: %s",
@@ -601,11 +600,11 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
             logger.info("No PRE_FLIGHT_ANALYSIS actions to perform")
 
         # Merge Params
+        param_names = hdf.valid_lfl_param_names() if reprocess else hdf.valid_param_names()
         pre_process_parameters(hdf, segment_info, param_names, required,
                                aircraft_info, achieved_flight_record, force=force)
 
         # Track nodes.
-        param_names = hdf.valid_lfl_param_names() if reprocess else hdf.valid_param_names()
         node_mgr = NodeManager(
             segment_info, hdf.duration, param_names,
             requested, required, derived_nodes, aircraft_info,

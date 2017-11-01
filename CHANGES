@@ -8,43 +8,25 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.37.2
+-------
+  - AE-1539: Polynomial terms added and test amended
+
 v0.37.1
 -------
   Resolved Tickets:
   - AE-49: Uncommented the code for V2Lookup derived parameter
   - AE-101: Added new KPV ILSGlideslope10SecBeforeEstablished
-  - AE-195: Problem - Interpolated data triggering false events. This ticket addressed by ignoring gross weight readings that increase the weight of the aircraft, as happens after touchdown on some types
   - AE-250: Removed flaperon condition from Configuration multistate for A330, A340-300 and A340-500
   - AE-1041: Fix Rejected Takeoff triggering incorrectly
-  - AE-1165: Inconsistency with flap 1 and 2
   - AE-1217: Changed parameter stacking method for engine vibrations
-  - AE-1257: Helicopter approaches offshore
-             Moved find_rig_approach and valid_between from flightdataprofiles
-             change STANDARD_APPROACH name to RIG
   - AE-1309: Unstable Approach-EPR and N1 patching
-             Added AltitudeLastUnstableDuringLastApproachExcludingEngTrust KPV
+             Added AltitudeLastUnstableDuringLastApproachExcludingEngThrust KPV
              Added StableApproachExcludingEngTrust multi-state parameter
   - AE-1353: New KPV EngTorqueExceeding100Percent
-  - AE 1457: Used Airspeed Selected (FMS)
-             New AirspeedMinusAirspeedSelectedFor3Sec500To20FtMin kpv
-             New AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMin kpv
-             New AirspeedMinusAirspeedSelectedFMS parameter
-             New AirspeedMinusAirspeedSelectedFMSFor3Sec parameter
-             Modify AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMax KPV
-             Modify AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMin KPV
-             Modify AirspeedMinusAirspeedSelectedFor3Sec500To20FtMin KPV
-             Modify AirspeedMinusAirspeedSelectedFor3Sec500To20FtMax KPV
   - AE-1502: 737 spoiler priority fixes
-  - AE-1523: mcp alt setting
-             New KPV for Height Selected On Approach Min
-  - AE-1527: Large accelerometer corrections now retained, so that KPVs can be presented to maintenance
-  - AE-1528: Merge Latitude and Longitude sources where two available
-             Added Latitude and Longitude derived parameters
   - AE-1529: Changed Roll400To1000FtMax KPV to work for all flight phases
-  - AE-1530: Improved Dual Input parameter
   - AE-1539: Engine derate and flex temp kp
-  - AE-1563: Undefined Errors fixes
-  - AE-1564: Get for valid parameter after pre flight analysis
 
 
 v0.36.1

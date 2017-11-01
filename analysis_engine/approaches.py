@@ -297,12 +297,10 @@ class ApproachInformation(ApproachNode):
         app_slices = sorted(app.get_slices())
 
         for index, _slice in enumerate(app_slices):
-            type_landing = False
             # a) The last approach is assumed to be landing:
             if index == len(app_slices) - 1:
                 approach_type = 'LANDING'
                 landing = True
-                type_landing = True
             # b) We have a touch and go if Altitude AAL reached zero:
             #elif np.ma.any(alt.array[_slice] <= 0):
             elif np.ma.any(alt.array[_slice.start:_slice.stop+(5*alt.frequency)] <= 0):
@@ -432,7 +430,7 @@ class ApproachInformation(ApproachNode):
                 #
                 # A couple of seconds are added to the end of the slice as some flights used
                 # to test this had the touchdown a couple of seconds outside the approach slice 
-                if is_index_within_slice(touchdown.index, slice(_slice.start, _slice.stop+5*alt.frequency)) and type_landing == False:
+                if is_index_within_slice(touchdown.index, slice(_slice.start, _slice.stop+5*alt.frequency)):
                     if offshore and offshore.array[touchdown.index] == 'Offshore' and tkoff.start < touchdown.index:
                         if offshore.array[tkoff.start] == 'Offshore':
                             approach_type = 'SHUTTLING'

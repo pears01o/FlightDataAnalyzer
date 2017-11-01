@@ -301,7 +301,7 @@ class LandingAirport(FlightAttributeNode):
         '''
         '''
         # 1. If we have Approach Information use this as hardwork already done.
-        if approaches:
+        if approaches and approaches.get_last(_type='LANDING'):
             landing_approach = approaches.get_last(_type='LANDING')
             airport = landing_approach.airport
             if airport:
@@ -343,7 +343,7 @@ class LandingRunway(FlightAttributeNode):
         '''
         '''
         # 1. If we have Approach Information use this as hardwork already done.
-        if approaches:
+        if approaches and approaches.get_last(_type='LANDING'):
             landing_approach = approaches.get_last(_type='LANDING')
             runway = landing_approach.landing_runway
             if runway:

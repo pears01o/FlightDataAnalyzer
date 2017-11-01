@@ -1798,8 +1798,6 @@ class AirspeedAbove500FtMin(KeyPointValueNode):
                 continue
             else:
                 self.create_kpv_from_slices(air_spd.array,[alt_agl_slice], min_value)
-                
-        print()
                         
         
 class AirspeedAbove500FtMinOffshoreSpecialProcedure(KeyPointValueNode):
@@ -1809,9 +1807,7 @@ class AirspeedAbove500FtMinOffshoreSpecialProcedure(KeyPointValueNode):
     '''
 
     units = ut.KT
-
     can_operate = helicopter_only
-
     def derive(self, air_spd= P('Airspeed'), alt_agl=P('Altitude AGL For Flight Phases'),
                approaches=App('Approach Information')):
         
@@ -1824,9 +1820,7 @@ class AirspeedAbove500FtMinOffshoreSpecialProcedure(KeyPointValueNode):
             for app_slice in app_slices:
                 if slices_overlap(app_slice, alt_agl_slice):
                     self.create_kpv_from_slices(air_spd.array,[alt_agl_slice], min_value)
-                    
-        print()
-                
+         
 
 class AirspeedAt200FtDuringOnshoreApproach(KeyPointValueNode):
     '''
@@ -12389,8 +12383,6 @@ class HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxSpecialProcedure(KeyPo
                             phase = slice(start_kti.index, stop_kti.index+1)
                             heading_delta = np.ma.ptp(heading.array[phase])
                             self.create_kpv(phase.stop-1, heading_delta)
-                            
-        print()
                                             
 
 class HeadingVariation300To50Ft(KeyPointValueNode):
@@ -13314,8 +13306,6 @@ class Groundspeed0_8NMToOffshoreTouchdownSpecialProcedure(KeyPointValueNode):
                         dist_to_touchdown = dtts.get_previous(tdwn.index, name='0.8 NM To Touchdown')
                         if dist_to_touchdown:
                             self.create_kpvs_at_ktis(groundspeed.array, [dist_to_touchdown])
-                            
-        print()
                                     
         
 class Groundspeed0_8NMToOffshoreTouchdownStandardApproach(KeyPointValueNode):
@@ -13325,9 +13315,7 @@ class Groundspeed0_8NMToOffshoreTouchdownStandardApproach(KeyPointValueNode):
     '''
 
     name = 'Groundspeed 0.8 NM To Offshore Touchdown Standard Approach'
-
     units = ut.KT
-
     can_operate = helicopter_only
 
     def derive(self, groundspeed=P('Groundspeed'), 
@@ -13342,7 +13330,7 @@ class Groundspeed0_8NMToOffshoreTouchdownStandardApproach(KeyPointValueNode):
                         if dist_to_touchdown:
                             self.create_kpvs_at_ktis(groundspeed.array, [dist_to_touchdown])
 
-
+                            
 class GroundspeedVacatingRunway(KeyPointValueNode):
     '''
     Groundspeed at the point of turning off the landing runway. May be quite high for runways with Rapid Exit Turnoffs.

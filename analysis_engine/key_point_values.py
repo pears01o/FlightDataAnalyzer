@@ -18979,12 +18979,14 @@ class EngThrustTakeoffDerate(KeyPointValueNode):
                n1_derates=KPV('Eng N1 Takeoff Derate')):
 
         def corrected_parameter_power_management(corr_n1, mach_toff):
-            fnk = -34422.1945 \
-                - 3.591798057 * mach_toff \
-                - 221.3236997 * mach_toff * corr_n1 \
-                + 663.3754542 * corr_n1
+            # See blog article about curve fitting
+            fnk = -94514.4 \
+                -20501.84 * mach_toff \
+                -7.7018523 * corr_n1**2.0 \
+                + 2027.295 * corr_n1 \
+                -0.01571593 * mach_toff * corr_n1
             return fnk
-        
+
         for n1 in n1_derates:
             index = n1.index
             corr_n1 = 100.0 - n1.value
@@ -19018,3 +19020,4 @@ class EngTakeoffFlexTemp(KeyPointValueNode):
                 index = toff.index
                 value = (flex_1.array[index] + flex_2.array[index]) / 2.0
                 self.create_kpv(index, value)
+

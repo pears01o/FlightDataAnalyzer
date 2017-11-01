@@ -11796,7 +11796,7 @@ class TestEngN1TakeoffDerate(unittest.TestCase):
                     items=[KeyTimeInstance(5, 'SAGE Takeoff')])
         eng_n1 = P('Eng (*) N1 Avg', array=np.ma.array([87.25]*10))
         tat = P('TAT', array=np.ma.array([39.5]*10))
-        mach = P('Mach', array=np.ma.array([0.22]*10))
+        mach = P('Mach', array=np.ma.array([0.252]*10))
         node = self.node_class()
         node.derive(eng_n1, tat, mach, toff)
         self.assertEqual(len(node), 1)
@@ -11832,14 +11832,25 @@ class TestEngThrustTakeoffDerate(unittest.TestCase):
         self.assertEqual(opts, [('Mach', 'Eng N1 Takeoff Derate')])
         
     def test_derive(self):
+        mach = P('Mach', array=np.ma.array([0.25]*10))
+        eng_dr = KPV('Eng N1 Takeoff Derate', 
+                     items=[KeyPointValue(index=5, value=14)])
+        node = self.node_class()
+        node.derive(mach, eng_dr)
+        self.assertEqual(len(node), 1)
+        self.assertAlmostEqual(node[0].value, 13.15, places=2)    
+
+        
+    def test_derive(self):
         mach = P('Mach', array=np.ma.array([0.252]*10))
         eng_dr = KPV('Eng N1 Takeoff Derate', 
                      items=[KeyPointValue(index=5, value=16.238)])
         node = self.node_class()
         node.derive(mach, eng_dr)
         self.assertEqual(len(node), 1)
-        self.assertAlmostEqual(node[0].value, 18.705, places=2)    
-
+        self.assertAlmostEqual(node[0].value, 21.1, places=1)    
+        
+        
 class TestEngTakeoffFlexTemp(unittest.TestCase):
     
     def setUp(self):

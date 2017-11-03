@@ -90,9 +90,9 @@ class TestDateTimeFunctions(unittest.TestCase):
         hdf = mock.Mock()
         hdf.duration = duration
         hdf.get.side_effect = hdf_get
-        dt_arrays, is_dt_accurate = get_dt_arrays(hdf, datetime(2016, 8, 4, 23, 59, 59), datetime(2016, 8, 5, 1, 59, 59))
+        dt_arrays = get_dt_arrays(hdf, datetime(2016, 8, 4, 23, 59, 59), datetime(2016, 8, 5, 1, 59, 59))
         self.assertEqual(dt_arrays, [year.array, month.array, day.array, hour.array, minute.array, second.array])
-        self.assertEqual(is_dt_accurate, True)
+
 
 class TestSplitSegments(unittest.TestCase):
     def test_split_segments(self):
@@ -667,40 +667,33 @@ class TestSegmentInfo(unittest.TestCase):
         })
         dt = datetime(2012, 12, 12, 12, 12, 12, tzinfo=pytz.utc)
         # test with all params
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2011, 11, 11, 11, 11, 11, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, True)
         # test without Year
         del hdf['Year']
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 11, 11, 11, 11, 11, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, False)
         # test without Month
         del hdf['Month']
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 11, 11, 11, 11, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, False)
         # test without Day
         del hdf['Day']
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 12, 11, 11, 11, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, False)
         # test without Hour
         del hdf['Hour']
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 12, 12, 11, 11, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, False)
         # test without Minute
         del hdf['Minute']
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 12, 12, 12, 11, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, False)
         # test without Second
         del hdf['Second']
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 12, 12, 12, 12, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, False)
-        
+
     def test_empty_year_no_seconds(self):
         # NB: 12's are the fallback_dt, 11's are the recorded time parameters
         dt = datetime(2012, 12, 12, 12, 12, 10, tzinfo=pytz.utc)
@@ -711,10 +704,9 @@ class TestSegmentInfo(unittest.TestCase):
             'Hour': P('Hour', np.ma.array([11, 11, 11, 11], mask=[True, False, False, False])),
             'Minute': P('Minute', np.ma.array([11, 11]), frequency=0.5),
         }, duration=4)
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         # 9th second as the first sample (10th second) was masked
         self.assertEqual(res, datetime(2012, 11, 12, 11, 11, 10, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, False)
 
     def test_year_00_uses_fallback_year(self):
         # Ensure that a timebase error is not raised due to old date!
@@ -732,11 +724,10 @@ class TestSegmentInfo(unittest.TestCase):
         # add a masked invalid value
         hdf['Year'].array[2] = 50
         hdf['Year'].array[2] = np.ma.masked
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         print(hdf, dt)
         self.assertEqual(res, datetime(2012, 11, 11, 11, 11, 10, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, False)
-        
+
     def test_no_year_with_a_very_recent_fallback(self):
         """When fallback is a year after the flight and Year is not recorded,
         the result would be in the future. Ensure that a year is taken off if
@@ -759,12 +750,11 @@ class TestSegmentInfo(unittest.TestCase):
             'Minute': P('Minute', np.ma.array([59, 59])),  # last minute
             'Second': P('Minute', np.ma.array([58, 59])),  # last two seconds
         }, duration=2)
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         # result is a year behind the fallback datetime, even though the
         # fallback Year was used.
         self.assertEqual(res.year, datetime.now().year - 1)
         #self.assertEqual(res, datetime(2012,6,1,11,11,1))
-        self.assertEqual(is_dt_accurate, False)        
 
     def test_midnight_rollover(self):
         """
@@ -780,10 +770,10 @@ class TestSegmentInfo(unittest.TestCase):
             'Minute': P('Minute', np.ma.array([59, 59] + [0] * 18)),
             'Second': P('Minute', np.ma.array([58, 59] + list(range(18)))),  # last two seconds and start of next flight
         }, duration=20)
-        res, is_dt_accurate = _calculate_start_datetime(hdf, dt, dt)
+        res = _calculate_start_datetime(hdf, dt, dt)
         # result is the exact start of the data for the timestamp (not a day before!)
         self.assertEqual(res, datetime(2012, 12, 12, 23, 59, 58, tzinfo=pytz.utc))
-        self.assertEqual(is_dt_accurate, False)
+
 
 class TestSegmentTypeAndSlice(unittest.TestCase):
     

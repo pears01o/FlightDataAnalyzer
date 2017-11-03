@@ -480,10 +480,14 @@ from analysis_engine.key_point_values import (
     ILSGlideslopeDeviation1000To500FtMax,
     ILSGlideslopeDeviation1500To1000FtMax,
     ILSGlideslopeDeviation500To200FtMax,
+    ILSGlideslopeEstablished1000To200Ft,
+    ILSGlideslopeEstablished500To200Ft,
     ILSLocalizerDeviation1000To500FtMax,
     ILSLocalizerDeviation1500To1000FtMax,
     ILSLocalizerDeviation500To200FtMax,
     ILSLocalizerDeviationAtTouchdown,
+    ILSLocalizerEstablished1000To200Ft,
+    ILSLocalizerEstablished500To200Ft,
     IsolationValveOpenAtLiftoff,
     KineticEnergyAtRunwayTurnoff,
     LandingConfigurationGearWarningDuration,
@@ -8099,6 +8103,506 @@ class TestILSGlideslopeDeviation500To200FtMax(unittest.TestCase, ILSTest):
         self.assertEqual(kpv[0].index, 0)          # FIXME
         self.assertAlmostEqual(kpv[0].value, 0.0)  # FIXME
 
+
+class TestILSGlideslopeEstablished1000To200Ft(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = ILSGlideslopeEstablished1000To200Ft
+
+    def test_can_operate(self):
+        self.assertFalse(self.node_class.can_operate([], ac_type=aeroplane))
+        self.assertFalse(self.node_class.can_operate([], ac_type=helicopter))
+        self.assertTrue(self.node_class.can_operate((
+            'Altitude AAL For Flight Phases'
+            'ILS Glideslope'
+        ), ac_type=aeroplane))
+        self.assertTrue(self.node_class.can_operate((
+            'Altitude AGL',
+            'ILS Glideslope'
+        ), ac_type=helicopter))
+        
+    def test_derive_ILS_established_during_one_approach(self):
+    
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400),
+                            Section('Approach', slice(100, 120), 100, 120)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(250, 375), 250, 375)])
+
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+        
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 301)
+        self.assertEqual(node[0].value, 1)
+        
+    def test_derive_ILS_established_only_one_approach(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(250, 375), 250, 375)])
+    
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 301)
+        self.assertEqual(node[0].value, 1)
+    
+    def test_derive_ILS_established_two_approaches(self):
+        
+        alt_aal = P('Altitude AAL', np.tile(np.ma.arange(4000, 0, -10),2))
+        ils_gs = P('ILS GLideslope', np.repeat(np.arange(-0.5, 0.5, 0.0025),2))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400),
+                            Section('Approach', slice(600, 800), 600, 800)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(250, 375), 250, 375),
+                                Section('ILS Localizer Established', slice(650, 775), 650, 775)])
+    
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+        
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].index, 301)
+        self.assertEqual(node[0].value, 1)
+        self.assertEqual(node[1].index, 701)
+        self.assertEqual(node[1].value, 1)        
+    
+    def test_derive_ILS_not_established(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[])
+    
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+                
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 301)
+
+    def test_derive_ILS_not_established_at_approach(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(150, 175), 150, 175)])
+    
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 301)        
+        
+    def test_derive_helicopter_ILS_established(self):
+        
+        alt_agl = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'helicopter')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(250, 375), 250, 375)])
+    
+        node = self.node_class()
+        node.derive(None, alt_agl,  ac_type, approach, ils_gs, ils_loc_ests)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 301)
+        self.assertEqual(node[0].value, 1)        
+    
+    def test_derive_helicopter_ILS_not_established(self):
+        
+        alt_agl = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'helicopter')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[])
+    
+        node = self.node_class()
+        node.derive(None, alt_agl,  ac_type, approach, ils_gs, ils_loc_ests)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 301)        
+    
+
+class TestILSGlideslopeEstablished500To200Ft(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = ILSGlideslopeEstablished500To200Ft
+
+    def test_can_operate(self):
+        self.assertFalse(self.node_class.can_operate([], ac_type=aeroplane))
+        self.assertFalse(self.node_class.can_operate([], ac_type=helicopter))
+        self.assertTrue(self.node_class.can_operate((
+            'Altitude AAL For Flight Phases'
+            'ILS Glideslope'
+        ), ac_type=aeroplane))
+        self.assertTrue(self.node_class.can_operate((
+            'Altitude AGL',
+            'ILS Glideslope'
+        ), ac_type=helicopter))
+        
+    def test_derive_ILS_established_during_one_approach(self):
+    
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400),
+                            Section('Approach', slice(100, 120), 100, 120)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(350, 380), 350, 380)])
+
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+        
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 351)
+        self.assertEqual(node[0].value, 1)
+        
+    def test_derive_ILS_established_only_one_approach(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(250, 375), 250, 375)])
+    
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 351)
+        self.assertEqual(node[0].value, 1)
+    
+    def test_derive_ILS_established_two_approaches(self):
+        
+        alt_aal = P('Altitude AAL', np.tile(np.ma.arange(4000, 0, -10),2))
+        ils_gs = P('ILS GLideslope', np.repeat(np.arange(-0.5, 0.5, 0.0025),2))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400),
+                            Section('Approach', slice(600, 800), 600, 800)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(250, 375), 250, 375),
+                                Section('ILS Localizer Established', slice(650, 775), 650, 775)])
+    
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+        
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].index, 351)
+        self.assertEqual(node[0].value, 1)
+        self.assertEqual(node[1].index, 751)
+        self.assertEqual(node[1].value, 1)        
+    
+    def test_derive_ILS_not_established(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[])
+    
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+                
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 351)
+
+    def test_derive_ILS_not_established_at_approach(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(150, 175), 150, 175)])
+    
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_gs, ils_loc_ests)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 351)
+        
+    def test_derive_helicopter_ILS_established(self):
+        
+        alt_agl = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'helicopter')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[Section('ILS Localizer Established', slice(250, 375), 250, 375)])
+    
+        node = self.node_class()
+        node.derive(None, alt_agl,  ac_type, approach, ils_gs, ils_loc_ests)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 351)
+        self.assertEqual(node[0].value, 1)        
+    
+    def test_derive_helicopter_ILS_not_established(self):
+        
+        alt_agl = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_gs = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'helicopter')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        ils_loc_ests = S(items=[])
+    
+        node = self.node_class()
+        node.derive(None, alt_agl,  ac_type, approach, ils_gs, ils_loc_ests)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 351)
+        
+
+class TestILSLocalizerEstablished1000To200Ft(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = ILSLocalizerEstablished1000To200Ft
+
+    def test_can_operate(self):
+        self.assertFalse(self.node_class.can_operate([], ac_type=aeroplane))
+        self.assertFalse(self.node_class.can_operate([], ac_type=helicopter))
+        self.assertTrue(self.node_class.can_operate((
+            'Altitude AAL For Flight Phases'
+            'ILS Localizer'
+        ), ac_type=aeroplane))
+        self.assertTrue(self.node_class.can_operate((
+            'Altitude AGL',
+            'ILS Localizer'
+        ), ac_type=helicopter))
+        
+    def test_derive_ILS_established_during_one_approach(self):
+    
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400),
+                            Section('Approach', slice(100, 120), 100, 120)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+        
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 301)
+        self.assertEqual(node[0].value, 1)
+        
+    def test_derive_ILS_established_only_one_approach(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 301)
+        self.assertEqual(node[0].value, 1)
+    
+    def test_derive_ILS_established_two_approaches(self):
+        
+        alt_aal = P('Altitude AAL', np.tile(np.ma.arange(4000, 0, -10),2))
+        ils_loc = P('ILS GLideslope', np.repeat(np.arange(-0.5, 0.5, 0.0025),2))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400),
+                            Section('Approach', slice(600, 800), 600, 800)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+        
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].index, 301)
+        self.assertEqual(node[0].value, 1)
+        self.assertEqual(node[1].index, 701)
+        self.assertEqual(node[1].value, 1)        
+    
+    def test_derive_ILS_not_established(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(1.0, 2.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+                
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 301)
+
+    def test_derive_ILS_not_established_at_approach(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ils_loc.array[200:400] = np.arange(2.0, 3.0)
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 301)        
+        
+    def test_derive_helicopter_ILS_established(self):
+        
+        alt_agl = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'helicopter')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        
+        node = self.node_class()
+        node.derive(None, alt_agl,  ac_type, approach, ils_loc)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 301)
+        self.assertEqual(node[0].value, 1)        
+    
+    def test_derive_helicopter_ILS_not_established(self):
+        
+        alt_agl = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ils_loc.array[200:400] = np.arange(2.0, 3.0)
+        ac_type = A('Aircraft Type', 'helicopter')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+    
+        node = self.node_class()
+        node.derive(None, alt_agl,  ac_type, approach, ils_loc)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 301)        
+    
+
+class TestILSLocalizerEstablished500To200Ft(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = ILSLocalizerEstablished500To200Ft
+
+    def test_can_operate(self):
+        self.assertFalse(self.node_class.can_operate([], ac_type=aeroplane))
+        self.assertFalse(self.node_class.can_operate([], ac_type=helicopter))
+        self.assertTrue(self.node_class.can_operate((
+            'Altitude AAL For Flight Phases'
+            'ILS Localizer'
+        ), ac_type=aeroplane))
+        self.assertTrue(self.node_class.can_operate((
+            'Altitude AGL',
+            'ILS Localizer'
+        ), ac_type=helicopter))
+        
+    def test_derive_ILS_established_during_one_approach(self):
+    
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400),
+                            Section('Approach', slice(100, 120), 100, 120)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+        
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 351)
+        self.assertEqual(node[0].value, 1)
+        
+    def test_derive_ILS_established_only_one_approach(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 351)
+        self.assertEqual(node[0].value, 1)
+    
+    def test_derive_ILS_established_two_approaches(self):
+        
+        alt_aal = P('Altitude AAL', np.tile(np.ma.arange(4000, 0, -10),2))
+        ils_loc = P('ILS GLideslope', np.repeat(np.arange(-0.5, 0.5, 0.0025),2))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400),
+                            Section('Approach', slice(600, 800), 600, 800)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+        
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].index, 351)
+        self.assertEqual(node[0].value, 1)
+        self.assertEqual(node[1].index, 751)
+        self.assertEqual(node[1].value, 1)        
+    
+    def test_derive_ILS_not_established(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(1.0, 2.5, 0.0025))
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+                
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 351)
+
+    def test_derive_ILS_not_established_at_approach(self):
+        
+        alt_aal = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ils_loc.array[200:400] = np.arange(2.0, 3.0)
+        ac_type = A('Aircraft Type', 'aeroplane')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        
+        node = self.node_class()
+        node.derive(alt_aal, None,  ac_type, approach, ils_loc)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 351)        
+        
+    def test_derive_helicopter_ILS_established(self):
+        
+        alt_agl = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ac_type = A('Aircraft Type', 'helicopter')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+        
+        node = self.node_class()
+        node.derive(None, alt_agl,  ac_type, approach, ils_loc)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 351)
+        self.assertEqual(node[0].value, 1)        
+    
+    def test_derive_helicopter_ILS_not_established(self):
+        
+        alt_agl = P('Altitude AAL', np.ma.arange(4000, 0, -10))
+        ils_loc = P('ILS GLideslope', np.arange(-0.5, 0.5, 0.0025))
+        ils_loc.array[200:400] = np.arange(2.0, 3.0)
+        ac_type = A('Aircraft Type', 'helicopter')
+        approach = S(items=[Section('Approach', slice(200, 400), 200, 400)])
+    
+        node = self.node_class()
+        node.derive(None, alt_agl,  ac_type, approach, ils_loc)
+    
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 0)
+        self.assertEqual(node[0].index, 351)    
+        
 
 class TestILSLocalizerDeviation1500To1000FtMax(unittest.TestCase, ILSTest):
 

@@ -60,6 +60,7 @@ from analysis_engine.library import (ambiguous_runway,
                                      first_valid_parameter,
                                      first_valid_sample,
                                      hysteresis,
+                                     ils_established,
                                      index_at_value,
                                      index_of_first_start,
                                      index_of_last_stop,
@@ -7517,6 +7518,175 @@ class ILSGlideslopeDeviation500To200FtMax(KeyPointValueNode):
                 ils_bands,
                 max_abs_value)
 
+
+class ILSGlideslopeEstablished1000To200Ft(KeyPointValueNode):
+    '''
+    Determine if the ILS glideslope was established at all between 1000
+    and 200 ft AAL (AGL for helicopter). This KPV returns 1 or 0, 
+    corresponding to True or False
+    '''
+    
+    name = 'ILS Glideslope Established 1000 To 200 Ft'
+    
+    @classmethod
+    def can_operate(cls, available, ac_type=A('Aircraft Type')):
+        if ac_type and ac_type.value == 'helicopter':
+            return all_of(('Altitude AGL','ILS Glideslope'), available)
+        else:
+            return all_of(('Altitude AAL For Flight Phases', 'ILS Glideslope'), available)
+        
+    def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
+               alt_agl=P('Altitude AGL'),
+               ac_type=A('Aircraft Type'),
+               approach=S('Approach'),
+               ils_gs=P('ILS Glideslope'),
+               ils_loc_ests=S('ILS Localizer Established')):
+        
+        if ac_type and ac_type.value == 'helicopter':
+            alt_bands = alt_agl.slices_from_to(1000, 200)
+            approach_bands = slices_and(alt_bands, approach.get_slices())
+        else:
+            approach_bands = alt_aal.slices_from_to(1000, 200)
+        
+        ils_ests = []
+        for approach_slice in approach_bands:
+            for ils_loc_established_slice in ils_loc_ests.get_slices():
+                if len(slices_and([approach_slice], [ils_loc_established_slice])) > 0:
+                    ils_ests.append(ils_established(ils_gs.array, 
+                                                    slices_and([approach_slice], [ils_loc_established_slice])[0], 
+                                                    ils_gs.frequency))
+        if ils_ests:
+            for ils_est_index in ils_ests:
+                self.create_kpv(ils_est_index, 1)
+            return
+        for approach_slice in approach_bands:
+            self.create_kpv(approach_slice.start, 0)
+                                        
+                    
+class ILSGlideslopeEstablished500To200Ft(KeyPointValueNode):
+    '''
+    Determine if the ILS glideslope was established at all between 500
+    and 200 ft AAL (AGL for helicopter). This KPV returns 1 or 0, 
+    corresponding to True or False
+    '''
+    
+    name = 'ILS Glideslope Established 500 To 200 Ft'
+    
+    @classmethod
+    def can_operate(cls, available, ac_type=A('Aircraft Type')):
+        if ac_type and ac_type.value == 'helicopter':
+            return all_of(('Altitude AGL','ILS Glideslope'), available)
+        else:
+            return all_of(('Altitude AAL For Flight Phases', 'ILS Glideslope'), available)
+        
+    def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
+               alt_agl=P('Altitude AGL'),
+               ac_type=A('Aircraft Type'),
+               approach=S('Approach'),
+               ils_gs=P('ILS Glideslope'),
+               ils_loc_ests=S('ILS Localizer Established')):
+        
+        if ac_type and ac_type.value == 'helicopter':
+            alt_bands = alt_agl.slices_from_to(500, 200)
+            approach_bands = slices_and(alt_bands, approach.get_slices())
+        else:
+            approach_bands = alt_aal.slices_from_to(500, 200)
+            
+        ils_ests = []
+        for approach_slice in approach_bands:
+            for ils_loc_established_slice in ils_loc_ests.get_slices():
+                    if len(slices_and([approach_slice], [ils_loc_established_slice])) > 0:
+                        ils_ests.append(ils_established(ils_gs.array, 
+                                                        slices_and([approach_slice], [ils_loc_established_slice])[0], 
+                                                        ils_gs.frequency))
+        if ils_ests:
+            for ils_est_index in ils_ests:
+                self.create_kpv(ils_est_index, 1)
+            return
+        for approach_slice in approach_bands:
+            self.create_kpv(approach_slice.start, 0)
+        
+
+class ILSLocalizerEstablished1000To200Ft(KeyPointValueNode):
+    '''
+    Determine if the ILS localizer was established at all between 1000
+    and 200 ft AAL (AGL for helicopter). This KPV returns 1 or 0, 
+    corresponding to True or False
+    '''
+    
+    name = 'ILS Localizer Established 1000 To 200 Ft'
+    
+    @classmethod
+    def can_operate(cls, available, ac_type=A('Aircraft Type')):
+        if ac_type and ac_type.value == 'helicopter':
+            return all_of(('Altitude AGL','ILS Localizer'), available)
+        else:
+            return all_of(('Altitude AAL For Flight Phases', 'ILS Localizer'), available)
+        
+    def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
+               alt_agl=P('Altitude AGL'),
+               ac_type=A('Aircraft Type'),
+               approach=S('Approach'),
+               ils_loc=P('ILS Localizer')):
+            
+        if ac_type and ac_type.value == 'helicopter':
+            alt_bands = alt_agl.slices_from_to(1000, 200)
+            approach_bands = slices_and(alt_bands, approach.get_slices())
+        else:
+            approach_bands = alt_aal.slices_from_to(1000, 200)
+
+        ils_ests = []
+        for approach_slice in approach_bands:
+            if ils_established(ils_loc.array, approach_slice, ils_loc.frequency):
+                ils_ests.append(ils_established(ils_loc.array, approach_slice, ils_loc.frequency))
+        if ils_ests:
+            for ils_est_index in ils_ests:
+                self.create_kpv(ils_est_index, 1)
+            return
+        for approach_slice in approach_bands:
+            self.create_kpv(approach_slice.start, 0)
+                                        
+                    
+class ILSLocalizerEstablished500To200Ft(KeyPointValueNode):
+    '''
+    Determine if the ILS localizer was established at all between 500
+    and 200 ft AAL (AGL for helicopter). This KPV returns 1 or 0, 
+    corresponding to True or False
+    '''
+    
+    name = 'ILS Localizer Established 500 To 200 Ft'
+    
+    @classmethod
+    def can_operate(cls, available, ac_type=A('Aircraft Type')):
+        if ac_type and ac_type.value == 'helicopter':
+            return all_of(('Altitude AGL','ILS Localizer'), available)
+        else:
+            return all_of(('Altitude AAL For Flight Phases', 'ILS Localizer'), available)
+        
+    def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
+               alt_agl=P('Altitude AGL'),
+               ac_type=A('Aircraft Type'),
+               approach=S('Approach'),
+               ils_loc=P('ILS Localizer')):
+    
+        if ac_type and ac_type.value == 'helicopter':
+            alt_bands = alt_agl.slices_from_to(500, 200)
+            approach_bands = slices_and(alt_bands, approach.get_slices())
+        else:
+            approach_bands = alt_aal.slices_from_to(500, 200)
+            
+        ils_ests = []
+        for approach_slice in approach_bands:
+            if ils_established(ils_loc.array, approach_slice, ils_loc.frequency):
+                ils_ests.append(ils_established(ils_loc.array, approach_slice, ils_loc.frequency))
+        if ils_ests:
+            for ils_est_index in ils_ests:
+                self.create_kpv(ils_est_index, 1)
+            return
+
+        for approach_slice in approach_bands:
+            self.create_kpv(approach_slice.start, 0)
+        
 
 class ILSLocalizerDeviation1500To1000FtMax(KeyPointValueNode):
     '''

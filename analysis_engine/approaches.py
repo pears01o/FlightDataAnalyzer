@@ -716,10 +716,9 @@ class ApproachInformation(ApproachNode):
     
                     elif approach_type == 'LANDING':
                         # Just end at 2 dots where we turn off the runway
-                        loc_end_2_dots = index_at_value(np.ma.abs(ils_loc.array), 2.0, _slice=slice(loc_end, loc_estab, -1))
-                        if loc_end_2_dots:
+                        loc_end_2_dots = index_at_value(np.ma.abs(ils_loc.array), 2.0, _slice=slice(turnoff+5*(_slice.stop-_slice.start)/100, loc_estab, -1))
+                        if loc_end_2_dots and is_index_within_slice(loc_end_2_dots, _slice) and not np.ma.is_masked(ils_loc.array[loc_end_2_dots]) and loc_end_2_dots > loc_estab:
                             loc_end = loc_end_2_dots
-                        
                     loc_est = slice(loc_estab, loc_end+1)
 
             #######################################################################

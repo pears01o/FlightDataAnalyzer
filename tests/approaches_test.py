@@ -8,7 +8,7 @@ from mock import call, Mock, patch
 from analysis_engine.approaches import ApproachInformation, is_heliport
 from analysis_engine.exceptions import AFRMissmatchError
 from analysis_engine.node import (
-    A, ApproachItem, aeroplane, helicopter, KPV, KeyPointValue, P, S, Section,
+    A, ApproachItem, aeroplane, helicopter, KPV, KeyPointValue, P, S, Section, KTI, KeyTimeInstance,
     load)
 
 
@@ -71,7 +71,12 @@ class TestApproachInformation(unittest.TestCase):
                           A(name='AFR Landing Runway', value=None) ,
                           KPV('Latitude At Touchdown', items=[KeyPointValue(index=19, value=51.145, name='Latitude At Touchdown')]),
                           KPV('Longitude At Touchdown', items=[KeyPointValue(index=19, value=-0.19, name='Longitude At Touchdown')]),
-                          A('Precise Positioning', True))
+                          A('Precise Positioning', True),
+                          S(items=[Section('Fast', slice(10,90), 10, 90)]),
+                          None, None, None, None, None, None, None, None, None, 
+                          KTI('Touchdown', items=[KeyTimeInstance(index=19)]), 
+                          None, 
+                          S(items=[Section('Takeoff', slice(1,10), 1, 10)]))
         get_handler.get_nearest_airport.assert_called_with(latitude=51.145, longitude=-0.19)
         self.assertEqual(approaches[0].loc_est, slice(41, 100, None))
 
@@ -425,7 +430,7 @@ class TestApproachInformation(unittest.TestCase):
                           KPV('Longitude At Touchdown', items=[KeyPointValue(index=17, value=-0.19, name='Longitude At Touchdown')]),
                           A('Precise Positioning', True))
         get_handler.get_nearest_airport.assert_called_with(latitude=51.145, longitude=-0.19)
-        self.assertEqual(approaches[0].loc_est, slice(22,38.5,None))
+        self.assertEqual(approaches[0].loc_est, slice(22,39.5,None))
 
 
     #@patch('analysis_engine.api_handler.FileHandler.get_nearest_airport')

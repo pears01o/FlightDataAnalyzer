@@ -767,9 +767,10 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
 
     def derive(self,
                acc_norm=P('Acceleration Normal Offset Removed'),
-               touchdowns=KTI('Touchdown')):
+               touchdowns=KTI('Touchdown'),
+               touch_and_go=KTI('Touch And Go')):
 
-        for touchdown in touchdowns:
+        for touchdown in (touchdowns+touch_and_go):
             self.create_kpv(*bump(acc_norm, touchdown))
 
 
@@ -857,7 +858,8 @@ class AccelerationNormalMinusLoadFactorThresholdAtTouchdown(KeyPointValueNode):
                gw = P('Gross Weight'),
                model=A('Model'),
                series=A('Series'),
-               mods=A('Modifications')):
+               mods=A('Modifications'),
+               touch_and_go=KTI('Touch And Go')):
         mlw = self.get_landing_weight(series.value, model.value, mods.value)
         if not mlw:
             self.warning("Cannot determine landing weight. series:'%s' "
@@ -869,7 +871,7 @@ class AccelerationNormalMinusLoadFactorThresholdAtTouchdown(KeyPointValueNode):
         weight_threshold = mlw + 1133.981  # 2500LB --> 1133.981KG
         freq_8hz = land_vert_acc.frequency == 8.0
         freq_16hz = land_vert_acc.frequency == 16.0
-        for idx, tdwn in enumerate(tdwns):
+        for idx, tdwn in enumerate(tdwns+touch_and_go):
             # not interested in direction of roll
             roll_tdwn = abs(value_at_index(roll_repaired, tdwn.index))
 
@@ -18405,7 +18407,9 @@ class GrossWeightAtTouchdown(KeyPointValueNode):
 
     units = ut.KG
 
-    def derive(self, gw=P('Gross Weight Smoothed'), touchdowns=KTI('Touchdown')):
+    def derive(self, gw=P('Gross Weight Smoothed'), 
+               touchdowns=KTI('Touchdown'),
+               touch_and_go=KTI('Touch And Go')):
         try:
             # TODO: Things to consider related to gross weight:
             #       - Does smoothed gross weight need to be repaired?
@@ -18416,7 +18420,7 @@ class GrossWeightAtTouchdown(KeyPointValueNode):
             self.warning("KPV '%s' will not be created because '%s' array "
                          "could not be repaired.", self.name, gw.name)
             return
-        self.create_kpvs_at_ktis(array, touchdowns)
+        self.create_kpvs_at_ktis(array, (touchdowns+touch_and_go))
 
 
 class GrossWeightConditionalAtTouchdown(KeyPointValueNode):

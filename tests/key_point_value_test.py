@@ -1826,10 +1826,10 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = AccelerationNormalAtTouchdown
-        self.operational_combinations = [('Acceleration Normal Offset Removed', 'Touchdown')]
+        self.operational_combinations = [('Acceleration Normal Offset Removed', 'Touchdown', 'Touch And Go')]
 
     @patch('analysis_engine.key_point_values.bump')
-    def test_derive(self, bump):
+    def test_derive_only_touchdowns(self, bump):
         bump.side_effect = [(3, 4), (1, 2)]
         acc_norm = Mock()
         touchdowns = KTI('Touchdown', items=[
@@ -1846,7 +1846,24 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
             KeyPointValue(3, 4.0, 'Acceleration Normal At Touchdown', slice(None, None)),
             KeyPointValue(1, 2.0, 'Acceleration Normal At Touchdown', slice(None, None)),
         ])
-
+        
+    @patch('analysis_engine.key_point_values.bump')
+    def test_derive_touchdown_and_touch_and_go(self, bump):
+        bump.side_effect = [(3, 4), (1, 2)]
+        acc_norm = Mock()
+        touchdowns = KTI('Touchdown', items=[KeyTimeInstance(3, 'Touchdown')])
+        touch_and_go = KTI('Touch And Go', items=[KeyTimeInstance(1, 'Touch And Go')])
+        node = AccelerationNormalAtTouchdown()
+        node.derive(acc_norm, touchdowns,touch_and_go)
+        bump.assert_has_calls([
+            call(acc_norm, touchdowns[0]),
+            call(acc_norm, touch_and_go[0]),
+        ])
+        self.assertEqual(node, [
+            KeyPointValue(3, 4.0, 'Acceleration Normal At Touchdown', slice(None, None)),
+            KeyPointValue(1, 2.0, 'Acceleration Normal At Touchdown', slice(None, None)),
+        ])
+        
 
 class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCase):
     def setUp(self):
@@ -1862,7 +1879,8 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
                                          'Gross Weight',
                                          'Model',
                                          'Series',
-                                         'Modifications')]
+                                         'Modifications',
+                                         'Touch And Go')]
         self.tdwn_idx = 4
         self.gw_under_value = 128367
         self.gw_over_value = 138367
@@ -1891,7 +1909,9 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
         self.tdwns = KTI('Touchdown', items=[
             KeyTimeInstance(index=self.tdwn_idx, name='Touchdown'),
         ])
+        self.touch_and_go = KTI('Touch And Go', items=[])
         self.roll = np.ma.array([0.]*10)
+        
         
     def _test_landing_weight(self, series, model, mods, weight):
         self.assertEqual(
@@ -1945,7 +1965,7 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
         node.derive(land_vert_acc=land_vert_acc, roll=roll,
                            tdwns=self.tdwns, gw_kpv=gw_kpv,
                            gw=gw, series=self.series, model=self.model,
-                           mods=self.mods)
+                           mods=self.mods, touch_and_go=self.touch_and_go)
         self.assertEqual(len(node), 1)
         return node
 
@@ -2006,6 +2026,16 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
             node = self._call_derive(roll, self.land_vert_acc_8hz,
                                      gw=self.gw_over)[0]
             self.assertAlmostEqual(node.value, expected_val[idx], places=2)
+            
+        # Roll 0-6, weight > MLW+2500LB @ 8Hz
+        expected_val = [0.50, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75]
+        self.touch_and_go = KTI('Touch And Go', items=[KeyTimeInstance(index=self.tdwn_idx, name='Touch And Go')])
+        self.tdwns = KTI('Touchdown', items=[])
+        for idx, roll in enumerate(np.arange(0.0, 7.0)):
+            node = self._call_derive(roll, self.land_vert_acc_8hz,
+                                     gw=self.gw_over)[0]
+            self.assertAlmostEqual(node.value, expected_val[idx], places=2)
+
 
 class TestAccelerationNormalLiftoffTo35FtMax(unittest.TestCase, NodeTest):
 
@@ -20714,18 +20744,21 @@ class TestGrossWeightAtTouchdown(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = GrossWeightAtTouchdown
-        self.operational_combinations = [('Gross Weight Smoothed', 'Touchdown')]
+        self.operational_combinations = [('Gross Weight Smoothed', 'Touchdown', 'Touch And Go')]
         self.gw = P(name='Gross Weight Smoothed', array=np.ma.array((1, 2, 3)))
         self.touchdowns = KTI(name='Touchdown', items=[
-            KeyTimeInstance(name='Touchdown', index=1),
+            KeyTimeInstance(name='Touchdown', index=2),
         ])
+        self.touch_and_go = KTI(name='Touchdown', items=[
+            KeyTimeInstance(name='Touch And Go', index=1),
+        ])        
 
     def test_derive__basic(self):
         name = self.node_class.get_name()
         node = self.node_class()
         node.derive(self.gw, self.touchdowns)
         self.assertEqual(node, KPV(name=name, items=[
-            KeyPointValue(name=name, index=1, value=2),
+            KeyPointValue(name=name, index=2, value=3),
         ]))
 
     def test_derive__masked(self):
@@ -20733,6 +20766,14 @@ class TestGrossWeightAtTouchdown(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(self.gw, self.touchdowns)
         self.assertEqual(len(node), 0)
+        
+    def test_derive__touch_and_go(self):
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(self.gw, self.touch_and_go)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(name=name, index=1, value=2),
+        ]))        
 
 
 class TestGrossWeightConditionalAtTouchdown(unittest.TestCase):

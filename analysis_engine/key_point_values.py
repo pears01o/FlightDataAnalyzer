@@ -7529,6 +7529,7 @@ class ILSGlideslopeEstablished1000To200Ft(KeyPointValueNode):
     '''
     
     name = 'ILS Glideslope Established 1000 To 200 Ft'
+    units = None
     
     @classmethod
     def can_operate(cls, available, ac_type=A('Aircraft Type')):
@@ -7573,6 +7574,7 @@ class ILSGlideslopeEstablished500To200Ft(KeyPointValueNode):
     '''
     
     name = 'ILS Glideslope Established 500 To 200 Ft'
+    units = None
     
     @classmethod
     def can_operate(cls, available, ac_type=A('Aircraft Type')):
@@ -7617,6 +7619,7 @@ class ILSLocalizerEstablished1000To200Ft(KeyPointValueNode):
     '''
     
     name = 'ILS Localizer Established 1000 To 200 Ft'
+    units = None
     
     @classmethod
     def can_operate(cls, available, ac_type=A('Aircraft Type')):
@@ -7657,6 +7660,7 @@ class ILSLocalizerEstablished500To200Ft(KeyPointValueNode):
     '''
     
     name = 'ILS Localizer Established 500 To 200 Ft'
+    units = None
     
     @classmethod
     def can_operate(cls, available, ac_type=A('Aircraft Type')):

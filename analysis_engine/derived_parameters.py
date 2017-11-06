@@ -4917,7 +4917,7 @@ class CoordinatesSmoothed(object):
                     lon_adj[:toff_slice.start] = lon_adj[toff_slice.start]
 
             else:
-                print('Cannot smooth taxi out')
+                self.warning('Cannot smooth taxi out')
 
         #-----------------------------------------------------------------------
         # Use ILS track for approach and landings in all localizer approaches

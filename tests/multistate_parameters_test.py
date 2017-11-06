@@ -2495,8 +2495,6 @@ class TestPilotFlying(unittest.TestCase, NodeTest):
         expected_array = MappedArray([2.] * 100 + [1.] * 100)
         expected = M('Pilot Flying', expected_array,
                      values_mapping=PilotFlying.values_mapping)
-        print(node.array)
-        print(expected.array, expected.values_mapping)
         np.testing.assert_array_equal(node.array, expected.array)
 
 

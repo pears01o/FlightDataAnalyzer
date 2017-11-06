@@ -13638,17 +13638,24 @@ class GroundspeedSpeedbrakeHandleDuringTakeoffMax(KeyPointValueNode):
     def derive(self,
                gnd_spd=P('Groundspeed'),
                spdbrk=P('Speedbrake Handle'),
+               spdbrk_selected=M('Speedbrake Selected'),
                takeoff_roll=S('Takeoff Roll Or Rejected Takeoff')):
 
         SPEEDBRAKE_HANDLE_LIMIT = 2.0
-
         masked_in_range = np.ma.masked_less_equal(spdbrk.array,
                                                   SPEEDBRAKE_HANDLE_LIMIT)
+        
+        #Masking only the portion of the array where the speedbrake is not deployed
+        masked_in_range_not_deployed = np.ma.masked_not_equal(spdbrk_selected.array, 2)
+        
+        #Keeping unmasked only the portions of the array where the speedbrake handle is over
+        #limit and the speedbrake is deployed
+        final_mask = np.logical_and(masked_in_range, masked_in_range_not_deployed)
 
         # Masking groundspeed where speedbrake is within limit.
         # WARNING: in this particular case we don't want the KPV to be created
         # when the condition (speedbrake handle limit exceedance) is not met.
-        gspd_masked = np.ma.array(gnd_spd.array, mask=masked_in_range.mask)
+        gspd_masked = np.ma.array(gnd_spd.array, mask=final_mask.mask)
         self.create_kpvs_within_slices(gspd_masked, takeoff_roll, max_value)
 
 

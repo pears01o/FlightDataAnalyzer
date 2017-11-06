@@ -14719,10 +14719,10 @@ class TestGroundspeedSpeedbrakeHandleDuringTakeoffMax(unittest.TestCase,
     def setUp(self):
         self.node_class = GroundspeedSpeedbrakeHandleDuringTakeoffMax
         self.operational_combinations = [
-            ('Groundspeed', 'Speedbrake Handle',
+            ('Groundspeed', 'Speedbrake Handle', 'Speedbrake Selected',
              'Takeoff Roll Or Rejected Takeoff')]
 
-    def test_derive(self):
+    def test_derive_speedbrake_deployed(self):
         array = np.arange(10) + 100
         array = np.ma.concatenate((array[::-1], array))
         gspd = P('Groundspeed', array)
@@ -14730,18 +14730,53 @@ class TestGroundspeedSpeedbrakeHandleDuringTakeoffMax(unittest.TestCase,
         array = 1 + np.arange(0, 20, 2) * 0.1
         array = np.ma.concatenate((array[::-1], array))
         spdbrk = P('Speedbrake Handle', array)
-
+        
+        spdbrk_selected = M(name='Speedbrake Selected', 
+                            array=np.ma.array([2]*20),
+                            values_mapping = {
+                                0: 'Stowed',
+                                1: 'Armed/Cmd Dn',
+                                2: 'Deployed/Cmd Up',})
+        
         phase = S(frequency=1)
         phase.create_section(slice(0, 20))
 
         node = self.node_class()
-        node.derive(gspd, spdbrk, phase)
+        node.derive(gspd, spdbrk, spdbrk_selected, phase)
         self.assertEqual(
             node,
             KPV(self.node_class.get_name(),
                 items=[KeyPointValue(name=self.node_class.get_name(),
                                      index=0.0, value=109.0)])
         )
+        
+    def test_derive_speedbrake_not_deployed(self):
+        array = np.arange(10) + 100
+        array = np.ma.concatenate((array[::-1], array))
+        gspd = P('Groundspeed', array)
+
+        array = 1 + np.arange(0, 20, 2) * 0.1
+        array = np.ma.concatenate((array[::-1], array))
+        spdbrk = P('Speedbrake Handle', array)
+        
+        spdbrk_selected = M(name='Speedbrake Selected', 
+                            array=np.ma.array([0]*10 + [1]*10),
+                            values_mapping = {
+                                0: 'Stowed',
+                                1: 'Armed/Cmd Dn',
+                                2: 'Deployed/Cmd Up',})        
+
+        phase = S(frequency=1)
+        phase.create_section(slice(0, 20))
+
+        node = self.node_class()
+        node.derive(gspd, spdbrk, spdbrk_selected, phase)
+        self.assertEqual(
+            node,
+            KPV(self.node_class.get_name(),
+                items=[])
+        )
+    
 
 
 class TestGroundspeedSpeedbrakeDuringTakeoffMax(unittest.TestCase, NodeTest):

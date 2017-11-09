@@ -2129,6 +2129,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         array = MappedArray(np.repeat(expected, 10), values_mapping=mapping)
         np.testing.assert_array_equal(node.array, array)
 
+    @unittest.skip('AE-1470: Testing resolution on test to see if events are reduced.')
     def test_derive__a330(self):
         # A330 uses Configuration conditions.
         # Prepare our generated flap and slat arrays:

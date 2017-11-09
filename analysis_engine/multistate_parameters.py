@@ -1368,10 +1368,13 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
                 state = at.constants.CONF_TO_LEVER[state]
             self.array[condition] = state
 
-        # Repair the mask to smooth out transitions:
-        nearest_neighbour_mask_repair(self.array, copy=False,
-                                      repair_gap_size=30 * self.hz,
-                                      direction='backward')
+        # Should be repairing? seg_hash 0c6700b43b0ae721039fe6633389bc44e0e2bcd8b93263e9765751929d3231b5
+        # has a gap of missing data of about 4 minutes although recorded is about 8 seconds. 
+        # All other derived Flap * parameter do not try to repair, maybe this one shouldn't either.
+        ## Repair the mask to smooth out transitions:
+        #nearest_neighbour_mask_repair(self.array, copy=False,
+                                      #repair_gap_size=30 * self.hz,
+                                      #direction='backward')
 
 
 class Flaperon(MultistateDerivedParameterNode):

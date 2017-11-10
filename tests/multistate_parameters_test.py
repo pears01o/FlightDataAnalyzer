@@ -2129,13 +2129,12 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         array = MappedArray(np.repeat(expected, 10), values_mapping=mapping)
         np.testing.assert_array_equal(node.array, array)
 
-    @unittest.skip('AE-1470: Testing resolution on test to see if events are reduced.')
     def test_derive__a330(self):
         # A330 uses Configuration conditions.
         # Prepare our generated flap and slat arrays:
         #                 -  - 1+F   -  -  1   1*  2   2*  3  Full -
-        slat_array =     [0, 0, 16, 16, 0, 16, 20, 20, 23, 23, 23, 0]
-        flap_array =     [0, 0,  8,  8, 0,  0,  8, 14, 14, 22, 32, 0]
+        slat_array =     [0, 0, 16,  0, 0, 16, 20, 20, 23, 23, 23, 0]
+        flap_array =     [0, 0,  8,  0, 0,  0,  8, 14, 14, 22, 32, 0]
         flaperon_array = [0, 0,  5,  0, 0,  0, 10, 10, 10, 10, 10, 0]
         expected = ['Lever 0', 'Lever 0', 'Lever 1', 'Lever 0', 'Lever 0',
                     'Lever 1', 'Lever 2', 'Lever 2', 'Lever 3', 'Lever 3',

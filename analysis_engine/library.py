@@ -5819,7 +5819,7 @@ def runs_of_ones(bits, min_samples=None):
     return runs
 
 
-def slices_of_runs(array, min_samples=None):
+def slices_of_runs(array, min_samples=None, flat=False):
     '''
     Provides a list of slices of runs of each value in the array.
 
@@ -5832,6 +5832,8 @@ def slices_of_runs(array, min_samples=None):
 
     :param array: a numpy masked array or mapped array.
     :type array: np.ma.array
+    :param flat: yield a flat list of unordered slices
+    :type flat: bool
     '''
     for value in np.ma.sort(np.ma.unique(array)):
         if value is np.ma.masked:
@@ -5839,10 +5841,13 @@ def slices_of_runs(array, min_samples=None):
         if hasattr(array, 'values_mapping'):
             value = array.values_mapping[value]
         runs = runs_of_ones(array == value, min_samples=min_samples)
-        if min_samples and runs == []:
-            value = None
-
-        yield value, runs
+        if flat:
+            for run in runs:
+                yield run
+        else:
+            if min_samples and runs == []:
+                value = None
+            yield value, runs
 
 
 def shift_slice(this_slice, offset):

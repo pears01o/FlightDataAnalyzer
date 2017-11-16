@@ -25,6 +25,7 @@ from analysis_engine.library import (align,
                                      repair_mask,
                                      rate_of_change,
                                      runs_of_ones,
+                                     slices_of_runs,
                                      slices_remove_small_gaps,
                                      slices_remove_small_slices,
                                      straighten_headings,
@@ -130,18 +131,19 @@ def _segment_type_and_slice(speed_array, speed_frequency,
         if gog:
             gog_start_idx = start * gog.frequency
             gog_stop_idx = stop * gog.frequency
-            gog_samples = 120 * gog.frequency
-            gog_start = closest_unmasked_value(gog.array, gog_start_idx,
-                                               gog_start_idx - gog_samples,
-                                               gog_start_idx + gog_samples)
-            gog_stop = closest_unmasked_value(gog.array, gog_stop_idx,
-                                              gog_stop_idx - gog_samples,
-                                              gog_stop_idx + gog_samples)
-            if gog_start is not None and gog_stop is not None:
+            gog_window_samples = 120 * gog.frequency
+            gog_min_samples = 4 * gog.frequency
+            gog_start_slices = sorted(slices_of_runs(
+                gog.array[gog_start_idx:gog_start_idx + gog_window_samples],
+                min_samples=gog_min_samples, flat=True))
+            gog_stop_slices = sorted(slices_of_runs(
+                gog.array[gog_stop_idx - gog_window_samples:gog_stop_idx],
+                min_samples=gog_min_samples, flat=True))
+            if gog_start_slices and gog_stop_slices:
                 # Use Gear on Ground rather than rotor speed as rotors may be
                 # 90+% at beginning or end of segment.
-                slow_start = (gog_start.value == 'Ground')
-                slow_stop = (gog_stop.value == 'Ground')
+                slow_start = (gog.array[gog_start_slices[0].start] == 'Ground')
+                slow_stop = (gog.array[gog_stop_slices[-1].stop - 1] == 'Ground')
             temp = np.ma.array(gog.array[gog_start_idx:gog_stop_idx].data, mask=gog.array[gog_start_idx:gog_stop_idx].mask)
             gog_test = np.ma.masked_less(temp, 1.0)
             # We have seeen 12-second spurious gog='Air' signals during rotor rundown. Hence increased limit.

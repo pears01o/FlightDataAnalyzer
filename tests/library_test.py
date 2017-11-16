@@ -5535,6 +5535,14 @@ class TestSlicesOfRuns(unittest.TestCase):
         self.assertIsInstance(result, types.GeneratorType)
         self.assertEqual(list(result), expected)
 
+    def test__slices_of_runs__flat(self):
+        array = np.ma.repeat(range(0, 2), 5)
+        array[3:7] = np.ma.masked
+        result = slices_of_runs(array, flat=True)
+        expected = [slice(0, 3, None), slice(7, 10, None)]
+        self.assertIsInstance(result, types.GeneratorType)
+        self.assertEqual(list(result), expected)
+
 
 class TestShiftSlice(unittest.TestCase):
     def test_shift_slice(self):

@@ -1202,11 +1202,18 @@ class InitialClimb(FlightPhaseNode):
     def derive(self,
                takeoffs=S('Takeoff'),
                climb_starts=KTI('Climb Start'),
-               tocs=KTI('Top Of Climb')):
-
-        to_scan = [[t.stop_edge, 'takeoff'] for t in takeoffs] + \
-            [[c.index, 'climb'] for c in climb_starts]+ \
-            [[c.index, 'climb'] for c in tocs]
+               tocs=KTI('Top Of Climb'),
+               alt=P('Altitude STD')):
+        
+        # if max alt is above 1000 ft we don't need to consider the ToC
+        # point in our calculations
+        if alt and np.ma.max(alt.array) > 1000:
+            to_scan = [[t.stop_edge, 'takeoff'] for t in takeoffs] + \
+                [[c.index, 'climb'] for c in climb_starts]            
+        else:
+            to_scan = [[t.stop_edge, 'takeoff'] for t in takeoffs] + \
+                [[c.index, 'climb'] for c in climb_starts]+ \
+                [[c.index, 'climb'] for c in tocs]
         from operator import itemgetter
         to_scan = sorted(to_scan, key=itemgetter(0))
         for i in range(len(to_scan)-1):

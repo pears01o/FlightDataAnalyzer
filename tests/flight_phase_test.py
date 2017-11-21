@@ -1244,7 +1244,7 @@ class TestCruise(unittest.TestCase):
 class TestInitialClimb(unittest.TestCase):
 
     def test_can_operate(self):
-        expected = [('Takeoff', 'Climb Start', 'Top Of Climb')]
+        expected = [('Takeoff', 'Climb Start', 'Top Of Climb', 'Altitude STD')]
         opts = InitialClimb.get_operational_combinations()
         self.assertEqual(opts, expected)
 
@@ -1253,20 +1253,26 @@ class TestInitialClimb(unittest.TestCase):
         toff = buildsection('Takeoff', 10, 20)
         clb_start = build_kti('Climb Start', 30)
         toc = build_kti('Top Of Climb', 40)
-        ini_clb.derive(toff, clb_start, toc)
+        alt = P('Altitude STD', array=np.ma.arange(0, 20000, 20))
+        ini_clb.derive(toff, clb_start, toc, alt)
         self.assertEqual(len(ini_clb.get_slices()), 1)
         self.assertEqual(ini_clb.get_first().slice.start, 20)
         self.assertEqual(ini_clb.get_first().slice.stop, 30)
 
     def test_short_climb(self):
+        # in this case we don't want the phase to be created
+        # as if the max(alt) is above 1000 feet, that most likely
+        # means that we're missing or have masked some of the data during 
+        # takeoff and creating the phase in this case will result in 
+        # Initial Climb to be up to ToC point which is usually
+        # over 30.000ft raising invalid events        
         ini_clb = InitialClimb()
         toff = buildsection('Takeoff', 10, 20)
         clb_start = build_kti('Climb Start', None)
         toc = build_kti('Top Of Climb', 40)
-        ini_clb.derive(toff, clb_start, toc)
-        self.assertEqual(len(ini_clb.get_slices()), 1)
-        self.assertEqual(ini_clb.get_first().slice.start, 20)
-        self.assertEqual(ini_clb.get_first().slice.stop, 40)
+        alt = P('Altitude STD', array=np.ma.arange(0, 20000, 20))
+        ini_clb.derive(toff, clb_start, toc, alt)
+        self.assertEqual(len(ini_clb.get_slices()), 0)
 
     def test_initial_climb_for_helicopter_operation(self):
         # This test case is borne out of actual helicopter data.
@@ -1274,8 +1280,31 @@ class TestInitialClimb(unittest.TestCase):
         climbs = build_kti('Climb Start', 30)
         toc = build_kti('Top Of Climb', 40)
         ini_clb = InitialClimb()
-        ini_clb.derive(toffs, climbs, toc)
+        alt = P('Altitude STD', array=np.ma.arange(0, 20000, 20))
+        ini_clb.derive(toffs, climbs, toc, alt)
         self.assertEqual(len(ini_clb), 1)
+        
+    def test_max_alt_below_1000ft(self):
+        ini_clb = InitialClimb()
+        toff = buildsection('Takeoff', 10, 20)
+        clb_start = build_kti('Climb Start', 30)
+        toc = build_kti('Top Of Climb', 40)
+        alt = P('Altitude STD', array=np.ma.arange(0, 950, 5))
+        ini_clb.derive(toff, clb_start, toc, alt)
+        self.assertEqual(len(ini_clb.get_slices()), 1)
+        self.assertEqual(ini_clb.get_first().slice.start, 20)
+        self.assertEqual(ini_clb.get_first().slice.stop, 30)
+        
+    def test_no_alt_data_below_1000ft(self):
+        ini_clb = InitialClimb()
+        toff = buildsection('Takeoff', 10, 20)
+        clb_start = build_kti('Climb Start', 30)
+        toc = build_kti('Top Of Climb', 40)
+        alt = P('Altitude STD', array=np.ma.arange(1500, 17000, 10))
+        ini_clb.derive(toff, clb_start, toc, alt)
+        self.assertEqual(len(ini_clb.get_slices()), 1)
+        self.assertEqual(ini_clb.get_first().slice.start, 20)
+        self.assertEqual(ini_clb.get_first().slice.stop, 30)
 
 
 class TestInitialCruise(unittest.TestCase):

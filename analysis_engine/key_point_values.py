@@ -2642,10 +2642,10 @@ class AirspeedMinusMinimumAirspeedDuringGoAroundMin(KeyPointValueNode):
 
 class AirspeedMinusAirspeedSelectedFor3Sec500To20FtMax(KeyPointValueNode):
     '''
-    Difference between IAS and selected airspeed during approach between 
-    500 ft AAL and 20ft AAL.
+    Maximum difference between IAS and selected airspeed during approach
+    between 500 ft AAL and 20 ft AAL.
 
-    For aircraft with 'Airspeed Selected (FMS)', this paramater will be used
+    For aircraft with 'Airspeed Selected (FMS)', this parameter will be used
     instead of 'Airspeed Selected'.
     '''
 
@@ -2677,10 +2677,10 @@ class AirspeedMinusAirspeedSelectedFor3Sec500To20FtMax(KeyPointValueNode):
 
 class AirspeedMinusAirspeedSelectedFor3Sec500To20FtMin(KeyPointValueNode):
     '''
-    Difference between IAS and selected airspeed during approach between 
-    500 ft AAL and 20ft AAL.
+    Minimum difference between IAS and selected airspeed during approach
+    between 500 ft AAL and 20 ft AAL.
 
-    For aircraft with 'Airspeed Selected (FMS)', this paramater will be used
+    For aircraft with 'Airspeed Selected (FMS)', this parameter will be used
     instead of 'Airspeed Selected'.
     '''
 
@@ -2712,10 +2712,10 @@ class AirspeedMinusAirspeedSelectedFor3Sec500To20FtMin(KeyPointValueNode):
 
 class AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMax(KeyPointValueNode):
     '''
-    Difference between IAS and selected airspeed during approach for 3 sec 
-    between 1000 ft AAL and 500ft AAL.
+    Maximum difference between IAS and selected airspeed during approach
+    for 3 sec between 1000 ft AAL and 500 ft AAL.
 
-    For aircraft with 'Airspeed Selected (FMS)', this paramater will be used
+    For aircraft with 'Airspeed Selected (FMS)', this parameter will be used
     instead of 'Airspeed Selected'.
     '''
 
@@ -2747,10 +2747,10 @@ class AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMax(KeyPointValueNode):
 
 class AirspeedMinusAirspeedSelectedFor3Sec1000To500FtMin(KeyPointValueNode):
     '''
-    Difference between IAS and selected airspeed during approach for 3 sec 
-    between 1000 ft AAL and 500ft AAL.
+    Minimum difference between IAS and selected airspeed during approach
+    for 3 sec between 1000 ft AAL and 500 ft AAL.
 
-    For aircraft with 'Airspeed Selected (FMS)', this paramater will be used
+    For aircraft with 'Airspeed Selected (FMS)', this parameter will be used
     instead of 'Airspeed Selected'.
     '''
 

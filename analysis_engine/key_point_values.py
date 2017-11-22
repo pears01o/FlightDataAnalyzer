@@ -7533,16 +7533,16 @@ class ILSGlideslopeNotEstablishedHighestAltitude1000To200Ft(KeyPointValueNode):
     @classmethod
     def can_operate(cls, available, ac_type=A('Aircraft Type')):
         if ac_type and ac_type.value == 'helicopter':
-            return all_of(('Altitude AGL','ILS Glideslope'), available)
+            return all_of(('Altitude AGL','ILS Glideslope', 'ILS Localizer'), available)
         else:
-            return all_of(('Altitude AAL For Flight Phases', 'ILS Glideslope'), available)
+            return all_of(('Altitude AAL For Flight Phases', 'ILS Glideslope', 'ILS Localizer'), available)
         
     def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
                alt_agl=P('Altitude AGL'),
                ac_type=A('Aircraft Type'),
                approach=S('Approach'),
                ils_gs=P('ILS Glideslope'),
-               ils_loc_ests=S('ILS Localizer Established')):
+               ils_loc=P('ILS Localizer')):
         
         if ac_type and ac_type.value == 'helicopter':
             alt_bands = alt_agl.slices_from_to(1000, 200)
@@ -7552,25 +7552,22 @@ class ILSGlideslopeNotEstablishedHighestAltitude1000To200Ft(KeyPointValueNode):
         
         for approach_slice in approach_bands:
             ils_stop = None
-            for ils_loc_established_slice in ils_loc_ests.get_slices():
-                approach_localizer_establised = slices_and([approach_slice], [ils_loc_established_slice])
-                if len(approach_localizer_establised) > 0:
-                    ils_start = ils_established(ils_gs.array, approach_localizer_establised[0], ils_gs.frequency)
-                    if ils_start:
-                        if ils_start == approach_localizer_establised[0].start:
-                            for ils_index in range(ils_start, int(ils_loc_established_slice.stop)+1):
-                                if abs(ils_gs.array[ils_index]) > 0.5 or ils_index == ils_loc_established_slice.stop:
-                                    if ac_type and ac_type.value == 'helicopter':
-                                        ils_stop = alt_agl.array[ils_index]
-                                        self.create_kpv(ils_index, ils_stop)
-                                    else:
-                                        ils_stop = alt_aal.array[ils_index]
-                                        self.create_kpv(ils_index, ils_stop)
-                                    break
-                        elif ils_start != approach_localizer_establised[0].start:
-                            ils_stop = approach_slice.start
-                            self.create_kpv(ils_stop, 1000)
-                            
+            if ils_established(ils_loc.array, approach_slice, ils_loc.frequency):
+                ils_start = ils_established(ils_gs.array, approach_slice, ils_gs.frequency)
+                if ils_start:
+                    if ils_start == approach_slice.start:
+                        for ils_index in range(ils_start, int(approach_slice.stop)+1):
+                            if abs(ils_gs.array[ils_index]) > 0.5 or ils_index == approach_slice.stop:
+                                if ac_type and ac_type.value == 'helicopter':
+                                    ils_stop = alt_agl.array[ils_index]
+                                    self.create_kpv(ils_index, ils_stop)
+                                else:
+                                    ils_stop = alt_aal.array[ils_index]
+                                    self.create_kpv(ils_index, ils_stop)
+                                break
+                    elif ils_start != approach_slice.start:
+                        ils_stop = approach_slice.start
+                        self.create_kpv(ils_stop, 1000)
             if ils_stop is None:
                 self.create_kpv(approach_slice.start, 1000)
 
@@ -7583,20 +7580,20 @@ class ILSGlideslopeNotEstablishedHighestAltitude500To200Ft(KeyPointValueNode):
     
     name = 'ILS Glideslope Not Established Highest Altitude 500 To 200 Ft'
     units = ut.FT
-    
+
     @classmethod
     def can_operate(cls, available, ac_type=A('Aircraft Type')):
         if ac_type and ac_type.value == 'helicopter':
-            return all_of(('Altitude AGL','ILS Glideslope'), available)
+            return all_of(('Altitude AGL','ILS Glideslope', 'ILS Localizer'), available)
         else:
-            return all_of(('Altitude AAL For Flight Phases', 'ILS Glideslope'), available)
+            return all_of(('Altitude AAL For Flight Phases', 'ILS Glideslope', 'ILS Localizer'), available)
         
     def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
                alt_agl=P('Altitude AGL'),
                ac_type=A('Aircraft Type'),
                approach=S('Approach'),
                ils_gs=P('ILS Glideslope'),
-               ils_loc_ests=S('ILS Localizer Established')):
+               ils_loc=P('ILS Localizer')):
         
         if ac_type and ac_type.value == 'helicopter':
             alt_bands = alt_agl.slices_from_to(500, 200)
@@ -7606,25 +7603,22 @@ class ILSGlideslopeNotEstablishedHighestAltitude500To200Ft(KeyPointValueNode):
             
         for approach_slice in approach_bands:
             ils_stop = None
-            for ils_loc_established_slice in ils_loc_ests.get_slices():
-                approach_localizer_establised = slices_and([approach_slice], [ils_loc_established_slice])
-                if len(approach_localizer_establised) > 0:
-                    ils_start = ils_established(ils_gs.array, approach_localizer_establised[0], ils_gs.frequency)
-                    if ils_start:
-                        if ils_start == approach_localizer_establised[0].start:
-                            for ils_index in range(ils_start, int(ils_loc_established_slice.stop)+1):
-                                if abs(ils_gs.array[ils_index]) > 0.5 or ils_index == ils_loc_established_slice.stop:
-                                    if ac_type and ac_type.value == 'helicopter':
-                                        ils_stop = alt_agl.array[ils_index]
-                                        self.create_kpv(ils_index, ils_stop)
-                                    else:
-                                        ils_stop = alt_aal.array[ils_index]
-                                        self.create_kpv(ils_index, ils_stop)
-                                    break
-                        elif ils_start != approach_localizer_establised[0].start:
-                            ils_stop = approach_slice.start
-                            self.create_kpv(ils_stop, 500)
-                            
+            if ils_established(ils_loc.array, approach_slice, ils_loc.frequency):
+                ils_start = ils_established(ils_gs.array, approach_slice, ils_gs.frequency)
+                if ils_start:
+                    if ils_start == approach_slice.start:
+                        for ils_index in range(ils_start, int(approach_slice.stop)+1):
+                            if abs(ils_gs.array[ils_index]) > 0.5 or ils_index == approach_slice.stop:
+                                if ac_type and ac_type.value == 'helicopter':
+                                    ils_stop = alt_agl.array[ils_index]
+                                    self.create_kpv(ils_index, ils_stop)
+                                else:
+                                    ils_stop = alt_aal.array[ils_index]
+                                    self.create_kpv(ils_index, ils_stop)
+                                break
+                    elif ils_start != approach_slice.start:
+                        ils_stop = approach_slice.start
+                        self.create_kpv(ils_stop, 500)
             if ils_stop is None:
                 self.create_kpv(approach_slice.start, 500)
 
@@ -7674,7 +7668,6 @@ class ILSLocalizerNotEstablishedHighestAltitude1000To200Ft(KeyPointValueNode):
                 elif ils_start != approach_slice.start:
                     ils_stop = approach_slice.start
                     self.create_kpv(ils_stop, 1000)
-                            
             if ils_stop is None:
                 self.create_kpv(approach_slice.start, 1000)
 
@@ -7699,7 +7692,8 @@ class ILSLocalizerNotEstablishedHighestAltitude500To200Ft(KeyPointValueNode):
                alt_agl=P('Altitude AGL'),
                ac_type=A('Aircraft Type'),
                approach=S('Approach'),
-               ils_loc=P('ILS Localizer')):
+               ils_loc=P('ILS Localizer'),
+               ils_loc_ests=S('ILS Localizer Established')):
     
         if ac_type and ac_type.value == 'helicopter':
             alt_bands = alt_agl.slices_from_to(500, 200)
@@ -7724,7 +7718,6 @@ class ILSLocalizerNotEstablishedHighestAltitude500To200Ft(KeyPointValueNode):
                 elif ils_start != approach_slice.start:
                     ils_stop = approach_slice.start
                     self.create_kpv(ils_stop, 500)
-                            
             if ils_stop is None:
                 self.create_kpv(approach_slice.start, 500)
 

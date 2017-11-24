@@ -1257,7 +1257,7 @@ class AltitudeQNH(DerivedParameterNode):
 
     @classmethod
     def can_operate(cls, available):
-        baro = any_of(('Baro Correction (Capt)', 'Baro Correction (FO)'
+        baro = any_of(('Baro Correction (Capt)', 'Baro Correction (FO)',
                        'Baro Correction'), available)
         return baro and 'Altitude STD' in available
 

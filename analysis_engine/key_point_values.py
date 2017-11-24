@@ -13047,6 +13047,13 @@ class FlareDuration20FtToTouchdown(KeyPointValueNode):
     '''
     This is the time from the last time the aircraft passed 
     through 20ft AAL to the moment of touchdown.
+    
+    The Altitude Radio reference is included to make sure this KPV is not
+    computed if there is no radio height reference. With small turboprops, we
+    have seen 40ft pressure altitude difference between the point of
+    touchdown and the landing roll, so trying to measure this 20ft to
+    touchdown difference is impractical.
+    
     '''
 
     can_operate = aeroplane_only
@@ -13058,14 +13065,6 @@ class FlareDuration20FtToTouchdown(KeyPointValueNode):
                tdowns=KTI('Touchdown'),
                lands=S('Landing'),
                ralt=P('Altitude Radio')):
-
-        '''
-        The Altitude Radio reference is included to make sure this KPV is not
-        computed if there is no radio height reference. With small turboprops, we
-        have seen 40ft pressure altitude difference between the point of
-        touchdown and the landing roll, so trying to measure this 20ft to
-        touchdown difference is impractical.
-        '''
 
         for tdown in tdowns:
             this_landing = lands.get_surrounding(tdown.index)

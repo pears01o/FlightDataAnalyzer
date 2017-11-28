@@ -324,14 +324,22 @@ class APURunning(MultistateDerivedParameterNode):
 
     def derive(self, apu_n1=P('APU N1'),
                apu_voltage=P('APU Generator AC Voltage'),
-               apu_bleed_valve_open=M('APU Bleed Valve Open')):
-        if apu_n1:
+               apu_bleed_valve_open=M('APU Bleed Valve Open'),
+               apu_fuel_flow=P('APU Fuel Flow'),
+               apu_on=M('APU On')):
+        if apu_n1 and apu_n1.array.any():
             self.array = np.ma.where(apu_n1.array > 50.0, 'Running', '-')
         elif apu_voltage:
             # XXX: APU Generator AC Voltage > 100 volts.
             self.array = np.ma.where(apu_voltage.array > 100.0, 'Running', '-')
-        else:
+        elif apu_bleed_valve_open:
             self.array = apu_bleed_valve_open.array == 'Open'
+        elif apu_fuel_flow:
+            #Added for LFL A330-D1033RR04CCX002
+            fuel_flow_threshold = max(apu_fuel_flow.array.data) / 3.0
+            self.array = np.ma.where(apu_fuel_flow.array > fuel_flow_threshold, 'Running', '-')
+        else:
+            self.array = np.ma.where(apu_on.array == 1, 'Running', '-')
 
 
 class ASEEngaged(MultistateDerivedParameterNode):

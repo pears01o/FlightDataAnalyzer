@@ -508,11 +508,13 @@ class TestAPURunning(unittest.TestCase):
         self.assertTrue(('APU N1',) in opts)
         self.assertTrue(('APU Generator AC Voltage',) in opts)
         self.assertTrue(('APU Bleed Valve Open',) in opts)
+        self.assertTrue(('APU Fuel Flow',) in opts)
+        self.assertTrue(('APU On',) in opts)
 
     def test_derive_apu_n1(self):
         apu_n1 = P('APU N1', array=np.ma.array([0, 40, 80, 100, 70, 30, 0.0]))
         run = APURunning()
-        run.derive(apu_n1, None, None)
+        run.derive(apu_n1, None, None, None, None)
         expected = ['-'] * 2 + ['Running'] * 3 + ['-'] * 2
         np.testing.assert_array_equal(run.array, expected)
 
@@ -520,7 +522,7 @@ class TestAPURunning(unittest.TestCase):
         apu_voltage = P('APU Generator AC Voltage',
                         array=np.ma.array([0, 115, 115, 115, 114, 0, 0]))
         run = APURunning()
-        run.derive(None, apu_voltage, None)
+        run.derive(None, apu_voltage, None, None, None)
         expected = ['-'] + ['Running'] * 4 + ['-'] * 2
         np.testing.assert_array_equal(run.array, expected)
 
@@ -530,8 +532,26 @@ class TestAPURunning(unittest.TestCase):
                                                    mask=[False] * 4 + [True]),
                                  values_mapping={0: '-', 1: 'Open'})
         run = APURunning()
-        run.derive(None, None, apu_bleed_valve_open)
+        run.derive(None, None, apu_bleed_valve_open, None, None)
         expected = ['-'] + ['Running'] * 2 + ['-'] * 2
+        np.testing.assert_array_equal(run.array, expected)
+        
+    def test_derive_apu_fuel_flow(self):
+        apu_fuel_flow = P('APU Fuel Flow',
+                        array=np.ma.array([0, 120, 120, 120, 116, 112, 112, 112, 0, 0, 0, 120, 120, 120, 0, 0]))
+        run = APURunning()
+        run.derive(None, None, None, apu_fuel_flow, None)
+        expected = ['-'] + ['Running'] * 7 + ['-'] * 3 + ['Running'] * 3 + ['-'] * 2
+        np.testing.assert_array_equal(run.array, expected)    
+        
+    def test_derive_apu_on(self):
+        apu_on = M('APU On',
+                   array=np.ma.array([0,0,1,1,1,0,0,0,0,1,1,1,0]),
+                   mask=False,
+                   values_mapping={0: '-', 1:'Open'})
+        run = APURunning()
+        run.derive(None, None, None, None, apu_on)
+        expected = ['-']*2 + ['Running']*3 + ['-']*4 + ['Running']*3 + ['-']
         np.testing.assert_array_equal(run.array, expected)
 
 

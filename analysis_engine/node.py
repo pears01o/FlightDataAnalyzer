@@ -2004,6 +2004,9 @@ class KeyPointValueNode(FormattedNameNode):
                 index += start
                 break
             index -= duration
+        if kwargs.has_key('mode') and kwargs['mode'] == 'compass':
+            value = value%360.0
+            kwargs.pop('mode')
         self.create_kpv(index, value, **kwargs)
 
     def create_kpv_between(self, array, index_1, index_2, function):

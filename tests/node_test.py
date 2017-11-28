@@ -9,7 +9,7 @@ from datetime import datetime
 from inspect import ArgSpec
 from random import shuffle
 
-from analysis_engine.library import min_value, max_value
+from analysis_engine.library import min_value, max_value, average_value
 from analysis_engine.node import (
     ApproachItem,
     ApproachNode,
@@ -1354,6 +1354,10 @@ class TestKeyPointValueNode(unittest.TestCase):
                         [slice(1, 2), slice(3, 4), slice(5, 6)], max_value)
         self.assertEqual(list(knode)[-1],
                          KeyPointValue(index=5, value=20, name='Kpv'))
+        # test compass mode
+        knode.create_kpv_from_slices(array+500.0, [slice(5,10)], average_value, mode='compass')
+        self.assertEqual(list(knode)[-1],
+                         KeyPointValue(index=7, value=162, name='Kpv'))
 
     def test_create_kpvs_from_slice_durations_basic(self):
         # Basic

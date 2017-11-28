@@ -9074,10 +9074,10 @@ class EngTorqueOverThresholdDuration(KeyPointValueNode):
         return base and heli_additions
 
     def derive(self,
-               eng1=M('Eng (1) Torque'),
-               eng2=M('Eng (2) Torque'),
-               eng3=M('Eng (3) Torque'),
-               eng4=M('Eng (4) Torque'),
+               eng1=P('Eng (1) Torque'),
+               eng2=P('Eng (2) Torque'),
+               eng3=P('Eng (3) Torque'),
+               eng4=P('Eng (4) Torque'),
                takeoff=S('Takeoff 5 Min Rating'),
                mcp=S('Maximum Continuous Power'),
                go_around=S('Go Around 5 Min Rating'),

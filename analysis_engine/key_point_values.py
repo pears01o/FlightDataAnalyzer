@@ -7556,7 +7556,7 @@ class ILSGlideslopeNotEstablishedHighestAltitude1000To200Ft(KeyPointValueNode):
                 ils_start = ils_established(ils_gs.array, approach_slice, ils_gs.frequency)
                 if ils_start:
                     if ils_start == approach_slice.start:
-                        for ils_index in range(ils_start, int(approach_slice.stop)+1):
+                        for ils_index in range(int(ils_start), int(approach_slice.stop)+1):
                             if abs(ils_gs.array[ils_index]) > 0.5 or ils_index == approach_slice.stop:
                                 if ac_type and ac_type.value == 'helicopter':
                                     ils_stop = alt_agl.array[ils_index]
@@ -7607,7 +7607,7 @@ class ILSGlideslopeNotEstablishedHighestAltitude500To200Ft(KeyPointValueNode):
                 ils_start = ils_established(ils_gs.array, approach_slice, ils_gs.frequency)
                 if ils_start:
                     if ils_start == approach_slice.start:
-                        for ils_index in range(ils_start, int(approach_slice.stop)+1):
+                        for ils_index in range(int(ils_start), int(approach_slice.stop)+1):
                             if abs(ils_gs.array[ils_index]) > 0.5 or ils_index == approach_slice.stop:
                                 if ac_type and ac_type.value == 'helicopter':
                                     ils_stop = alt_agl.array[ils_index]
@@ -7656,7 +7656,7 @@ class ILSLocalizerNotEstablishedHighestAltitude1000To200Ft(KeyPointValueNode):
             ils_start = ils_established(ils_loc.array, approach_slice, ils_loc.frequency)
             if ils_start:
                 if ils_start == approach_slice.start:
-                    for ils_index in range(ils_start, int(approach_slice.stop)+1):
+                    for ils_index in range(int(ils_start), int(approach_slice.stop)+1):
                         if abs(ils_loc.array[ils_index]) > 0.5 or ils_index == approach_slice.stop:
                             if ac_type and ac_type.value == 'helicopter':
                                 ils_stop = alt_agl.array[ils_index]
@@ -7706,7 +7706,7 @@ class ILSLocalizerNotEstablishedHighestAltitude500To200Ft(KeyPointValueNode):
             ils_start = ils_established(ils_loc.array, approach_slice, ils_loc.frequency)
             if ils_start:
                 if ils_start == approach_slice.start:
-                    for ils_index in range(ils_start, int(approach_slice.stop)+1):
+                    for ils_index in range(int(ils_start), int(approach_slice.stop)+1):
                         if abs(ils_loc.array[ils_index]) > 0.5 or ils_index == approach_slice.stop:
                             if ac_type and ac_type.value == 'helicopter':
                                 ils_stop = alt_agl.array[ils_index]

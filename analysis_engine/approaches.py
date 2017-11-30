@@ -432,9 +432,12 @@ class ApproachInformation(ApproachNode):
                 # to test this had the touchdown a couple of seconds outside the approach slice 
                 if is_index_within_slice(touchdown.index, slice(_slice.start, _slice.stop+5*alt.frequency)):
                     if offshore and offshore.array[touchdown.index] == 'Offshore' and tkoff.start < touchdown.index:
-                        if offshore.array[tkoff.start] == 'Offshore':
+                        if not distance_land:
+                            if offshore.array[tkoff.start] == 'Offshore':
+                                approach_type = 'SHUTTLING'
+                        elif offshore.array[tkoff.start] == 'Offshore' and tkoff.start < len(distance_land.array) and distance_land.array[tkoff.start] <= 40:
                             approach_type = 'SHUTTLING'
-                        else:
+                        elif height_from_rig:
                             Vy = 80.0 # Type dependent?
                 
                             # conditions_defs is a dict of condition name : expression to evaluate pairs, listed this way for clarity

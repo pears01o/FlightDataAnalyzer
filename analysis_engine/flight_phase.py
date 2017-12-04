@@ -1605,14 +1605,22 @@ class RejectedTakeoff(FlightPhaseNode):
     Note: We cannot use Liftoff, Taxi Out or Airborne in this computation in case
     the rejected takeoff was followed by a taxi back to stand.
     '''
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Eng (*) All Running', 'Acceleration Longitudinal Offset Removed', 'Grounded'), available)    
 
     def derive(self, accel_lon=P('Acceleration Longitudinal Offset Removed'),
                eng_running=M('Eng (*) All Running'),
-               groundeds=S('Grounded')):
+               groundeds=S('Grounded'),
+               takeoffs=S('Takeoff'),
+               eng_n1=P('Eng (*) N1 Max')):
         
         # We need all engines running to be a realistic attempt to get airborne
         runnings = runs_of_ones(eng_running.array=='Running')
         running_on_grounds = slices_and(runnings, groundeds.get_slices())
+        if takeoffs is not None:
+            running_on_grounds = slices_and_not(running_on_grounds, takeoffs.get_slices())
         if len(running_on_grounds) > 1:
             # The final slice will be the landing and taxi in, so we can skip this
             to_test = running_on_grounds[:-1]
@@ -1621,21 +1629,29 @@ class RejectedTakeoff(FlightPhaseNode):
             to_test = running_on_grounds
         
         for running_on_ground in to_test:
-            to_scan = accel_lon.array[running_on_ground]
-            peaks = np.ma.clump_unmasked(np.ma.masked_less(to_scan, TAKEOFF_ACCELERATION_THRESHOLD))
-            trough_index = 0
-            for peak in peaks:
-                if peak.start < trough_index:
-                    continue
-                # Look for the deceleration characteristic of a rejected takeoff.
-                trough_index = index_at_value(to_scan, -TAKEOFF_ACCELERATION_THRESHOLD/2.0, _slice=slice(peak.stop, None))
-                # trough_index will be None for every takeoff. Then, if it looks like a rejection, 
-                # we check the two accelerations happened fairly close together.
-                if trough_index and \
-                   (trough_index - peak.start)/accel_lon.hz < 60.0:
-                    self.create_phase(slice(peak.start + running_on_ground.start,
-                                            trough_index + running_on_ground.start))
-
+            accel_lon_ground = accel_lon.array[running_on_ground]
+            accel_lon_slices = runs_of_ones(accel_lon_ground >= TAKEOFF_ACCELERATION_THRESHOLD)
+            if eng_n1 is not None and takeoffs is not None:
+                eng_n1_slices = runs_of_ones(eng_n1.array[running_on_ground] > 50)
+                combined_slices = slices_and(eng_n1_slices, accel_lon_slices)
+                self.create_phases(shift_slices(combined_slices, running_on_ground.start))
+            else:
+                trough_index = 0
+                for peak in accel_lon_slices:
+                    if peak.start < trough_index:
+                        continue
+                    # Look for the deceleration characteristic of a rejected takeoff.
+                    trough_index = index_at_value(accel_lon_ground, -TAKEOFF_ACCELERATION_THRESHOLD/2.0, _slice=slice(peak.stop, None))
+                    # trough_index will be None for every takeoff. Then, if it looks like a rejection, 
+                    # we check the two accelerations happened fairly close together.
+                    if trough_index and \
+                                   (trough_index - peak.start)/accel_lon.hz < 60.0:
+                        self.create_phase(slice(peak.start + running_on_ground.start,
+                                                trough_index + running_on_ground.start))
+                    
+                   
+                
+               
 
 class RotorsTurning(FlightPhaseNode):
     '''

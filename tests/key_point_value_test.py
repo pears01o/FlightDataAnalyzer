@@ -14702,7 +14702,7 @@ class TestGroundspeedDuringRejectedTakeoffMax(unittest.TestCase):
                             values_mapping={0: 'Not Running', 1: 'Running'})        
         # Create RTO here to ensure it operates as expected
         rto = RejectedTakeoff()
-        rto.get_derived((accel, eng_running, gnds))
+        rto.get_derived((accel, eng_running, gnds, None, None))
         # The data passes 0.1g on the 6th and 72nd samples of the sine wave.
         # With the 24 sample offset and 4Hz sample rate this gives an RTO
         # section thus:

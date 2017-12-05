@@ -19233,3 +19233,86 @@ class EngTakeoffFlexTemp(KeyPointValueNode):
                 value = (flex_1.array[index] + flex_2.array[index]) / 2.0
                 self.create_kpv(index, value)
 
+
+class EngNpMaxDuringTakeoff(KeyPointValueNode):
+    '''
+    The maximum value of Eng (*) Np Max during Takeoff 5 Min Rating phase
+    maintained for the specified duration
+    '''
+    
+    NAME_FORMAT = 'Eng (*) Np Max During Takeoff %(seconds)d Sec'
+    NAME_VALUES = {'seconds': [5, 20]}
+    units =ut.PERCENT
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Takeoff 5 Min Rating', 'Eng (*) Np Max'), available)
+    
+    def derive(self, takeoffs=S('Takeoff 5 Min Rating'),
+               eng_np_max=P('Eng (*) Np Max')):
+        
+        for duration in self.NAME_VALUES['seconds']:
+            for takeoff in takeoffs.get_slices():
+                array = eng_np_max.array[takeoff]
+                if eng_np_max.frequency >= 1.0:
+                    array = second_window(eng_np_max.array[takeoff], eng_np_max.frequency, duration, extend_window=True)
+                index, value = max_value(array)
+                if index is not None and value is not None:
+                    self.create_kpv(index + takeoff.start, value, seconds=duration)
+
+
+class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
+    '''
+    The maximum value of Eng (*) Torque Max during Takeoff 5 Min Rating phase
+    maintained for the specified duration
+    '''
+    
+    NAME_FORMAT = 'Eng (*) Torque Max During Takeoff %(durations)s'
+    NAME_VALUES = {'durations': ['10 Sec', '20 Sec', '5 Min']}
+    units = ut.PERCENT
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Eng (*) Torque Max', 'Takeoff 5 Min Rating'), available)
+    
+    def derive(self, eng_torq_max=P('Eng (*) Torque Max'),
+               takeoffs=S('Takeoff 5 Min Rating')):
+        
+        seconds = np.array([10, 20, 300])
+        for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
+            for takeoff in takeoffs.get_slices():
+                array = eng_torq_max.array[takeoff]
+                if eng_torq_max.frequency >= 1.0:
+                    array = second_window(eng_torq_max.array[takeoff], eng_torq_max.frequency, samples, extend_window=True)
+                index, value = max_value(array)
+                if index is not None and value is not None:
+                    self.create_kpv(index + takeoff.start, value, durations=duration)
+
+
+class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
+    '''
+    The maximum value of Eng (*) Torque Max during Maximum Continous Power phase 
+    maintained for the specified duration
+    '''
+    
+    NAME_FORMAT = 'Eng (*) Torque Max During Maximum Continuous Power %(durations)s'
+    NAME_VALUES = {'durations': ['10 Sec', '20 Sec', '5 Min', '10 Min']}
+    units = ut.PERCENT
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Eng (*) Torque Max', 'Maximum Continuous Power'), available)
+    
+    def derive(self,
+               eng_torq_max=P('Eng (*) Torque Max'),
+               ratings=S('Maximum Continuous Power')):
+        
+        seconds = np.array([10, 20, 300, 600])
+        for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
+            for mcp in ratings.get_slices():
+                array = eng_torq_max.array[mcp]
+                if eng_torq_max.frequency >= 1.0:
+                    array = second_window(eng_torq_max.array[mcp], eng_torq_max.frequency, samples, extend_window=True)
+                index, value = max_value(array)
+                if index is not None and value is not None:
+                    self.create_kpv(index + mcp.start, value, durations=duration)

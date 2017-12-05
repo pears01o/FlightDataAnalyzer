@@ -348,6 +348,7 @@ from analysis_engine.key_point_values import (
     EngNpFor5SecDuringTakeoff5MinRatingMax,
     EngNpDuringTaxiMax,
     EngNpOverThresholdDuration,
+    EngNpMaxDuringTakeoff,
     EngVibNpMax,
     EngOilPressFor60SecDuringCruiseMax,
     EngOilPressMax,
@@ -385,6 +386,8 @@ from analysis_engine.key_point_values import (
     EngTorqueFor5SecDuringTakeoff5MinRatingMax,
     EngTorqueOverThresholdDuration,
     EngTorqueLimitExceedanceWithOneEngineInoperativeDuration,
+    EngTorqueMaxDuringMaximumContinuousPower,
+    EngTorqueMaxDuringTakeoff,
     EngTorqueWhileDescendingMax,
     EngTorqueWithOneEngineInoperativeMax,
     EngTorque7FtToTouchdownMax,
@@ -9713,6 +9716,113 @@ class TestEngNpOverThresholdDuration(unittest.TestCase):
         )
 
         self.assertEqual(node, expected)
+        
+        
+class TestEngNpMaxDuringTakeoff(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = EngNpMaxDuringTakeoff
+        
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(('Takeoff 5 Min Rating', 'Eng (*) Np Max')))
+        
+    def test_derive(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 40)
+        eng_np_max=P('Eng (*) Np Max', array=np.ma.array([80, 81, 82, 83, 83, 82, 83, 81, 82, 83] + 
+                                                         [85, 90, 92, 95, 96, 99] + 
+                                                         [99, 100, 99, 99, 99, 100, 99, 98] * 3 + 
+                                                         [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(takeoffs, eng_np_max)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=15, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
+            KeyPointValue(index=15, value=98, name='Eng (*) Np Max During Takeoff 20 Sec'),
+        ]))
+        
+    def test_derive_short_takeoff(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 21)
+        eng_np_max=P('Eng (*) Np Max', array=np.ma.array([80, 81, 82, 83, 83, 82, 83, 81, 82, 83] + 
+                                                             [85, 90, 92, 95, 96, 99] + 
+                                                             [99, 100, 99, 99, 99, 100, 99, 98, 98] * 3 + 
+                                                             [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(takeoffs, eng_np_max)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=14, value=96, name='Eng (*) Np Max During Takeoff 5 Sec'),
+            ]))
+    
+    def test_derive_masked_data(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 40)
+        eng_np_max=P('Eng (*) Np Max', array=np.ma.array([80, 81, 82, 83, 83, 82, 83, 81, 82, 83] + 
+                                                             [85, 90, 92, 95, 96, 99] + 
+                                                             [99, 100, 99, 99, 99, 100, 99, 98] * 3 + 
+                                                             [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        eng_np_max.array[15:30] = np.ma.masked
+        
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(takeoffs, eng_np_max)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=30, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
+            ]))
+        
+    def test_derive_all_data_masked(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 40)
+        eng_np_max=P('Eng (*) Np Max', array=np.ma.array([80, 81, 82, 83, 83, 82, 83, 81, 82, 83] + 
+                                                             [85, 90, 92, 95, 96, 99] + 
+                                                             [99, 100, 99, 99, 99, 100, 99, 98] * 3 + 
+                                                             [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        eng_np_max.array[10:40] = np.ma.masked
+        
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(takeoffs, eng_np_max)
+        self.assertEqual(node, KPV(name=name, items=[]))    
+    
+    def test_derive_not_enough_high_samples(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 20)
+        eng_np_max=P('Eng (*) Np Max', array=np.ma.array([80, 81, 82, 83, 83, 82, 83, 
+                                                          81, 82, 83, 85, 90, 91, 92, 
+                                                          99, 86, 82, 80, 80, 81, 82]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(takeoffs, eng_np_max)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=10, value=85, name='Eng (*) Np Max During Takeoff 5 Sec'),
+            ]))        
+    
+    def test_derive_hz_2(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 55)
+        eng_np_max=P('Eng (*) Np Max', 
+                     frequency=2,
+                     array=np.ma.array([80, 81, 82, 83, 83, 82, 83, 81, 82, 83] + 
+                                       [85, 90, 92, 95, 96, 99, 98, 98] + 
+                                       [99, 100, 99, 99, 99, 100, 99, 98] * 4 + 
+                                       [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(takeoffs, eng_np_max)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=15, value=98, name='Eng (*) Np Max During Takeoff 5 Sec'),
+                KeyPointValue(index=12, value=92, name='Eng (*) Np Max During Takeoff 20 Sec'),
+            ]))        
+    
+    def test_derive_same_values_returned(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 40)
+        eng_np_max=P('Eng (*) Np Max', array=np.ma.array([80, 81, 82, 83, 83, 82, 83, 81, 82, 83] + 
+                                                             [85, 90, 92, 95, 96, 99] + 
+                                                             [99, 100, 99, 99, 99, 100, 99, 99] * 3 + 
+                                                             [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(takeoffs, eng_np_max)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=15, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
+                KeyPointValue(index=15, value=99, name='Eng (*) Np Max During Takeoff 20 Sec'),
+            ]))        
 
 
 class TestEngTorqueOverThresholdDuration(unittest.TestCase):
@@ -9907,6 +10017,174 @@ class TestEngTorqueLimitExceedanceWithOneEngineInoperativeDuration(unittest.Test
         )
 
         self.assertEqual(node, expected)
+
+
+class TestEngTorqueMaxDuringMaximumContinuousPower(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = EngTorqueMaxDuringMaximumContinuousPower
+        
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(('Eng (*) Torque Max', 'Maximum Continuous Power')))
+    
+    def test_derive(self):
+        mcp=buildsection('Maximum Continuous Power', 20, 700)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                  95, 92, 93, 89, 87, 85, 82, 83, 80, 79] + 
+                                                                 [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 70 + 
+                                                                 [75, 72, 68, 63, 58, 40, 30, 20, 10, 0]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=20, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 10 Sec'),
+                KeyPointValue(index=20, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 20 Sec'),
+                KeyPointValue(index=20, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 5 Min'),
+                KeyPointValue(index=20, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 10 Min'),
+            ]))
+        
+    def test_derive_short_mcp(self):
+        mcp=buildsection('Maximum Continuous Power', 20, 400)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                  95, 92, 93, 89, 87, 85, 82, 83, 80, 79] + 
+                                                                 [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 70 + 
+                                                                 [75, 72, 68, 63, 58, 40, 30, 20, 10, 0]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=20, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 10 Sec'),
+                KeyPointValue(index=20, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 20 Sec'),
+                KeyPointValue(index=20, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 5 Min'),
+            ]))        
+    
+    def test_derive_masked_data(self):
+        mcp=buildsection('Maximum Continuous Power', 20, 700)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                  95, 92, 93, 89, 87, 85, 82, 83, 80, 79] + 
+                                                                 [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 70 + 
+                                                                 [75, 72, 68, 63, 58, 40, 30, 20, 10, 0]))
+        eng_torque_max.array[60:] =np.ma.masked
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=20, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 10 Sec'),
+                KeyPointValue(index=20, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 20 Sec'),
+            ]))        
+    
+    def test_derive_all_data_masked(self):
+        mcp=buildsection('Maximum Continuous Power', 20, 700)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array(([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                   95, 92, 93, 89, 87, 85, 82, 83, 80, 79] + 
+                                                                  [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 70 + 
+                                                                  [75, 72, 68, 63, 58, 40, 30, 20, 10, 0]), mask=True))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[]))        
+    
+    def test_derive_hz_2(self):
+        mcp=buildsection('Maximum Continuous Power', 40, 1400)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                  95, 92, 93, 89, 87, 85, 82, 83, 80, 79] * 2  + 
+                                                                 [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 140 + 
+                                                                 [75, 72, 68, 63, 58, 40, 30, 20, 10, 0] * 2))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=40, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 10 Sec'),
+                KeyPointValue(index=40, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 20 Sec'),
+                KeyPointValue(index=40, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 5 Min'),
+                KeyPointValue(index=40, value=80, name='Eng (*) Torque Max During Maximum Continuous Power 10 Min'),
+            ]))        
+
+
+class TestEngTorqueMaxDuringTakeoff(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = EngTorqueMaxDuringTakeoff
+        
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(('Eng (*) Torque Max', 'Takeoff 5 Min Rating')))
+        
+    def test_derive(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 360)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                 [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                 [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=10, value=99, name='Eng (*) Torque Max During Takeoff 10 Sec'),
+            KeyPointValue(index=10, value=99, name='Eng (*) Torque Max During Takeoff 20 Sec'),
+            KeyPointValue(index=10, value=99, name='Eng (*) Torque Max During Takeoff 5 Min'),
+        ]))
+        
+    def test_derive_short_takeoff(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 25)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                 [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                 [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=10, value=99, name='Eng (*) Torque Max During Takeoff 10 Sec'),
+        ]))            
+        
+    def test_derive_masked_data(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 360)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                     [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                     [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        eng_torque_max.array[50:360] = np.ma.masked
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=10, value=99, name='Eng (*) Torque Max During Takeoff 10 Sec'),
+                KeyPointValue(index=10, value=99, name='Eng (*) Torque Max During Takeoff 20 Sec'),
+            ]))        
+        
+    def test_derive_all_data_masked(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 360)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array(([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                     [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                     [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]), mask=True))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[]))
+    
+    def test_derive_not_enough_high_samples(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 400)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 98] * 2 + 
+                                                                 [95, 94, 92, 89, 86, 82, 80, 80, 81, 82] * 40))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=14, value=85, name='Eng (*) Torque Max During Takeoff 10 Sec'),
+                KeyPointValue(index=10, value=80, name='Eng (*) Torque Max During Takeoff 20 Sec'),
+                KeyPointValue(index=10, value=80, name='Eng (*) Torque Max During Takeoff 5 Min'),
+            ]))        
+        
+    def test_derive_hz_2(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 720)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] * 2 + 
+                                                                     [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 70 + 
+                                                                     [95, 94, 92, 89, 86, 82, 80, 80, 81, 82] * 2))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=19, value=98, name='Eng (*) Torque Max During Takeoff 10 Sec'),
+                KeyPointValue(index=19, value=98, name='Eng (*) Torque Max During Takeoff 20 Sec'),
+                KeyPointValue(index=19, value=98, name='Eng (*) Torque Max During Takeoff 5 Min'),
+            ]))        
 
 
 ##############################################################################

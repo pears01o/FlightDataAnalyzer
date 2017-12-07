@@ -8213,7 +8213,7 @@ def nearest_runway(airport, heading, ilsfreq=None, latitude=None, longitude=None
 
 def mb2ft(mb):
     '''Convert millibars into feet'''
-    return (1-pow((mb/1013.25),0.190284))*145366.45
+    return (1-np.power((mb/1013.25),0.190284))*145366.45
 
 
 def valid_between(param_1,lower,upper):

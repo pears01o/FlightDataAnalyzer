@@ -1879,4 +1879,66 @@ palma_de_mallorca:
         !!python/unicode 'longitude': 2.7425101852401506}
       !!python/unicode 'strip': {!!python/unicode 'id': 4982, !!python/unicode 'length': 10728,
         !!python/unicode 'surface': !!python/unicode 'ASP', !!python/unicode 'width': 148}
-    
+split:
+    !!python/unicode 'code':
+      !!python/unicode 'iata': !!python/unicode 'SPU'
+      !!python/unicode 'icao': !!python/unicode 'LDSP'
+    !!python/unicode 'distance': 3.773403846612538
+    !!python/unicode 'elevation': 79
+    !!python/unicode 'id': 2944
+    !!python/unicode 'latitude': 43.5389
+    !!python/unicode 'location':
+      !!python/unicode 'city': !!python/unicode 'Split'
+      !!python/unicode 'country': !!python/unicode 'Croatia'
+    !!python/unicode 'longitude': 16.298000000000005
+    !!python/unicode 'magnetic_variation': !!python/unicode 'E 03.0'
+    !!python/unicode 'name': !!python/unicode 'Split'
+    !!python/unicode 'runways':
+    - !!python/unicode 'end':
+        !!python/unicode 'elevation': 70
+        !!python/unicode 'latitude': 43.53205299999999
+        !!python/unicode 'longitude': 16.285582999999992
+      !!python/unicode 'id': 5578
+      !!python/unicode 'identifier': !!python/unicode '23'
+      !!python/unicode 'localizer':
+        !!python/unicode 'is_offset': false
+      !!python/unicode 'magnetic_heading': 230.0
+      !!python/unicode 'start':
+        !!python/unicode 'elevation': 50
+        !!python/unicode 'latitude': 43.545105641028705
+        !!python/unicode 'longitude': 16.30901021691972
+      !!python/unicode 'strip':
+        !!python/unicode 'id': 2789
+        !!python/unicode 'length': 8366
+        !!python/unicode 'surface': !!python/unicode 'ASP'
+        !!python/unicode 'width': 147
+    - !!python/unicode 'end':
+        !!python/unicode 'elevation': 50
+        !!python/unicode 'latitude': 43.545964418306454
+        !!python/unicode 'longitude': 16.310589307233084
+      !!python/unicode 'glideslope':
+        !!python/unicode 'angle': 3.0
+        !!python/unicode 'elevation': 70
+        !!python/unicode 'latitude': 43.53268261186711
+        !!python/unicode 'longitude': 16.289203101852205
+        !!python/unicode 'threshold_distance': 884
+      !!python/unicode 'id': 5577
+      !!python/unicode 'identifier': !!python/unicode '05'
+      !!python/unicode 'localizer':
+        !!python/unicode 'beam_width': 4.5
+        !!python/unicode 'elevation': 50
+        !!python/unicode 'frequency': 110500.0
+        !!python/unicode 'heading': 50
+        !!python/unicode 'is_offset': false
+        !!python/unicode 'latitude': 43.547877999999976
+        !!python/unicode 'longitude': 16.314025000000008
+      !!python/unicode 'magnetic_heading': 50.0
+      !!python/unicode 'start':
+        !!python/unicode 'elevation': 70
+        !!python/unicode 'latitude': 43.532052999999976
+        !!python/unicode 'longitude': 16.285582999999992
+      !!python/unicode 'strip':
+        !!python/unicode 'id': 2789
+        !!python/unicode 'length': 8366
+        !!python/unicode 'surface': !!python/unicode 'ASP'
+        !!python/unicode 'width': 147    

@@ -1188,6 +1188,54 @@ class TestSirSeretseKhama(unittest.TestCase):
         self.assertEqual(int(approaches[0].loc_est.start), 8679)
         self.assertEqual(int(approaches[0].loc_est.stop), app_end)
 
+    
+class TestSplit(unittest.TestCase):
+    
+    # This flight gave an erroneous smoothed track when originally processed.
+    # (The go-around was not aligned to the runway while the landing was). 
+    @patch('analysis_engine.approaches.api')
+    def test_ga_at_split(self, api):
+
+        get_handler = Mock()
+        get_handler.get_nearest_airport.return_value = [airports['split']]
+        api.get_handler.return_value = get_handler
+
+        def fetch(par_name):
+            try:
+                return load(root + par_name + '.nod')
+            except:
+                return None
+        root = os.path.join(approaches_path, 'ILS_test_15109245_')
+        approaches = ApproachInformation()
+        approaches.derive(fetch('Altitude AAL'),
+                          None,
+                          A('Aircraft Type', 'aeroplane'),
+                          S(name='Approach And Landing',
+                            items=[Section(name='Approach And Landing',
+                                           slice=slice(19951, 20518),
+                                           start_edge=19951, 
+                                           stop_edge=20518),
+                                   Section(name='Approach And Landing',
+                                           slice=slice(20876, 21470),
+                                           start_edge=20876, 
+                                           stop_edge=21470),
+                                   ]),
+                          fetch('Heading Continuous'),
+                          fetch('Latitude Prepared'),
+                          fetch('Longitude Prepared'),
+                          fetch('ILS Localizer'),
+                          fetch('ILS Glideslope'),
+                          fetch('ILS Frequency'),
+                          A(name='AFR Landing Airport', value=None),
+                          A(name='AFR Landing Runway', value=None) ,
+                          KPV('Latitude At Touchdown', items=[]),
+                          KPV('Longitude At Touchdown', items=[]),
+                          A('Precise Positioning', False))
+        self.assertEqual(approaches[0].airport['name'], 'Split')
+        self.assertEqual(approaches[0].landing_runway['identifier'], '23')
+        self.assertEqual(approaches[1].airport['name'], 'Split')
+        self.assertEqual(approaches[1].landing_runway['identifier'], '23')
+        
 
 class TestWashingtonNational(unittest.TestCase):
     

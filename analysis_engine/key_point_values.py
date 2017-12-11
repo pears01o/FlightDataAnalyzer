@@ -19272,12 +19272,37 @@ class EngNpMaxDuringTakeoff(KeyPointValueNode):
         
         for duration in self.NAME_VALUES['seconds']:
             for takeoff in takeoffs.get_slices():
-                array = eng_np_max.array[takeoff]
-                if eng_np_max.frequency >= 1.0:
-                    array = second_window(eng_np_max.array[takeoff], eng_np_max.frequency, duration, extend_window=True)
-                index, value = max_value(array)
-                if index is not None and value is not None:
-                    self.create_kpv(index + takeoff.start, value, seconds=duration)
+                arrays = eng_np_max.array[takeoff]
+                indices = []
+                values = []
+                samples = duration * eng_np_max.frequency
+                for unmasked_slice in np.ma.clump_unmasked(arrays):
+                    array = arrays[unmasked_slice]
+                    if samples < len(array):
+                        # For each given number of seconds window, get the sum of differences between 
+                        # each value and the maximum value of the array
+                        sliding_window = np.lib.stride_tricks.as_strided(
+                            max(array) - array, shape=(len(array) - samples, samples),
+                            strides=array.strides * 2)
+                        max_difference = np.sum(sliding_window, axis=-1).tolist()
+                            
+                        # The index of the maximum value of the max_difference array will also be
+                        # the index of the sliding window containing the most minimum values for this array
+                        start_slice_index = int(index_at_value(np.array(max_difference), min(max_difference)))
+                        index, value = min_value(max(array) - sliding_window[start_slice_index])
+                        
+                        indices.append(start_slice_index + index + takeoff.start + unmasked_slice.start)
+                        values.append(value)                        
+                        
+                        #if index is not None and value is not None:
+                        #    self.create_kpv(start_slice_index + index + takeoff.start + unmasked_slice.start, value, seconds=duration)
+                if len(values) == 1:
+                    self.create_kpv(indices[0], values[0], seconds=duration)
+                elif len(values) > 1:
+                    value = max(values)
+                    index = indices[int(index_at_value(np.array(values), value))]
+                    if index is not None and value is not None:
+                        self.create_kpv(index, value, seconds=duration)                
 
 
 class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
@@ -19300,12 +19325,34 @@ class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
         seconds = np.array([10, 20, 300])
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for takeoff in takeoffs.get_slices():
-                array = eng_torq_max.array[takeoff]
-                if eng_torq_max.frequency >= 1.0:
-                    array = second_window(eng_torq_max.array[takeoff], eng_torq_max.frequency, samples, extend_window=True)
-                index, value = max_value(array)
-                if index is not None and value is not None:
-                    self.create_kpv(index + takeoff.start, value, durations=duration)
+                arrays = eng_torq_max.array[takeoff]
+                indices = []
+                values = []                
+                for unmasked_slice in np.ma.clump_unmasked(arrays):
+                    array = arrays[unmasked_slice]
+                    if samples < len(array):
+                        # For each given number of seconds window, get the sum of differences between 
+                        # each value and the maximum value of the array
+                        sliding_window = np.lib.stride_tricks.as_strided(
+                            max(array) - array, shape=(len(array) - samples, samples),
+                            strides=array.strides * 2)
+                        max_difference = np.sum(sliding_window, axis=-1).tolist()
+                            
+                        # The index of the maximum value of the max_difference array will also be
+                        # the index of the sliding window containing the most minimum values for this array
+                        start_slice_index = int(index_at_value(np.array(max_difference), min(max_difference)))
+                        index, value = min_value(max(array) - sliding_window[start_slice_index])
+                        
+                        indices.append(start_slice_index + index + takeoff.start + unmasked_slice.start)
+                        values.append(value)
+                        
+                if len(values) == 1:
+                    self.create_kpv(indices[0], values[0], durations=duration)
+                elif len(values) > 1:
+                    value = max(values)
+                    index = indices[int(index_at_value(np.array(values), value))]
+                    if index is not None and value is not None:
+                        self.create_kpv(index, value, durations=duration)                    
 
 
 class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
@@ -19329,9 +19376,31 @@ class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
         seconds = np.array([10, 20, 300, 600])
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for mcp in ratings.get_slices():
-                array = eng_torq_max.array[mcp]
-                if eng_torq_max.frequency >= 1.0:
-                    array = second_window(eng_torq_max.array[mcp], eng_torq_max.frequency, samples, extend_window=True)
-                index, value = max_value(array)
-                if index is not None and value is not None:
-                    self.create_kpv(index + mcp.start, value, durations=duration)
+                arrays = eng_torq_max.array[mcp]
+                indices = []
+                values = []
+                for unmasked_slice in np.ma.clump_unmasked(arrays):
+                    array = arrays[unmasked_slice]
+                    if samples < len(array):
+                        # For each given number of seconds window, get the sum of differences between 
+                        # each value and the maximum value of the array
+                        sliding_window = np.lib.stride_tricks.as_strided(
+                            max(array) - array, shape=(len(array) - samples, samples),
+                            strides=array.strides * 2)
+                        max_difference = np.sum(sliding_window, axis=-1).tolist()
+                        
+                        # The index of the maximum value of the max_difference array will also be
+                        # the index of the sliding window containing the most minimum values for this array
+                        start_slice_index = int(index_at_value(np.array(max_difference), min(max_difference)))
+                        index, value = min_value(max(array) - sliding_window[start_slice_index])
+                        
+                        indices.append(start_slice_index + index + mcp.start + unmasked_slice.start)
+                        values.append(value)
+                        
+                if len(values) == 1:
+                    self.create_kpv(indices[0], values[0], durations=duration)
+                elif len(values) > 1:
+                    value = max(values)
+                    index = indices[int(index_at_value(np.array(values), value))]
+                    if index is not None and value is not None:
+                        self.create_kpv(index, value, durations=duration)

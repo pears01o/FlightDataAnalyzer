@@ -10444,19 +10444,38 @@ class EngN1For5Sec500To50FtMin(KeyPointValueNode):
 
     name = 'Eng N1 For 5 Sec 500 To 50 Ft Min'
     units = ut.PERCENT
+    
+    @classmethod
+    def can_operate(self, available):
+        return all_of(('Eng (*) N1 Min', 'Altitude AAL For Flight Phases', 'HDF Duration'), available)
 
     def derive(self,
-               eng_n1_min=P('Eng (*) N1 Min For 5 Sec'),
+               eng_n1_min_param=P('Eng (*) N1 Min'),
                alt_aal=P('Altitude AAL For Flight Phases'),
                duration=A('HDF Duration')):
 
         hdf_duration = duration.value * self.frequency if duration else None
-        self.create_kpvs_within_slices(
-            eng_n1_min.array,
-            trim_slices(alt_aal.slices_from_to(500, 50), 5, self.frequency,
-                        hdf_duration),
-            min_value,
-        )
+        alt_slices = trim_slices(alt_aal.slices_from_to(500, 50), 5, self.frequency, hdf_duration)
+        
+        if eng_n1_min_param:
+            for alt_slice in alt_slices:
+                array = eng_n1_min_param.array[alt_slice]
+                samples = 5
+                
+                # For each 5 seconds window, get the sum of differences between 
+                # each value and the maximum value of the array
+                sliding_window = np.lib.stride_tricks.as_strided(
+                    max(array) - array, shape=(len(array) - samples * eng_n1_min_param.frequency, samples * eng_n1_min_param.frequency),
+                    strides=array.strides * 2)
+                max_difference = np.sum(sliding_window, axis=-1).tolist()
+                
+                # The index of the maximum value of the max_difference array will also be
+                # the index of the sliding window containing the most minimum values for this array
+                start_slice_index = index_at_value(np.array(max_difference), max(max_difference))
+                index, value = max_value(max(array) - sliding_window[start_slice_index])
+                
+                if index is not None:
+                    self.create_kpv(start_slice_index + index + alt_slice.start, value)
 
 
 class EngN1For5Sec1000To500FtMin(KeyPointValueNode):

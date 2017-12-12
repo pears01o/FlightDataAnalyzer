@@ -4788,6 +4788,161 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         self.assertEqual(node[0].name, 'Airspeed With Flap 5.5 Max')
         self.assertEqual(node[3].name, 'Airspeed With Flap Including Transition 5.5 Max')
         self.assertEqual(node[6].name, 'Airspeed With Flap Excluding Transition 5.5 Max')
+        
+    def test_derive_Boeing(self):
+        airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
+        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20])
+        array = np.concatenate((array, array[::-1]))
+        mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
+        flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
+        fast = buildsection('Fast', 0, 80)
+        array = np.array([0.0, 0.1, 0.6, 1.0] + [1.2, 1.5, 1.9, 2.5, 3.5, 4.5] + 
+                         [5.0, 5.2, 5.9, 6.5, 7.0, 7.9, 8.7, 9.0, 9.8, 10.0] + 
+                         [10.0, 10.2, 10.9, 11.5, 12.0, 12.9, 13.7, 14.0, 14.9, 15.0] + 
+                         [15.0, 15.2, 15.9, 16.5, 17.0, 17.9, 18.7, 19.0, 19.5, 20.0])
+        array = np.concatenate((array, array[::-1]))
+        flap_angle=P('Flap Angle', array)
+        manufacturer=A('Manufacturer', value='Boeing')
+        
+        node = self.node_class()
+        node.derive(airspeed, None, None, flap_inc_trans, None, fast, flap_angle, manufacturer)
+        
+        self.assertEqual(len(node), 5)
+        self.assertEqual(node[0].name, 'Airspeed With Flap Including Transition 1 Max')
+        self.assertEqual(node[1].name, 'Airspeed With Flap Including Transition 5 Max')
+        self.assertEqual(node[2].name, 'Airspeed With Flap Including Transition 10 Max')
+        self.assertEqual(node[3].name, 'Airspeed With Flap Including Transition 15 Max')
+        self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
+        self.assertEqual(node[0].index, 76)
+        self.assertEqual(node[1].index, 74)
+        self.assertEqual(node[2].index, 68)
+        self.assertEqual(node[3].index, 56)
+        self.assertEqual(node[4].index, 44)
+        self.assertEqual(node[0].value, 39)
+        self.assertEqual(node[1].value, 39)
+        self.assertEqual(node[2].value, 37)
+        self.assertEqual(node[3].value, 33)
+        self.assertEqual(node[4].value, 29)
+        
+    def test_derive_Boeing_flap_angle_not_available(self):
+        airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
+        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20])
+        array = np.concatenate((array, array[::-1]))
+        mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
+        flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
+        fast = buildsection('Fast', 0, 80)
+        manufacturer=A('Manufacturer', value='Boeing')
+    
+        node = self.node_class()
+        node.derive(airspeed, None, None, flap_inc_trans, None, fast, None, manufacturer)
+        
+        self.assertEqual(len(node), 5)
+        self.assertEqual(node[0].name, 'Airspeed With Flap Including Transition 1 Max')
+        self.assertEqual(node[1].name, 'Airspeed With Flap Including Transition 5 Max')
+        self.assertEqual(node[2].name, 'Airspeed With Flap Including Transition 10 Max')
+        self.assertEqual(node[3].name, 'Airspeed With Flap Including Transition 15 Max')
+        self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
+        self.assertEqual(node[0].index, 74)
+        self.assertEqual(node[1].index, 68)
+        self.assertEqual(node[2].index, 56)
+        self.assertEqual(node[3].index, 50)
+        self.assertEqual(node[4].index, 39)
+        self.assertEqual(node[0].value, 39)
+        self.assertEqual(node[1].value, 37)
+        self.assertEqual(node[2].value, 33)
+        self.assertEqual(node[3].value, 31)
+        self.assertEqual(node[4].value, 27)
+    
+    def test_derive_Boeing_flap_including_transition_not_available(self):
+        airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
+        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20])
+        array = np.concatenate((array, array[::-1]))
+        mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
+        flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
+        fast = buildsection('Fast', 0, 80)
+        array = np.array([0.0, 0.1, 0.6, 1.0] + [1.2, 1.5, 1.9, 2.5, 3.5, 4.5] + 
+                         [5.0, 5.2, 5.9, 6.5, 7.0, 7.9, 8.7, 9.0, 9.8, 10.0] + 
+                         [10.0, 10.2, 10.9, 11.5, 12.0, 12.9, 13.7, 14.0, 14.9, 15.0] + 
+                         [15.0, 15.2, 15.9, 16.5, 17.0, 17.9, 18.7, 19.0, 19.5, 20.0])
+        array = np.concatenate((array, array[::-1]))
+        flap_angle=P('Flap Angle', array)
+        manufacturer=A('Manufacturer', value='Boeing')
+    
+        node = self.node_class()
+        node.derive(airspeed, None, None, None, None, fast, flap_angle, manufacturer)
+        
+        self.assertEqual(len(node), 0)
+
+    def test_derive_Boeing_masked_data(self):
+        airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
+        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20])
+        array = np.concatenate((array, array[::-1]))
+        mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
+        flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
+        fast = buildsection('Fast', 0, 80)
+        array = np.array([0.0, 0.1, 0.6, 1.0] + [1.2, 1.5, 1.9, 2.5, 3.5, 4.5] + 
+                             [5.0, 5.2, 5.9, 6.5, 7.0, 7.9, 8.7, 9.0, 9.8, 10.0] + 
+                             [10.0, 10.2, 10.9, 11.5, 12.0, 12.9, 13.7, 14.0, 14.9, 15.0] + 
+                             [15.0, 15.2, 15.9, 16.5, 17.0, 17.9, 18.7, 19.0, 19.5, 20.0])
+        array = np.concatenate((array, array[::-1]))
+        flap_angle=P('Flap Angle', array)
+        flap_angle.array.mask = True
+        manufacturer=A('Manufacturer', value='Boeing')
+    
+        node = self.node_class()
+        node.derive(airspeed, None, None, flap_inc_trans, None, fast, flap_angle, manufacturer)
+        
+        self.assertEqual(len(node), 5)
+        self.assertEqual(node[0].name, 'Airspeed With Flap Including Transition 1 Max')
+        self.assertEqual(node[1].name, 'Airspeed With Flap Including Transition 5 Max')
+        self.assertEqual(node[2].name, 'Airspeed With Flap Including Transition 10 Max')
+        self.assertEqual(node[3].name, 'Airspeed With Flap Including Transition 15 Max')
+        self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
+        self.assertEqual(node[0].index, 74)
+        self.assertEqual(node[1].index, 68)
+        self.assertEqual(node[2].index, 56)
+        self.assertEqual(node[3].index, 50)
+        self.assertEqual(node[4].index, 39)
+        self.assertEqual(node[0].value, 39)
+        self.assertEqual(node[1].value, 37)
+        self.assertEqual(node[2].value, 33)
+        self.assertEqual(node[3].value, 31)
+        self.assertEqual(node[4].value, 27)
+    
+    def test_derive_Boeing_fast_flap_angle_rate_of_change(self):
+        airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
+        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20])
+        array = np.concatenate((array, array[::-1]))
+        mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
+        flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
+        fast = buildsection('Fast', 0, 80)
+        angle_array = np.array([0.0, 0.1, 0.6, 1.0] + [1.9, 2.3, 2.5, 3.5, 4.5] + 
+                               [4.9, 5.0, 5.0, 7.5, 7.6, 7.9, 8.5, 8.9, 9.5, 9.8] +
+                               [10.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.1, 15.1, 15.1, 15.1] + 
+                               [15.3, 15.5, 15.9, 16.5, 17.0, 17.9, 18.7, 19.0, 19.5, 20.0])
+        angle_array = np.concatenate((angle_array, angle_array[::-1]))
+        flap_angle=P('Flap Angle', angle_array.copy())
+        manufacturer=A('Manufacturer', value='Boeing')
+    
+        node = self.node_class()
+        node.derive(airspeed, None, None, flap_inc_trans, None, fast, flap_angle, manufacturer)
+    
+        self.assertEqual(len(node), 5)
+        self.assertEqual(node[0].name, 'Airspeed With Flap Including Transition 1 Max')
+        self.assertEqual(node[1].name, 'Airspeed With Flap Including Transition 5 Max')
+        self.assertEqual(node[2].name, 'Airspeed With Flap Including Transition 10 Max')
+        self.assertEqual(node[3].name, 'Airspeed With Flap Including Transition 15 Max')
+        self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
+        self.assertEqual(node[0].index, 76)
+        self.assertEqual(node[1].index, 74)
+        self.assertEqual(node[2].index, 62)
+        self.assertEqual(node[3].index, 56)
+        self.assertEqual(node[4].index, 44)
+        self.assertEqual(node[0].value, 39)
+        self.assertEqual(node[1].value, 39)
+        self.assertEqual(node[2].value, 35)
+        self.assertEqual(node[3].value, 33)
+        self.assertEqual(node[4].value, 29)
 
 
 class TestAirspeedWithFlapMin(unittest.TestCase, NodeTest):

@@ -327,7 +327,7 @@ class APURunning(MultistateDerivedParameterNode):
                apu_bleed_valve_open=M('APU Bleed Valve Open'),
                apu_fuel_flow=P('APU Fuel Flow'),
                apu_on=M('APU On')):
-        if apu_n1 and apu_n1.array.any():
+        if apu_n1:
             self.array = np.ma.where(apu_n1.array > 50.0, 'Running', '-')
         elif apu_voltage:
             # XXX: APU Generator AC Voltage > 100 volts.
@@ -338,7 +338,7 @@ class APURunning(MultistateDerivedParameterNode):
             #Added for LFL A330-D1033RR04CCX002
             fuel_flow_threshold = max(apu_fuel_flow.array.data) / 3.0
             self.array = np.ma.where(apu_fuel_flow.array > fuel_flow_threshold, 'Running', '-')
-        else:
+        elif apu_on:
             self.array = np.ma.where(apu_on.array == 1, 'Running', '-')
 
 

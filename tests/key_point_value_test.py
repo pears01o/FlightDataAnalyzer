@@ -4791,7 +4791,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         
     def test_derive_Boeing(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
-        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20.0])
+        array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])
         array = np.concatenate((array, array[::-1]))
         mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
         flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
@@ -4826,7 +4826,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         
     def test_derive_Boeing_flap_angle_not_available(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
-        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20.0])
+        array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])
         array = np.concatenate((array, array[::-1]))
         mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
         flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
@@ -4855,7 +4855,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
     
     def test_derive_Boeing_flap_including_transition_not_available(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
-        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20.0])
+        array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])
         array = np.concatenate((array, array[::-1]))
         mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
         flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
@@ -4875,7 +4875,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
 
     def test_derive_Boeing_masked_data(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
-        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20.0])
+        array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])
         array = np.concatenate((array, array[::-1]))
         mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
         flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
@@ -4911,7 +4911,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
     
     def test_derive_Boeing_fast_flap_angle_rate_of_change(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
-        array = np.ma.array([0.0] * 3 + [1.0] * 7 + [5.0] * 9 + [10.0] * 9 + [15.0] * 11 + [20.0])
+        array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])
         array = np.concatenate((array, array[::-1]))
         mapping = {0: '0', 1: '1', 5: '5', 10: '10', 15: '15', 20: '20'}
         flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)

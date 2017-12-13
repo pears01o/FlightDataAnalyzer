@@ -3345,14 +3345,14 @@ class AirspeedWithFlapMax(KeyPointValueNode, FlapOrConfigurationMaxOrMin):
                 flap_array = flap.array
                 transition = False
                 for i in range(0, len(flap_array)-1):
-                    if initial_flap[i] is not np.ma.masked and initial_flap[i+1] is not np.ma.masked and initial_flap[i+1] is not np.ma.masked:
-                        if int(initial_flap[i]) > int(initial_flap[i+1]) and flap_angle.array[i+1] > int(initial_flap[i+1]) + 0.1:
+                    if initial_flap[i] is not np.ma.masked and initial_flap[i+1] is not np.ma.masked and flap_angle.array[i+1] is not np.ma.masked:
+                        if initial_flap.raw[i] > initial_flap.raw[i+1] and flap_angle.array[i+1] > initial_flap.raw[i+1] + 0.1:
                             transition = True
-                            flap_array[i+1] = flap_array[i]
+                            flap_array.raw[i+1] = flap_array.raw[i]
                             continue
                         if transition:
-                            if initial_flap[i] == initial_flap[i+1] and flap_angle.array[i+1] > int(initial_flap[i+1]) + 0.1:
-                                flap_array[i+1] = flap_array[i]
+                            if initial_flap.raw[i] == initial_flap.raw[i+1] and flap_angle.array[i+1] > initial_flap.raw[i+1] + 0.1:
+                                flap_array.raw[i+1] = flap_array.raw[i]
                             else:
                                 transition = False
                 data = self.flap_or_conf_max_or_min(flap, airspeed, max_value, scope)

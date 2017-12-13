@@ -19371,19 +19371,17 @@ class EngNpMaxDuringTakeoff(KeyPointValueNode):
                             
                         # The index of the maximum value of the max_difference array will also be
                         # the index of the sliding window containing the most minimum values for this array
-                        start_slice_index = int(index_at_value(np.array(max_difference), min(max_difference)))
+                        start_slice_index = int(index_at_value(np.array(max_difference), min(np.array(max_difference))))
                         index, value = min_value(max(array) - sliding_window[start_slice_index])
                         
                         indices.append(start_slice_index + index + takeoff.start + unmasked_slice.start)
                         values.append(value)                        
                         
-                        #if index is not None and value is not None:
-                        #    self.create_kpv(start_slice_index + index + takeoff.start + unmasked_slice.start, value, seconds=duration)
                 if len(values) == 1:
                     self.create_kpv(indices[0], values[0], seconds=duration)
                 elif len(values) > 1:
                     value = max(values)
-                    index = indices[int(index_at_value(np.array(values), value))]
+                    index = indices[int(round(index_at_value(np.array(values), value)))]
                     if index is not None and value is not None:
                         self.create_kpv(index, value, seconds=duration)                
 
@@ -19423,7 +19421,7 @@ class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
                             
                         # The index of the maximum value of the max_difference array will also be
                         # the index of the sliding window containing the most minimum values for this array
-                        start_slice_index = int(index_at_value(np.array(max_difference), min(max_difference)))
+                        start_slice_index = int(index_at_value(np.array(max_difference), min(np.array(max_difference))))                        
                         index, value = min_value(max(array) - sliding_window[start_slice_index])
                         
                         indices.append(start_slice_index + index + takeoff.start + unmasked_slice.start)
@@ -19474,7 +19472,7 @@ class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
                         
                         # The index of the maximum value of the max_difference array will also be
                         # the index of the sliding window containing the most minimum values for this array
-                        start_slice_index = int(index_at_value(np.array(max_difference), min(max_difference)))
+                        start_slice_index = int(index_at_value(np.array(max_difference), min(np.array(max_difference))))                        
                         index, value = min_value(max(array) - sliding_window[start_slice_index])
                         
                         indices.append(start_slice_index + index + mcp.start + unmasked_slice.start)

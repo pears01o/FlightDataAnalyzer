@@ -4788,7 +4788,8 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         self.assertEqual(node[0].name, 'Airspeed With Flap 5.5 Max')
         self.assertEqual(node[3].name, 'Airspeed With Flap Including Transition 5.5 Max')
         self.assertEqual(node[6].name, 'Airspeed With Flap Excluding Transition 5.5 Max')
-        
+    
+    @patch.dict('analysis_engine.key_point_values.AirspeedWithFlapMax.NAME_VALUES', {'flap': (0, 1, 5, 10, 15, 20)})
     def test_derive_Boeing(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
         array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])
@@ -4822,8 +4823,9 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         self.assertEqual(node[1].value, 39)
         self.assertEqual(node[2].value, 37)
         self.assertEqual(node[3].value, 33)
-        #self.assertEqual(node[4].value, 29)
-        
+        self.assertEqual(node[4].value, 29)
+    
+    @patch.dict('analysis_engine.key_point_values.AirspeedWithFlapMax.NAME_VALUES', {'flap': (0, 1, 5, 10, 15, 20)})
     def test_derive_Boeing_flap_angle_not_available(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
         array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])
@@ -4853,6 +4855,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         self.assertEqual(node[3].value, 31)
         #self.assertEqual(node[4].value, 27)
     
+    @patch.dict('analysis_engine.key_point_values.AirspeedWithFlapMax.NAME_VALUES', {'flap': (0, 1, 5, 10, 15, 20)})
     def test_derive_Boeing_flap_including_transition_not_available(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
         array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])
@@ -4873,6 +4876,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         
         self.assertEqual(len(node), 0)
 
+    @patch.dict('analysis_engine.key_point_values.AirspeedWithFlapMax.NAME_VALUES', {'flap': (0, 1, 5, 10, 15, 20)})
     def test_derive_Boeing_masked_data(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
         array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])
@@ -4909,6 +4913,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         self.assertEqual(node[3].value, 31)
         #self.assertEqual(node[4].value, 27)
     
+    @patch.dict('analysis_engine.key_point_values.AirspeedWithFlapMax.NAME_VALUES', {'flap': (0, 1, 5, 10, 15, 20)})
     def test_derive_Boeing_fast_flap_angle_rate_of_change(self):
         airspeed=P('Airspeed', array=np.concatenate((np.arange(20), (np.repeat([20, 23, 25, 27, 29, 31, 33, 35, 37, 39], 6)))))
         array = np.ma.array([0] * 3 + [1] * 7 + [5] * 9 + [10] * 9 + [15] * 11 + [20])

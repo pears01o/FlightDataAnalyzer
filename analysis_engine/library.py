@@ -8468,3 +8468,61 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
         return longest_approach_type, longest_approach_durn, longest_approach_slice
     else:
         return None, None, None
+
+
+def max_maintained_value(arrays, samples, phase):
+    """
+    For the given phase, return the indices of the maximum value maintained 
+    for the given number of samples (this is the minimum value within the slice
+    equal to the number of samples containing the highest values)
+    
+    E.g. 
+    arrays = [1,2,3,4,3,4,3,4,3,2,5,2]
+    samples = 5
+    
+    max_value = 5
+    windows:
+    [1,2,3,4,3] => sum = min_difference = 5-1 + 5-2 + 5-3 + 5-4 + 5-3 = 12
+    [2,3,4,3,4] => sum = min_difference = 9
+    [3,4,3,4,3] => sum = min_difference = 8
+    [4,3,4,3,4] => sum = min_difference = 7 // min_difference_index = 3
+    [3,4,3,4,3] => sum = 8
+    [4,3,4,3,2] => sum = 9
+    [3,4,3,2,5] => sum = 8
+    [4,3,2,5,2] => sum = 9
+    
+    The returned values will be:
+    index = 3
+    value = 3
+    
+    The slice starting at index 3 and ending at index 8 (5 samples) is the slice
+    with the minimum difference from the maximum value in the array, therefore it contains
+    the samples with the highest values. The value returned along with this index is 3, 
+    as if we return the minimum value within this slice, we ensure that all other values 
+    will be higher than this. 
+    """
+    indices = []
+    values = []    
+    for unmasked_slice in np.ma.clump_unmasked(arrays):
+        array = arrays[unmasked_slice]
+        if samples < len(array):
+            max_value = array.max()
+            min_difference_index = 0
+            min_difference = np.ma.sum(max_value - array[:samples])
+            for i in range(1, len(array) - samples + 1):
+                sum = np.ma.sum(max_value - array[i:i + samples])
+                if sum < min_difference:
+                    min_difference = sum
+                    min_difference_index = i
+            index, value = min_value(array[min_difference_index:min_difference_index+samples])
+            indices.append(min_difference_index + index + phase.start + unmasked_slice.start)
+            values.append(value)
+            
+    if len(values) == 1:
+        return indices[0], values[0]
+    elif len(values) > 1:
+        value = max(values)
+        index = indices[int(index_at_value(np.array(values), value))]
+        return index, value
+    else:
+        return None, None

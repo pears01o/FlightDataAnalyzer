@@ -73,6 +73,7 @@ from analysis_engine.library import (ambiguous_runway,
                                      mask_outside_slices,
                                      max_abs_value,
                                      max_continuous_unmasked,
+                                     max_maintained_value,
                                      max_value,
                                      median_value,
                                      min_value,
@@ -4141,12 +4142,13 @@ class AirspeedTopOfDescentTo10000FtMax(KeyPointValueNode):
             country = ldg_apt.value.get('location', {}).get('country')
 
         alt = alt_qnh.array if country == 'United States' else alt_std.array
-        alt = hysteresis(alt, HYSTERESIS_FPALT)
-
-        height_bands = np.ma.clump_unmasked(np.ma.masked_less(repair_mask(alt),
-                                                              10000))
-        descent_bands = slices_and(height_bands, descent.get_slices())
-        self.create_kpvs_within_slices(air_spd.array, descent_bands, max_value)
+        if np.ma.clump_unmasked(alt):
+            alt = hysteresis(alt, HYSTERESIS_FPALT)
+    
+            height_bands = np.ma.clump_unmasked(np.ma.masked_less(repair_mask(alt),
+                                                                  10000))
+            descent_bands = slices_and(height_bands, descent.get_slices())
+            self.create_kpvs_within_slices(air_spd.array, descent_bands, max_value)
 
 
 class AirspeedTopOfDescentTo4000FtMax(KeyPointValueNode):
@@ -4177,12 +4179,13 @@ class AirspeedTopOfDescentTo4000FtMax(KeyPointValueNode):
             country = ldg_apt.value.get('location', {}).get('country')
 
         alt = alt_qnh.array if country == 'United States' else alt_std.array
-        alt = hysteresis(alt, HYSTERESIS_FPALT)
+        if np.ma.clump_unmasked(alt):
+            alt = hysteresis(alt, HYSTERESIS_FPALT)
 
-        height_bands = np.ma.clump_unmasked(np.ma.masked_less(repair_mask(alt),
-                                                              4000))
-        descent_bands = slices_and(height_bands, descent.get_slices())
-        self.create_kpvs_within_slices(air_spd.array, descent_bands, max_value)
+            height_bands = np.ma.clump_unmasked(np.ma.masked_less(repair_mask(alt),
+                                                                  4000))
+            descent_bands = slices_and(height_bands, descent.get_slices())
+            self.create_kpvs_within_slices(air_spd.array, descent_bands, max_value)
 
 
 class AirspeedTopOfDescentTo4000FtMin(KeyPointValueNode):
@@ -4212,13 +4215,15 @@ class AirspeedTopOfDescentTo4000FtMin(KeyPointValueNode):
         if ldg_apt.value:
             country = ldg_apt.value.get('location', {}).get('country')
 
-        alt = alt_qnh.array if country == 'United States' else alt_std.array
-        alt = hysteresis(alt, HYSTERESIS_FPALT)
+        alt = alt_qnh.array if country == 'United States' else alt_std.array       
+        
+        if np.ma.clump_unmasked(alt):
+            alt = hysteresis(alt, HYSTERESIS_FPALT)
 
-        height_bands = np.ma.clump_unmasked(np.ma.masked_less(repair_mask(alt),
-                                                              4000))
-        descent_bands = slices_and(height_bands, descent.get_slices())
-        self.create_kpvs_within_slices(air_spd.array, descent_bands, min_value)
+            height_bands = np.ma.clump_unmasked(np.ma.masked_less(repair_mask(alt),
+                                                                  4000))
+            descent_bands = slices_and(height_bands, descent.get_slices())
+            self.create_kpvs_within_slices(air_spd.array, descent_bands, min_value)
 
 
 class AirspeedDuringLevelFlightMax(KeyPointValueNode):
@@ -17693,6 +17698,7 @@ class TAWSWindshearWarningBelow1500FtDuration(KeyPointValueNode):
                alt_aal=P('Altitude AAL For Flight Phases'),
                fasts=S('Fast')):
         fast_below_1500 = slices_and(fasts.get_slices(), alt_aal.slices_below(1500))
+        fast_below_1500 = [_slice for _slice in fast_below_1500 if _slice.stop - _slice.start >= 1]
         self.create_kpvs_where(taws_windshear.array == 'Warning',
                                taws_windshear.hz,
                                fast_below_1500)
@@ -17711,6 +17717,7 @@ class TAWSWindshearCautionBelow1500FtDuration(KeyPointValueNode):
                alt_aal=P('Altitude AAL For Flight Phases'),
                fasts=S('Fast')):
         fast_below_1500 = slices_and(fasts.get_slices(), alt_aal.slices_below(1500))
+        fast_below_1500 = [_slice for _slice in fast_below_1500 if _slice.stop - _slice.start >= 1]
         self.create_kpvs_where(taws_windshear.array == 'Caution',
                                taws_windshear.hz,
                                fast_below_1500)
@@ -17729,6 +17736,7 @@ class TAWSWindshearSirenBelow1500FtDuration(KeyPointValueNode):
                alt_aal=P('Altitude AAL For Flight Phases'),
                fasts=S('Fast')):
         fast_below_1500 = slices_and(fasts.get_slices(), alt_aal.slices_below(1500))
+        fast_below_1500 = [_slice for _slice in fast_below_1500 if _slice.stop - _slice.start >= 1]
         self.create_kpvs_where(taws_windshear.array == 'Siren',
                                taws_windshear.hz,
                                fast_below_1500)
@@ -19356,37 +19364,11 @@ class EngNpMaxDuringTakeoff(KeyPointValueNode):
         for duration in self.NAME_VALUES['seconds']:
             for takeoff in takeoffs.get_slices():
                 arrays = eng_np_max.array[takeoff]
-                indices = []
-                values = []
                 samples = int(duration * eng_np_max.frequency)
-                
-                for unmasked_slice in np.ma.clump_unmasked(arrays):
-                    array = arrays[unmasked_slice]
-                    if samples < len(array):
-                        max_value = max(array)
-                        max_difference = 0.0
-                        max_difference_index = 0
-                        for j in range(0, samples):
-                            max_difference += max_value - array[j]
-                        for i in range(1, len(array) - samples + 1):
-                            sum = 0.0
-                            for j in range(i, i + samples):
-                                sum += max_value - array[j]
-                            if sum < max_difference:
-                                max_difference = sum
-                                max_difference_index = i
-                        
-                        index, value = min_value(array[max_difference_index:max_difference_index+samples])
-                        indices.append(max_difference_index + index + takeoff.start + unmasked_slice.start)
-                        values.append(value)
-                        
-                if len(values) == 1:
-                    self.create_kpv(indices[0], values[0], seconds=duration)
-                elif len(values) > 1:
-                    value = max(values)
-                    index = indices[int(round(index_at_value(np.array(values), value)))]
+                if len(arrays) > 0:
+                    index, value = max_maintained_value(arrays, samples, takeoff)
                     if index is not None and value is not None:
-                        self.create_kpv(index, value, seconds=duration)                
+                        self.create_kpv(index, value, seconds=duration)
 
 
 class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
@@ -19410,36 +19392,10 @@ class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for takeoff in takeoffs.get_slices():
                 arrays = eng_torq_max.array[takeoff]
-                indices = []
-                values = []
-                
-                for unmasked_slice in np.ma.clump_unmasked(arrays):
-                    array = arrays[unmasked_slice]
-                    if samples < len(array):
-                        max_value = max(array)
-                        max_difference = 0.0
-                        max_difference_index = 0
-                        for j in range(0, samples):
-                            max_difference += max_value - array[j]
-                        for i in range(1, len(array) - samples + 1):
-                            sum = 0.0
-                            for j in range(i, i + samples):
-                                sum += max_value - array[j]
-                            if sum < max_difference:
-                                max_difference = sum
-                                max_difference_index = i
-                        
-                        index, value = min_value(array[max_difference_index:max_difference_index+samples])
-                        indices.append(max_difference_index + index + takeoff.start + unmasked_slice.start)
-                        values.append(value)
-                        
-                if len(values) == 1:
-                    self.create_kpv(indices[0], values[0], durations=duration)
-                elif len(values) > 1:
-                    value = max(values)
-                    index = indices[int(index_at_value(np.array(values), value))]
+                if len(arrays) > 0:
+                    index, value = max_maintained_value(arrays, samples, takeoff)
                     if index is not None and value is not None:
-                        self.create_kpv(index, value, durations=duration)                    
+                        self.create_kpv(index, value, durations=duration)
 
 
 class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
@@ -19464,33 +19420,7 @@ class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for mcp in ratings.get_slices():
                 arrays = eng_torq_max.array[mcp]
-                indices = []
-                values = []
-                
-                for unmasked_slice in np.ma.clump_unmasked(arrays):
-                    array = arrays[unmasked_slice]
-                    if samples < len(array):
-                        max_value = max(array)
-                        max_difference = 0.0
-                        max_difference_index = 0
-                        for j in range(0, samples):
-                            max_difference += max_value - array[j]
-                        for i in range(1, len(array) - samples + 1):
-                            sum = 0.0
-                            for j in range(i, i + samples):
-                                sum += max_value - array[j]
-                            if sum < max_difference:
-                                max_difference = sum
-                                max_difference_index = i
-                        
-                        index, value = min_value(array[max_difference_index:max_difference_index+samples])
-                        indices.append(max_difference_index + index + mcp.start + unmasked_slice.start)
-                        values.append(value)                
-                        
-                if len(values) == 1:
-                    self.create_kpv(indices[0], values[0], durations=duration)
-                elif len(values) > 1:
-                    value = max(values)
-                    index = indices[int(index_at_value(np.array(values), value))]
+                if len(arrays) > 0:
+                    index, value = max_maintained_value(arrays, samples, mcp)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)

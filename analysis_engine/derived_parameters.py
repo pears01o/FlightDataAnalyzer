@@ -1266,17 +1266,24 @@ class AltitudeQNH(DerivedParameterNode):
                baro_capt=P('Baro Correction (Capt)'), 
                baro_fo=P('Baro Correction (FO)'),
                baro=P('Baro Correction')):
-        baro_correction = baro or baro_capt or baro_fo
-        baro_fixed = nearest_neighbour_mask_repair(baro_correction.array)
         
-        alt_qnh = np_ma_masked_zeros_like(alt_std.array)
+        baro_param = [p for p in [baro, baro_capt, baro_fo] if p and np.ma.count(p.array)]
         
-        for value_mb, slices in slices_of_runs(baro_fixed):
-            value_ft = mb2ft(value_mb)
-            for s in slices:
-                alt_qnh[s] = alt_std.array[s] - value_ft
-
-        self.array = np.ma.array(data=alt_qnh, mask=alt_std.array.mask)
+        if baro_param and len(baro_param) > 0:
+            baro_correction = baro_param[0]
+            baro_fixed = nearest_neighbour_mask_repair(baro_correction.array)
+            
+            alt_qnh = np_ma_masked_zeros_like(alt_std.array)
+            
+            for value_mb, slices in slices_of_runs(baro_fixed):
+                value_ft = mb2ft(value_mb)
+                for s in slices:
+                    alt_qnh[s] = alt_std.array[s] - value_ft
+    
+            self.array = np.ma.array(data=alt_qnh, mask=alt_std.array.mask)
+        else:
+            baro_correction = baro or baro_capt or baro_fo
+            self.array = np.ma.array(data=baro_correction.array.data, mask=True)
 
 
 # TODO: Account for 'Touch & Go' - need to adjust QNH for additional airfields!
@@ -8832,8 +8839,10 @@ class AltitudeADH(DerivedParameterNode):
                 return height
 
             height_from_rig = np_ma_masked_zeros_like(rad)
-            height_from_rig[:min_idx] = one_direction(rad[:min_idx], hdot[:min_idx], "backwards")
-            height_from_rig[min_idx:] = one_direction(rad[min_idx:], hdot[min_idx:], "forwards")
+            if len(rad[:min_idx]) > 0:
+                height_from_rig[:min_idx] = one_direction(rad[:min_idx], hdot[:min_idx], "backwards")
+            if len(rad[min_idx:]) > 0:
+                height_from_rig[min_idx:] = one_direction(rad[min_idx:], hdot[min_idx:], "forwards")
 
             '''
             # And we are bound to want to know the rig height somewhere, so here's how to work that out.

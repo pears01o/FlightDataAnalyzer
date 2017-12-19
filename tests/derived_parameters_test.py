@@ -95,7 +95,6 @@ from analysis_engine.derived_parameters import (
     AirspeedTrue,
     AltitudeAAL,
     AltitudeAALForFlightPhases,
-    AltitudeADH,
     AltitudeAGL,
     AltitudeDensity,
     AltitudeQNH,
@@ -1164,42 +1163,6 @@ class TestAltitudeAAL(unittest.TestCase):
         alt_aal = AltitudeAAL()
         alt_aal.derive(None, alt_std, fast, pitch, gog, helicopter)
 
-
-class TestAltitudeADH(unittest.TestCase):
-    def test_can_operate(self):
-        opts = AltitudeADH.get_operational_combinations()
-        self.assertEqual(opts, [('Altitude Radio', 'Vertical Speed')])
-
-    def test_adh_basic(self):
-        z = np.ma.arange(200)
-        height = P('Altitude Radio', np.ma.concatenate([z, z[:150:-1], z[50::-1], z[:50], z[150:], z[::-1]]))
-        hdot = P('Vertical Speed', np.ma.array([60]*200+[-60]*100+[60]*100+[-60]*200))
-        adh = AltitudeADH()
-        adh.derive(height, hdot)
-        # We confirm that the radio height was 100ft higher than the height above the deck.
-        self.assertEqual(height.array[210], 189.0)
-        self.assertEqual(adh.array[210], 89.0)
-
-    def test_adh_no_rig(self):
-        z = np.ma.arange(200)
-        height = P('Altitude Radio', np.ma.concatenate([z,z[::-1]]))
-        hdot = P('Vertical Speed', np.ma.array([60]*200+[-60]*200))
-        adh = AltitudeADH()
-        adh.derive(height, hdot)
-        # We confirm that the radio height was 100ft higher than the height above the deck.
-        self.assertEqual(np.ma.count(adh.array), 0)
-
-    def test_adh_two_rigs(self):
-        z = np.ma.arange(200)
-        height = P('Altitude Radio', np.ma.concatenate([
-            z, z[:150:-1], z[50::-1], z[:50], z[150:], z[:150:-1], z[100::-1], z[:100], z[150:], z[::-1]]))
-        hdot = P('Vertical Speed', np.ma.array(
-            [60]*200 + [-60]*100 + [60]*100 + [-60]*150 + [60]*150 + [-60]*200))
-        adh = AltitudeADH()
-        adh.derive(height, hdot)
-        self.assertEqual(height.array[210]-adh.array[210], 100.0)
-        self.assertEqual(height.array[680]-adh.array[680], 50.0)
-        
 
 class TestAimingPointRange(unittest.TestCase):
     def test_basic_scaling(self):

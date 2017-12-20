@@ -3933,6 +3933,12 @@ class AirspeedWithConfigurationMax(KeyPointValueNode, FlapOrConfigurationMaxOrMi
                airspeed=P('Airspeed'),
                conf=M('Configuration'),
                scope=S('Fast')):
+        
+        # Masking single values that cause invalid events to trigger when 
+        # not picked up by the cleanser
+        for unmasked_slice in np.ma.clump_unmasked(airspeed.array):
+            if unmasked_slice.stop - unmasked_slice.start < 2:
+                airspeed.array[unmasked_slice.start] = np.ma.masked        
 
         # Fast scope traps configuration changes very late on the approach and
         # before 80 kt on the landing run.

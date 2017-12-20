@@ -1618,17 +1618,12 @@ class RejectedTakeoff(FlightPhaseNode):
         
         # We need all engines running to be a realistic attempt to get airborne
         runnings = runs_of_ones(eng_running.array=='Running')
-        running_on_grounds = slices_and(runnings, groundeds.get_slices())
+        # We ignore the last slice in groundeds as this is usually the during the taxi in
+        running_on_grounds = slices_and(runnings, groundeds.get_slices()[:-1])
         if takeoffs is not None:
             running_on_grounds = slices_and_not(running_on_grounds, takeoffs.get_slices())
-        if len(running_on_grounds) > 1:
-            # The final slice will be the landing and taxi in, so we can skip this
-            to_test = running_on_grounds[:-1]
-        else:
-            # We always check a single period as this is a classic rejection candidate.
-            to_test = running_on_grounds
-        
-        for running_on_ground in to_test:
+            
+        for running_on_ground in running_on_grounds:
             accel_lon_ground = accel_lon.array[running_on_ground]
             accel_lon_slices = runs_of_ones(accel_lon_ground >= TAKEOFF_ACCELERATION_THRESHOLD)
             if eng_n1 is not None and takeoffs is not None:
@@ -1648,10 +1643,7 @@ class RejectedTakeoff(FlightPhaseNode):
                                    (trough_index - peak.start)/accel_lon.hz < 60.0:
                         self.create_phase(slice(peak.start + running_on_ground.start,
                                                 trough_index + running_on_ground.start))
-                    
-                   
-                
-               
+
 
 class RotorsTurning(FlightPhaseNode):
     '''

@@ -15109,7 +15109,7 @@ class TestGroundspeedDuringRejectedTakeoffMax(unittest.TestCase):
         testwave = [0]*150+sinewave.tolist()+[0]*193 # To match array sizes
         accel = P('Acceleration Longitudinal Offset Removed',
                   testwave, frequency=4.0, offset=0.2)
-        gnds = buildsection('Grounded', 0, 125)
+        gnds = buildsections('Grounded', [0, 125], [400, 500])
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel.array), 
                             values_mapping={0: 'Not Running', 1: 'Running'})        
         # Create RTO here to ensure it operates as expected

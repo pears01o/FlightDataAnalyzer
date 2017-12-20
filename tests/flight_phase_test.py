@@ -2224,7 +2224,7 @@ class TestRejectedTakeoff(unittest.TestCase):
                       np.ma.array([0] * 3 + [0.02, 0.05, 0.02, 0, -0.17,] + [0] * 7 +
                                   [0.2, 0.4, 0.1] + [0.11] * 4 + [0] * 6 + [-2] +
                                   [0] * 5 + [0.02, 0.08, 0.08, 0.08, 0.08] + [0] * 20)*1.5)
-        grounded = buildsection('Grounded', 0, len(accel_lon.array))
+        grounded = buildsections('Grounded', [0,len(accel_lon.array)/2.0],[len(accel_lon.array)/2.0, len(accel_lon.array)])
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
                         values_mapping={0: 'Not Running', 1: 'Running'})
         
@@ -2242,7 +2242,7 @@ class TestRejectedTakeoff(unittest.TestCase):
                       np.ma.array([0] * 3 + [0.02, 0.05, 0.11, 0, -0.17,] + [0] * 7 +
                                   [0.2, 0.4, 0.1] + [0.11] * 4 + [0] * 6 + [-2] +
                                   [0] * 5 + [0.02, 0.08, 0.08, 0.08, 0.08] + [0] * 20)*1.5)
-        grounded = buildsection('Grounded', 0, len(accel_lon.array))
+        grounded = buildsections('Grounded', [0,len(accel_lon.array)/2.0],[len(accel_lon.array)/2.0, len(accel_lon.array)])
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
                             values_mapping={0: 'Not Running', 1: 'Running'})
 
@@ -2263,7 +2263,7 @@ class TestRejectedTakeoff(unittest.TestCase):
                                       [0.2, 0.4, 0.1] + [0.11] * 4 + [0] * 6 + [0.2, 0.4, 0.1] + 
                                       [0.11] * 4 + [0] * 6  + [-0.2] + [0] * 5 + 
                                       [0.02, 0.08, 0.08, 0.08, 0.08] + [0] * 20)*1.5)
-        grounded = buildsection('Grounded', 0, len(accel_lon.array))
+        grounded = buildsections('Grounded', [0,len(accel_lon.array) - 20],[len(accel_lon.array) - 20, len(accel_lon.array)])
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
                             values_mapping={0: 'Not Running', 1: 'Running'})
     

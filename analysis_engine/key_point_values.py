@@ -3323,6 +3323,12 @@ class AirspeedWithFlapMax(KeyPointValueNode, FlapOrConfigurationMaxOrMin):
                flap_angle=P('Flap Angle'),
                manufacturer=A('Manufacturer')
                ):
+        
+        # Masking single values that cause invalid events to trigger when 
+        # not picked up by the cleanser
+        for unmasked_slice in np.ma.clump_unmasked(airspeed.array):
+            if unmasked_slice.stop - unmasked_slice.start < 2:
+                airspeed.array[unmasked_slice.start] = np.ma.masked
 
         # We want to use flap lever detents if they are available, but we need
         # to ensure that the parameter is called flap with the name hack below:

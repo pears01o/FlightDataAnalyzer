@@ -5830,7 +5830,7 @@ class HeadingRate(DerivedParameterNode):
     def derive(self, head=P('Heading Continuous')):
 
         # add a little hysteresis to rate of change to smooth out minor changes
-        roc = rate_of_change(head, 4)
+        roc = rate_of_change(head, 4 if head.hz > 0.25 else 1 / head.hz * 2)
         self.array = hysteresis(roc, 0.1)
         # trouble is that we're loosing the nice 0 values, so force include!
         self.array[(self.array <= 0.05) & (self.array >= -0.05)] = 0

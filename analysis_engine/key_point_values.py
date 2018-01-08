@@ -10560,12 +10560,14 @@ class EngN1For5Sec500To50FtMin(KeyPointValueNode):
         if eng_n1_min_param:
             for alt_slice in alt_slices:
                 array = eng_n1_min_param.array[alt_slice]
-                samples = 5
+                samples = 5 * eng_n1_min_param.frequency
+                if len(array) - samples < 0:
+                    continue
                 
                 # For each 5 seconds window, get the sum of differences between 
                 # each value and the maximum value of the array
                 sliding_window = np.lib.stride_tricks.as_strided(
-                    max(array) - array, shape=(len(array) - samples * eng_n1_min_param.frequency, samples * eng_n1_min_param.frequency),
+                    array.max() - array, shape=(len(array) - samples, samples),
                     strides=array.strides * 2)
                 max_difference = np.sum(sliding_window, axis=-1).tolist()
                 

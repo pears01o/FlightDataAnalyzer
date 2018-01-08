@@ -363,7 +363,7 @@ class ApproachInformation(ApproachNode):
             if lat and lon and ref_idx:
                 lowest_lat = lat.array[ref_idx] or None
                 lowest_lon = lon.array[ref_idx] or None
-                if approach_type == 'GO_AROUND':
+                if lowest_lat and lowest_lon and approach_type == 'GO_AROUND':
                     # Doing a go-around, we extrapolate to the threshold
                     # in case we abort the approach abeam a different airport,
                     # using the rule of three miles per thousand feet.

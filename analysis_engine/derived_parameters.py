@@ -843,10 +843,12 @@ class AltitudeAAL(DerivedParameterNode):
                     alt_rad=alt_rad_section,
                     land_pitch=land_pitch)
 
-            # Reset end sections
+            # Reset end sections only if Altitude STD is not masked for these sections
             if len(alt_idxs):
-                alt_aal[quick.start:alt_idxs[0]+1] = 0.0
-                alt_aal[alt_idxs[-1]+1:quick.stop] = 0.0
+                if quick.start != alt_idxs[0]+1 and np.ma.count(alt_std.array[quick.start:alt_idxs[0]+1]) > (alt_idxs[0]+1 - quick.start)/2:
+                    alt_aal[quick.start:alt_idxs[0]+1] = 0.0
+                if alt_idxs[-1]+1 != quick.stop and np.ma.count(alt_std.array[alt_idxs[-1]+1:quick.stop]) > (quick.stop - alt_idxs[-1]+1)/2:
+                    alt_aal[alt_idxs[-1]+1:quick.stop] = 0.0
 
         '''
         # Quick visual check of the altitude aal.

@@ -10225,7 +10225,24 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
         self.assertEqual(node, KPV(name=name, items=[
                 KeyPointValue(index=18, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
                 KeyPointValue(index=15, value=99, name='Eng (*) Np Max During Takeoff 20 Sec'),
-            ]))        
+            ]))
+        
+    def test_derive_with_go_around(self):
+        go_arounds=buildsection('Go Around 5 Min Rating', 10, 40)
+        takeoffs=buildsection('Takeoff 5 Min Rating', 60, 90)
+        eng_np_max=P('Eng (*) Np Max', array=np.tile(np.ma.array([80, 81, 82, 83, 83, 82, 83, 81, 82, 83] + 
+                                                                 [85, 90, 92, 95, 96, 99] + 
+                                                                 [99, 100, 99, 99, 99, 100, 99, 98] * 3 + 
+                                                                 [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]), 2))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(takeoffs, eng_np_max, go_arounds)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=68, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
+            KeyPointValue(index=73, value=98, name='Eng (*) Np Max During Takeoff 20 Sec'),
+            KeyPointValue(index=18, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
+            KeyPointValue(index=23, value=98, name='Eng (*) Np Max During Takeoff 20 Sec'),
+        ]))
 
 
 class TestEngTorqueOverThresholdDuration(unittest.TestCase):
@@ -10623,7 +10640,25 @@ class TestEngTorqueMaxDuringTakeoff(unittest.TestCase):
                 KeyPointValue(index=27, value=98, name='Eng (*) Torque Max During Takeoff 10 Sec'),
                 KeyPointValue(index=27, value=98, name='Eng (*) Torque Max During Takeoff 20 Sec'),
                 KeyPointValue(index=27, value=98, name='Eng (*) Torque Max During Takeoff 5 Min'),
-            ]))        
+            ]))
+        
+    def test_derive_with_go_around(self):
+        go_arounds=buildsection('Go Around 5 Min Rating', 10, 360)
+        takeoffs=buildsection('Takeoff 5 Min Rating', 380, 720)
+        eng_torque_max=P('Eng (*) Torque Max', array=np.tile(np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                         [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                         [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]), 2))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_torque_max, takeoffs, go_arounds)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=387, value=98, name='Eng (*) Torque Max During Takeoff 10 Sec'),
+            KeyPointValue(index=387, value=98, name='Eng (*) Torque Max During Takeoff 20 Sec'),
+            KeyPointValue(index=387, value=98, name='Eng (*) Torque Max During Takeoff 5 Min'),            
+            KeyPointValue(index=17, value=98, name='Eng (*) Torque Max During Takeoff 10 Sec'),
+            KeyPointValue(index=17, value=98, name='Eng (*) Torque Max During Takeoff 20 Sec'),
+            KeyPointValue(index=17, value=98, name='Eng (*) Torque Max During Takeoff 5 Min'),
+        ]))
 
 
 ##############################################################################

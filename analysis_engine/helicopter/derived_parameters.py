@@ -72,24 +72,24 @@ class AltitudeADH(DerivedParameterNode):
                hdot=P('Vertical Speed'),
                ):
 
-        def seek_deck(rad, hdot, min_idx):
+        def seek_deck(rad, hdot, min_idx, rad_hz):
 
-            def one_direction(rad, hdot, sence):
+            def one_direction(rad, hdot, sence, rad_hz):
                 # Stairway to Heaven is getting a bit old. Getting with the times?
                 b_diffs = hdot/60
                 r_diffs = np.ma.ediff1d(rad, to_begin=b_diffs[0])
                 diffs = np.ma.where(np.ma.abs(r_diffs-b_diffs)>6.0, b_diffs, r_diffs)
                 height = integrate(diffs,
-                                   frequency=1.0,
+                                   frequency=rad_hz,
                                    direction=sence,
                                    repair=False)
                 return height
 
             height_from_rig = np_ma_masked_zeros_like(rad)
             if len(rad[:min_idx]) > 0:
-                height_from_rig[:min_idx] = one_direction(rad[:min_idx], hdot[:min_idx], "backwards")
+                height_from_rig[:min_idx] = one_direction(rad[:min_idx], hdot[:min_idx], "backwards", rad_hz)
             if len(rad[min_idx:]) > 0:
-                height_from_rig[min_idx:] = one_direction(rad[min_idx:], hdot[min_idx:], "forwards")
+                height_from_rig[min_idx:] = one_direction(rad[min_idx:], hdot[min_idx:], "forwards", rad_hz)
 
             '''
             # And we are bound to want to know the rig height somewhere, so here's how to work that out.
@@ -117,7 +117,8 @@ class AltitudeADH(DerivedParameterNode):
             else:
                 self.array[this_deck_slice] = seek_deck(rad.array[this_deck_slice],
                                                         hdot.array[this_deck_slice],
-                                                        slice_idx[1]-slice_idx[0])
+                                                        slice_idx[1]-slice_idx[0],
+                                                        rad.frequency)
                 '''
                 import matplotlib.pyplot as plt
                 plt.plot(rad.array[this_deck_slice])

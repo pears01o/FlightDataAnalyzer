@@ -775,7 +775,7 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
             self.create_kpv(*bump(acc_norm, touchdown))
 
 
-class AccelerationNormalMinusLoadFactorThresholdAtTouchdown(KeyPointValueNode):
+class LoadFactorAtTouchdown(KeyPointValueNode):
     '''
     A Boeing 767/757/737 specific KPV, which returns the difference between 
     acceleration normal at touchdown and load factor threshold based on roll 
@@ -955,8 +955,38 @@ class AccelerationNormalMinusLoadFactorThresholdAtTouchdown(KeyPointValueNode):
             # At 6 deg the graph drops to zero. 
             if roll_tdwn > 6.0:
                 load_factor = 0.0
-            delta = land_vert_acc[idx].value - load_factor
-            self.create_kpv(tdwn.index, delta)
+                
+            self.create_kpv(tdwn.index, load_factor)
+
+
+class AccelerationNormalMinusLoadFactorThresholdAtTouchdown(KeyPointValueNode):
+    '''
+    A Boeing 767/757/737 specific KPV, which returns the difference between 
+    acceleration normal at touchdown and load factor threshold based on roll 
+    and weight. A positive value indicates the amount over the load factor 
+    threshold and therefore a hard landing which needs maintenance action.
+    
+    MM 05-51-01 HARD LANDING OR OVERWEIGHT/HARD LANDING OR HIGH DRAG OR HIGH 
+    SIDELOAD LANDING CONDITION - MAINTENANCE PRACTICES (CONDITIONAL INSPECTION)
+    
+    N.B. 737 and 767 manuals used to implement this algorithm. 
+    No 757 publication issued, so based on 767 MM graphs.
+    '''
+    units = ut.G
+
+    # This KPV is specific to 767 aircraft
+    @classmethod
+    def can_operate(cls, available, model=A('Model'), series=A('Series'),
+                    mods=A('Modifications')):
+        return all_deps(cls, available)
+
+    def derive(self,
+               land_vert_acc=KPV('Acceleration Normal At Touchdown'),
+               load_factors=KPV('Load Factor At Touchdown')):
+        
+        for idx, load_factor in enumerate(load_factors):
+            delta = land_vert_acc[idx].value - load_factor.value
+            self.create_kpv(load_factor.index, delta)
 
 
 class AccelerationNormalLiftoffTo35FtMax(KeyPointValueNode):

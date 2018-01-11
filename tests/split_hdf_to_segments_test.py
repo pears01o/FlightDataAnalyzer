@@ -56,13 +56,15 @@ class TestInvalidYears(unittest.TestCase):
 class TestDateTimeFunctions(unittest.TestCase):
     def test_calculate_fallback_dt(self):
         hdf = mocked_hdf()('slow')
-        dt = datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc)
+        dt = datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), False
         # test no change
-        new_dt = calculate_fallback_dt(hdf, dt, dt, True)
+        new_dt = calculate_fallback_dt(hdf, datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), 
+                                       datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), True)
         self.assertEqual(new_dt, dt)
         # test 50 seconds (duration) earlier as relative to end
-        new_dt = calculate_fallback_dt(hdf, dt, dt, False)
-        expected_dt = datetime(2012, 12, 12, 12, 12, 12, tzinfo=pytz.utc)
+        new_dt = calculate_fallback_dt(hdf, datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), 
+                                       datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), False)
+        expected_dt = datetime(2012, 12, 12, 12, 12, 12, tzinfo=pytz.utc), False
         self.assertEqual(new_dt, expected_dt)
 
     def test_constant_time(self):

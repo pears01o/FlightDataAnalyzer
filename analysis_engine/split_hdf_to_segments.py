@@ -777,7 +777,7 @@ def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None, fallback_re
 
     if not frame_doubled or not has_constant_time(hdf):
         # we don't need to do any further corrections
-        return fallback_dt
+        return fallback_dt, False
 
     # Only use this for certain recorders where we use timestamps from headers
     # to provide a fallback which happens to be a constant value.
@@ -785,10 +785,10 @@ def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None, fallback_re
         timebase = calculate_timebase(*get_dt_arrays(hdf, fallback_dt, validation_dt))
     except (KeyError, ValueError):
         # The time parameters are not available/operational
-        return fallback_dt
+        return fallback_dt, False
     else:
         logger.warning("Time doesn't change, using the starting time as the fallback_dt")
-        return timebase
+        return timebase, True
 
 
 def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
@@ -889,7 +889,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
 
 
 def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
-                        fallback_dt=None, validation_dt=None, aircraft_info={}):
+                        fallback_dt=None, validation_dt=None, aircraft_info={}, precise_timestamp=True):
     """
     Get information about a segment such as type, hash, etc. and return a
     named tuple.
@@ -954,7 +954,8 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
         speed_hash,
         start_datetime,
         go_fast_datetime,
-        stop_datetime
+        stop_datetime,
+        precise_timestamp
     )
     return segment
 
@@ -1017,7 +1018,7 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
         segment_tuples = split_segments(hdf, aircraft_info)
         frame_doubled = aircraft_info.get('Frame Doubled', False)
 
-        fallback_dt = calculate_fallback_dt(hdf, fallback_dt, validation_dt, fallback_relative_to_start, frame_doubled)
+        fallback_dt, precise_timestamp = calculate_fallback_dt(hdf, fallback_dt, validation_dt, fallback_relative_to_start, frame_doubled)
 
     # process each segment (into a new file) having closed original hdf_path
     segments = []
@@ -1039,7 +1040,7 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
         segment = append_segment_info(
             dest_path, segment_type, segment_slice, part,
             fallback_dt=segment_start_dt, validation_dt=validation_dt,
-            aircraft_info=aircraft_info)
+            aircraft_info=aircraft_info, precise_timestamp=precise_timestamp)
 
         if previous_stop_dt and segment.start_dt < previous_stop_dt - timedelta(0, 4):
             # In theory, this should not happen - but be warned of superframe

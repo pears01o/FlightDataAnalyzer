@@ -2913,9 +2913,11 @@ class SpeedbrakeSelected(MultistateDerivedParameterNode):
                                                  armed=12)
 
         elif family_name == 'B777':
-            self.array = self.derive_from_handle(handle.array, deployed=10,
-                                                 armed=1)
-
+            self.array = np.ma.where((handle.array >= 30.0),
+                                     'Deployed/Cmd Up', 'Armed/Cmd Dn')
+            self.array = np.ma.where((handle.array <= 1.0),
+                                     'Stowed', self.array)
+            
         elif family_name == 'B787':
             self.array = self.b787_speedbrake(handle)
 

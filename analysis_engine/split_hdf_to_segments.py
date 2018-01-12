@@ -710,6 +710,7 @@ def get_dt_arrays(hdf, fallback_dt, validation_dt):
 
     onehz = P(frequency=1)
     dt_arrays = []
+    precise = True
     for name in ('Year', 'Month', 'Day', 'Hour', 'Minute', 'Second'):
         param = hdf.get(name)
         if param:
@@ -729,6 +730,7 @@ def get_dt_arrays(hdf, fallback_dt, validation_dt):
                 dt_arrays.append(array)
                 continue
         if fallback_dt:
+            precise = False
             array = [getattr(dt, name.lower()) for dt in fallback_dts]
             logger.warning("%s not available, using range from %d to %d from fallback_dt %s",
                            name, array[0], array[-1], fallback_dt)
@@ -736,7 +738,7 @@ def get_dt_arrays(hdf, fallback_dt, validation_dt):
             continue
         else:
             raise TimebaseError("Required parameter '%s' not available" % name)
-    return dt_arrays
+    return dt_arrays, precise
 
 
 def has_constant_time(hdf):
@@ -777,18 +779,18 @@ def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None, fallback_re
 
     if not frame_doubled or not has_constant_time(hdf):
         # we don't need to do any further corrections
-        return fallback_dt, False
+        return fallback_dt
 
     # Only use this for certain recorders where we use timestamps from headers
     # to provide a fallback which happens to be a constant value.
     try:
-        timebase = calculate_timebase(*get_dt_arrays(hdf, fallback_dt, validation_dt))
+        timebase = calculate_timebase(*get_dt_arrays(hdf, fallback_dt, validation_dt)[0])
     except (KeyError, ValueError):
         # The time parameters are not available/operational
-        return fallback_dt, False
+        return fallback_dt
     else:
         logger.warning("Time doesn't change, using the starting time as the fallback_dt")
-        return timebase, True
+        return timebase
 
 
 def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
@@ -827,7 +829,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
                 "Fallback time '%s' ahead of validation time is not allowed. "
                 "Validation time is '%s'." % (fallback_dt, validation_dt))
     # align required parameters to 1Hz
-    dt_arrays = get_dt_arrays(hdf, fallback_dt, validation_dt)
+    dt_arrays, precise_timestamp = get_dt_arrays(hdf, fallback_dt, validation_dt)
 
     length = max([len(a) for a in dt_arrays])
     if length > 1:
@@ -865,7 +867,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
                 logger.info(
                     "Timebase was in the future, using a DAY before "
                     "satisfies requirements: %s", a_day_before)
-                return a_day_before
+                return a_day_before, False
             # continue to take away a Year
         if 'Year' not in hdf:
             # remove a year from the timebase
@@ -873,7 +875,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
             if a_year_before < now:
                 logger.info("Timebase was in the future, using a YEAR before "
                             "satisfies requirements: %s", a_year_before)
-                return a_year_before
+                return a_year_before, False
 
         raise TimebaseError("Timebase '%s' is in the future.", timebase)
 
@@ -885,11 +887,11 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
         raise TimebaseError(error_msg)
 
     logger.info("Valid timebase identified as %s", timebase)
-    return timebase
+    return timebase, precise_timestamp
 
 
 def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
-                        fallback_dt=None, validation_dt=None, aircraft_info={}, precise_timestamp=True):
+                        fallback_dt=None, validation_dt=None, aircraft_info={}):
     """
     Get information about a segment such as type, hash, etc. and return a
     named tuple.
@@ -916,13 +918,15 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
         speed, thresholds = _get_speed_parameter(hdf, aircraft_info)
         duration = hdf.duration
         try:
-            start_datetime = _calculate_start_datetime(hdf, fallback_dt, validation_dt)
+            start_datetime, precise_timestamp = _calculate_start_datetime(
+                hdf, fallback_dt, validation_dt)
         except TimebaseError:
             # Warn the user and store the fake datetime. The code on the other
             # side should check the datetime and avoid processing this file
             logger.exception(
                 'Unable to calculate timebase, using 1970-01-01 00:00:00+0000!')
             start_datetime = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
+            precise_timestamp = False
         stop_datetime = start_datetime + timedelta(seconds=duration)
         hdf.start_datetime = start_datetime
 
@@ -955,7 +959,7 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
         start_datetime,
         go_fast_datetime,
         stop_datetime,
-        precise_timestamp
+        precise_timestamp,
     )
     return segment
 
@@ -1018,7 +1022,7 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
         segment_tuples = split_segments(hdf, aircraft_info)
         frame_doubled = aircraft_info.get('Frame Doubled', False)
 
-        fallback_dt, precise_timestamp = calculate_fallback_dt(hdf, fallback_dt, validation_dt, fallback_relative_to_start, frame_doubled)
+        fallback_dt = calculate_fallback_dt(hdf, fallback_dt, validation_dt, fallback_relative_to_start, frame_doubled)
 
     # process each segment (into a new file) having closed original hdf_path
     segments = []
@@ -1040,7 +1044,7 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
         segment = append_segment_info(
             dest_path, segment_type, segment_slice, part,
             fallback_dt=segment_start_dt, validation_dt=validation_dt,
-            aircraft_info=aircraft_info, precise_timestamp=precise_timestamp)
+            aircraft_info=aircraft_info)
 
         if previous_stop_dt and segment.start_dt < previous_stop_dt - timedelta(0, 4):
             # In theory, this should not happen - but be warned of superframe

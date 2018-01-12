@@ -6782,6 +6782,13 @@ class Speedbrake(DerivedParameterNode):
                 'Spoiler (R) (4)',
                 'Spoiler (R) (5)'),
                 available
+            ) or
+            family_name in ['B777'] and all_of((
+                'Spoiler (L) (6)',
+                'Spoiler (L) (7)',
+                'Spoiler (R) (6)',
+                'Spoiler (R) (7)'),
+                available
             )
         )
 
@@ -6808,6 +6815,7 @@ class Speedbrake(DerivedParameterNode):
                spoiler_l3=P('Spoiler (L) (3)'),
                spoiler_l4=P('Spoiler (L) (4)'),
                spoiler_l5=P('Spoiler (L) (5)'),
+               spoiler_l6=P('Spoiler (L) (6)'),
                spoiler_l7=P('Spoiler (L) (7)'),
                spoiler_r=P('Spoiler (R)'),
                spoiler_r1=P('Spoiler (R) (1)'),
@@ -6815,6 +6823,7 @@ class Speedbrake(DerivedParameterNode):
                spoiler_r3=P('Spoiler (R) (3)'),
                spoiler_r4=P('Spoiler (R) (4)'),
                spoiler_r5=P('Spoiler (R) (5)'),
+               spoiler_r6=P('Spoiler (R) (6)'),
                spoiler_r7=P('Spoiler (R) (7)'),
                family=A('Family'),
                ):
@@ -6867,6 +6876,14 @@ class Speedbrake(DerivedParameterNode):
             spoiler_R = DerivedParameterNode(
                 'Spoiler (R)',
                 blend_parameters((spoiler_r3, spoiler_r4, spoiler_r5)))
+            self.merge_spoiler(spoiler_L, spoiler_R)
+        elif family_name in ('B777',):
+            spoiler_L = DerivedParameterNode(
+                'Spoiler (L)',
+                *blend_two_parameters(spoiler_l6, spoiler_l7))
+            spoiler_R = DerivedParameterNode(
+                'Spoiler (R)',
+                *blend_two_parameters(spoiler_r6, spoiler_r7))
             self.merge_spoiler(spoiler_L, spoiler_R)
         else:
             raise DataFrameError(self.name, family_name)

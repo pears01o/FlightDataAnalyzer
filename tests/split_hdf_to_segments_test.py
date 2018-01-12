@@ -56,7 +56,7 @@ class TestInvalidYears(unittest.TestCase):
 class TestDateTimeFunctions(unittest.TestCase):
     def test_calculate_fallback_dt(self):
         hdf = mocked_hdf()('slow')
-        dt = datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), False
+        dt = datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc)
         # test no change
         new_dt = calculate_fallback_dt(hdf, datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), 
                                        datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), True)
@@ -64,7 +64,7 @@ class TestDateTimeFunctions(unittest.TestCase):
         # test 50 seconds (duration) earlier as relative to end
         new_dt = calculate_fallback_dt(hdf, datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), 
                                        datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), False)
-        expected_dt = datetime(2012, 12, 12, 12, 12, 12, tzinfo=pytz.utc), False
+        expected_dt = datetime(2012, 12, 12, 12, 12, 12, tzinfo=pytz.utc)
         self.assertEqual(new_dt, expected_dt)
 
     def test_constant_time(self):
@@ -92,8 +92,9 @@ class TestDateTimeFunctions(unittest.TestCase):
         hdf = mock.Mock()
         hdf.duration = duration
         hdf.get.side_effect = hdf_get
-        dt_arrays = get_dt_arrays(hdf, datetime(2016, 8, 4, 23, 59, 59), datetime(2016, 8, 5, 1, 59, 59))
+        dt_arrays, precise_timestamp = get_dt_arrays(hdf, datetime(2016, 8, 4, 23, 59, 59), datetime(2016, 8, 5, 1, 59, 59))
         self.assertEqual(dt_arrays, [year.array, month.array, day.array, hour.array, minute.array, second.array])
+        self.assertTrue(precise_timestamp)
 
 
 class TestSplitSegments(unittest.TestCase):
@@ -669,32 +670,39 @@ class TestSegmentInfo(unittest.TestCase):
         })
         dt = datetime(2012, 12, 12, 12, 12, 12, tzinfo=pytz.utc)
         # test with all params
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2011, 11, 11, 11, 11, 11, tzinfo=pytz.utc))
+        self.assertTrue(precise_timestamp)
         # test without Year
         del hdf['Year']
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 11, 11, 11, 11, 11, tzinfo=pytz.utc))
+        self.assertFalse(precise_timestamp)
         # test without Month
         del hdf['Month']
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 11, 11, 11, 11, tzinfo=pytz.utc))
+        self.assertFalse(precise_timestamp)
         # test without Day
         del hdf['Day']
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 12, 11, 11, 11, tzinfo=pytz.utc))
+        self.assertFalse(precise_timestamp)
         # test without Hour
         del hdf['Hour']
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 12, 12, 11, 11, tzinfo=pytz.utc))
+        self.assertFalse(precise_timestamp)
         # test without Minute
         del hdf['Minute']
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 12, 12, 12, 11, tzinfo=pytz.utc))
+        self.assertFalse(precise_timestamp)
         # test without Second
         del hdf['Second']
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 12, 12, 12, 12, 12, tzinfo=pytz.utc))
+        self.assertFalse(precise_timestamp)
 
     def test_empty_year_no_seconds(self):
         # NB: 12's are the fallback_dt, 11's are the recorded time parameters
@@ -706,9 +714,10 @@ class TestSegmentInfo(unittest.TestCase):
             'Hour': P('Hour', np.ma.array([11, 11, 11, 11], mask=[True, False, False, False])),
             'Minute': P('Minute', np.ma.array([11, 11]), frequency=0.5),
         }, duration=4)
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         # 9th second as the first sample (10th second) was masked
         self.assertEqual(res, datetime(2012, 11, 12, 11, 11, 10, tzinfo=pytz.utc))
+        self.assertFalse(precise_timestamp)
 
     def test_year_00_uses_fallback_year(self):
         # Ensure that a timebase error is not raised due to old date!
@@ -726,9 +735,9 @@ class TestSegmentInfo(unittest.TestCase):
         # add a masked invalid value
         hdf['Year'].array[2] = 50
         hdf['Year'].array[2] = np.ma.masked
-        res = _calculate_start_datetime(hdf, dt, dt)
-        print(hdf, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         self.assertEqual(res, datetime(2012, 11, 11, 11, 11, 10, tzinfo=pytz.utc))
+        self.assertFalse(precise_timestamp)
 
     def test_no_year_with_a_very_recent_fallback(self):
         """When fallback is a year after the flight and Year is not recorded,
@@ -752,10 +761,11 @@ class TestSegmentInfo(unittest.TestCase):
             'Minute': P('Minute', np.ma.array([59, 59])),  # last minute
             'Second': P('Minute', np.ma.array([58, 59])),  # last two seconds
         }, duration=2)
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         # result is a year behind the fallback datetime, even though the
         # fallback Year was used.
         self.assertEqual(res.year, datetime.now().year - 1)
+        self.assertFalse(precise_timestamp)
         #self.assertEqual(res, datetime(2012,6,1,11,11,1))
 
     def test_midnight_rollover(self):
@@ -772,9 +782,10 @@ class TestSegmentInfo(unittest.TestCase):
             'Minute': P('Minute', np.ma.array([59, 59] + [0] * 18)),
             'Second': P('Minute', np.ma.array([58, 59] + list(range(18)))),  # last two seconds and start of next flight
         }, duration=20)
-        res = _calculate_start_datetime(hdf, dt, dt)
+        res, precise_timestamp = _calculate_start_datetime(hdf, dt, dt)
         # result is the exact start of the data for the timestamp (not a day before!)
         self.assertEqual(res, datetime(2012, 12, 12, 23, 59, 58, tzinfo=pytz.utc))
+        self.assertFalse(precise_timestamp)
 
 
 class TestSegmentTypeAndSlice(unittest.TestCase):

@@ -1613,24 +1613,33 @@ class RejectedTakeoff(FlightPhaseNode):
     def derive(self, accel_lon=P('Acceleration Longitudinal Offset Removed'),
                eng_running=M('Eng (*) All Running'),
                groundeds=S('Grounded'),
-               takeoffs=S('Takeoff'),
+               takeoffs=S('Takeoff Roll'),
                eng_n1=P('Eng (*) N1 Max')):
-        
+
         # We need all engines running to be a realistic attempt to get airborne
         runnings = runs_of_ones(eng_running.array=='Running')
         # We ignore the last slice in groundeds as this is usually the during the taxi in
         running_on_grounds = slices_and(runnings, groundeds.get_slices()[:-1])
-        if takeoffs is not None:
-            running_on_grounds = slices_and_not(running_on_grounds, takeoffs.get_slices())
-            
-        for running_on_ground in running_on_grounds:
-            accel_lon_ground = accel_lon.array[running_on_ground]
-            accel_lon_slices = runs_of_ones(accel_lon_ground >= TAKEOFF_ACCELERATION_THRESHOLD)
-            if eng_n1 is not None and takeoffs is not None:
-                eng_n1_slices = runs_of_ones(eng_n1.array[running_on_ground] > 50)
-                combined_slices = slices_and(eng_n1_slices, accel_lon_slices)
-                self.create_phases(shift_slices(combined_slices, running_on_ground.start))
-            else:
+
+        if eng_n1 is not None:
+            accel_above_thres = runs_of_ones(repair_mask(accel_lon.array, frequency=accel_lon.frequency, repair_duration=None) >= TAKEOFF_ACCELERATION_THRESHOLD)
+            n1_max_above_50 = runs_of_ones(repair_mask(eng_n1.array, frequency=accel_lon.frequency, repair_duration=None) > 50)
+            # list of potential RTO's
+            potential_rto = slices_and(accel_above_thres, n1_max_above_50)
+            for rto in potential_rto:
+                for running_on_ground in running_on_grounds:
+                    # If RTO slice changes (decreases) when AND'd with
+                    # running_on_ground this Acceleration/N1 Max combination
+                    # should be the takeoff takeoff
+                    if slices_and([rto], [running_on_ground]) == [rto]:
+                        self.create_phase(rto)
+        else:
+            if takeoffs is not None:
+                running_on_grounds = slices_and_not(running_on_grounds, takeoffs.get_slices())
+            for running_on_ground in running_on_grounds:
+                accel_lon_ground = accel_lon.array[running_on_ground]
+                accel_lon_slices = runs_of_ones(accel_lon_ground >= TAKEOFF_ACCELERATION_THRESHOLD)
+
                 trough_index = 0
                 for peak in accel_lon_slices:
                     if peak.start < trough_index:

@@ -8,6 +8,50 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.38.1
+-------
+  Jira Tickets:
+  - AE-1215: GearUpInTransition: Change Fast to Airborne
+  - AE-1257: Helicopter approaches offshore
+  - AE-1457: New Event- Airspeed relative low to Airspeed Selected
+  - AE-1470: Problem - gap in data is wrong length, and has triggered invalid event
+  - AE-1487: 3 New Events Airspeed With Flap Excluding Transition, 5, 15, 35 Max
+  - AE-1509: Added precise_timestamp flag
+  - AE-1528: Merge Latitude and Longitude sources where two available
+  - AE-1556: Helicopter: Derived parameter 'Gear-on-Ground' and 'Grounded' phase error
+  - AE-1557:  Changed EngN1For5Sec500To50FtMin to stop using second_window and added unit tests
+  - AE-1562: Groundspeed Speedbrake Handle During Takeoff Max(KPV) 
+  - AE-1565, AE-1343 & AE-1331: ILS established phase improvement and new ILS localizer/glideslope KPVs
+             Added new KPVs: 
+                 ILSGlideslopeEstablished1000To200Ft
+                 ILSGlideslopeEstablished500To200Ft
+                 ILSLocalizerEstablished1000To200Ft
+                 ILSLocalizerEstablished500To200Ft
+  - AE-1589: KPV adjustment to monitor Flaps in Transition to a reading of 0.1 degrees
+             fix AirspeedWithFlapMax KPV to include new Boeing requirements
+  - AE-1594: Wind Direction Averaging corrections as averages through North give incorrect answers.
+  - AE-1595: P and W Engine Torque Events
+  - AE-1596: New Prop Overspeed Events
+  - AE-1597: New Event B737 Hard Overweight Landing.
+  - AE-1603: Deriving Speedbrake from spoilers and updated Speedbrake Selected for B777
+  - AE-1625: Masking Airspeed single values which cause invalid flap events to trigger for AirspeedWithConfigurationMax as well
+  - AE-1628: Move Altitude ADH to helicopter specific
+  - AE-1630: Fix undefined errors
+  - CDS-207, CDS-254 & CDS-255: Derive APU Running from APU Fuel Flow or APU On when available
+
+  Other Fixes:
+  - Fix for derived parameter Altitude QNH masked values
+  - Fix for new Np and propeller KPVs for slices containing 0 elements
+  - Fixed index 0 is out of bound for axis 0 with size 0 error
+  - mb2ft method now uses numpy power which works for integers as well as for arrays, as opposed to python's built-in pow function which doesn't work for arrays.
+  - Changed hard landing KPVs to include Touch And Go
+  - Alt qnh can operate fix
+  - Modified InitialClimb phase to account for missing altitude data below 1000ft
+  - Added a separate KPV for Load Factor at Touchdown
+  - HeadingRate: handle Heading hz below 0.25
+  - Using Altitude Radio instead of Altitude STD when this is masked
+  - Changed AltitudeADH to integrate using the same frequncy as the Altitude Radio parameter
+
 v0.37.2
 -------
   - AE-1539: Polynomial terms added and test amended

@@ -1623,14 +1623,15 @@ class RejectedTakeoff(FlightPhaseNode):
 
         if eng_n1 is not None:
             accel_above_thres = runs_of_ones(repair_mask(accel_lon.array, frequency=accel_lon.frequency, repair_duration=None) >= TAKEOFF_ACCELERATION_THRESHOLD)
-            n1_max_above_50 = runs_of_ones(repair_mask(eng_n1.array, frequency=accel_lon.frequency, repair_duration=None) > 50)
-            # list of potential RTO's
+            n1_max_above_50 = runs_of_ones(repair_mask(eng_n1.array, frequency=eng_n1.frequency, repair_duration=None) > 50)
+            # list of potential RTO's which may include the takeoff as well.
             potential_rto = slices_and(accel_above_thres, n1_max_above_50)
             for rto in potential_rto:
                 for running_on_ground in running_on_grounds:
-                    # If RTO slice changes (decreases) when AND'd with
+                    # The RTO slice can only be within the 'Grounded' phase. 
+                    # If RTO slice size changes (decreases) when AND'd with
                     # running_on_ground this Acceleration/N1 Max combination
-                    # should be the takeoff takeoff
+                    # should be the takeoff. 
                     if slices_and([rto], [running_on_ground]) == [rto]:
                         self.create_phase(rto)
         else:

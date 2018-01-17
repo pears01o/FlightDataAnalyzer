@@ -2209,11 +2209,11 @@ class TestRejectedTakeoff(unittest.TestCase):
         expected = [('Acceleration Longitudinal Offset Removed', 
                      'Eng (*) All Running', 'Grounded'),
                     ('Acceleration Longitudinal Offset Removed', 
-                     'Eng (*) All Running', 'Grounded','Takeoff'),
+                     'Eng (*) All Running', 'Grounded','Takeoff Roll'),
                     ('Acceleration Longitudinal Offset Removed', 
                      'Eng (*) All Running', 'Grounded','Eng (*) N1 Max'),  
                     ('Acceleration Longitudinal Offset Removed', 
-                     'Eng (*) All Running', 'Grounded','Takeoff', 'Eng (*) N1 Max')]
+                     'Eng (*) All Running', 'Grounded','Takeoff Roll', 'Eng (*) N1 Max')]
         
         self.assertEqual(
             expected,

@@ -3896,6 +3896,29 @@ def slices_remove_small_slices(slices, time_limit=10, hz=1, count=None):
     return [s for s in slices if s.stop - s.start > sample_limit]
 
 
+def slices_find_small_slices(slices, time_limit=10, hz=1, count=None):
+    '''
+    Find small slices in a list of slices.
+    
+    :param slice_list: list of slices to be processed
+    :type slice_list: list of Python slices.
+
+    :param time_limit: Tolerance below which slice will be rejected.
+    :type time_limit: integer (sec)
+    :param hz: sample rate for the parameter
+    :type hz: float
+
+    :param count: Tolerance based on count, not time
+    :type count: integer (default = None)
+
+    :returns: slice list.
+    '''
+    if slices is None or slices == []:
+        return slices
+    sample_limit = count if count is not None else time_limit * hz
+    return [s for s in slices if s.stop - s.start < sample_limit]
+
+
 def trim_slices(slices, seconds, frequency, hdf_duration):
     '''
     Trims slices by a number of seconds and excludes slices which are too small

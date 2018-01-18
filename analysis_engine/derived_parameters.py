@@ -97,6 +97,7 @@ from analysis_engine.library import (air_track,
                                      slices_not,
                                      slices_or,
                                      slices_remove_small_slices,
+                                     slices_find_small_slices,
                                      slices_split,
                                      smooth_track,
                                      straighten_altitudes,
@@ -957,9 +958,16 @@ class AltitudeAGL(DerivedParameterNode):
 
         # When was the helicopter on the ground?
         gear_on_grounds = np.ma.clump_masked(np.ma.masked_equal(gog.array, 1))
+        # Find and eliminate short spikes (15 seconds) as these are most likely errors.
+        short_spikes = slices_find_small_slices(gear_on_grounds, time_limit=15, hz=gog.hz)
+        for slice in short_spikes:
+            gog.array[slice.start:slice.stop] = 0
+        
+        # Remove slices shorter than 15 seconds as these are most likely created in error.
+        gear_on_grounds = slices_remove_small_slices(gear_on_grounds, time_limit=15, hz=gog.hz)
         # Compute the half period which we will need.
         hp = int(alt_rad.frequency*ALTITUDE_AGL_SMOOTHING)/2
-        # We force the radio altitude to be zero when the gear shows 'Ground' state
+        # We force altitude AGL to be zero when the gear shows 'Ground' state
         alt_rad_repaired = repair_mask(alt_rad.array, frequency=alt_rad.frequency, repair_duration=20.0, extrapolate=True)
         alt_agl = moving_average(np.maximum(alt_rad.array, 0.0) * (1 - gog.array.data), window=hp*2+1, weightings=None)
 

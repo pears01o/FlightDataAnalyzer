@@ -1226,12 +1226,12 @@ class TestAltitudeAGL(unittest.TestCase):
         assert_array_equal(alt_aal.array, expected)
 
     def test_on_ground(self):
-        alt_rad = P(name='Altitude Radio', array=np.ma.array([-1, 0, 6, 0, -1]))
-        alt_baro = P(name='Altitude STD', array=np.ma.array([0]*5))
-        gog = M(name='Gear On Ground', array=np.ma.array([1]*5), values_mapping={0:'Air', 1:'Ground'})
+        alt_rad = P(name='Altitude Radio', array=np.ma.array([-1, 0, 6, 0, -1, -1, 0, 6, 0, -1, -1, 0, 6, 0, -1, -1, 0, 6, 0, -1]))
+        alt_baro = P(name='Altitude STD', array=np.ma.array([0]*20))
+        gog = M(name='Gear On Ground', array=np.ma.array([1]*20), values_mapping={0:'Air', 1:'Ground'})
         alt_aal = AltitudeAGL()
         alt_aal.derive(alt_rad, None, alt_baro, gog)
-        expected = [0, 0, 0, 0, 0]
+        expected = [0]*20
         assert_array_equal(alt_aal.array, expected)
 
 

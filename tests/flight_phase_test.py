@@ -2206,15 +2206,27 @@ class TestRejectedTakeoff(unittest.TestCase):
     scaling, hence the *1.5 factors.
     '''
     def test_can_operate(self):
-        expected = [('Acceleration Longitudinal Offset Removed', 
+        expected = [('Acceleration Longitudinal Offset Removed',
                      'Eng (*) All Running', 'Grounded'),
-                    ('Acceleration Longitudinal Offset Removed', 
-                     'Eng (*) All Running', 'Grounded','Takeoff Roll'),
-                    ('Acceleration Longitudinal Offset Removed', 
-                     'Eng (*) All Running', 'Grounded','Eng (*) N1 Max'),  
-                    ('Acceleration Longitudinal Offset Removed', 
-                     'Eng (*) All Running', 'Grounded','Takeoff Roll', 'Eng (*) N1 Max')]
-        
+                    ('Acceleration Longitudinal Offset Removed',
+                     'Eng (*) All Running', 'Grounded', 'Takeoff Roll'),
+                    ('Acceleration Longitudinal Offset Removed',
+                     'Eng (*) All Running', 'Grounded', 'Eng (*) N1 Max'),
+                    ('Acceleration Longitudinal Offset Removed',
+                     'Eng (*) All Running', 'Grounded',
+                     'Takeoff Acceleration Start'),
+                    ('Acceleration Longitudinal Offset Removed',
+                     'Eng (*) All Running', 'Grounded', 'Takeoff Roll',
+                     'Eng (*) N1 Max'),
+                    ('Acceleration Longitudinal Offset Removed',
+                     'Eng (*) All Running', 'Grounded', 'Takeoff Roll',
+                     'Takeoff Acceleration Start'),
+                    ('Acceleration Longitudinal Offset Removed',
+                     'Eng (*) All Running', 'Grounded', 'Eng (*) N1 Max',
+                     'Takeoff Acceleration Start'),
+                    ('Acceleration Longitudinal Offset Removed',
+                     'Eng (*) All Running', 'Grounded', 'Takeoff Roll',
+                     'Eng (*) N1 Max', 'Takeoff Acceleration Start')]
         self.assertEqual(
             expected,
             RejectedTakeoff.get_operational_combinations())       
@@ -2231,7 +2243,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         node = RejectedTakeoff()
         # Set a low frequency to pass slice duration checks.
         node.frequency = 1/64.0
-        node.derive(accel_lon, eng_running, grounded, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None, None)
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 15, 0)
         self.assertAlmostEqual(node[0].slice.stop, 27, 0)        
@@ -2249,7 +2261,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         node = RejectedTakeoff()
         # Set a low frequency to pass slice duration checks.
         node.frequency = 1/64.0
-        node.derive(accel_lon, eng_running, grounded, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None, None)
         self.assertEqual(len(node), 2)
         self.assertAlmostEqual(node[0].slice.start, 5, 0)
         self.assertAlmostEqual(node[0].slice.stop, 6, 0)        
@@ -2270,7 +2282,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         node = RejectedTakeoff()
         # Set a low frequency to pass slice duration checks.
         node.frequency = 1/64.0
-        node.derive(accel_lon, eng_running, grounded, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None, None)
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 15, 0)
         self.assertAlmostEqual(node[0].slice.stop, 40, 0)                
@@ -2286,7 +2298,7 @@ class TestRejectedTakeoff(unittest.TestCase):
                         values_mapping={0: 'Not Running', 1: 'Running'})
         
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None, None)
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 3622, 0)
         self.assertAlmostEqual(node[0].slice.stop, 3663, 0)
@@ -2306,7 +2318,7 @@ class TestRejectedTakeoff(unittest.TestCase):
                                        'rejectedTakeoffEngN1.nod'))       
      
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, groundeds,takeoffs, eng_n1 )
+        node.derive(accel_lon, eng_running, groundeds,takeoffs, eng_n1, None)
         self.assertEqual(len(node), 2)
         self.assertAlmostEqual(node[0].slice.start, 2970, 0)
         self.assertAlmostEqual(node[0].slice.stop, 3015, 0)
@@ -2324,7 +2336,7 @@ class TestRejectedTakeoff(unittest.TestCase):
                             values_mapping={0: 'Not Running', 1: 'Running'})
     
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None, None)
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 2383, 0)
         self.assertAlmostEqual(node[0].slice.stop, 2413, 0)
@@ -2340,7 +2352,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
                             values_mapping={0: 'Not Running', 1: 'Running'})        
         node = RejectedTakeoff(frequency=4)
-        node.derive(accel_lon, eng_running, grounded, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None, None)
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 1917, 0)
         self.assertAlmostEqual(node[0].slice.stop, 1969, 0)
@@ -2355,7 +2367,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
                             values_mapping={0: 'Not Running', 1: 'Running'})        
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None, None)
         self.assertEqual(len(node), 0)
 
     def test_derive_flight_without_rejected_takeoff_1(self):
@@ -2368,7 +2380,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
                             values_mapping={0: 'Not Running', 1: 'Running'})        
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None, None)
         self.assertEqual(len(node), 0)
 
     def test_derive_flight_without_rejected_takeoff_2(self):
@@ -2381,7 +2393,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
                             values_mapping={0: 'Not Running', 1: 'Running'})           
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None, None)
         self.assertEqual(len(node), 0)
 
 

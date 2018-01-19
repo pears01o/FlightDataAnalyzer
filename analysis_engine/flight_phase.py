@@ -1613,16 +1613,16 @@ class RejectedTakeoff(FlightPhaseNode):
     def derive(self, accel_lon=P('Acceleration Longitudinal Offset Removed'),
                eng_running=M('Eng (*) All Running'),
                groundeds=S('Grounded'),
-               toff_acc=KTI('Takeoff Acceleration Start'),
                takeoffs=S('Takeoff Roll'),
-               eng_n1=P('Eng (*) N1 Max')):
+               eng_n1=P('Eng (*) N1 Max'),
+               toff_acc=KTI('Takeoff Acceleration Start')):
 
         # We need all engines running to be a realistic attempt to get airborne
         runnings = runs_of_ones(eng_running.array=='Running')
         hz = accel_lon.frequency
         # If Takeoff Acceleration Start KTI exists, include only slices before this KTI
         # and shorten the slice containing the it.
-        if toff_acc is not None:
+        if toff_acc:
             toff_idx = toff_acc.get_first().index
             running_on_grounds = slices_and(runnings, [slice(runnings[0].start, toff_idx),])
         else:

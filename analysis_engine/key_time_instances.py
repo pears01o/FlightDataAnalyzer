@@ -19,6 +19,7 @@ from analysis_engine.library import (
     is_index_within_slice,
     last_valid_sample,
     max_value,
+    min_value,
     minimum_unmasked,
     np_ma_masked_zeros_like,
     peak_curvature,
@@ -1149,7 +1150,16 @@ class TakeoffAccelerationStart(KeyTimeInstanceNode):
                     start_accel = slices_and(
                         runs_of_ones(accel.array >= TAKEOFF_ACCELERATION_THRESHOLD),
                         [takeoff.slice]
-                    )[-1].start
+                    )
+                    if len(start_accel) > 1:
+                        accel_sel = start_accel[0]
+                        for alt_start in start_accel[1:]:
+                            if min_value(accel.array,slice(accel_sel.start, alt_start.start)).value <= 0.0:
+                                # The dip in acceleration is too great to be the actual
+                                # takeoff acceleration point, it might be an RTO.
+                                # Take the start the next slice.
+                                accel_sel = alt_start
+                        start_accel = accel_sel.start
 
             if start_accel is None:
                 '''

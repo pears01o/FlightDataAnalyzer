@@ -1146,9 +1146,19 @@ class TakeoffAccelerationStart(KeyTimeInstanceNode):
                 if first_accel > TAKEOFF_ACCELERATION_THRESHOLD:
                     start_accel = takeoff.slice.start
                 else:
-                    start_accel = index_at_value(accel.array,
-                                                 TAKEOFF_ACCELERATION_THRESHOLD,
-                                                 takeoff.slice)
+                    start_accel = slices_and(
+                        runs_of_ones(accel.array >= TAKEOFF_ACCELERATION_THRESHOLD),
+                        [takeoff.slice]
+                    )
+                    if len(start_accel) >= 1:
+                        accel_sel = start_accel[0]
+                        for alt_start in start_accel[1:]:
+                            if min_value(accel.array,slice(accel_sel.start, alt_start.start)).value <= 0.0:
+                                # The dip in acceleration is too great to be the actual
+                                # takeoff acceleration point, it might be an RTO.
+                                # Take the start the next slice.
+                                accel_sel = alt_start
+                        start_accel = accel_sel.start
 
             if start_accel is None:
                 '''

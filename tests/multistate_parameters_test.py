@@ -2180,7 +2180,56 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         mapping = {x: str(x) for x in sorted(set(expected))}
         self.assertEqual(list(node.array), list(np.repeat(expected, repeat)))
 
+    @patch('analysis_engine.multistate_parameters.at')
+    def test_derive__e170(self, at):
+        # Test applies to E170_EBD_047 only
+        at.get_conf_angles.side_effect = KeyError
+        at.get_lever_angles.return_value = {
+            'Lever 0':    (0, 0, None),
+            'Lever 1':    (15, 5, None),
+            'Lever 2':    (15, 10, None),
+            'Lever 3':    (15, 20, None),
+            'Lever 4':    (25, 20, None),
+            'Lever 5':    (25, 20, None),
+            'Lever Full': (25, 35, None),
+        }
+        at.get_lever_map.return_value = {
+            1:'Lever 0',
+            2:'Lever 1',
+            4:'Lever 2',
+            8:'Lever 3',
+            16:'Lever 4',
+            32:'Lever 5',
+            64:'Lever Full',
+        }
+        
+        slat_array = [0, 15, 15, 15, 25, 25, 25, 25, 25, 25, 25, 25]
+        flap_array = [0, 5, 10, 20, 20, 20, 20, 20, 20, 20, 20, 20]
+        expected = ['Lever 0', 'Lever 1', 'Lever 2', 'Lever 3', 'Lever 4',
+                    'Lever 4', 'Lever 4', 'Lever 5', 'Lever 5', 'Lever 5',
+                    'Lever 4', 'Lever 4']
+        repeat = 1
+        flap_array = MappedArray(np.repeat(flap_array, repeat),
+                values_mapping={f: str(f) for f in (0, 5, 10, 20, 35)})
+        slat_array = MappedArray(np.repeat(slat_array, repeat),
+                values_mapping={s: str(s) for s in (0, 15, 25)})
 
+        # Derive the synthetic flap lever:
+        flap = M('Flap', flap_array)
+        slat = M('Slat', slat_array)
+        
+        model = A('Model', None)
+        series = A('Series', None)
+        family = A('Family', 'ERJ-170/175')
+        frame = A('Frame', 'E170_EBD_047')
+        
+        approach = buildsections('Approach And Landing', (7,10))
+        node = self.node_class()
+        node.derive(flap, slat, None, model, series, family, approach, frame)
+        
+        self.assertEqual(list(node.array), list(np.repeat(expected, repeat)))
+        
+        
 class TestFlaperon(unittest.TestCase):
     def test_can_operate(self):
         self.assertTrue(Flaperon.can_operate(

@@ -1151,7 +1151,7 @@ class TakeoffAccelerationStart(KeyTimeInstanceNode):
                         runs_of_ones(accel.array >= TAKEOFF_ACCELERATION_THRESHOLD),
                         [takeoff.slice]
                     )
-                    if len(start_accel) > 1:
+                    if len(start_accel) >= 1:
                         accel_sel = start_accel[0]
                         for alt_start in start_accel[1:]:
                             if min_value(accel.array,slice(accel_sel.start, alt_start.start)).value <= 0.0:

@@ -1347,7 +1347,8 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         return can_operate
 
     def derive(self, flap=M('Flap'), slat=M('Slat'), flaperon=M('Flaperon'),
-               model=A('Model'), series=A('Series'), family=A('Family')):
+               model=A('Model'), series=A('Series'), family=A('Family'),
+               approach=S('Approach And Landing'), frame=A('Frame'),):
         try:
             angles = at.get_conf_angles(model.value, series.value, family.value)
             use_conf = True
@@ -1375,7 +1376,13 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
             if use_conf:
                 state = at.constants.CONF_TO_LEVER[state]
             self.array[condition] = state
-
+            
+        frame_name = frame.value if frame else None
+        approach_slices = approach.get_slices() if approach else None
+        
+        if frame_name == 'E170_EBD_047' and approach_slices is not None:
+            self.array[approach_slices][self.array[approach_slices] == 16] = 32
+            
 
 class Flaperon(MultistateDerivedParameterNode):
     '''

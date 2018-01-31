@@ -10519,17 +10519,54 @@ class EngAPRDuration(KeyPointValueNode):
     @classmethod
     def can_operate(cls, available):
         return all_of(('FADEC (L) APR Active', 
-                       'FADEC (R) 50 APR Active',), available)
+                       'FADEC (R) 50 APR Active',), available) or \
+               all_of(('Eng (1) ATTCS Armed',
+                       'Eng (1) ATTCS Enabled',
+                       'Eng (1) ATTCS Triggered',
+                       'Eng (2) ATTCS Armed',
+                       'Eng (2) ATTCS Enabled',
+                       'Eng (2) ATTCS Triggered',), available)
         
     def derive(self,
                eng1_apr = P('FADEC (L) APR Active'),
-               eng2_apr = P('FADEC (R) 50 APR Active'),):
+               eng2_apr = P('FADEC (R) 50 APR Active'),
+               eng1_attcs_arm = P('Eng (1) ATTCS Armed'),
+               eng1_attcs_enabled = P('Eng (1) ATTCS Enabled'),
+               eng1_attcs_trigger = P('Eng (1) ATTCS Triggered'),
+               eng2_attcs_arm = P('Eng (2) ATTCS Armed'),
+               eng2_attcs_enabled = P('Eng (2) ATTCS Enabled'),
+               eng2_attcs_trigger = P('Eng (2) ATTCS Triggered'),):
 
-        if eng1_apr.hz == eng2_apr.hz:
-            apr_active = slices_or(runs_of_ones(eng1_apr.array), 
-                                   runs_of_ones(eng2_apr.array),)
-           
-            frequency = eng1_apr.hz
+        if eng1_apr and eng2_apr:
+            # TODO: make it work if frequencies aren't equal
+            if eng1_apr.hz == eng2_apr.hz:
+                apr_active = slices_or(runs_of_ones(eng1_apr.array), 
+                                       runs_of_ones(eng2_apr.array),)
+                
+                frequency = eng1_apr.hz
+                apr_active = slices_remove_small_gaps(apr_active, time_limit=600, hz=frequency)
+                
+                # APR activation is a rare occurence, if we catch more than 5 it's most likely an error.
+                if len(apr_active) > 5:
+                    apr_active = apr_active[:5]
+                    
+                self.create_kpvs_from_slice_durations(apr_active, frequency)
+        
+        else:
+            # APR is active if ATTCS Armed, Triggered and Enabled are true.
+            eng1_apr_active = runs_of_ones(np.ma.logical_and(
+                                                             np.ma.logical_and(eng1_attcs_arm.array,
+                                                                               eng1_attcs_enabled.array),
+                                                             eng1_attcs_trigger.array))
+            
+            eng2_apr_active = runs_of_ones(np.ma.logical_and(
+                                                             np.ma.logical_and(eng2_attcs_arm.array,
+                                                                               eng2_attcs_enabled.array),
+                                                             eng2_attcs_trigger.array))
+            
+            apr_active = slices_or(eng1_apr_active, eng2_apr_active)
+            
+            frequency = eng1_attcs_arm.hz
             apr_active = slices_remove_small_gaps(apr_active, time_limit=600, hz=frequency)
             
             # APR activation is a rare occurence, if we catch more than 5 it's most likely an error.
@@ -10538,7 +10575,7 @@ class EngAPRDuration(KeyPointValueNode):
                 
             self.create_kpvs_from_slice_durations(apr_active, frequency)
 
-
+            
 class EngN1CyclesDuringFinalApproach(KeyPointValueNode):
     '''
     Numer of N1 cycles during final approach phase.

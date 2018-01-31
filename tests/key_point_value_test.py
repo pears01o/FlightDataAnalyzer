@@ -11556,16 +11556,13 @@ class TestEngN1For5SecMaximumContinuousPowerMax(unittest.TestCase, CreateKPVsWit
         self.assertTrue(False, msg='Test not implemented.')
 
 
-class TestEngAPRDuration(unittest.TestCase, NodeTest):
-    def setUp(self):
-        self.node_class = EngAPRDuration
-        self.operational_combinations = [('FADEC (L) APR Active', 'FADEC (R) 50 APR Active')]
-
+class TestEngAPRDuration(unittest.TestCase, NodeTest):        
     def test_basic(self):
         apr_l = P('FADEC (L) APR Active',    [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
         apr_r = P('FADEC (R) 50 APR Active', [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
         event = EngAPRDuration()
-        event.derive(apr_l, apr_r)
+        event.derive(apr_l, apr_r, None, None, None, None, None, None)
+
         self.assertEqual(event[0].index, 4)
         self.assertEqual(event[0].value, 6)
 
@@ -11573,7 +11570,8 @@ class TestEngAPRDuration(unittest.TestCase, NodeTest):
         apr_l = P('FADEC (L) APR Active', [0]*10 + [1]*10 + [0]*500 + [1]*10 + [0]*100)
         apr_r = P('FADEC (R) 50 APR Active', [0]*630)
         event = EngAPRDuration()
-        event.derive(apr_l, apr_r)
+        event.derive(apr_l, apr_r, None, None, None, None, None, None)
+
         self.assertEqual(event[0].index, 10)
         self.assertEqual(event[0].value, 520)
 
@@ -11581,7 +11579,8 @@ class TestEngAPRDuration(unittest.TestCase, NodeTest):
         apr_l = P('FADEC (L) APR Active',    [0]*10 + [1]*10 + [0]*600 + [0]*10 + [0]*100)
         apr_r = P('FADEC (R) 50 APR Active', [0]*10 + [0]*10 + [0]*600 + [1]*10 + [0]*100)
         event = EngAPRDuration()
-        event.derive(apr_l, apr_r)
+        event.derive(apr_l, apr_r, None, None, None, None, None, None)
+
         self.assertEqual(event[0].index, 10)
         self.assertEqual(event[0].value, 10)
         self.assertEqual(event[1].index, 620)
@@ -11591,8 +11590,23 @@ class TestEngAPRDuration(unittest.TestCase, NodeTest):
         apr_l = P('FADEC (L) APR Active',    ([0]*10 + [1]*10 + [0]*600 + [0]*10 + [0]*100)*6)
         apr_r = P('FADEC (R) 50 APR Active', ([0]*10 + [0]*10 + [0]*600 + [1]*10 + [0]*100)*6)
         event = EngAPRDuration()
-        event.derive(apr_l, apr_r)
+        event.derive(apr_l, apr_r, None, None, None, None, None, None)
         self.assertEqual(len(event), 5)
+        
+    def test_attcs(self):
+        e1_arm = P('Eng (1) ATTCS Armed',        [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
+        e1_enabled = P('Eng (1) ATTCS Enabled',  [1,1,1,1,1,1,1,1,1,1,1,1,1,1])
+        e1_trigger = P('Eng (1) ATTCS Triggered',[0,0,0,0,0,0,1,1,1,1,1,1,0,0])
+        
+        e2_arm = P('Eng (2) ATTCS Armed',        [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
+        e2_enabled = P('Eng (2) ATTCS Enabled',  [1,1,1,1,1,1,1,1,1,1,1,1,1,1])
+        e2_trigger = P('Eng (2) ATTCS Triggered',[0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+        
+        event = EngAPRDuration()
+        event.derive(None, None, e1_arm, e1_enabled, e1_trigger, e2_arm, e2_enabled, e2_trigger)
+        
+        self.assertEqual(event[0].index, 6)
+        self.assertEqual(event[0].value, 4)
         
         
 class TestEngN1CyclesDuringFinalApproach(unittest.TestCase, NodeTest):

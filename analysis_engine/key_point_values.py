@@ -10508,6 +10508,37 @@ class EngN1For5SecDuringMaximumContinuousPowerMax(KeyPointValueNode):
             ratings, max_value)
 
 
+class EngAPRDuration(KeyPointValueNode):
+    '''
+    Duration for which APR was active.
+    '''
+    
+    name = 'Eng APR Duration'
+    units = ut.SECOND
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('FADEC (L) APR Active', 
+                       'FADEC (R) 50 APR Active',), available)
+        
+    def derive(self,
+               eng1_apr = P('FADEC (L) APR Active'),
+               eng2_apr = P('FADEC (R) 50 APR Active'),):
+
+        if eng1_apr.hz == eng2_apr.hz:
+            apr_active = slices_or(runs_of_ones(eng1_apr.array), 
+                                   runs_of_ones(eng2_apr.array),)
+           
+            frequency = eng1_apr.hz
+            apr_active = slices_remove_small_gaps(apr_active, time_limit=600, hz=frequency)
+            
+            # APR activation is a rare occurence, if we catch more than 5 it's most likely an error.
+            if len(apr_active) > 5:
+                apr_active = apr_active[:5]
+                
+            self.create_kpvs_from_slice_durations(apr_active, frequency)
+
+
 class EngN1CyclesDuringFinalApproach(KeyPointValueNode):
     '''
     Numer of N1 cycles during final approach phase.
@@ -10515,7 +10546,7 @@ class EngN1CyclesDuringFinalApproach(KeyPointValueNode):
 
     name = 'Eng N1 Cycles During Final Approach'
     units = ut.CYCLES
-
+    
     def derive(self,
                eng_n1_avg=P('Eng (*) N1 Avg'),
                fin_apps=S('Final Approach')):

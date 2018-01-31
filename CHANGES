@@ -8,6 +8,12 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.38.2
+-------
+  Jira Tickets:
+  - AE-1667: Eng APR Duration
+  - AE-1672: E170 force flap lever 5 on approach
+
 v0.38.1
 -------
   Jira Tickets:

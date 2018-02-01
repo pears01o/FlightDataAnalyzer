@@ -1632,13 +1632,13 @@ class TestFlap(unittest.TestCase, NodeTest):
         _as = A('Series', None)
         _af = A('Family', 'C208')
         _fr = A('Frame', None)
-        array = np.ma.array((0, 0, 50, 1500, 1500, 1500, 2500, 2500, 1500, 1500, 50, 50))
+        array = np.ma.array((0, 0, 50, 450, 1000, 1500, 2500, 1500, 1000, 450, 50, 50))
         alt_aal = P(name='Altitude AAL', array=array)
         node = self.node_class()
         node.derive(None, _am, _as, _af, _fr, alt_aal)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
-        ma_test.assert_masked_array_equal(node.array, np.ma.array((0, 0, 0, 40, 40, 40, 40, 40, 40, 40, 0, 0)))
+        ma_test.assert_masked_array_equal(node.array, np.ma.array((40, 40, 40, 40, 0, 0, 0, 0, 0, 40, 40, 40)))
 
     def test_derive__citation(self):
         _am = A('Model', None)

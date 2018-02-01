@@ -5656,6 +5656,15 @@ class TestThrustAsymmetry(unittest.TestCase):
         # there should be all 20 values being 2 out
         self.assertEqual(uniq, {2: 20})
 
+    def test_derive_epr(self):
+        epr_max = P('Eng (*) EPR Max', np.arange(0.0, 1.8, step=0.2))
+        epr_min = P('Eng (*) EPR Min', np.arange(0.2, 2.0, step=0.2))
+        asym = ThrustAsymmetry()
+        asym.get_derived((epr_max, epr_min, None, None))
+        self.assertEqual(len(asym.array), len(epr_max.array))
+        self.assertEqual(asym.array[2], -20)
+        self.assertAlmostEqual(asym.array[-3], -20)        
+        
     def test_derive_epr_and_n1(self):
         n1_max = P('Eng (*) N1 Max', np.arange(10, 30))
         n1_min = P('Eng (*) N1 Min', np.arange(8, 28))
@@ -5664,10 +5673,8 @@ class TestThrustAsymmetry(unittest.TestCase):
         epr_min = P('Eng (*) EPR Min', np.arange(0.2, 2.0, step=0.2))
         asym = ThrustAsymmetry()
         asym.get_derived((epr_max, epr_min, n1_max, n1_min))
-        self.assertEqual(len(asym.array), len(epr_max.array))
-        self.assertEqual(asym.array[2], -20)
-        self.assertAlmostEqual(asym.array[-3], -20)
-
+        self.assertEqual(len(asym.array), len(n1_max.array))
+        self.assertEqual(asym.array[2], 2)
 
 
 class TestThrottleLevers(unittest.TestCase):

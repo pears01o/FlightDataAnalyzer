@@ -1170,9 +1170,10 @@ class Flap(MultistateDerivedParameterNode):
         if family_name == 'C208':
             self.values_mapping = {0: '0', 10: '10', 20: '20', 40: '40'}
             self.array = np_ma_zeros_like(alt_aal.array)
-            self.array[alt_aal.array > 1000.0] = 40
+            self.array[alt_aal.array < 500.0] = 40
             self.frequency, self.offset = alt_aal.frequency, alt_aal.offset
             return
+        
         if 'B737' in family_name:
             _slices = runs_of_ones(np.logical_and(flap.array>=0.9, flap.array<=2.1))
             for s in _slices:

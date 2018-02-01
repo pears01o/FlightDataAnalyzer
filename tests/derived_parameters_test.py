@@ -3452,7 +3452,18 @@ class TestHeadingContinuous(unittest.TestCase, NodeTest):
         node.derive(None, hdg_ca, hdg_fo, None)
         expected = np.ma.array([359,359,359.25,360,360,359.75,359.5,359 ])
         assert_equal(node.array, expected)
-
+    
+    def test_heading_continuous_masked(self):
+        hdg_ca = P('Heading (Capt)',np.ma.array(data=[0, 2, 0, 90, 0, 0, 0.0],
+                                                mask=[0, 0, 0,  1, 0, 0, 0]), 
+                   offset=0.2, frequency=0.5)
+        hdg_fo = P('Heading (FO)',np.ma.array([2.0, 0.0]+[2.0]*5), offset=1.1, frequency=0.5)
+        node = self.node_class()
+        node.derive(None, hdg_ca, hdg_fo, None)
+        expected = np.ma.array(data=[1, 2, 1, 0.0]+[1]*10, mask=[0]*5+[1]*2+[0]*6+[1])
+        assert_equal(node.array, expected)
+        assert_equal(node.array.mask, expected.mask)
+        
 
 class TestNr(unittest.TestCase):
 

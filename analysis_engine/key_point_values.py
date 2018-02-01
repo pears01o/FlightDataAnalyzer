@@ -775,7 +775,7 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
             self.create_kpv(*bump(acc_norm, touchdown))
 
 
-class LoadFactorAtTouchdown(KeyPointValueNode):
+class LoadFactorThresholdAtTouchdown(KeyPointValueNode):
     '''
     A Boeing 767/757/737 specific KPV, which returns the difference between 
     acceleration normal at touchdown and load factor threshold based on roll 
@@ -789,7 +789,6 @@ class LoadFactorAtTouchdown(KeyPointValueNode):
     No 757 publication issued, so based on 767 MM graphs.
     '''
     units = ut.G
-    name = 'Load Factor Threshold At Touchdown'
     
     @classmethod
     def get_landing_weight(cls, series=None, model=None, mods=None):

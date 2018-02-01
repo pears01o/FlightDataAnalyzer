@@ -506,7 +506,7 @@ from analysis_engine.key_point_values import (
     LatitudeOffBlocks,
     LatitudeSmoothedAtLiftoff,
     LatitudeSmoothedAtTouchdown,
-    LoadFactorAtTouchdown,
+    LoadFactorThresholdAtTouchdown,
     LongitudeAtLiftoff,
     LongitudeAtLowestAltitudeDuringApproach,
     LongitudeAtTakeoffAccelerationStart,
@@ -1955,7 +1955,7 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
         return node
     
     def _call_derive_load_factor(self, roll_value, land_vert_acc, gw_kpv=[], gw=None):
-        load_factor_kpv = LoadFactorAtTouchdown()
+        load_factor_kpv = LoadFactorThresholdAtTouchdown()
         
         self.roll[self.tdwn_idx] = roll_value
         roll = P('Roll', self.roll)
@@ -2079,7 +2079,7 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
             np.linspace(-8.0, 2.0, num=40, endpoint=False, dtype=float)),
                  offset=0.0, frequency=4.0)
         
-        load_factor = LoadFactorAtTouchdown()
+        load_factor = LoadFactorThresholdAtTouchdown()
         load_factor.derive(land_vert_acc=self.land_vert_acc_16hz_767, roll=roll,
                            tdwns=self.tdwns, gw_kpv=self.gw_under_kpv_767,
                            gw=self.gw_under_767, 
@@ -2101,7 +2101,7 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
             np.linspace(-7.0, 3.0, num=40, endpoint=False, dtype=float)),
                  offset=0.0, frequency=4.0)
 
-        load_factor = LoadFactorAtTouchdown()
+        load_factor = LoadFactorThresholdAtTouchdown()
         load_factor.derive(land_vert_acc=self.land_vert_acc_16hz_737, roll=roll,
                            tdwns=self.tdwns, gw_kpv=[],
                            gw=self.gw_over_737, 
@@ -2116,7 +2116,7 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
     def test_roll_over_6_deg_767(self):
         roll = P('Roll', array=np.array([8.0]*10))
         
-        load_factor = LoadFactorAtTouchdown()
+        load_factor = LoadFactorThresholdAtTouchdown()
         load_factor.derive(land_vert_acc=self.land_vert_acc_16hz_767, roll=roll,
                            tdwns=self.tdwns, gw_kpv=self.gw_under_kpv_767,
                            gw=self.gw_under_767, 
@@ -2129,9 +2129,9 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
         self.assertAlmostEqual(node[0].value, 2.0, places=2)
         
             
-class TestLoadFactorAtTouchdown(unittest.TestCase):
+class TestLoadFactorThresholdAtTouchdown(unittest.TestCase):
     def setUp(self):
-        self.node_class = LoadFactorAtTouchdown
+        self.node_class = LoadFactorThresholdAtTouchdown
         # The following series, model & mods should return 128367KG
         self.model = A('Model', 'B767-232(F)')
         self.series = A('Series', 'B767-200')

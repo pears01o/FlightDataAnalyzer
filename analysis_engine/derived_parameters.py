@@ -6208,11 +6208,11 @@ class ThrustAsymmetry(DerivedParameterNode):
 
     def derive(self, epr_max=P('Eng (*) EPR Max'), epr_min=P('Eng (*) EPR Min'),
                n1_max=P('Eng (*) N1 Max'), n1_min=P('Eng (*) N1 Min')):
-        # use EPR if we have it in preference to N1
-        if epr_max:
-            diff = (epr_max.array - epr_min.array) * 100
+        # use N1 if we have it in preference to EPR
+        if n1_max:
+            diff = (n1_max.array - n1_min.array)         
         else:
-            diff = (n1_max.array - n1_min.array)
+            diff = (epr_max.array - epr_min.array) * 100
         window = 5 # 5 second window
         self.array = moving_average(diff, window=window)
 

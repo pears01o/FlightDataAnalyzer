@@ -2244,7 +2244,7 @@ class TestLoadFactorAtTouchdown(unittest.TestCase):
         self.assertEqual(node.units, 'g')
         self.assertEqual(
             node.name,
-            'Load Factor At Touchdown'
+            'Load Factor Threshold At Touchdown'
         )
 
     def test_can_operate(self):

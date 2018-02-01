@@ -789,7 +789,8 @@ class LoadFactorAtTouchdown(KeyPointValueNode):
     No 757 publication issued, so based on 767 MM graphs.
     '''
     units = ut.G
-
+    name = 'Load Factor Threshold At Touchdown'
+    
     @classmethod
     def get_landing_weight(cls, series=None, model=None, mods=None):
         '''

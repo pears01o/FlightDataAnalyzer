@@ -982,7 +982,7 @@ class AccelerationNormalMinusLoadFactorThresholdAtTouchdown(KeyPointValueNode):
 
     def derive(self,
                land_vert_acc=KPV('Acceleration Normal At Touchdown'),
-               load_factors=KPV('Load Factor At Touchdown')):
+               load_factors=KPV('Load Factor Threshold At Touchdown')):
         
         for idx, load_factor in enumerate(load_factors):
             delta = land_vert_acc[idx].value - load_factor.value

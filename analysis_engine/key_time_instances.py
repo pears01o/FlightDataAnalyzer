@@ -19,6 +19,7 @@ from analysis_engine.library import (
     is_index_within_slice,
     last_valid_sample,
     max_value,
+    min_value,
     minimum_unmasked,
     np_ma_masked_zeros_like,
     peak_curvature,

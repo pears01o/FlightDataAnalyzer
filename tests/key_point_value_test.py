@@ -1879,7 +1879,7 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
         self.mods = A('Modifications', ['Freighter Conversion',])
 
         self.operational_combinations = [('Acceleration Normal At Touchdown',
-                                         'Load Factor At Touchdown')]
+                                         'Load Factor Threshold At Touchdown')]
         self.tdwn_idx = 4
         self.gw_under_value_767 = 128367
         self.gw_over_value_767 = 138367

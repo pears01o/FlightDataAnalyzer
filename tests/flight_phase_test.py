@@ -2570,19 +2570,12 @@ class TestTaxiIn(unittest.TestCase):
 
 class TestTaxiing(unittest.TestCase):
     def test_can_operate(self):
-        combinations = Taxiing.get_operational_combinations()
-        expected = [
+        self.assertEqual(Taxiing.get_operational_combinations(), [
+            ('Mobile', 'Takeoff', 'Landing', 'Airborne'),
+            ('Mobile', 'Groundspeed', 'Takeoff', 'Landing', 'Airborne'),
             ('Mobile', 'Takeoff', 'Landing', 'Rejected Takeoff', 'Airborne'),
             ('Mobile', 'Groundspeed', 'Takeoff', 'Landing', 'Rejected Takeoff', 'Airborne'),
-        ]
-
-        self.assertEqual(combinations, expected)
-        #self.assertTrue(('Mobile', 'Airborne') in combinations)
-        #self.assertTrue(('Mobile', 'Takeoff', 'Landing') in combinations)
-        #self.assertTrue(('Mobile', 'Groundspeed', 'Airborne') in combinations)
-        #self.assertTrue(
-            #('Mobile', 'Groundspeed', 'Takeoff', 'Landing', 'Airborne')
-            #in combinations)
+        ])
 
     def test_taxiing_mobile_airborne(self):
         mobiles = buildsection('Mobile', 10, 90)

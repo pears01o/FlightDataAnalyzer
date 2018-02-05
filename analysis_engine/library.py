@@ -2599,7 +2599,12 @@ def runway_heading(runway):
         brg, dist = bearings_and_distances(np.ma.array(end_lat),
                                            np.ma.array(end_lon),
                                            runway['start'])
-        return float(brg.data)
+        rwy_brg = float(brg.data)
+        rwy_data = runway['magnetic_heading']
+        diff = (rwy_brg - rwy_data + 180) % 360 - 180
+        if abs(diff) > 90.0:
+            rwy_brg = (rwy_brg + 180) % 360.0
+        return rwy_brg
     except:
         if runway:
             raise ValueError("runway_heading unable to resolve heading for runway: %s" % runway)

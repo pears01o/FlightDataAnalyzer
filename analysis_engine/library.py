@@ -4635,8 +4635,6 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     # mode is cubic
 
     p_valid_slices = []
-    p_offset = []
-    p_freq = []
 
     # Prepare a place for the output signal
     length = len(params[0].array) * frequency / params[0].frequency
@@ -4645,10 +4643,7 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     result.mask = np.ma.getmaskarray(result)
 
     # Find out about the parameters we have to deal with...
-    for seq, param in enumerate(params):
-        p_freq.append(param.frequency)
-        p_offset.append(param.offset)
-    min_ip_freq = min(p_freq)
+    min_ip_freq = min(p.frequency for p in params)
 
     # Slices of valid data are scaled to the lowest timebase and then or'd
     # to find out when any valid data is available.
@@ -4664,7 +4659,7 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
 
         # Now scale these non-trivial slices into the lowest timebase for
         # collation.
-        p_valid_slices.append(slices_multiply(nts, min_ip_freq / p_freq[seq]))
+        p_valid_slices.append(slices_multiply(nts, min_ip_freq / param.frequency))
 
     # To find the valid ranges I need to 'or' the slices at a high level, hence
     # this list of lists of slices needs to be flattened. Don't ask me what
@@ -4679,10 +4674,8 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     # Now we can work through each period of valid data.
     for this_valid in any_valid:
         result_slice = slice_multiply(this_valid, frequency/min_ip_freq)
-
-        result[result_slice] = blend_parameters_cubic(this_valid, frequency,
-                                                      min_ip_freq, offset,
-                                                      params, p_freq, p_offset,result_slice)
+        result[result_slice] = blend_parameters_cubic(
+            frequency, offset, params, result_slice)
         # The endpoints of a cubic spline are generally unreliable, so trim
         # them back.
         result[result_slice][0] = np.ma.masked
@@ -4746,22 +4739,14 @@ def blend_parameters_linear(params, frequency, offset=0):
     return np.ma.average(aligned, axis=0, weights=weights)
 
 
-def blend_parameters_cubic(this_valid, frequency, min_ip_freq, offset, params, p_freq, p_offset, result_slice):
+def blend_parameters_cubic(frequency, offset, params, result_slice):
     '''
-    :param this_valid: slice for data to be processed; assumed all valid data
-    :type this_valid: slice
     :param frequency: the frequency of the output parameter
     :type frequency: float
-    :param min_ip_freq: the lowest frequency of the contributing parameters
-    :type min_ip_freq: float
     :param offset: the offset of the output parameter
     :type offset: float
     :param params: list of input parameters to be merged, can be None if not available
     :type params: [Parameter]
-    :param p_freq: a list of frequencies of the input parameters
-    :type p_freq: [float]
-    :param p_offset: a list of offsets of the input parameters
-    :type p_offset: [float]
     :param result_slice: the slice where results will be returned
     :type result_slice: slice
     
@@ -4788,14 +4773,14 @@ def blend_parameters_cubic(this_valid, frequency, min_ip_freq, offset, params, p
     # Compute the individual splines
     for seq, param in enumerate(params):
         # The slice and timebase for this parameter...
-        my_slice = slice_multiply(this_valid, p_freq[seq] / min_ip_freq)
+        my_slice = slice_multiply(result_slice, param.frequency / frequency)
         resampled_masks.append(
             resample(np.ma.getmaskarray(param.array)[my_slice],
                      param.frequency, frequency))
-        timebase = np.linspace(my_slice.start/p_freq[seq],
-                               my_slice.stop/p_freq[seq],
+        timebase = np.linspace(my_slice.start/param.frequency,
+                               my_slice.stop/param.frequency,
                                num=my_slice.stop-my_slice.start,
-                               endpoint=False) + p_offset[seq]
+                               endpoint=False) + param.offset
         my_time = np.ma.array(
             data=timebase, mask=np.ma.getmaskarray(param.array[my_slice]))
         if len(my_time.compressed()) < 4:

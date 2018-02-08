@@ -11487,15 +11487,20 @@ class EngVibBroadbandMax(KeyPointValueNode):
 
 class EngOilPressMax(KeyPointValueNode):
     '''
-    Maximum oil pressure in flight. High oil pressure on a cold engine
-    pre-flight assumed not significant.
+    Maximum oil pressure during first engine start until the last engine has
+    stopped.
     '''
 
     units = ut.PSI
 
     def derive(self, oil_press=P('Eng (*) Oil Press Max'),
-               airborne=S('Airborne')):
-        self.create_kpvs_within_slices(oil_press.array, airborne, max_value)
+               eng_start=KTI('First Eng Fuel Flow Start'),
+               eng_stop=KTI('Last Eng Fuel Flow Stop')):
+        self.create_kpvs_within_slices(
+            oil_press.array,
+            [slice(eng_start[0].index, eng_stop[-1].index),],
+            max_value
+        )
 
 
 class EngOilPressFor60SecDuringCruiseMax(KeyPointValueNode):

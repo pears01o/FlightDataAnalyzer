@@ -12342,6 +12342,13 @@ class TestEngOilPressMax(unittest.TestCase, NodeTest):
         self.assertAlmostEqual(int(node[0].value), 210)
         self.assertAlmostEqual(int(node[0].index), 13)
 
+    def test_no_KTIs(self):
+        node = self.node_class()
+        node.derive(self.oil_press, None, None)
+    
+        self.assertAlmostEqual(int(node[0].value), 210)
+        self.assertAlmostEqual(int(node[0].index), 13)        
+
 
 class TestEngOilPressFor60SecDuringCruiseMax(unittest.TestCase):
 

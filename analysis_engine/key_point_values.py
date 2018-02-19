@@ -10519,7 +10519,7 @@ class EngAPRDuration(KeyPointValueNode):
     @classmethod
     def can_operate(cls, available):
         return all_of(('FADEC (L) APR Active', 
-                       'FADEC (R) 50 APR Active',), available) or \
+                       'FADEC (R) APR Active',), available) or \
                all_of(('Eng (1) ATTCS Armed',
                        'Eng (1) ATTCS Enabled',
                        'Eng (1) ATTCS Triggered',
@@ -10529,7 +10529,7 @@ class EngAPRDuration(KeyPointValueNode):
         
     def derive(self,
                eng1_apr = P('FADEC (L) APR Active'),
-               eng2_apr = P('FADEC (R) 50 APR Active'),
+               eng2_apr = P('FADEC (R) APR Active'),
                eng1_attcs_arm = P('Eng (1) ATTCS Armed'),
                eng1_attcs_enabled = P('Eng (1) ATTCS Enabled'),
                eng1_attcs_trigger = P('Eng (1) ATTCS Triggered'),

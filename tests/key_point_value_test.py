@@ -11559,7 +11559,7 @@ class TestEngN1For5SecMaximumContinuousPowerMax(unittest.TestCase, CreateKPVsWit
 class TestEngAPRDuration(unittest.TestCase, NodeTest):        
     def test_basic(self):
         apr_l = P('FADEC (L) APR Active',    [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
-        apr_r = P('FADEC (R) 50 APR Active', [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
+        apr_r = P('FADEC (R) APR Active', [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
         event = EngAPRDuration()
         event.derive(apr_l, apr_r, None, None, None, None, None, None)
 
@@ -11568,7 +11568,7 @@ class TestEngAPRDuration(unittest.TestCase, NodeTest):
 
     def test_gap_and_one_engine(self):
         apr_l = P('FADEC (L) APR Active', [0]*10 + [1]*10 + [0]*500 + [1]*10 + [0]*100)
-        apr_r = P('FADEC (R) 50 APR Active', [0]*630)
+        apr_r = P('FADEC (R) APR Active', [0]*630)
         event = EngAPRDuration()
         event.derive(apr_l, apr_r, None, None, None, None, None, None)
 
@@ -11577,7 +11577,7 @@ class TestEngAPRDuration(unittest.TestCase, NodeTest):
 
     def test_multiple_two_engines(self):
         apr_l = P('FADEC (L) APR Active',    [0]*10 + [1]*10 + [0]*600 + [0]*10 + [0]*100)
-        apr_r = P('FADEC (R) 50 APR Active', [0]*10 + [0]*10 + [0]*600 + [1]*10 + [0]*100)
+        apr_r = P('FADEC (R) APR Active', [0]*10 + [0]*10 + [0]*600 + [1]*10 + [0]*100)
         event = EngAPRDuration()
         event.derive(apr_l, apr_r, None, None, None, None, None, None)
 
@@ -11588,7 +11588,7 @@ class TestEngAPRDuration(unittest.TestCase, NodeTest):
      
     def test_more_than_5_occurences(self):
         apr_l = P('FADEC (L) APR Active',    ([0]*10 + [1]*10 + [0]*600 + [0]*10 + [0]*100)*6)
-        apr_r = P('FADEC (R) 50 APR Active', ([0]*10 + [0]*10 + [0]*600 + [1]*10 + [0]*100)*6)
+        apr_r = P('FADEC (R) APR Active', ([0]*10 + [0]*10 + [0]*600 + [1]*10 + [0]*100)*6)
         event = EngAPRDuration()
         event.derive(apr_l, apr_r, None, None, None, None, None, None)
         self.assertEqual(len(event), 5)

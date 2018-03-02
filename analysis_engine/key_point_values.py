@@ -13166,16 +13166,26 @@ class FlapWithSpeedbrakeDeployedMax(KeyPointValueNode):
     '''
 
     units = ut.DEGREE
-
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Flap Including Transition', 'Speedbrake Selected',
+                      'Airborne', 'Landing'), available) or \
+               all_of(('Flap Including Transition', 'Speedbrake Selected',
+                      'Airborne', 'Landing', 'Landing Attitude Mode Delta CL'), 
+                      available)
     def derive(self,
                flap=M('Flap Including Transition'),
                spd_brk=M('Speedbrake Selected'),
                airborne=S('Airborne'),
-               landings=S('Landing')):
+               landings=S('Landing'),
+               lam=P('Landing Attitude Mode Delta CL'),):
 
         deployed = spd_brk.array == 'Deployed/Cmd Up'
         deployed = mask_outside_slices(deployed, airborne.get_slices())
         deployed = mask_inside_slices(deployed, landings.get_slices())
+        if lam:
+            deployed = np.ma.masked_where(lam.array!=0, deployed)
         deployed_slices = runs_of_ones(deployed)
         self.create_kpv_from_slices(flap.array, deployed_slices, max_value)
 

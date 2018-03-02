@@ -14847,7 +14847,8 @@ class TestFlapWithSpeedbrakeDeployedMax(unittest.TestCase, NodeTest):
     def setUp(self):
         self.node_class = FlapWithSpeedbrakeDeployedMax
         self.operational_combinations = [
-            ('Flap Including Transition', 'Speedbrake Selected', 'Airborne', 'Landing'),
+            ('Flap Including Transition', 'Speedbrake Selected', 'Airborne', 'Landing',
+             'Landing Attitude Mode Delta CL',),
         ]
 
     def test_derive(self):
@@ -14872,7 +14873,32 @@ class TestFlapWithSpeedbrakeDeployedMax(unittest.TestCase, NodeTest):
             KeyPointValue(index=7, value=7, name=name),
         ]))
 
-
+    def test_737MAX(self):
+        array = np.ma.repeat((0, 7, 15), 5)
+        mapping = {int(f): str(f) for f in np.ma.unique(array)}
+        flap = M(name='Flap', array=array, values_mapping=mapping)
+        spd_brk = M(
+            name='Speedbrake Selected',
+            array=np.ma.array([0, 1, 2, 2, 0] * 3),
+            values_mapping={
+                0: 'Stowed',
+                1: 'Armed/Cmd Dn',
+                2: 'Deployed/Cmd Up',
+            },
+        )
+        airborne = buildsection('Airborne', 5, 15)
+        landings = buildsection('Landing', 10, 15)
+        lam = P(
+                name = 'Landing Attitude Mode Delta CL',
+                array = [0, 0, 10, 0, 0]*3)
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(flap, spd_brk, airborne, landings, lam)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=8, value=7, name=name),
+        ]))
+        
+        
 class TestFlapAt1000Ft(unittest.TestCase, NodeTest):
 
     def setUp(self):

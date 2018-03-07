@@ -4941,10 +4941,6 @@ class CoordinatesSmoothed(object):
         #-----------------------------------------------------------------------
 
         if not approaches:
-            # Stop making any adjustment from the first touchdown onwards
-            no_change = slice(tdwns[0].index, None)
-            lat_adj[no_change] = lat.array[no_change]
-            lon_adj[no_change] = lon.array[no_change]
             return lat_adj, lon_adj
 
         # Work through the approaches in sequence.

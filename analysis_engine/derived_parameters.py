@@ -5142,6 +5142,7 @@ class LatitudeSmoothed(DerivedParameterNode, CoordinatesSmoothed):
             'Latitude Prepared',
             'Longitude Prepared',
             'Airspeed True',
+            'Approach Information',
             'Precise Positioning',
             'FDR Takeoff Runway',
             'Mobile']
@@ -5200,6 +5201,7 @@ class LongitudeSmoothed(DerivedParameterNode, CoordinatesSmoothed):
             'Latitude Prepared',
             'Longitude Prepared',
             'Airspeed True',
+            'Approach Information',
             'Precise Positioning',
             'FDR Takeoff Runway',
             'Mobile']

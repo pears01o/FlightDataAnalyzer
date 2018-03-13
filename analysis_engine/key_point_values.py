@@ -11941,10 +11941,29 @@ class EngTorqueFor5SecDuringMaximumContinuousPowerMax(KeyPointValueNode):
         self.create_kpvs_within_slices(array, ratings, max_value)
 
 
+class EngTorqueAbove90KtsMax(KeyPointValueNode):
+    '''
+    Maximum engine torque where the indicate airspeed is above 90 kts. (helicopter only)
+
+    Some Helicopters have Torque restictions above 90 kts to limit flight control loads
+    at high speed thereby preserving dynamic component replacement times.
+
+    '''
+
+    name = 'Eng Torque Above 90 Kts Max'
+
+    units = ut.PERCENT
+
+    can_operate = helicopter_only
+
+    def derive(self, eng=P('Eng (*) Torque Max'), air_spd=P('Airspeed')):
+        self.create_kpvs_within_slices(eng.array, air_spd.slices_above(90), max_value)
+
+
 class EngTorqueAbove100KtsMax(KeyPointValueNode):
     '''
     Maximum engine torque where the indicate airspeed is above 100 kts. (helicopter only)
-    
+
     Some Helicopters have Torque restictions above 100 kts to limit flight control loads
     at high speed thereby preserving dynamic component replacement times.
     (taken from S92 type certificate)
@@ -11958,6 +11977,7 @@ class EngTorqueAbove100KtsMax(KeyPointValueNode):
 
     def derive(self, eng=P('Eng (*) Torque Max'), air_spd=P('Airspeed')):
         self.create_kpvs_within_slices(eng.array, air_spd.slices_above(100), max_value)
+
 
 
 class EngTorque500To50FtMax(KeyPointValueNode):

@@ -9334,16 +9334,28 @@ class EngTorqueLimitExceedanceWithOneEngineInoperativeDuration(KeyPointValueNode
 
 class EngTorqueExceeding100Percent(KeyPointValueNode):
     '''
-    Measures the duration of Eng (*) Torque Avg exceeding 100. 
+    Measures the duration of Eng (*) Torque Avg exceeding 100.
     '''
-    
-    units = ut.SECOND    
+
+    units = ut.SECOND
     can_operate = helicopter_only
 
-    
     def derive(self, avg_torque = P('Eng (*) Torque Avg')):
-        
         threshold_slices = slices_above(avg_torque.array, 100)[1]
+        threshold_slices = slices_remove_small_slices(threshold_slices, 2, avg_torque.hz)
+        self.create_kpvs_from_slice_durations(threshold_slices, self.frequency)
+
+
+class EngTorqueExceeding110Percent(KeyPointValueNode):
+    '''
+    Measures the duration of Eng (*) Torque Avg exceeding 110.
+    '''
+
+    units = ut.SECOND
+    can_operate = helicopter_only
+
+    def derive(self, avg_torque = P('Eng (*) Torque Avg')):
+        threshold_slices = slices_above(avg_torque.array, 110)[1]
         threshold_slices = slices_remove_small_slices(threshold_slices, 2, avg_torque.hz)
         self.create_kpvs_from_slice_durations(threshold_slices, self.frequency)
 

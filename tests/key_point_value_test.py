@@ -376,6 +376,7 @@ from analysis_engine.key_point_values import (
     EngThrustTakeoffDerate,
     EngTorque500To50FtMax,
     EngTorque500To50FtMin,
+    EngTorqueAbove90KtsMax,
     EngTorqueAbove100KtsMax,
     EngTorqueDuringGoAround5MinRatingMax,
     EngTorqueDuringMaximumContinuousPowerMax,
@@ -12914,8 +12915,47 @@ class TestEngTorqueFor5SecMaximumContinuousPowerMax(unittest.TestCase, CreateKPV
         self.assertTrue(False, msg='Test not implemented.')
 
 
+class TestEngTorqueAbove90KtsMax(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = EngTorqueAbove90KtsMax
+
+    def test_attributes(self):
+        node = self.node_class()
+        self.assertEqual(
+            node.name,
+            'Eng Torque Above 90 Kts Max'
+        )
+        self.assertEqual(node.units, '%')
+
+    def test_can_operate(self):
+        self.assertEqual(self.node_class.get_operational_combinations(
+            ac_type=aeroplane), [])
+        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
+        self.assertEqual(opts, [('Eng (*) Torque Max', 'Airspeed')])
+
+    def test_derive(self):
+        eng = P('Eng (*) Torque Max', np.ma.array([
+            70, 70, 70, 70, 70, 70, 70, 70, 68, 72,
+            67, 73, 66, 59, 60, 58, 45, 60, 40, 79,
+            36, 44, 23, 40, 50, 37, 70, 75, 17, 17,
+        ]))
+        air_spd = P('Airspeed', np.ma.array([
+            136, 132, 131, 131, 132, 135, 131, 132, 131, 131,
+            132, 131, 132, 131, 131, 132, 130, 121, 113, 95,
+            97,  89,  81,  73,  65,  57,  49,  41,  33,  25
+        ]))
+
+        node = self.node_class()
+        node.derive(eng, air_spd)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 19)
+        self.assertEqual(node[0].value, 79)
+
+
 class TestEngTorqueAbove100KtsMax(unittest.TestCase):
-    
+
     def setUp(self):
         self.node_class = EngTorqueAbove100KtsMax
 

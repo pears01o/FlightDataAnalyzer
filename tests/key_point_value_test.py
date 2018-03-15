@@ -13018,16 +13018,16 @@ class TestEngTorqueAbove90KtsMax(unittest.TestCase):
         opts = self.node_class.get_operational_combinations(ac_type=helicopter)
         self.assertEqual(opts, [('Eng (*) Torque Max', 'Airspeed')])
 
-    def test_derive(self):
+    def test_derive_exceeding_once(self):
         eng = P('Eng (*) Torque Max', np.ma.array([
             70, 70, 70, 70, 70, 70, 70, 70, 68, 72,
             67, 73, 66, 59, 60, 58, 45, 60, 40, 79,
-            36, 44, 23, 40, 50, 37, 70, 75, 17, 17,
+            65, 62, 63, 59, 58, 57, 43, 46, 52, 58,
         ]))
         air_spd = P('Airspeed', np.ma.array([
             136, 132, 131, 131, 132, 135, 131, 132, 131, 131,
-            132, 131, 132, 131, 131, 132, 130, 121, 113, 95,
-            97,  89,  81,  73,  65,  57,  49,  41,  33,  25
+            120, 120, 110, 110, 110, 110, 100, 100, 100, 100,
+            90,  89,  89,  89,  89,  88,  88,  88,  87,  87,
         ]))
 
         node = self.node_class()
@@ -13036,6 +13036,93 @@ class TestEngTorqueAbove90KtsMax(unittest.TestCase):
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 19)
         self.assertEqual(node[0].value, 79)
+
+
+    def test_derive_exeeding_twice_seperated_by_less_than_ten_seconds(self):
+        eng = P('Eng (*) Torque Max', np.ma.array([
+            70, 70, 70, 70, 70, 70, 70, 70, 68, 72,
+            67, 73, 66, 59, 60, 58, 45, 60, 40, 79,
+            65, 62, 63, 59, 58, 57, 43, 46, 52, 58,
+            68, 62, 64, 65, 67, 70, 72, 73, 76, 81,
+            36, 44, 23, 40, 50, 37, 70, 75, 89, 17,
+        ]))
+        air_spd = P('Airspeed', np.ma.array([
+            136, 132, 131, 131, 132, 135, 131, 132, 131, 131,
+            120, 120, 110, 110, 110, 110, 100, 100, 100, 100,
+            90,  89,  89,  89,  89,  89,  89,  89,  89,  89,
+            132, 131, 132, 131, 131, 132, 130, 121, 113, 95,
+            97,  89,  81,  73,  65,  57,  49,  41,  33,  25
+        ]))
+
+        node = self.node_class()
+        node.derive(eng, air_spd)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 39)
+        self.assertEqual(node[0].value, 81)
+
+
+    def test_derive_exeeding_twice_seperated_by_more_than_ten_seconds(self):
+        eng = P('Eng (*) Torque Max', np.ma.array([
+            70, 70, 70, 70, 70, 70, 70, 70, 68, 72,
+            67, 73, 66, 59, 60, 58, 45, 60, 40, 79,
+            65, 62, 63, 59, 58, 57, 43, 46, 52, 58,
+            68, 62, 64, 65, 67, 70, 72, 73, 76, 81,
+            36, 44, 23, 40, 50, 37, 70, 75, 89, 17,
+        ]))
+        air_spd = P('Airspeed', np.ma.array([
+            136, 132, 131, 131, 132, 135, 131, 132, 131, 131,
+            120, 120, 110, 110, 110, 110, 100, 100, 90, 89,
+            89,  89,  89,  88,  88,  88,  89,  89,  89,  89,
+            89,  90,  132, 131, 131, 132, 130, 121, 113, 95,
+            97,  89,  81,  73,  65,  57,  49,  41,  33,  25
+        ]))
+
+        node = self.node_class()
+        node.derive(eng, air_spd)
+
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].index, 11)
+        self.assertEqual(node[0].value, 73)
+        self.assertEqual(node[1].index, 39)
+        self.assertEqual(node[1].value, 81)
+
+
+    def test_derive_not_exceeding(self):
+        eng = P('Eng (*) Torque Max', np.ma.array([
+            70, 70, 70, 70, 70, 70, 70, 70, 68, 72,
+            67, 73, 66, 59, 60, 58, 45, 60, 40, 79,
+            65, 62, 63, 59, 58, 57, 43, 46, 52, 58,
+        ]))
+        air_spd = P('Airspeed', np.ma.array([
+            89,  89,  89,  88,  87,  88,  89,  89,  89,  89,
+            89,  89,  89,  88,  88,  88,  89,  89,  89,  89,
+            89,  89,  89,  88,  88,  88,  77,  76,  77,  79,
+        ]))
+
+        node = self.node_class()
+        node.derive(eng, air_spd)
+
+        self.assertEqual(len(node), 0)
+
+
+    def test_derive_exceeding_masked_data(self):
+        eng = P('Eng (*) Torque Max', np.ma.array([
+            70, 74, 73, 72, 71, 70, 70, 70, 68, 72,
+            73, 74, 75, 76, 70, 78, 70, 70, 68, 72,
+            70, 70, 70, 70, 70, 70, 70, 70, 68, 72,
+        ]))
+        air_spd = P('Airspeed', np.ma.masked_greater_equal([
+            89,  89,  89,  88,  87,  88,  89,  89,  90,  91,
+            91,  90,  89,  88,  88,  88,  89,  89,  89,  89,
+            89,  89,  89,  88,  88,  88,  77,  76,  77,  79,
+        ], 90) )
+
+        node = self.node_class()
+        node.derive(eng, air_spd)
+
+        self.assertEqual(len(node), 0)
+
 
 
 class TestEngTorqueAbove100KtsMax(unittest.TestCase):

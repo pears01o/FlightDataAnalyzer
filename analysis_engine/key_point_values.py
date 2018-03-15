@@ -11957,7 +11957,13 @@ class EngTorqueAbove90KtsMax(KeyPointValueNode):
     can_operate = helicopter_only
 
     def derive(self, eng=P('Eng (*) Torque Max'), air_spd=P('Airspeed')):
-        self.create_kpvs_within_slices(eng.array, air_spd.slices_above(90), max_value)
+        slices_no_gaps = slices_remove_small_gaps(air_spd.slices_above(90), time_limit=10, hz=air_spd.hz)
+
+        self.create_kpvs_within_slices(
+            eng.array,
+            slices_no_gaps,
+            max_value
+            )
 
 
 class EngTorqueAbove100KtsMax(KeyPointValueNode):
@@ -11976,7 +11982,11 @@ class EngTorqueAbove100KtsMax(KeyPointValueNode):
     can_operate = helicopter_only
 
     def derive(self, eng=P('Eng (*) Torque Max'), air_spd=P('Airspeed')):
-        self.create_kpvs_within_slices(eng.array, air_spd.slices_above(100), max_value)
+        self.create_kpvs_within_slices(
+            eng.array,
+            air_spd.slices_above(100),
+            max_value
+        )
 
 
 

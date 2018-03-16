@@ -73,7 +73,7 @@ class TestApproachInformation(unittest.TestCase):
                           KPV('Longitude At Touchdown', items=[KeyPointValue(index=19, value=-0.19, name='Longitude At Touchdown')]),
                           A('Precise Positioning', True),
                           S(items=[Section('Fast', slice(10,90), 10, 90)]),
-                          None, None, None, None, None, None, None, None, None, 
+                          None, None, None, None, None, None, None, 
                           KTI('Touchdown', items=[KeyTimeInstance(index=19)]), 
                           None, 
                           S(items=[Section('Takeoff', slice(1,10), 1, 10)]))

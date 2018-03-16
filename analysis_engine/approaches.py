@@ -278,8 +278,8 @@ class ApproachInformation(ApproachNode):
                precision=A('Precise Positioning'),
                fast=S('Fast'),
                
-               lat_smoothed=P('Latitude Smoothed'),
-               lon_smoothed=P('Longitude Smoothed'),
+               #lat_smoothed=P('Latitude Smoothed'),
+               #lon_smoothed=P('Longitude Smoothed'),
                u=P('Airspeed'),
                gspd=P('Groundspeed'),
                height_from_rig=P('Altitude ADH'),
@@ -573,8 +573,8 @@ class ApproachInformation(ApproachNode):
                                     'Roll': roll.array[app_slice],
                                     'Distance To Landing': distance_land.array[app_slice],
                                     'Heading': heading_repaired,
-                                    'Latitude': lat_smoothed.array[app_slice],
-                                    'Longitude': lon_smoothed.array[app_slice],
+                                    'Latitude': lat.array[app_slice],
+                                    'Longitude': lon.array[app_slice],
                             }
                     
                             longest_approach_type, longest_approach_durn, longest_approach_slice = find_rig_approach(condition_defs,

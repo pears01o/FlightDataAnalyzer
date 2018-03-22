@@ -603,7 +603,9 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
             logger.info("No PRE_FLIGHT_ANALYSIS actions to perform")
 
         # Merge Params
-        param_names = hdf.valid_lfl_param_names() if reprocess else hdf.valid_param_names()
+        param_names = hdf.valid_lfl_param_names() \
+            if reprocess or requested_only else \
+            hdf.valid_param_names()
         pre_process_parameters(hdf, segment_info, param_names, required,
                                aircraft_info, achieved_flight_record, force=force)
 

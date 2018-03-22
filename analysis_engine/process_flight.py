@@ -358,7 +358,7 @@ def parse_analyser_profiles(analyser_profiles, filter_modules=None):
 def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_record={},
                    requested=[], required=[], include_flight_attributes=True,
                    additional_modules=[], pre_flight_kwargs={}, force=False,
-                   initial={}, reprocess=False):
+                   initial={}, reprocess=False, only_requested=False):
     '''
     Processes the HDF file (segment_info['File']) to derive the required_params (Nodes)
     within python modules (settings.NODE_MODULES).
@@ -389,6 +389,9 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
     :param initial: Initial content for nodes to avoid reprocessing (excluding parameter nodes which are saved to the hdf).
     :type initial: dict
     :param reprocess: Force reprocessing of all Nodes (including derived Nodes already saved to the HDF file).
+    :type reprocess: bool
+    :param only_requested: Process only requested parameters, not dependencies or children.
+    :type only_requested: bool
 
     :returns: See below:
     :rtype: Dict
@@ -582,7 +585,7 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
         requested = list(set(
             requested + list(get_derived_nodes(
                 ['analysis_engine.flight_attribute']).keys())))
-    
+
     initial = process_flight_to_nodes(initial)
     for node_name in requested:
         initial.pop(node_name, None)
@@ -609,18 +612,22 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
             segment_info, hdf.duration, param_names,
             requested, required, derived_nodes, aircraft_info,
             achieved_flight_record)
-        # calculate dependency tree
-        process_order, gr_st = dependency_order(node_mgr, draw=False)
-        if settings.CACHE_PARAMETER_MIN_USAGE:
-            # find params used more than
-            for node in gr_st.nodes():
-                if node in node_mgr.derived_nodes:
-                    # this includes KPV/KTIs but they'll be ignored by HDF
-                    qty = len(gr_st.predecessors(node))
-                    if qty > settings.CACHE_PARAMETER_MIN_USAGE:
-                        hdf.cache_param_list.append(node)
-            logging.info("HDF set to cache parameters: %s",
-                         hdf.cache_param_list)
+        if only_requested:
+            # TODO: derive dependencies which are unavailable
+            process_order = requested
+        else:
+            # calculate dependency tree
+            process_order, gr_st = dependency_order(node_mgr, draw=False)
+            if settings.CACHE_PARAMETER_MIN_USAGE:
+                # find params used more than CACHE_PARAMETER_MIN_USAGE
+                for node in gr_st.nodes():
+                    if node in node_mgr.derived_nodes:
+                        # this includes KPV/KTIs but they'll be ignored by HDF
+                        qty = len(gr_st.predecessors(node))
+                        if qty > settings.CACHE_PARAMETER_MIN_USAGE:
+                            hdf.cache_param_list.append(node)
+                logging.info("HDF set to cache parameters: %s",
+                             hdf.cache_param_list)
 
         # derive parameters
         ktis, kpvs, sections, approaches, flight_attrs = \
@@ -634,13 +641,16 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
         kpvs = geo_locate(hdf, kpvs)
         kpvs = _timestamp(segment_info['Start Datetime'], kpvs)
 
-        # Store version of FlightDataAnalyser
-        hdf.analysis_version = __version__
-        # Store dependency tree
-        hdf.dependency_tree = json.dumps(json_graph.node_link_data(gr_st))
-        # Store aircraft info
-        hdf.set_attr('aircraft_info', aircraft_info)
-        hdf.set_attr('achieved_flight_record', achieved_flight_record)
+        if not only_requested:
+            # Store version of FlightDataAnalyser
+            hdf.analysis_version = __version__
+
+            # Store dependency tree
+            hdf.dependency_tree = json.dumps(json_graph.node_link_data(gr_st))
+
+            # Store aircraft info
+            hdf.set_attr('aircraft_info', aircraft_info)
+            hdf.set_attr('achieved_flight_record', achieved_flight_record)
 
     return {
         'flight': flight_attrs,

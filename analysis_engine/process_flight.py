@@ -358,7 +358,7 @@ def parse_analyser_profiles(analyser_profiles, filter_modules=None):
 def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_record={},
                    requested=[], required=[], include_flight_attributes=True,
                    additional_modules=[], pre_flight_kwargs={}, force=False,
-                   initial={}, reprocess=False, only_requested=False):
+                   initial={}, reprocess=False, requested_only=False):
     '''
     Processes the HDF file (segment_info['File']) to derive the required_params (Nodes)
     within python modules (settings.NODE_MODULES).
@@ -390,8 +390,8 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
     :type initial: dict
     :param reprocess: Force reprocessing of all Nodes (including derived Nodes already saved to the HDF file).
     :type reprocess: bool
-    :param only_requested: Process only requested parameters, not dependencies or children.
-    :type only_requested: bool
+    :param requested_only: Process only requested parameters, not dependencies or children.
+    :type requested_only: bool
 
     :returns: See below:
     :rtype: Dict
@@ -614,7 +614,7 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
             segment_info, hdf.duration, param_names,
             requested, required, derived_nodes, aircraft_info,
             achieved_flight_record)
-        if only_requested:
+        if requested_only:
             # TODO: derive dependencies which are unavailable
             process_order = requested
         else:
@@ -643,7 +643,7 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
         kpvs = geo_locate(hdf, kpvs)
         kpvs = _timestamp(segment_info['Start Datetime'], kpvs)
 
-        if not only_requested:
+        if not requested_only:
             # Store version of FlightDataAnalyser
             hdf.analysis_version = __version__
 

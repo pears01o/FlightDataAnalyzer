@@ -14513,7 +14513,7 @@ class Pitch1000To500FtMax(KeyPointValueNode):
     def can_operate(cls, available, ac_type=A('Aircraft Type')):
         required = ['Pitch']
         if ac_type and ac_type.value == 'helicopter':
-            required.extend(['Altitude AGL For Flight Phases', 'Descending'])
+            required.extend(['Altitude AGL For Flight Phases', 'Descent'])
         else:
             required.extend(['Altitude AAL For Flight Phases', 'Final Approach'])
         return all_of(required, available)
@@ -14525,7 +14525,7 @@ class Pitch1000To500FtMax(KeyPointValueNode):
                fin_app=S('Final Approach'),
                # helicopter
                alt_agl=P('Altitude AGL For Flight Phases'),
-               descending=S('Descending'),
+               descending=S('Descent'),
                ac_type=A('Aircraft Type')):
 
         if ac_type and ac_type.value == 'helicopter':

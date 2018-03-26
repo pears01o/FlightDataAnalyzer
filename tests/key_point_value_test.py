@@ -16810,7 +16810,7 @@ class TestPitch1000To500FtMax(unittest.TestCase):
         self.assertFalse(self.node_class.can_operate([], ac_type=helicopter))
         self.assertTrue(self.node_class.can_operate(('Pitch', 'Altitude AAL For Flight Phases', 'Final Approach'), ac_type=aeroplane))
         self.assertFalse(self.node_class.can_operate(('Pitch', 'Altitude AAL For Flight Phases', 'Final Approach'), ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate(('Pitch', 'Altitude AGL', 'Descending'), ac_type=helicopter))
+        self.assertTrue(self.node_class.can_operate(('Pitch', 'Altitude AGL For Flight Phases', 'Descending'), ac_type=helicopter))
 
     @unittest.skip('Test Not Implemented')
     def test_derive(self):

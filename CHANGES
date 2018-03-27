@@ -8,6 +8,26 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.38.5
+-------
+  - AE-1667 Modified derive method in TakeoffAccelerationStart to work for single slices.
+  - AE-1604 ThrustAsymmetry now uses N1 in preference over EPR. Added test case.
+  - AE-1648 C208 set derived Flap parameter to 40 below 500ft AAL
+  - AE-1627 Fix for AccelerationNormalMinusLoadFactorThreshold KPV
+  - AE-1656: change Taxiing dependency Rejected Takeoff to be optional
+  - AE-1669 extended EngOilPressMax KPV now covers whole flight instead of just 'Airborne' phase.
+  - AE-1669 Modified EngOilPressMax KPV to work without KTIs
+  - AE-1685 Changes in logic to work for new FADEC parameters on E-Jets
+  - AE-1675 Fix forFlapWithSpeedbrakeDeployedMax for 737MAX
+  - AE-1729: Approach Information a required dependency of Smoothed parameters, touchdown point alignment fix
+  - AE-1696 New KPV EngTorqueExceeding110Percent
+  - AE-1697 New KPV EngTorqueAbove90KtsMax
+  - process_flight: only_requested option to override process_order
+  - process_flight: fix for deriving requested_only
+  - process_flight: change only_requested kwarg name to requested_only
+  - fix slices with odd numbered indices breaking blend_parameters_cubic
+  - local api: add aeroplane to Aircraft Type (G-FDSL)
+
 v0.38.4
 -------
   - AE-1641: Fix for Vertical Speed Inertial

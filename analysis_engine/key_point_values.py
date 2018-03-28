@@ -766,13 +766,20 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
 
     units = ut.G
 
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Acceleration Normal Offset Removed', 'Touchdown',),
+                      available)
+
     def derive(self,
                acc_norm=P('Acceleration Normal Offset Removed'),
                touchdowns=KTI('Touchdown'),
                touch_and_go=KTI('Touch And Go')):
-
-        for touchdown in (touchdowns+touch_and_go):
-            self.create_kpv(*bump(acc_norm, touchdown))
+        tdwns = touchdowns
+        if touch_and_go:
+            tdwns += touch_and_go
+        for touchdown in tdwns:
+                self.create_kpv(*bump(acc_norm, touchdown))
 
 
 class LoadFactorThresholdAtTouchdown(KeyPointValueNode):

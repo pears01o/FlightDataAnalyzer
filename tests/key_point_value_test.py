@@ -12302,47 +12302,11 @@ class TestEngOilPressMax(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = EngOilPressMax
-        self.operational_combinations = [('Eng (*) Oil Press Max',
-                                          'First Eng Fuel Flow Start',
-                                          'Last Eng Fuel Flow Stop')]
-        self.oil_press = P(name='Eng (*) Oil Press Max',
-                           array=np.ma.array([
-                               10, 40, 50, 60, 70,
-                               160, 200, 70, 20, 40,
-                               160, 140, 170, 210, 30,
-                           ]))
+        self.operational_combinations = [('Eng (*) Oil Press Max', 'Airborne')]
 
-    def test_derive_single_ktis(self):
-        start_kti = KTI(name='First Eng Fuel Flow Start',
-                        items=[KeyTimeInstance(name='First Eng Fuel Flow Start',
-                                               index=2),])
-
-        end_kti = KTI(name='Last Eng Fuel Flow Stop',
-                      items=[KeyTimeInstance(name='Last Eng Fuel Flow Stop',
-                                             index=13),])
-        node = self.node_class()
-        node.derive(self.oil_press, start_kti, end_kti)
-
-        self.assertAlmostEqual(int(node[0].value), 200)
-        self.assertAlmostEqual(int(node[0].index), 6)
-
-    def test_derive_multi_ktis(self):
-        start_kti = KTI(name='First Eng Fuel Flow Start',
-                        items=[
-                            KeyTimeInstance(name='First Eng Fuel Flow Start',index=1),
-                            KeyTimeInstance(name='First Eng Fuel Flow Start',index=3),
-                        ])
-
-        end_kti = KTI(name='Last Eng Fuel Flow Stop',
-                      items=[
-                          KeyTimeInstance(name='Last Eng Fuel Flow Stop', index=13),
-                          KeyTimeInstance(name='Last Eng Fuel Flow Stop', index=15),
-                      ])
-        node = self.node_class()
-        node.derive(self.oil_press, start_kti, end_kti)
-
-        self.assertAlmostEqual(int(node[0].value), 210)
-        self.assertAlmostEqual(int(node[0].index), 13)
+    @unittest.skip('Test Not Implemented')
+    def test_derive(self):
+        self.assertTrue(False, msg='Test not implemented.')
 
 
 class TestEngOilPressFor60SecDuringCruiseMax(unittest.TestCase):

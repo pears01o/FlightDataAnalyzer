@@ -1833,7 +1833,10 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = AccelerationNormalAtTouchdown
-        self.operational_combinations = [('Acceleration Normal Offset Removed', 'Touchdown', 'Touch And Go')]
+        self.operational_combinations = [
+            ('Acceleration Normal Offset Removed', 'Touchdown', 'Touch And Go'),
+            ('Acceleration Normal Offset Removed', 'Touchdown'),
+        ]
 
     @patch('analysis_engine.key_point_values.bump')
     def test_derive_only_touchdowns(self, bump):
@@ -1844,7 +1847,7 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
             KeyTimeInstance(1, 'Touchdown'),
         ])
         node = AccelerationNormalAtTouchdown()
-        node.derive(acc_norm, touchdowns)
+        node.derive(acc_norm, touchdowns, None)
         bump.assert_has_calls([
             call(acc_norm, touchdowns[0]),
             call(acc_norm, touchdowns[1]),

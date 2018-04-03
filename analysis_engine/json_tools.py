@@ -4,6 +4,7 @@ import pytz
 import simplejson as json
 import six
 
+from copy import deepcopy
 from datetime import datetime
 
 from analysis_engine import settings
@@ -173,6 +174,17 @@ def json_to_process_flight(txt):
             res[key][name] = [jsondict_to_node(i) for i in items]
 
     return res
+
+
+def merge_process_flights(pf1, pf2):
+    '''
+    Merge pf2 with pf1 and replace from pf2 where keys match.
+    '''
+    data = deepcopy(pf1)
+    for key in 'approach', 'flight', 'kpv', 'kti', 'phases':
+        for name, node in pf2[key].items():
+            data[key][name] = node
+    return data
 
 
 def process_flight_to_nodes(pf_results):

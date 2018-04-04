@@ -572,22 +572,22 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
     derived_nodes = get_derived_nodes(node_modules)
 
     if requested:
-        requested = \
+        requested_subset = \
             list(set(requested).intersection(set(derived_nodes)))
     else:
         # if requested isn't set, try using ALL derived_nodes!
         logger.debug("No requested nodes declared, using all derived nodes")
         # Enforce some sort of order in which the dependencies are traversed
-        requested = sorted(list(derived_nodes.keys()))
+        requested_subset = sorted(list(derived_nodes.keys()))
 
     # include all flight attributes as requested
     if include_flight_attributes:
-        requested = list(set(
-            requested + list(get_derived_nodes(
+        requested_subset = list(set(
+            requested_subset + list(get_derived_nodes(
                 ['analysis_engine.flight_attribute']).keys())))
 
     initial = process_flight_to_nodes(initial)
-    for node_name in requested:
+    for node_name in requested_subset:
         initial.pop(node_name, None)
 
     # open HDF for reading
@@ -609,15 +609,16 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
                                aircraft_info, achieved_flight_record, force=force)
 
         if requested_only:
-            param_names = list(set(param_names) - set(requested))
+            param_names = list(set(param_names) - set(requested_subset))
         # Track nodes.
         node_mgr = NodeManager(
             segment_info, hdf.duration, param_names,
-            requested, required, derived_nodes, aircraft_info,
+            requested_subset, required, derived_nodes, aircraft_info,
             achieved_flight_record)
         if requested_only:
             # TODO: derive dependencies which are unavailable
-            process_order = requested
+            # XXX: maintain ordering of requested iterable
+            process_order = [r for r in requested if r in requested_subset]
         else:
             # calculate dependency tree
             process_order, gr_st = dependency_order(node_mgr, draw=False)

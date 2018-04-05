@@ -11339,11 +11339,17 @@ class EngNpDuringTakeoff5MinRatingMax(KeyPointValueNode):
     name = 'Eng Np During Takeoff 5 Min Rating Max'
     units = ut.PERCENT
 
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Eng (*) Np Max', 'Takeoff 5 Min Rating'), available)
+
     def derive(self,
                eng_np_max=P('Eng (*) Np Max'),
-               ratings=S('Takeoff 5 Min Rating')):
+               takeoffs=S('Takeoff 5 Min Rating'),
+               go_arounds=S('Go Around 5 Min Rating')):
 
-        self.create_kpvs_within_slices(eng_np_max.array, ratings, max_value)
+        self.create_kpvs_within_slices(eng_np_max.array, takeoffs, max_value)
+        self.create_kpvs_within_slices(eng_np_max.array, go_arounds, max_value)
 
 
 class EngNpFor5SecDuringTakeoff5MinRatingMax(KeyPointValueNode):

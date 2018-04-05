@@ -345,7 +345,7 @@ from analysis_engine.key_point_values import (
     EngNpDuringMaximumContinuousPowerMax,
     EngNpDuringTakeoff5MinRatingMax,
     EngNpFor5SecDuringGoAround5MinRatingMax,
-    EngNpFor5SecDuringMaximumContinuousPowerMax,
+    EngNpForXSecDuringMaximumContinuousPowerMax,
     EngNpFor5SecDuringTakeoff5MinRatingMax,
     EngNpDuringTaxiMax,
     EngNpOverThresholdDuration,
@@ -12239,13 +12239,11 @@ class TestEngNpMaximumContinuousPowerMax(unittest.TestCase, CreateKPVsWithinSlic
         self.function = max_value
 
 
-class TestEngNpFor5SecMaximumContinuousPowerMax(unittest.TestCase, CreateKPVsWithinSlicesSecondWindowTest):
+class TestEngNpForXSecMaximumContinuousPowerMax(unittest.TestCase, NodeTest):
 
     def setUp(self):
-        self.node_class = EngNpFor5SecDuringMaximumContinuousPowerMax
+        self.node_class = EngNpForXSecDuringMaximumContinuousPowerMax
         self.operational_combinations = [('Eng (*) Np Max', 'Maximum Continuous Power')]
-        self.function = max_value
-        self.duration = 5
 
     @unittest.skip('Test Not Implemented')
     def test_derive(self):

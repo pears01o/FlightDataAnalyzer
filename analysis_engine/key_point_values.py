@@ -11416,24 +11416,26 @@ class EngNpDuringMaximumContinuousPowerMax(KeyPointValueNode):
         self.create_kpvs_within_slices(eng_np_max.array, mcp, max_value)
 
 
-class EngNpFor5SecDuringMaximumContinuousPowerMax(KeyPointValueNode):
+class EngNpForXSecDuringMaximumContinuousPowerMax(KeyPointValueNode):
     '''
-    Maximum Np recorded for at least 5 seconds during maximum continuous power.
+    Maximum Np recorded for at least 5 and 20 seconds during maximum continuous power.
     
     Maximum continuous power applies whenever takeoff or go-around
     power settings are not in force.
     '''
 
-    name = 'Eng Np For 5 Sec During Maximum Continuous Power Max'
+    NAME_FORMAT = 'Eng Np For %(seconds)d Sec During Maximum Continuous Power Max'
+    NAME_VALUES = {'seconds': [5, 20]}
     units = ut.PERCENT
 
     def derive(self,
                eng_np_max=P('Eng (*) Np Max'),
                ratings=S('Maximum Continuous Power')):
 
-        self.create_kpvs_within_slices(
-            second_window(eng_np_max.array, eng_np_max.frequency, 5),
-            ratings, max_value)
+        for seconds in self.NAME_VALUES['seconds']:
+            self.create_kpvs_within_slices(
+                second_window(eng_np_max.array, eng_np_max.frequency, seconds),
+                ratings, max_value, seconds=seconds)
 
 
 ##############################################################################
@@ -19536,7 +19538,7 @@ class EngNpMaxDuringTakeoff(KeyPointValueNode):
     
     NAME_FORMAT = 'Eng (*) Np Max During Takeoff %(seconds)d Sec'
     NAME_VALUES = {'seconds': [5, 20]}
-    units =ut.PERCENT
+    units = ut.PERCENT
     
     @classmethod
     def can_operate(cls, available):

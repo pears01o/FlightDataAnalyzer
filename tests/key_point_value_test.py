@@ -12169,12 +12169,14 @@ class TestEngNpDuringTaxiMax(unittest.TestCase, CreateKPVFromSlicesTest):
         self.assertTrue(False, msg='Test not implemented.')
 
 
-class TestEngNpDuringTakeoff5MinRatingMax(unittest.TestCase, CreateKPVsWithinSlicesTest):
+class TestEngNpDuringTakeoff5MinRatingMax(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = EngNpDuringTakeoff5MinRatingMax
-        self.operational_combinations = [('Eng (*) Np Max', 'Takeoff 5 Min Rating')]
-        self.function = max_value
+        self.operational_combinations = [
+            ('Eng (*) Np Max', 'Takeoff 5 Min Rating'),
+            ('Eng (*) Np Max', 'Takeoff 5 Min Rating', 'Go Around 5 Min Rating'),
+        ]
 
     @unittest.skip('Test Not Implemented')
     def test_derive(self):

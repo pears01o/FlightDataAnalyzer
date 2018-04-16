@@ -19756,3 +19756,39 @@ class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
                     index, value = max_maintained_value(arrays, samples, mcp)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)
+
+
+class EngN2MaxDuringTakeoff(KeyPointValueNode):
+    '''
+    The maximum value of Eng (*) N2 Max during Takeoff 5 Min Rating phase
+    maintained for the specified duration
+    '''
+    
+    NAME_FORMAT = 'Eng (*) N2 Max During Takeoff %(durations)s'
+    NAME_VALUES = {'durations': ['10 Sec', '20 Sec', '5 Min']}
+    units = ut.PERCENT
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Eng (*) N2 Max', 'Takeoff 5 Min Rating'), available)
+    
+    def derive(self, eng_torq_max=P('Eng (*) N2 Max'),
+               takeoffs=S('Takeoff 5 Min Rating'),
+               go_arounds=S('Go Around 5 Min Rating')):
+        
+        seconds = np.array([10, 20, 300])
+        for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
+            for takeoff in takeoffs.get_slices():
+                arrays = eng_torq_max.array[takeoff]
+                if len(arrays) > 0:
+                    index, value = max_maintained_value(arrays, samples, takeoff)
+                    if index is not None and value is not None:
+                        self.create_kpv(index, value, durations=duration)
+        if go_arounds:
+            for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
+                for go_around in go_arounds.get_slices():
+                    arrays = eng_torq_max.array[go_around]
+                    if len(arrays) > 0:
+                        index, value = max_maintained_value(arrays, samples, go_around)
+                        if index is not None and value is not None:
+                            self.create_kpv(index, value, durations=duration)

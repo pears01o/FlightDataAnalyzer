@@ -325,6 +325,7 @@ from analysis_engine.key_point_values import (
     EngN2DuringGoAround5MinRatingMax,
     EngN2DuringMaximumContinuousPowerMax,
     EngN2DuringMaximumContinuousPowerMin,
+    EngN2MaxDuringTakeoff,
     EngN2DuringTakeoff5MinRatingMax,
     EngN2DuringTaxiMax,
     EngN2ExceededN2RedlineDuration,
@@ -10670,6 +10671,127 @@ class TestEngTorqueMaxDuringTakeoff(unittest.TestCase):
         ]))
 
 
+class TestEngN2MaxDuringTakeoff(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = EngN2MaxDuringTakeoff
+        
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(('Eng (*) N2 Max', 'Takeoff 5 Min Rating')))
+        
+    def test_derive(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 360)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                 [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                 [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 10 Sec'),
+            KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 20 Sec'),
+            KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 5 Min'),
+        ]))
+        
+    def test_derive_short_takeoff(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 25)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                 [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                 [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 10 Sec'),
+        ]))            
+        
+    def test_derive_masked_data(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 360)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                     [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                     [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        eng_N2_max.array[50:360] = np.ma.masked
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 10 Sec'),
+                KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 20 Sec'),
+            ]))
+        
+    def test_derive_multiple_masked_slices(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 360)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                 [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                 [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
+        
+        eng_N2_max.array[200:250] = np.ma.masked
+        eng_N2_max.array[100:150] = np.ma.masked
+        
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 10 Sec'),
+            KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 20 Sec'),
+        ]))    
+        
+    def test_derive_all_data_masked(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 360)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array(([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                     [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                     [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]), mask=True))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[]))
+    
+    def test_derive_not_enough_high_samples(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 10, 400)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 98] * 2 + 
+                                                                 [95, 94, 92, 89, 86, 82, 80, 80, 81, 82] * 40))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=24, value=86, name='Eng (*) N2 Max During Takeoff 10 Sec'),
+                KeyPointValue(index=26, value=80, name='Eng (*) N2 Max During Takeoff 20 Sec'),
+                KeyPointValue(index=26, value=80, name='Eng (*) N2 Max During Takeoff 5 Min'),
+            ]))        
+        
+    def test_derive_hz_2(self):
+        takeoffs=buildsection('Takeoff 5 Min Rating', 20, 720)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] * 2 + 
+                                                                     [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 70 + 
+                                                                     [95, 94, 92, 89, 86, 82, 80, 80, 81, 82] * 2))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, takeoffs)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=27, value=98, name='Eng (*) N2 Max During Takeoff 10 Sec'),
+                KeyPointValue(index=27, value=98, name='Eng (*) N2 Max During Takeoff 20 Sec'),
+                KeyPointValue(index=27, value=98, name='Eng (*) N2 Max During Takeoff 5 Min'),
+            ]))
+        
+    def test_derive_with_go_around(self):
+        go_arounds=buildsection('Go Around 5 Min Rating', 10, 360)
+        takeoffs=buildsection('Takeoff 5 Min Rating', 380, 720)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.tile(np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
+                                                                         [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                         [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]), 2))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, takeoffs, go_arounds)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=387, value=98, name='Eng (*) N2 Max During Takeoff 10 Sec'),
+            KeyPointValue(index=387, value=98, name='Eng (*) N2 Max During Takeoff 20 Sec'),
+            KeyPointValue(index=387, value=98, name='Eng (*) N2 Max During Takeoff 5 Min'),            
+            KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 10 Sec'),
+            KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 20 Sec'),
+            KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 5 Min'),
+        ]))
+        
+        
 ##############################################################################
 # Engine Bleed
 

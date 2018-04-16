@@ -326,6 +326,7 @@ from analysis_engine.key_point_values import (
     EngN2DuringMaximumContinuousPowerMax,
     EngN2DuringMaximumContinuousPowerMin,
     EngN2MaxDuringTakeoff,
+    EngN2MaxDuringMaximumContinuousPower,
     EngN2DuringTakeoff5MinRatingMax,
     EngN2DuringTaxiMax,
     EngN2ExceededN2RedlineDuration,
@@ -10790,8 +10791,109 @@ class TestEngN2MaxDuringTakeoff(unittest.TestCase):
             KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 20 Sec'),
             KeyPointValue(index=17, value=98, name='Eng (*) N2 Max During Takeoff 5 Min'),
         ]))
+
+
+class TestEngN2MaxDuringMaximumContinuousPower(unittest.TestCase):
+    
+    def setUp(self):
+        self.node_class = EngN2MaxDuringMaximumContinuousPower
         
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(('Eng (*) N2 Max', 'Maximum Continuous Power')))
+    
+    def test_derive(self):
+        mcp=buildsection('Maximum Continuous Power', 20, 700)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                  95, 92, 93, 89, 87, 85, 82, 83, 80, 79] + 
+                                                                 [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 70 + 
+                                                                 [75, 72, 68, 63, 58, 40, 30, 20, 10, 0]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 10 Sec'),
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 20 Sec'),
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 5 Min'),
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 10 Min'),
+            ]))
         
+    def test_derive_short_mcp(self):
+        mcp=buildsection('Maximum Continuous Power', 20, 400)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                  95, 92, 93, 89, 87, 85, 82, 83, 80, 79] + 
+                                                                 [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 70 + 
+                                                                 [75, 72, 68, 63, 58, 40, 30, 20, 10, 0]))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 10 Sec'),
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 20 Sec'),
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 5 Min'),
+            ]))        
+    
+    def test_derive_masked_data(self):
+        mcp=buildsection('Maximum Continuous Power', 20, 700)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                  95, 92, 93, 89, 87, 85, 82, 83, 80, 79] + 
+                                                                 [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 70 + 
+                                                                 [75, 72, 68, 63, 58, 40, 30, 20, 10, 0]))
+        eng_N2_max.array[60:] =np.ma.masked
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 10 Sec'),
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 20 Sec'),
+            ]))  
+        
+    def test_derive_multiple_masked_slices(self):
+        mcp=buildsection('Maximum Continuous Power', 20, 700)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                  95, 92, 93, 89, 87, 85, 82, 83, 80, 79] + 
+                                                                 [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 70 + 
+                                                                 [75, 72, 68, 63, 58, 40, 30, 20, 10, 0]))
+        
+        eng_N2_max.array[350:400] = np.ma.masked
+        eng_N2_max.array[450:500] = np.ma.masked
+    
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 10 Sec'),
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 20 Sec'),
+                KeyPointValue(index=23, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 5 Min'),
+            ]))    
+    
+    def test_derive_all_data_masked(self):
+        mcp=buildsection('Maximum Continuous Power', 20, 700)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array(([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                   95, 92, 93, 89, 87, 85, 82, 83, 80, 79] + 
+                                                                  [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 70 + 
+                                                                  [75, 72, 68, 63, 58, 40, 30, 20, 10, 0]), mask=True))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[]))        
+    
+    def test_derive_hz_2(self):
+        mcp=buildsection('Maximum Continuous Power', 40, 1400)
+        eng_N2_max=P('Eng (*) N2 Max', array=np.ma.array([80, 81, 85, 90, 95, 96, 99, 100, 100, 99, 
+                                                                  95, 92, 93, 89, 87, 85, 82, 83, 80, 79] * 2  + 
+                                                                 [80, 81, 79, 75, 78, 81, 82, 79, 80, 79] * 140 + 
+                                                                 [75, 72, 68, 63, 58, 40, 30, 20, 10, 0] * 2))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(eng_N2_max, mcp)
+        self.assertEqual(node, KPV(name=name, items=[
+                KeyPointValue(index=43, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 10 Sec'),
+                KeyPointValue(index=43, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 20 Sec'),
+                KeyPointValue(index=43, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 5 Min'),
+                KeyPointValue(index=43, value=75, name='Eng (*) N2 Max During Maximum Continuous Power 10 Min'),
+            ]))        
+
+      
 ##############################################################################
 # Engine Bleed
 

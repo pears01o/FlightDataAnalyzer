@@ -6015,10 +6015,91 @@ class RollRate(DerivedParameterNode):
     '''
 
     units = ut.DEGREE_S
-
+    
     def derive(self, roll=P('Roll')):
 
         self.array = rate_of_change(roll, 2.0)
+
+
+class RollRateForTouchdown(DerivedParameterNode):
+    '''
+    Unsmoothed roll rate (required for touchdown).
+    '''
+
+    def derive(self,
+               roll=P('Roll'),):
+
+        roc_array = [0] # prepend 0 at the beginning to match the length of roll array
+        
+        for i in range(len(roll.array)-1):
+            '''
+            As per Embraer's AMM - Figure 606 - Sheet 1
+            Rev 52 - Nov 24/17; 200-802-A/600
+            
+            RRi = roll rate at i time instant
+            R(i) = roll angle at i time instant
+            R(i-1) = roll angle at i-1 time instant
+            dt = delta time between i and i-1
+            
+            RRi = (R(i) - R(i-1))/dt
+            '''
+            roll_rate = ((roll.array[i+1] - roll.array[i])*roll.hz)
+            roc_array.append(roll_rate)
+        
+        self.array = np.array(roc_array)
+
+
+class RollRateAtTouchdownLimit(DerivedParameterNode):
+    '''
+    Maximum roll rate at touchdown for current weight.
+    Applicable only for Embraer E-175.
+    '''
+
+    @classmethod
+    def can_operate(cls, available,
+                    family=A('Family'),):
+        
+        family_name = family.value if family else None
+        
+        return family_name in ('ERJ-170/175',) and (
+               'Gross Weight Smoothed' in available)
+        
+        
+    def derive(self,
+               gw=P('Gross Weight Smoothed'),):
+        
+        '''
+        Embraer 175 - AMM 2134
+        200-802-A/600
+        Rev 52 - Nov 24/17
+        
+        E175 Aircraft Maintenance Manual, Roll Rate Calculation and Threshold, 
+        Figure 606 - Sheet 2
+        
+        The following method returns an approximation of the roll limit curve.
+        
+        For weights between 20000kg and 21999kg approximate (values returned are 
+        slightly below the limit) roll rate limit is:
+        f(x) = -0.001x + 34 
+        
+        For weights between 22000kg and 38000kg roll rate limit is a function:
+        f(x) = -0.000375x + 20.75
+        
+        For weights between 38001kg and 40000kg we assume a limit of 6 degrees per second, 
+        which again, is slightly below the limit.
+        '''
+        
+        limit_curve = []
+        
+        for sample in gw.array:
+            if 22000 < sample < 38000:
+                limit_curve.append(sample*(-0.000375) + 20.75)
+            elif 20000 <= sample < 21999:
+                limit_curve.append(sample*(-0.001) + 34)
+            elif 38001 < sample <= 40000:
+                limit_curve.append(6)
+        
+        self.array = np.array(limit_curve)
 
 
 class Rudder(DerivedParameterNode):

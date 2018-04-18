@@ -16606,6 +16606,35 @@ class RollAboveFL200Max(KeyPointValueNode):
             max_abs_value,
         )
 
+
+class RollRateMaxAboveLimitAtTouchdown(KeyPointValueNode):
+    '''
+    Maximum value of roll rate limit exceedance at touchdown.
+    '''
+    units = ut.DEGREE_S
+    
+    def derive(self,
+               appr_ldg=S('Approach And Landing'),
+               limit=P('Roll Rate At Touchdown Limit'),
+               roll_rate=P('Roll Rate For Touchdown'),
+               accel_normal=P('Acceleration Normal'),):
+        '''
+        Roll rate exceedance within +/-2 seconds of peak acceleration 
+        during Approach And Landing phase.
+        '''
+        max_acc_indices = [np.argmax(accel_normal.array[window.start:window.stop]) + \
+                           window.start for window in appr_ldg.get_slices()]
+        
+        for i in max_acc_indices:
+            window_start = i - (2*self.hz)
+            window_end = i + (2*self.hz) + 1 # +1 so that the number of indices is equal on both sides of peak acceleration
+            rr_over_limit = abs(roll_rate.array[window_start:window_end]) - \
+                            limit.array[window_start:window_end]
+            
+            if rr_over_limit.any() > 0:
+                self.create_kpv(np.argmax(rr_over_limit)+window_start, max(rr_over_limit))
+
+
 ##############################################################################
 # Rotor
 

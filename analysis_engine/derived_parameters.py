@@ -6026,6 +6026,16 @@ class RollRateForTouchdown(DerivedParameterNode):
     Unsmoothed roll rate (required for touchdown).
     '''
 
+    @classmethod
+    def can_operate(cls, available,
+                    family=A('Family'),):
+
+        family_name = family.value if family else None
+
+        return family_name in ('ERJ-170/175',) and (
+            'Roll' in available)
+    
+    
     def derive(self,
                roll=P('Roll'),):
 

@@ -21628,7 +21628,7 @@ class TestTakeoffConfigurationWarningDuration(unittest.TestCase,
                                               CreateKPVsWhereTest):
     def setUp(self):
         self.param_name = 'Takeoff Configuration Warning'
-        self.phase_name = 'Takeoff Roll Or Rejected Takeoff'
+        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationWarningDuration
         self.values_mapping = {0: '-', 1: 'Warning'}
 
@@ -21639,7 +21639,7 @@ class TestTakeoffConfigurationFlapWarningDuration(unittest.TestCase,
                                                   CreateKPVsWhereTest):
     def setUp(self):
         self.param_name = 'Takeoff Configuration Flap Warning'
-        self.phase_name = 'Takeoff Roll Or Rejected Takeoff'
+        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationFlapWarningDuration
         self.values_mapping = {0: '-', 1: 'Warning'}
 
@@ -21650,7 +21650,7 @@ class TestTakeoffConfigurationParkingBrakeWarningDuration(unittest.TestCase,
                                                           CreateKPVsWhereTest):
     def setUp(self):
         self.param_name = 'Takeoff Configuration Parking Brake Warning'
-        self.phase_name = 'Takeoff Roll Or Rejected Takeoff'
+        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationParkingBrakeWarningDuration
         self.values_mapping = {0: '-', 1: 'Warning'}
 
@@ -21661,7 +21661,7 @@ class TestTakeoffConfigurationSpoilerWarningDuration(unittest.TestCase,
                                                      CreateKPVsWhereTest):
     def setUp(self):
         self.param_name = 'Takeoff Configuration Spoiler Warning'
-        self.phase_name = 'Takeoff Roll Or Rejected Takeoff'
+        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationSpoilerWarningDuration
         self.values_mapping = {0: '-', 1: 'Warning'}
 
@@ -21672,7 +21672,7 @@ class TestTakeoffConfigurationStabilizerWarningDuration(unittest.TestCase,
                                                         CreateKPVsWhereTest):
     def setUp(self):
         self.param_name = 'Takeoff Configuration Stabilizer Warning'
-        self.phase_name = 'Takeoff Roll Or Rejected Takeoff'
+        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationStabilizerWarningDuration
         self.values_mapping = {0: '-', 1: 'Warning'}
 

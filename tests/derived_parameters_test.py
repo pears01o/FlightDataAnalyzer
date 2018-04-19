@@ -5474,10 +5474,6 @@ class TestRollRate(unittest.TestCase):
 
 
 class TestRollRateForTouchdown(unittest.TestCase):
-    def test_can_operate(self):
-        opts = RollRateForTouchdown.get_operational_combinations()
-        self.assertTrue(('Roll',) in opts)
-
     def test_derive(self):
         roll_rate=P('Roll', np.array([-3.2, -0.5, 2.3, 0.9, 0.7, 0.7, 0.5, 0.5]), frequency=2)
         node = RollRateForTouchdown()

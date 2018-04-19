@@ -198,6 +198,8 @@ from analysis_engine.derived_parameters import (
     PotentialEnergy,
     Roll,
     RollRate,
+    RollRateForTouchdown,
+    RollRateAtTouchdownLimit,
     Rudder,
     RudderPedal,
     RudderPedalCapt,
@@ -5469,6 +5471,25 @@ class TestRollRate(unittest.TestCase):
         rr.derive(roll)
         expected=np_ma_ones_like(roll.array)*4.0
         assert_array_equal(expected[2:4], rr.array[2:4]) # Differential process blurs ends of the array, so just test the core part.
+
+
+
+class TestRollRateForTouchdown(unittest.TestCase):
+    def test_can_operate(self):
+        opts = RollRateForTouchdown.get_operational_combinations()
+        self.assertTrue(('Roll',) in opts)
+
+    def test_derive(self):
+        assert_array_equal(x, y)
+
+
+class TestRollRateAtTouchdownLimit(unittest.TestCase):
+    def test_can_operate(self):
+        opts = RollRateAtTouchdownLimit.get_operational_combinations()
+        self.assertTrue(('Gross Weight Smoothed',) in opts)
+
+    def test_derive(self):
+        assert_array_equal(x, y)
 
 
 class TestRudderPedalCapt(unittest.TestCase):

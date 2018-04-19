@@ -6041,20 +6041,18 @@ class RollRateForTouchdown(DerivedParameterNode):
 
         roc_array = [0] # prepend 0 at the beginning to match the length of roll array
         
-        for i in range(len(roll.array)-1):
-            '''
-            As per Embraer's AMM - Figure 606 - Sheet 1
-            Rev 52 - Nov 24/17; 200-802-A/600
-            
-            RRi = roll rate at i time instant
-            R(i) = roll angle at i time instant
-            R(i-1) = roll angle at i-1 time instant
-            dt = delta time between i and i-1
-            
-            RRi = (R(i) - R(i-1))/dt
-            '''
-            roll_rate = ((roll.array[i+1] - roll.array[i])*roll.hz)
-            roc_array.append(roll_rate)
+        '''
+        As per Embraer's AMM - Figure 606 - Sheet 1
+        Rev 52 - Nov 24/17; 200-802-A/600
+        
+        RRi = roll rate at i time instant
+        R(i) = roll angle at i time instant
+        R(i-1) = roll angle at i-1 time instant
+        dt = delta time between i and i-1
+        
+        RRi = (R(i) - R(i-1))/dt
+        '''
+        roc_array = np.ma.ediff1d(roll.array)*roll.hz
         
         self.array = np.array(roc_array)
 

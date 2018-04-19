@@ -18167,9 +18167,9 @@ class TakeoffConfigurationWarningDuration(KeyPointValueNode):
     units = ut.SECOND
 
     def derive(self, takeoff_warn=M('Takeoff Configuration Warning'),
-               takeoff=S('Takeoff Roll Or Rejected Takeoff')):
+               grounded=S('Grounded')):
         self.create_kpvs_where(takeoff_warn.array == 'Warning',
-                               takeoff_warn.hz, phase=takeoff)
+                               takeoff_warn.hz, phase=grounded)
 
 
 class TakeoffConfigurationFlapWarningDuration(KeyPointValueNode):
@@ -18180,9 +18180,9 @@ class TakeoffConfigurationFlapWarningDuration(KeyPointValueNode):
     units = ut.SECOND
 
     def derive(self, takeoff_warn=M('Takeoff Configuration Flap Warning'),
-               takeoff=S('Takeoff Roll Or Rejected Takeoff')):
+               grounded=S('Grounded')):
         self.create_kpvs_where(takeoff_warn.array == 'Warning',
-                               takeoff_warn.hz, phase=takeoff)
+                               takeoff_warn.hz, phase=grounded)
 
 
 class TakeoffConfigurationParkingBrakeWarningDuration(KeyPointValueNode):
@@ -18194,9 +18194,9 @@ class TakeoffConfigurationParkingBrakeWarningDuration(KeyPointValueNode):
 
     def derive(self,
                takeoff_warn=M('Takeoff Configuration Parking Brake Warning'),
-               takeoff=S('Takeoff Roll Or Rejected Takeoff')):
+               grounded=S('Grounded')):
         self.create_kpvs_where(takeoff_warn.array == 'Warning',
-                               takeoff_warn.hz, phase=takeoff)
+                               takeoff_warn.hz, phase=grounded)
 
 
 class TakeoffConfigurationSpoilerWarningDuration(KeyPointValueNode):
@@ -18208,9 +18208,9 @@ class TakeoffConfigurationSpoilerWarningDuration(KeyPointValueNode):
 
     def derive(self,
                takeoff_cfg_warn=M('Takeoff Configuration Spoiler Warning'),
-               takeoff=S('Takeoff Roll Or Rejected Takeoff')):
+               grounded=S('Grounded')):
         self.create_kpvs_where(takeoff_cfg_warn.array == 'Warning',
-                               takeoff_cfg_warn.hz, phase=takeoff)
+                               takeoff_cfg_warn.hz, phase=grounded)
 
 
 class TakeoffConfigurationStabilizerWarningDuration(KeyPointValueNode):
@@ -18222,9 +18222,9 @@ class TakeoffConfigurationStabilizerWarningDuration(KeyPointValueNode):
 
     def derive(self,
                takeoff_cfg_warn=M('Takeoff Configuration Stabilizer Warning'),
-               takeoff=S('Takeoff Roll Or Rejected Takeoff')):
+               grounded=S('Grounded')):
         self.create_kpvs_where(takeoff_cfg_warn.array == 'Warning',
-                               takeoff_cfg_warn.hz, phase=takeoff)
+                               takeoff_cfg_warn.hz, phase=grounded)
 
 
 ##############################################################################

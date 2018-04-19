@@ -5473,23 +5473,25 @@ class TestRollRate(unittest.TestCase):
         assert_array_equal(expected[2:4], rr.array[2:4]) # Differential process blurs ends of the array, so just test the core part.
 
 
-
 class TestRollRateForTouchdown(unittest.TestCase):
     def test_can_operate(self):
         opts = RollRateForTouchdown.get_operational_combinations()
         self.assertTrue(('Roll',) in opts)
 
     def test_derive(self):
-        assert_array_equal(x, y)
-
+        roll_rate=P('Roll', np.array([-3.2, -0.5, 2.3, 0.9, 0.7, 0.7, 0.5, 0.5]), frequency=2)
+        node = RollRateForTouchdown()
+        node.derive(roll_rate)
+        assert_array_almost_equal(node.array, [0, 5.4, 5.6, -2.8, -0.4, 0, -0.4, 0])
+        
 
 class TestRollRateAtTouchdownLimit(unittest.TestCase):
-    def test_can_operate(self):
-        opts = RollRateAtTouchdownLimit.get_operational_combinations()
-        self.assertTrue(('Gross Weight Smoothed',) in opts)
-
     def test_derive(self):
-        assert_array_equal(x, y)
+        gw = P('Gross Weight Smoothed', [20000, 22000, 34000, 38000, 40000])
+        expected_result = [14, 12.5, 8, 6.5, 6]
+        node = RollRateAtTouchdownLimit()
+        node.derive(gw)
+        assert_array_almost_equal(node.array, expected_result)
 
 
 class TestRudderPedalCapt(unittest.TestCase):

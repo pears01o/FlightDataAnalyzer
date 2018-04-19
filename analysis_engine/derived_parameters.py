@@ -6079,7 +6079,9 @@ class RollRateAtTouchdownLimit(DerivedParameterNode):
         The following method returns an approximation of the roll limit curve.
         
         For weights between 20000kg and 21999kg approximate (values returned are 
-        slightly below the limit) roll rate limit is:
+        slightly below the limit) roll rate limit is:    def test_can_operate(self):
+        opts = RollRateAtTouchdownLimit.get_operational_combinations()
+        self.assertTrue(('Gross Weight Smoothed', 'ERJ-170/175') in opts)
         f(x) = -0.001x + 34 
         
         For weights between 22000kg and 38000kg roll rate limit is a function:
@@ -6092,11 +6094,11 @@ class RollRateAtTouchdownLimit(DerivedParameterNode):
         limit_curve = []
         
         for sample in gw.array:
-            if 22000 < sample < 38000:
+            if 20000 <= sample <= 21999:
+                limit_curve.append(sample*(-0.001) + 34)            
+            elif 22000 <= sample <= 38000:
                 limit_curve.append(sample*(-0.000375) + 20.75)
-            elif 20000 <= sample < 21999:
-                limit_curve.append(sample*(-0.001) + 34)
-            elif 38001 < sample <= 40000:
+            elif 38001 <= sample <= 40000:
                 limit_curve.append(6)
         
         self.array = np.array(limit_curve)

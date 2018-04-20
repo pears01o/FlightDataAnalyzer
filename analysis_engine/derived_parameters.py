@@ -6038,9 +6038,6 @@ class RollRateForTouchdown(DerivedParameterNode):
     
     def derive(self,
                roll=P('Roll'),):
-
-        roc_array = [0] # prepend 0 at the beginning to match the length of roll array
-        
         '''
         As per Embraer's AMM - Figure 606 - Sheet 1
         Rev 52 - Nov 24/17; 200-802-A/600

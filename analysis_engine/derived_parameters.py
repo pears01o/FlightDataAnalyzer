@@ -8233,6 +8233,100 @@ class VappLookup(DerivedParameterNode):
                 # raising an exception, so that the incorrect flap at landing
                 # can be detected.
                 continue
+            
+            
+########################################
+# Lowest Selectable Speed (VLS)
+
+class VLS(DerivedParameterNode):
+    '''
+    Lowest Selectable Speed (VLS) can be derived for Airbus aircraft.
+
+    In cases where values cannot be derived solely from recorded parameters, we
+    can make use of a look-up table to determine values for velocity speeds.
+
+    For VLS, looking up a value requires configuration and in some cases CG.
+    '''
+
+    name = 'VLS'
+    units = ut.KT
+
+    @classmethod
+    def can_operate(cls, available,
+                    model=A('Model'), series=A('Series'), family=A('Family'),
+                    engine_type=A('Engine Type'), engine_series=A('Engine Series')):
+
+        core = all_of((
+            'Airspeed',
+            'Approach And Landing',
+            'Model',
+            'Series',
+            'Family',
+            'Engine Type',
+            'Engine Series',
+            'Gross Weight Smoothed'
+        ), available)
+
+        flap = any_of((
+            'Flap Lever',
+            'Flap Lever (Synthetic)',
+        ), available)
+
+        attrs = (model, series, family, engine_type, engine_series)
+        return core and flap and lookup_table(cls, 'vls', *attrs)
+
+    def derive(self,
+               flap_lever=M('Flap Lever'),
+               flap_synth=M('Flap Lever (Synthetic)'),
+               air_spd=P('Airspeed'),
+               gw=P('Gross Weight Smoothed'),
+               approaches=S('Approach And Landing'),
+               model=A('Model'),
+               series=A('Series'),
+               family=A('Family'),
+               engine_type=A('Engine Type'),
+               engine_series=A('Engine Series'),
+               center_of_gravity=P('Center Of Gravity'),):
+
+        # Prepare a zeroed, masked array based on the airspeed:
+        self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
+
+        # Determine the sections of flight to populate:
+        phases = [approach.slice for approach in approaches]
+
+        # Initialise the velocity speed lookup table:
+        attrs = (model, series, family, engine_type, engine_series)
+        table = lookup_table(self, 'vls', *attrs)
+
+        # Repair gaps in Gross Weight up to 2 superframes in length:
+        if gw is not None:
+            try:
+                repaired_gw = repair_mask(gw.array, repair_duration=130,
+                                          extrapolate=True)
+            except ValueError:
+                self.warning("'%s' will be fully masked because '%s' array "
+                             "could not be repaired.", self.name, gw.name)
+                return
+
+        parameter = flap_lever or flap_synth
+
+        max_detent = max(table.vls_detents, key=lambda x: parameter.state.get(x, -1))
+
+        for phase in phases:
+            # Find the maximum flap detent selection point during the phase:
+            max_flap_selected = max_value(parameter.array, phase)
+            weight = repaired_gw[max_flap_selected.index]
+            if center_of_gravity:
+                cg = center_of_gravity.array[max_flap_selected.index]
+            else:
+                cg = None
+
+            try:
+                for state in (parameter.array.values_mapping[r] for r in np.ma.unique(parameter.array.raw.compressed())):
+                    self.array[parameter.array == state] = table.vls(state, weight, cg)
+            except (KeyError, ValueError) as error:
+                self.warning("Error in '%s': %s", self.name, error)
+                continue
 
 
 ########################################

@@ -687,7 +687,7 @@ def pre_process_parameters(hdf, segment_info, param_names, required,
 
 
 def main():
-    print('FlightDataAnalyzer (c) Copyright 2013 Flight Data Services, Ltd.')
+    print('FlightDataAnalyzer (c) Copyright 2018 Flight Data Services, Ltd.')
     print('  - Powered by POLARIS')
     print('  - http://www.flightdatacommunity.com')
     print()

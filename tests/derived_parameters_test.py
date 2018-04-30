@@ -232,6 +232,7 @@ from analysis_engine.derived_parameters import (
     VerticalSpeedInertial,
     Vref,
     VrefLookup,
+    VLS,
     WheelSpeed,
     WheelSpeedLeft,
     WheelSpeedRight,
@@ -6959,6 +6960,128 @@ class TestVrefLookup(unittest.TestCase, NodeTest):
         ma_test.assert_masked_array_equal(node.array, expected)
 
 
+########################################
+# Lowest Selectable Speed (VLS)
+
+
+    class TestVLS(unittest.TestCase, NodeTest):
+        class VSNoCG(VelocitySpeed):
+            '''
+            Table for aircraft with configuration-only lookup (A319, A320, A321).
+            '''
+            weight_unit = ut.TONNE
+            tables = {
+                'vls': {
+                          'weight':        ( 44,  47,  51,  55,  59,  60,  67,  71,  76),
+                         'Lever 3': {None: (113, 117, 122, 127, 131, 136, 140, 144, 149)},
+                      'Lever Full': {None: (111, 113, 116, 121, 125, 129, 133, 137, 142)},
+                        },
+            }
+            
+            
+        class VSCG(VelocitySpeed):
+            '''
+            Table for aircraft with configuration + cg lookup (A330, A340).
+            '''
+            weight_unit = ut.TONNE
+            tables = {
+                'vls': {
+                    'weight':      (180, 190, 210, 230, 250, 270, 290, 310, 330, 350, 380),
+                   'Lever 3': {
+                               13: (132, 133, 141, 147, 154, 160, 166, 171, 176, 182, 189),
+                               35: (132, 133, 137, 143, 150, 156, 162, 167, 172, 177, 185),
+                               },
+                'Lever Full': {
+                               13: (132, 133, 136, 143, 149, 154, 160, 166, 171, 176, 183),
+                               35: (132, 133, 134, 139, 145, 150, 156, 162, 167, 172, 179),
+                               },
+                        },
+            }            
+    
+        
+        def setUp(self):
+            self.node_class = VLS
+            self.approach = buildsection('Approach And Landing', 2, 15)
+            self.airspeed = airspeed = P('Airspeed', np.ma.repeat(200, 16))
+            self.flap_lever = M('Flap Lever', 
+                      np.ma.array([0]*4 + [3]*4 + [4]*4 + [2]*4), 
+                      values_mapping={0: 'Lever 0', 1: 'Lever 1', 2: 'Lever 2', 3: 'Lever 3', 4: 'Lever Full'})
+
+        @patch('analysis_engine.library.at')   
+        def test_can_operate(self, at):          
+            airbus = {'series': Attribute('Series', 'A320-200'), 
+                       'model': Attribute('Model', 'A320-212'), 
+                 'engine_type': Attribute('Engine Type', 'CFM56-5A3'), 
+                      'family': Attribute('Family', 'A320'), 
+               'engine_series': Attribute('Engine Series', 'CFM56-5A')}
+            
+            at.get_vspeed_map.return_value = self.VSNoCG
+            
+            nodes = ('Airspeed', 'Approach And Landing', 'Gross Weight Smoothed',
+                     'Flap Lever', 'Series', 'Model', 'Engine Type', 'Family',
+                     'Engine Series',)
+
+            self.assertTrue(self.node_class.can_operate(nodes, **airbus))
+            
+            
+        @patch('analysis_engine.library.at')
+        def test_derive_no_cg(self, at):
+            at.get_vspeed_map.return_value = self.VSNoCG
+            
+            model = A('Model', 'A320-212')
+            series = A('Series', 'A320-200')
+            family = A('Family', 'A320')
+            engine_type = A('Engine Type', 'CFM56-5A3')
+            engine_series = A('Engine Series', 'CFM56-5A')
+            
+            node = self.node_class()
+            
+            gw = P('Gross Weight Smoothed', [64300] * 16)
+            
+            node.derive(self.flap_lever, None, self.airspeed, gw, self.approach,
+                        model, series, family, engine_type, engine_series, None)
+            
+            expected = np.ma.array([None, None, None, None,
+                                   138, 138, 138, 138,
+                                   131, 131, 131, 131,
+                                   None, None, None, None], 
+                                   mask = [1, 1, 1, 1,
+                                           0, 0, 0, 0,
+                                           0, 0, 0, 0,
+                                           1, 1, 1, 1,])
+            
+            ma_test.assert_array_equal(node.array, expected)
+        
+        @patch('analysis_engine.library.at')
+        def test_derive_with_cg(self, at):
+            at.get_vspeed_map.return_value = self.VSCG
+            
+            model = A('Model', 'A340-642X')
+            series = A('Series', 'A340-600')
+            family = A('Family', 'A340')
+            engine_type = A('Engine Type', 'Trent 556A2-61')
+            engine_series = A('Engine Series', 'Trent 500')
+            
+            node = self.node_class()
+            
+            gw = P('Gross Weight Smoothed', [264300] * 16)
+            cg = P('Center Of Gravity', [22.5] * 16)
+            
+            node.derive(self.flap_lever, None, self.airspeed, gw, self.approach,
+                        model, series, family, engine_type, engine_series, cg)
+            
+            expected = np.ma.array([None, None, None, None,
+                                   157, 157, 157, 157,
+                                   151, 151, 151, 151,
+                                   None, None, None, None], 
+                                   mask = [1, 1, 1, 1,
+                                           0, 0, 0, 0,
+                                           0, 0, 0, 0,
+                                           1, 1, 1, 1,])
+            
+            ma_test.assert_array_equal(node.array, expected)
+            
+            
 ########################################
 # Approach Speed (VAPP)
 

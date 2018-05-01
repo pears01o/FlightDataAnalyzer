@@ -17012,6 +17012,7 @@ class SpeedbrakeDeployedWithPowerOnDuration(KeyPointValueNode):
             high_power = power.array[air] >= power_on_percent
             array = spd_brk_dep & high_power
             slices = shift_slices(runs_of_ones(array), air.start)
+            slices = slices_remove_small_gaps(slices, 30) # multiple occurences within 30s of each other are treated as one
             self.create_kpvs_from_slice_durations(slices, self.frequency,
                                                   mark='start')
 

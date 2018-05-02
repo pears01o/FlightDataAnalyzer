@@ -7384,6 +7384,34 @@ class TrackTrue(DerivedParameterNode):
         #Note: drift is to the right of heading, so: Track = Heading + Drift
         self.array = (heading.array + drift.array) % 360.0
 
+class TrackContinuous(DerivedParameterNode):
+    '''
+    Magnetic Track Heading of the Aircraft by adding Drift from track to the
+    aircraft Heading.
+
+    Range is Continuous
+    '''
+
+    units = ut.DEGREE
+
+    def derive(self, heading=P('Heading Continuous'), drift=P('Drift')):
+        self.array = heading.array + drift.array
+
+
+class TrackTrueContinuous(DerivedParameterNode):
+    '''
+    True Track Heading of the Aircraft by adding Drift from track to the
+    aircraft's True Heading.
+
+    Range is Continuous
+    '''
+
+    units = ut.DEGREE
+
+    def derive(self, heading=P('Heading True Continuous'), drift=P('Drift')):
+        #Note: drift is to the right of heading, so: Track = Heading + Drift
+        self.array = heading.array + drift.array
+
 
 class TrackDeviationFromRunway(DerivedParameterNode):
     '''
@@ -7394,6 +7422,9 @@ class TrackDeviationFromRunway(DerivedParameterNode):
     order to avoid complications with magnetic deviation values recorded at
     airports. The deviation from runway centre line would be the same whether
     the calculation is based on Magnetic or True measurements.
+
+    This parameter uses continous versions of Track and Track True as the input
+    but returns a range from 0 to 360
     '''
 
     # force offset for approach slice start consistency
@@ -7404,7 +7435,7 @@ class TrackDeviationFromRunway(DerivedParameterNode):
     @classmethod
     def can_operate(cls, available):
         return any_of(('Approach Information', 'FDR Takeoff Runway'), available) \
-               and any_of(('Track', 'Track True'), available)
+               and any_of(('Track Continuous', 'Track True Continuous'), available)
 
     def _track_deviation(self, array, _slice, rwy, magnetic=False):
         if magnetic:
@@ -7425,8 +7456,8 @@ class TrackDeviationFromRunway(DerivedParameterNode):
             # could not determine runway information
             return
 
-    def derive(self, track_true=P('Track True'),
-               track_mag=P('Track'),
+    def derive(self, track_true=P('Track True Continuous'),
+               track_mag=P('Track Continuous'),
                takeoff=S('Takeoff Roll Or Rejected Takeoff'),
                to_rwy=A('FDR Takeoff Runway'),
                apps=App('Approach Information')):

@@ -6068,8 +6068,7 @@ class RollRateAtTouchdownLimit(DerivedParameterNode):
         
         return family_name in ('ERJ-170/175',) and (
                'Gross Weight Smoothed' in available)
-        
-        
+
     def derive(self,
                gw=P('Gross Weight Smoothed'),):
         
@@ -6096,17 +6095,12 @@ class RollRateAtTouchdownLimit(DerivedParameterNode):
         which again, is slightly below the limit.
         '''
         
-        limit_curve = []
-        
-        for sample in gw.array:
-            if 20000 <= sample <= 21999:
-                limit_curve.append(sample*(-0.001) + 34)            
-            elif 22000 <= sample <= 38000:
-                limit_curve.append(sample*(-0.000375) + 20.75)
-            elif 38001 <= sample <= 40000:
-                limit_curve.append(6)
-        
-        self.array = np.array(limit_curve)
+        self.array = np_ma_masked_zeros_like(gw.array)
+        range1 = (20000 <= gw.array) & (gw.array < 22000)
+        self.array[range1] = gw.array[range1] * -0.001 + 34
+        range2 = (22000 <= gw.array) & (gw.array <= 38000)
+        self.array[range2] = gw.array[range2] * -0.000375 + 20.75
+        self.array[(38000 < gw.array) & (gw.array <= 40000)] = 6
 
 
 class Rudder(DerivedParameterNode):

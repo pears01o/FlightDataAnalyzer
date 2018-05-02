@@ -5483,8 +5483,12 @@ class TestRollRateForTouchdown(unittest.TestCase):
 
 class TestRollRateAtTouchdownLimit(unittest.TestCase):
     def test_derive(self):
-        gw = P('Gross Weight Smoothed', [20000, 22000, 34000, 38000, 40000])
-        expected_result = [14, 12.5, 8, 6.5, 6]
+        gw = P('Gross Weight Smoothed', np.ma.masked_array(
+            [10000, 20000, 20000, 22000, 34000, 38000, 40000, 50000],
+            mask=[False, True, False, False, False, False, False, False]))
+        expected_result = np.ma.masked_array(
+            [0, 0, 14, 12.5, 8, 6.5, 6, 0],
+            mask=[True, True, False, False, False, False, False, True])
         node = RollRateAtTouchdownLimit()
         node.derive(gw)
         assert_array_almost_equal(node.array, expected_result)

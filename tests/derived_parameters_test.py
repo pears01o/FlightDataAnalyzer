@@ -215,8 +215,10 @@ from analysis_engine.derived_parameters import (
     ThrustAsymmetry,
     TorqueAsymmetry,
     Track,
+    TrackContinuous,
     TrackDeviationFromRunway,
     TrackTrue,
+    TrackTrueContinuous,
     Turbulence,
     VMOLookup,
     Vapp,
@@ -3529,7 +3531,7 @@ class TestTrackTrue(unittest.TestCase, NodeTest):
         heading = P('Heading True',
                     array=np.ma.array([14.1, 29.2, 59.3, 119.4, 239.5, 359.6, 449.7, 539.8, 629.9, 720.0]))
         drift = P('Drift',
-                      array=np.ma.array([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]))        
+                      array=np.ma.array([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]))
         node = self.node_class()
         node.derive(heading, drift)
         expected = [15.0, 30.0, 60.0, 120.0, 240.0, 0.0, 90.0, 180.0, 270.0, 0.0]
@@ -3556,30 +3558,64 @@ class TestTrackTrue(unittest.TestCase, NodeTest):
         assert_array_within_tolerance(node.array % 360, expected.array, 10, 98)
 
 
+class TestTrackContinuous(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = TrackContinuous
+        self.operational_combinations = [('Heading Continuous', 'Drift')]
+
+    def test_derive_basic(self):
+        heading = P('Heading Continuous',
+                    array=np.ma.array([14.1, 29.2, 59.3, 119.4, 239.5, 359.6, 449.7, 539.8, 629.9, 720.0]))
+        drift = P('Drift',
+                  array=np.ma.array([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]))
+        node = self.node_class()
+        node.derive(heading, drift)
+        expected = [15.0, 30.0, 60.0, 120.0, 240.0, 360.0, 450.0, 540.0, 630.0, 720.0]
+        assert_equal(node.array, expected)
+
+
+class TestTrackTrueContinuous(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = TrackTrueContinuous
+        self.operational_combinations = [('Heading True Continuous', 'Drift')]
+
+    def test_derive_basic(self):
+        heading = P('Heading True Continuous',
+                    array=np.ma.array([14.1, 29.2, 59.3, 119.4, 239.5, 359.6, 449.7, 539.8, 629.9, 720.0]))
+        drift = P('Drift',
+                      array=np.ma.array([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]))
+        node = self.node_class()
+        node.derive(heading, drift)
+        expected = [15.0, 30.0, 60.0, 120.0, 240.0, 360.0, 450.0, 540.0, 630.0, 720.0]
+        assert_equal(node.array, expected)
+
+
 class TestTrackDeviationFromRunway(unittest.TestCase):
-    
+
     # TODO: For all these combination there is just one testcase calling a derive once
     def test_can_operate(self):
         self.assertEqual(
             TrackDeviationFromRunway.get_operational_combinations(),
-            [('Track True', 'FDR Takeoff Runway'),
-             ('Track True', 'Approach Information'),
-             ('Track', 'FDR Takeoff Runway'),
-             ('Track', 'Approach Information'),
-             ('Track True', 'Track', 'FDR Takeoff Runway'),
-             ('Track True', 'Track', 'Approach Information'),
-             ('Track True', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway'),
-             ('Track True', 'Takeoff Roll Or Rejected Takeoff', 'Approach Information'),
-             ('Track True', 'FDR Takeoff Runway', 'Approach Information'),
-             ('Track', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway'),
-             ('Track', 'Takeoff Roll Or Rejected Takeoff', 'Approach Information'),
-             ('Track', 'FDR Takeoff Runway', 'Approach Information'),
-             ('Track True', 'Track', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway'),
-             ('Track True', 'Track', 'Takeoff Roll Or Rejected Takeoff', 'Approach Information'),
-             ('Track True', 'Track', 'FDR Takeoff Runway', 'Approach Information'),
-             ('Track True', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway', 'Approach Information'),
-             ('Track', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway', 'Approach Information'),
-             ('Track True', 'Track', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway', 'Approach Information')
+            [('Track True Continuous', 'FDR Takeoff Runway'),
+             ('Track True Continuous', 'Approach Information'),
+             ('Track Continuous', 'FDR Takeoff Runway'),
+             ('Track Continuous', 'Approach Information'),
+             ('Track True Continuous', 'Track Continuous', 'FDR Takeoff Runway'),
+             ('Track True Continuous', 'Track Continuous', 'Approach Information'),
+             ('Track True Continuous', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway'),
+             ('Track True Continuous', 'Takeoff Roll Or Rejected Takeoff', 'Approach Information'),
+             ('Track True Continuous', 'FDR Takeoff Runway', 'Approach Information'),
+             ('Track Continuous', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway'),
+             ('Track Continuous', 'Takeoff Roll Or Rejected Takeoff', 'Approach Information'),
+             ('Track Continuous', 'FDR Takeoff Runway', 'Approach Information'),
+             ('Track True Continuous', 'Track Continuous', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway'),
+             ('Track True Continuous', 'Track Continuous', 'Takeoff Roll Or Rejected Takeoff', 'Approach Information'),
+             ('Track True Continuous', 'Track Continuous', 'FDR Takeoff Runway', 'Approach Information'),
+             ('Track True Continuous', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway', 'Approach Information'),
+             ('Track Continuous', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway', 'Approach Information'),
+             ('Track True Continuous', 'Track Continuous', 'Takeoff Roll Or Rejected Takeoff', 'FDR Takeoff Runway', 'Approach Information')
              ]
         )
 
@@ -3627,7 +3663,7 @@ class TestTrackDeviationFromRunway(unittest.TestCase):
         self.assertAlmostEqual(np.ma.max(deviation.array[8775:8975]), 12.3, places = 1)
 
     def test_derive__multiple_approaches(self):
-        
+
         apps = App(items=[
             ApproachItem(
                     'GO_AROUND', slice(500, 1500),
@@ -3647,6 +3683,51 @@ class TestTrackDeviationFromRunway(unittest.TestCase):
         deviation.derive(None, heading_track, None, None, apps)
 
         np.testing.assert_array_equal(deviation.array, np.ma.zeros(2200))
+
+    def test_derive_north_rwy_app(self):
+        hdg_con = P(name='Track True Continuous',
+                    array=np.ma.array([
+                        719.7430146, 719.8749494, 720.0068841, 719.741058,
+                        719.5834213, 719.4516828, 719.3199441, 718.9452616,
+                        718.9287504, 718.6679204, 718.665269, 718.6860868,
+                        718.9742777, 719.3039603, 719.3287719, 719.6427257,
+                        719.4436262, 719.4629417, 719.8338194, 720.2436481,
+                        720.3361067, 720.3801377, 720.1192977, 720.1398589,
+                        719.9397382, 719.6981202, 719.7613724,
+                        ]))
+        expected = [
+            0.690980747, 0.822915588, 0.954850318, 0.689024181, 0.531387448,
+            0.399648935, 0.267910243, -0.106772212, -0.123283449, -0.384113379,
+            -0.386764844, -0.36594698, -0.077756105, 0.251926457, 0.276738102,
+            0.590691878, 0.391592334, 0.4109079, 0.781785586, 1.191614312,
+            1.284072892, 1.328103887, 1.06726383, 1.087825049, 0.887704327,
+            0.646086399, 0.709338563,
+        ]
+        apps = App(
+            items=[
+            ApproachItem(
+                type='LANDING',
+                slice=slice(0, 27, None),
+                landing_runway={
+                    u'end': {
+                        u'latitude': 4.205357754937445,
+                        u'elevation': 6,
+                        u'longitude': 73.52892655092602
+                        },
+                    u'start': {
+                        u'latitude': 4.179942425877438,
+                        u'elevation': 5,
+                        u'longitude': 73.52934822453923},
+                    u'magnetic_heading': 2.0,
+                }),
+            ])
+
+        deviation = TrackDeviationFromRunway()
+        deviation.derive(hdg_con, None, None, None, apps)
+
+        self.assertEqual(len(deviation.array), 27)
+        for first, second in zip(deviation.array, expected):
+            self.assertAlmostEqual(first, second, places=2)
 
 
 class TestHeadingIncreasing(unittest.TestCase):

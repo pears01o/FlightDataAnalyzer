@@ -11562,44 +11562,74 @@ class TestEngN1For5SecMaximumContinuousPowerMax(unittest.TestCase, CreateKPVsWit
         self.assertTrue(False, msg='Test not implemented.')
 
 
-class TestEngAPRDuration(unittest.TestCase, NodeTest):        
-    def test_basic(self):
-        apr_l = P('FADEC (L) APR Active',    [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
-        apr_r = P('FADEC (R) APR Active', [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
-        event = EngAPRDuration()
-        event.derive(apr_l, apr_r, None, None, None, None, None, None)
+class TestEngAPRDuration(unittest.TestCase):
+    def test_can_operate(self):
+        combinations = EngAPRDuration.get_operational_combinations()
+        self.assertIn(('Mobile', 'FADEC (L) APR Active', 'FADEC (R) APR Active'),
+                      combinations)
+        self.assertIn(('Mobile', 'Eng (1) ATTCS Armed', 'Eng (1) ATTCS Enabled', 'Eng (1) ATTCS Triggered', 'Eng (2) ATTCS Armed', 'Eng (2) ATTCS Enabled', 'Eng (2) ATTCS Triggered'),
+                      combinations)
+        self.assertNotIn(('FADEC (L) APR Active', 'FADEC (R) APR Active'),
+                         combinations)
+        self.assertNotIn(('Mobile', 'FADEC (L) APR Active'),
+                         combinations)
 
-        self.assertEqual(event[0].index, 4)
-        self.assertEqual(event[0].value, 6)
+    def test_basic(self):
+        mobiles = buildsection('Mobile', 0, 14)
+        apr_l = P('FADEC (L) APR Active', [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
+        apr_r = P('FADEC (R) APR Active', [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
+        node = EngAPRDuration()
+        node.derive(mobiles, apr_l, apr_r, None, None, None, None, None, None)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 4)
+        self.assertEqual(node[0].value, 6)
 
     def test_gap_and_one_engine(self):
+        mobiles = buildsection('Mobile', 0, 630)
         apr_l = P('FADEC (L) APR Active', [0]*10 + [1]*10 + [0]*500 + [1]*10 + [0]*100)
         apr_r = P('FADEC (R) APR Active', [0]*630)
-        event = EngAPRDuration()
-        event.derive(apr_l, apr_r, None, None, None, None, None, None)
+        node = EngAPRDuration()
+        node.derive(mobiles, apr_l, apr_r, None, None, None, None, None, None)
 
-        self.assertEqual(event[0].index, 10)
-        self.assertEqual(event[0].value, 520)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 10)
+        self.assertEqual(node[0].value, 520)
 
     def test_multiple_two_engines(self):
-        apr_l = P('FADEC (L) APR Active',    [0]*10 + [1]*10 + [0]*600 + [0]*10 + [0]*100)
+        mobiles = buildsection('Mobile', 0, 730)
+        apr_l = P('FADEC (L) APR Active', [0]*10 + [1]*10 + [0]*600 + [0]*10 + [0]*100)
         apr_r = P('FADEC (R) APR Active', [0]*10 + [0]*10 + [0]*600 + [1]*10 + [0]*100)
-        event = EngAPRDuration()
-        event.derive(apr_l, apr_r, None, None, None, None, None, None)
+        node = EngAPRDuration()
+        node.derive(mobiles, apr_l, apr_r, None, None, None, None, None, None)
 
-        self.assertEqual(event[0].index, 10)
-        self.assertEqual(event[0].value, 10)
-        self.assertEqual(event[1].index, 620)
-        self.assertEqual(event[1].value, 10)        
-     
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].index, 10)
+        self.assertEqual(node[0].value, 10)
+        self.assertEqual(node[1].index, 620)
+        self.assertEqual(node[1].value, 10)
+
+    def test_multiple_two_engines_exclude_not_mobile(self):
+        mobiles = buildsection('Mobile', 100, 730)
+        apr_l = P('FADEC (L) APR Active', [0]*10 + [1]*10 + [0]*600 + [0]*10 + [0]*100)
+        apr_r = P('FADEC (R) APR Active', [0]*10 + [0]*10 + [0]*600 + [1]*10 + [0]*100)
+        node = EngAPRDuration()
+        node.derive(mobiles, apr_l, apr_r, None, None, None, None, None, None)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 620)
+        self.assertEqual(node[0].value, 10)
+
     def test_more_than_5_occurences(self):
-        apr_l = P('FADEC (L) APR Active',    ([0]*10 + [1]*10 + [0]*600 + [0]*10 + [0]*100)*6)
+        mobiles = buildsection('Mobile', 0, 730 * 6)
+        apr_l = P('FADEC (L) APR Active', ([0]*10 + [1]*10 + [0]*600 + [0]*10 + [0]*100)*6)
         apr_r = P('FADEC (R) APR Active', ([0]*10 + [0]*10 + [0]*600 + [1]*10 + [0]*100)*6)
-        event = EngAPRDuration()
-        event.derive(apr_l, apr_r, None, None, None, None, None, None)
-        self.assertEqual(len(event), 5)
-        
+        node = EngAPRDuration()
+        node.derive(mobiles, apr_l, apr_r, None, None, None, None, None, None)
+        self.assertEqual(len(node), 5)
+
     def test_attcs(self):
+        mobiles = buildsection('Mobile', 0, 14)
         e1_arm = P('Eng (1) ATTCS Armed',        [0,0,0,0,1,1,1,1,1,1,0,0,0,0])
         e1_enabled = P('Eng (1) ATTCS Enabled',  [1,1,1,1,1,1,1,1,1,1,1,1,1,1])
         e1_trigger = P('Eng (1) ATTCS Triggered',[0,0,0,0,0,0,1,1,1,1,1,1,0,0])
@@ -11608,13 +11638,14 @@ class TestEngAPRDuration(unittest.TestCase, NodeTest):
         e2_enabled = P('Eng (2) ATTCS Enabled',  [1,1,1,1,1,1,1,1,1,1,1,1,1,1])
         e2_trigger = P('Eng (2) ATTCS Triggered',[0,0,0,0,0,0,0,0,0,0,0,0,0,0])
         
-        event = EngAPRDuration()
-        event.derive(None, None, e1_arm, e1_enabled, e1_trigger, e2_arm, e2_enabled, e2_trigger)
+        node = EngAPRDuration()
+        node.derive(mobiles, None, None, e1_arm, e1_enabled, e1_trigger, e2_arm, e2_enabled, e2_trigger)
         
-        self.assertEqual(event[0].index, 6)
-        self.assertEqual(event[0].value, 4)
-        
-        
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 6)
+        self.assertEqual(node[0].value, 4)
+
+
 class TestEngN1CyclesDuringFinalApproach(unittest.TestCase, NodeTest):
 
     def setUp(self):

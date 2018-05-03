@@ -21624,59 +21624,94 @@ class TestTCASFailureDuration(unittest.TestCase, CreateKPVsWhereTest):
 # Warnings: Takeoff Configuration
 
 
-class TestTakeoffConfigurationWarningDuration(unittest.TestCase,
-                                              CreateKPVsWhereTest):
+class TestTakeoffConfigurationWarningDuration(unittest.TestCase, NodeTest):
     def setUp(self):
-        self.param_name = 'Takeoff Configuration Warning'
-        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationWarningDuration
-        self.values_mapping = {0: '-', 1: 'Warning'}
+        self.operational_combinations = [('Takeoff Configuration Warning', 'Movement Start', 'Liftoff')]
 
-        self.basic_setup()
+    def test_derive(self):
+        node = self.node_class()
+        takeoff_warn = M('Takeoff Configuration Warning',
+                         np.ma.array([1,0,0,1,1,0,0,0,0,1,1]),
+                         values_mapping={1: 'Warning', 0: '-'})
+        movement_starts = KTI('Liftoff', items=[KeyTimeInstance(2, 'Movement Start')])
+        liftoffs = KTI('Liftoff', items=[KeyTimeInstance(5, 'Liftoff')])
+        node.derive(takeoff_warn, movement_starts, liftoffs)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, 2)
 
 
-class TestTakeoffConfigurationFlapWarningDuration(unittest.TestCase,
-                                                  CreateKPVsWhereTest):
+class TestTakeoffConfigurationFlapWarningDuration(unittest.TestCase, NodeTest):
     def setUp(self):
-        self.param_name = 'Takeoff Configuration Flap Warning'
-        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationFlapWarningDuration
-        self.values_mapping = {0: '-', 1: 'Warning'}
+        self.operational_combinations = [('Takeoff Configuration Flap Warning', 'Movement Start', 'Liftoff')]
 
-        self.basic_setup()
+    def test_derive(self):
+        node = self.node_class()
+        takeoff_warn = M('Takeoff Configuration Flap Warning',
+                         np.ma.array([1,0,0,1,1,0,0,0,0,1,1]),
+                         values_mapping={1: 'Warning', 0: '-'})
+        movement_starts = KTI('Liftoff', items=[KeyTimeInstance(2, 'Movement Start')])
+        liftoffs = KTI('Liftoff', items=[KeyTimeInstance(5, 'Liftoff')])
+        node.derive(takeoff_warn, movement_starts, liftoffs)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, 2)
 
 
-class TestTakeoffConfigurationParkingBrakeWarningDuration(unittest.TestCase,
-                                                          CreateKPVsWhereTest):
+class TestTakeoffConfigurationParkingBrakeWarningDuration(unittest.TestCase, NodeTest):
     def setUp(self):
-        self.param_name = 'Takeoff Configuration Parking Brake Warning'
-        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationParkingBrakeWarningDuration
-        self.values_mapping = {0: '-', 1: 'Warning'}
+        self.operational_combinations = [('Takeoff Configuration Parking Brake Warning', 'Movement Start', 'Liftoff')]
 
-        self.basic_setup()
+    def test_derive(self):
+        node = self.node_class()
+        takeoff_warn = M('Takeoff Configuration Parking Brake Warning',
+                         np.ma.array([1,0,0,1,1,0,0,0,0,1,1]),
+                         values_mapping={1: 'Warning', 0: '-'})
+        movement_starts = KTI('Liftoff', items=[KeyTimeInstance(2, 'Movement Start')])
+        liftoffs = KTI('Liftoff', items=[KeyTimeInstance(5, 'Liftoff')])
+        node.derive(takeoff_warn, movement_starts, liftoffs)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, 2)
 
 
-class TestTakeoffConfigurationSpoilerWarningDuration(unittest.TestCase,
-                                                     CreateKPVsWhereTest):
+class TestTakeoffConfigurationSpoilerWarningDuration(unittest.TestCase, NodeTest):
     def setUp(self):
-        self.param_name = 'Takeoff Configuration Spoiler Warning'
-        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationSpoilerWarningDuration
-        self.values_mapping = {0: '-', 1: 'Warning'}
+        self.operational_combinations = [('Takeoff Configuration Spoiler Warning', 'Movement Start', 'Liftoff')]
 
-        self.basic_setup()
+    def test_derive(self):
+        node = self.node_class()
+        takeoff_warn = M('Takeoff Configuration Spoiler Warning',
+                         np.ma.array([1,0,0,1,1,0,0,0,0,1,1]),
+                         values_mapping={1: 'Warning', 0: '-'})
+        movement_starts = KTI('Liftoff', items=[KeyTimeInstance(2, 'Movement Start')])
+        liftoffs = KTI('Liftoff', items=[KeyTimeInstance(5, 'Liftoff')])
+        node.derive(takeoff_warn, movement_starts, liftoffs)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, 2)
 
 
-class TestTakeoffConfigurationStabilizerWarningDuration(unittest.TestCase,
-                                                        CreateKPVsWhereTest):
+class TestTakeoffConfigurationStabilizerWarningDuration(unittest.TestCase, NodeTest):
     def setUp(self):
-        self.param_name = 'Takeoff Configuration Stabilizer Warning'
-        self.phase_name = 'Grounded'
         self.node_class = TakeoffConfigurationStabilizerWarningDuration
-        self.values_mapping = {0: '-', 1: 'Warning'}
+        self.operational_combinations = [('Takeoff Configuration Stabilizer Warning', 'Movement Start', 'Liftoff')]
 
-        self.basic_setup()
+    def test_derive(self):
+        node = self.node_class()
+        takeoff_warn = M('Takeoff Configuration Stabilizer Warning',
+                         np.ma.array([1,0,0,1,1,0,0,0,0,1,1]),
+                         values_mapping={1: 'Warning', 0: '-'})
+        movement_starts = KTI('Liftoff', items=[KeyTimeInstance(2, 'Movement Start')])
+        liftoffs = KTI('Liftoff', items=[KeyTimeInstance(5, 'Liftoff')])
+        node.derive(takeoff_warn, movement_starts, liftoffs)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, 2)
 
 
 ##############################################################################

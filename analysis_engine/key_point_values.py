@@ -18196,9 +18196,17 @@ class TakeoffConfigurationWarningDuration(KeyPointValueNode):
     units = ut.SECOND
 
     def derive(self, takeoff_warn=M('Takeoff Configuration Warning'),
-               grounded=S('Grounded')):
-        self.create_kpvs_where(takeoff_warn.array == 'Warning',
-                               takeoff_warn.hz, phase=grounded)
+               movement_starts=S('Movement Start'),
+               liftoffs=S('Liftoff')):
+        if not liftoffs:
+            return
+        movement_start = movement_starts.get_first()
+        self.create_kpvs_where(
+            takeoff_warn.array == 'Warning',
+            takeoff_warn.hz,
+            phase=slice(movement_start.index if movement_start else None,
+                        liftoffs.get_first().index),
+        )
 
 
 class TakeoffConfigurationFlapWarningDuration(KeyPointValueNode):
@@ -18209,9 +18217,17 @@ class TakeoffConfigurationFlapWarningDuration(KeyPointValueNode):
     units = ut.SECOND
 
     def derive(self, takeoff_warn=M('Takeoff Configuration Flap Warning'),
-               grounded=S('Grounded')):
-        self.create_kpvs_where(takeoff_warn.array == 'Warning',
-                               takeoff_warn.hz, phase=grounded)
+               movement_starts=S('Movement Start'),
+               liftoffs=S('Liftoff')):
+        if not liftoffs:
+            return
+        movement_start = movement_starts.get_first()
+        self.create_kpvs_where(
+            takeoff_warn.array == 'Warning',
+            takeoff_warn.hz,
+            phase=[slice(movement_start.index if movement_start else None,
+                         liftoffs.get_first().index)],
+        )
 
 
 class TakeoffConfigurationParkingBrakeWarningDuration(KeyPointValueNode):
@@ -18223,9 +18239,17 @@ class TakeoffConfigurationParkingBrakeWarningDuration(KeyPointValueNode):
 
     def derive(self,
                takeoff_warn=M('Takeoff Configuration Parking Brake Warning'),
-               grounded=S('Grounded')):
-        self.create_kpvs_where(takeoff_warn.array == 'Warning',
-                               takeoff_warn.hz, phase=grounded)
+               movement_starts=S('Movement Start'),
+               liftoffs=S('Liftoff')):
+        if not liftoffs:
+            return
+        movement_start = movement_starts.get_first()
+        self.create_kpvs_where(
+            takeoff_warn.array == 'Warning',
+            takeoff_warn.hz,
+            phase=[slice(movement_start.index if movement_start else None,
+                         liftoffs.get_first().index)],
+        )
 
 
 class TakeoffConfigurationSpoilerWarningDuration(KeyPointValueNode):
@@ -18236,10 +18260,18 @@ class TakeoffConfigurationSpoilerWarningDuration(KeyPointValueNode):
     units = ut.SECOND
 
     def derive(self,
-               takeoff_cfg_warn=M('Takeoff Configuration Spoiler Warning'),
-               grounded=S('Grounded')):
-        self.create_kpvs_where(takeoff_cfg_warn.array == 'Warning',
-                               takeoff_cfg_warn.hz, phase=grounded)
+               takeoff_warn=M('Takeoff Configuration Spoiler Warning'),
+               movement_starts=S('Movement Start'),
+               liftoffs=S('Liftoff')):
+        if not liftoffs:
+            return
+        movement_start = movement_starts.get_first()
+        self.create_kpvs_where(
+            takeoff_warn.array == 'Warning',
+            takeoff_warn.hz,
+            phase=[slice(movement_start.index if movement_start else None,
+                         liftoffs.get_first().index)],
+        )
 
 
 class TakeoffConfigurationStabilizerWarningDuration(KeyPointValueNode):
@@ -18250,10 +18282,18 @@ class TakeoffConfigurationStabilizerWarningDuration(KeyPointValueNode):
     units = ut.SECOND
 
     def derive(self,
-               takeoff_cfg_warn=M('Takeoff Configuration Stabilizer Warning'),
-               grounded=S('Grounded')):
-        self.create_kpvs_where(takeoff_cfg_warn.array == 'Warning',
-                               takeoff_cfg_warn.hz, phase=grounded)
+               takeoff_warn=M('Takeoff Configuration Stabilizer Warning'),
+               movement_starts=S('Movement Start'),
+               liftoffs=S('Liftoff')):
+        if not liftoffs:
+            return
+        movement_start = movement_starts.get_first()
+        self.create_kpvs_where(
+            takeoff_warn.array == 'Warning',
+            takeoff_warn.hz,
+            phase=[slice(movement_start.index if movement_start else None,
+                         liftoffs.get_first().index)],
+        )
 
 
 ##############################################################################

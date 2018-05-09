@@ -66,3 +66,15 @@ class TestAltitudeADH(unittest.TestCase):
         adh.derive(height, hdot)
         self.assertEqual(height.array[210]-adh.array[210], 100.0)
         self.assertEqual(height.array[680]-adh.array[680], 50.0)
+        
+    def test_frequency(self):
+        z = np.ma.arange(200)
+        height = P('Altitude Radio', np.ma.concatenate([z, z[:150:-1], z[50::-1], z[:50], z[150:], z[::-1]]),
+                   frequency=4.0)
+        hdot = P('Vertical Speed', np.ma.array([60]*200+[-60]*100+[60]*100+[-60]*200),
+                 frequency=4.0)
+        adh = AltitudeADH()
+        adh.derive(height, hdot)
+        # We confirm that the radio height was 100ft higher than the height above the deck.
+        self.assertEqual(height.array[210], 189.0)
+        self.assertEqual(adh.array[210], 88.25)

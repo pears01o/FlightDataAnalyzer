@@ -1994,13 +1994,13 @@ class Drift(DerivedParameterNode):
     def can_operate(cls, available):
 
         return any_of(('Drift (1)', 'Drift (2)'), available) \
-            or all_of(('Heading', 'Track'), available)
+            or all_of(('Heading Continuous', 'Track'), available)
 
     def derive(self,
                drift_1=P('Drift (1)'),
                drift_2=P('Drift (2)'),
                track=P('Track'),
-               heading=P('Heading')):
+               heading=P('Heading Continuous')):
 
         if drift_1 or drift_2:
             self.array, self.frequency, self.offset = \

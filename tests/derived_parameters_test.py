@@ -2207,7 +2207,7 @@ class TestDrift(unittest.TestCase):
         self.assertTrue(Drift.can_operate(('Drift (1)',)))
         self.assertTrue(Drift.can_operate(('Drift (2)',)))
         self.assertTrue(Drift.can_operate(('Drift (1)', 'Drift (2)')))
-        self.assertTrue(Drift.can_operate(('Track', 'Heading')))
+        self.assertTrue(Drift.can_operate(('Track', 'Heading Continuous')))
 
     @unittest.skip('Test Not Implemented')
     def test_derive(self):

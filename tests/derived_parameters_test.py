@@ -38,7 +38,7 @@ from analysis_engine.node import (
 from analysis_engine.process_flight import process_flight
 from analysis_engine.settings import GRAVITY_IMPERIAL
 
-from flight_phase_test import buildsection, buildsections
+from analysis_engine.test_utils import buildsection, buildsections
 
 # Use pre-processed version
 from analysis_engine.pre_processing.merge_parameters import (
@@ -3114,12 +3114,28 @@ class TestGrossWeightSmoothed(unittest.TestCase):
         gw = load(os.path.join(test_data_path,
                                'gross_weight_smoothed_1_gw.nod'))
         gw_orig = gw.array.copy()
-        climbs = load(os.path.join(test_data_path,
-                                   'gross_weight_smoothed_1_climbs.nod'))
-        descends = load(os.path.join(test_data_path,
-                                     'gross_weight_smoothed_1_descends.nod'))
-        fast = load(os.path.join(test_data_path,
-                                 'gross_weight_smoothed_1_fast.nod'))
+        try:
+            climbs = load(os.path.join(test_data_path,
+                                       'gross_weight_smoothed_1_climbs.nod'))
+        except AttributeError: # Python 3
+            climbs = buildsection('Climbing', 1018, 1463, 1017.671875,
+                                  1462.671875)
+        try:
+            descends = load(os.path.join(test_data_path,
+                                         'gross_weight_smoothed_1_descends.nod'))
+        except AttributeError: # Python 3
+            descends = buildsections('Descending',
+                                     [1602, 2219, 1601.671875, 2218.671875],
+                                     [2230, 2248, 2229.671875, 2247.671875],
+                                     [2254, 2263, 2253.671875, 2262.671875],
+                                     [2269, 2278, 2268.671875, 2277.671875],
+                                     [2280, 2365, 2279.671875, 2364.671875],
+                                     [2416, 2607, 2415.671875, 2606.671875],)
+        try:
+            fast = load(os.path.join(test_data_path,
+                                     'gross_weight_smoothed_1_fast.nod'))
+        except AttributeError: # Python 3
+            fast = buildsection('Fast', 991, 2630, 990.53125, 2629.53125)
         gws = GrossWeightSmoothed()
         gws.derive(ff, gw, climbs, descends, fast)
         # Start is similar.
@@ -3135,12 +3151,28 @@ class TestGrossWeightSmoothed(unittest.TestCase):
         gw = load(os.path.join(test_data_path,
                                'gross_weight_smoothed_2_gw.nod'))
         gw_orig = gw.array.copy()
-        climbs = load(os.path.join(test_data_path,
-                                   'gross_weight_smoothed_2_climbs.nod'))
-        descends = load(os.path.join(test_data_path,
-                                     'gross_weight_smoothed_2_descends.nod'))
-        fast = load(os.path.join(test_data_path,
-                                 'gross_weight_smoothed_2_fast.nod'))
+        try:
+            climbs = load(os.path.join(test_data_path,
+                                       'gross_weight_smoothed_2_climbs.nod'))
+        except AttributeError: # Python 3
+            climbs = buildsection('Climbing',712, 1725, 711.671875,
+                                  1724.671875)
+        try:
+            descends = load(os.path.join(test_data_path,
+                                         'gross_weight_smoothed_2_descends.nod'))
+        except AttributeError: # Python 3
+            descends = buildsections('Descending',
+                                     [4739, 6109, 4738.671875, 6108.671875],
+                                     [6123, 6136, 6122.671875, 6135.671875],
+                                     [6138, 6174, 6137.671875, 6173.671875],
+                                     [6180, 6342, 6179.671875, 6341.671875],
+                                     [6392, 6523, 6391.671875, 6522.671875],)
+
+        try:
+            fast = load(os.path.join(test_data_path,
+                                     'gross_weight_smoothed_2_fast.nod'))
+        except AttributeError: # Python 3
+            fast = buildsection('Fast', 693, 6552, 692.53125, 6551.53125)
         gws = GrossWeightSmoothed()
         gws.derive(ff, gw, climbs, descends, fast)
         # Start is similar.
@@ -3418,7 +3450,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         gspd_data = []
         this_test_data_path = os.path.join(test_data_path,
                                            'Groundspeed_test_data_Entebbe.csv')
-        with open(this_test_data_path, 'rb') as csvfile:
+        with open(this_test_data_path, 'rt') as csvfile:
             self.reader = csv.DictReader(csvfile)
             for row in self.reader:
                 lat_data.append(float(row['Latitude']))
@@ -3456,7 +3488,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         gspd_data=[]
         this_test_data_path = os.path.join(test_data_path,
                                            'Groundspeed_test_data_Entebbe.csv')
-        with open(this_test_data_path, 'rb') as csvfile:
+        with open(this_test_data_path, 'rt') as csvfile:
             self.reader = csv.DictReader(csvfile)
             for row in self.reader:
                 lat_data.append(float(row['Latitude']))
@@ -4231,13 +4263,13 @@ class TestHeadwind(unittest.TestCase):
         ])
 
     def test_real_example(self):
-        ws = P('Wind Speed', np.ma.array([84.0]))
+        ws = P('Wind Speed', np.ma.array([84.0,]))
         wd = P('Wind Direction', np.ma.array([350]))
         head=P('Heading True', np.ma.array([50]))
         hw = Headwind()
         hw.derive(None, ws, wd, head, None, None)
-        expected = np.ma.array([42])
-        self.assertAlmostEqual(hw.array.data, expected.data)
+        expected = np.ma.array([42.])
+        ma_test.assert_masked_array_almost_equal(hw.array, expected)
 
     def test_odd_angles(self):
         ws = P('Wind Speed', np.ma.ones(5) * 20)

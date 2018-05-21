@@ -836,7 +836,7 @@ from analysis_engine.key_time_instances import (
 )
 from analysis_engine.library import (max_abs_value, max_value, min_value)
 from analysis_engine.flight_phase import Fast, RejectedTakeoff
-from flight_phase_test import buildsection, buildsections
+from analysis_engine.test_utils import buildsection, buildsections
 
 debug = sys.gettrace() is not None
 
@@ -884,7 +884,7 @@ class NodeTest(object):
                 self.operational_combination_length,
             )
         else:
-            combinations = map(set, self.node_class.get_operational_combinations(**kwargs))
+            combinations = list(map(set, self.node_class.get_operational_combinations(**kwargs)))
             for combination in map(set, self.operational_combinations):
                 self.assertIn(combination, combinations)
 
@@ -19880,7 +19880,7 @@ class TestRateOfDescentBelow80KtsMax(unittest.TestCase):
         vrt_spd = P('Vertical Speed', -x*np.sin(x) * 100)
         air_spd = P(
             name='Airspeed',
-            array=np.ma.array(list(range(-2, 150, 5)) + (range(150, -2, -5))),
+            array=np.ma.array(list(range(-2, 150, 5)) + list(range(150, -2, -5))),
         )
 
         air_spd.array[0] = 0
@@ -22297,7 +22297,7 @@ class TestEngStartTimeMax(unittest.TestCase):
                                   'Stationary', 'Taxi Out')])
 
     def test_1_start(self):
-        eng_1_start = P('Eng (1) N2', np.ma.array([0]*4+range(55)+[54]*4))
+        eng_1_start = P('Eng (1) N2', np.ma.array([0]*4+list(range(55))+[54]*4))
         eng_2_start = P('Eng (2) N2', np.ma.array([0]*50))
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)
@@ -22328,7 +22328,7 @@ class TestEngStartTimeMax(unittest.TestCase):
         self.assertEqual(estm[0].index, 8.0)
 
     def test_unclear_start(self):
-        eng_start = P('Eng (1) N2', np.ma.array([0]*5+range(45)+[45]*5))
+        eng_start = P('Eng (1) N2', np.ma.array([0]*5+list(range(45))+[45]*5))
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)
         estm = EngStartTimeMax()
@@ -22337,7 +22337,7 @@ class TestEngStartTimeMax(unittest.TestCase):
 
     def test_2_start(self):
         eng_1_start = P('Eng (1) N2', np.ma.array([60.0]*50))
-        eng_2_start = P('Eng (2) N2', np.ma.array([0]*3+range(0, 55, 2)+[54]*4))
+        eng_2_start = P('Eng (2) N2', np.ma.array([0]*3+list(range(0, 55, 2))+[54]*4))
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)
         estm = EngStartTimeMax()
@@ -22347,8 +22347,8 @@ class TestEngStartTimeMax(unittest.TestCase):
         self.assertEqual(estm[0].index, 4.0)
 
     def test_both_start(self):
-        eng_1_start = P('Eng (1) N2', np.ma.array([0]*4+range(55)+[54]*4))
-        eng_2_start = P('Eng (2) N2', np.ma.array([0]*6+range(55)+[54]*2))
+        eng_1_start = P('Eng (1) N2', np.ma.array([0]*4+list(range(55))+[54]*4))
+        eng_2_start = P('Eng (2) N2', np.ma.array([0]*6+list(range(55))+[54]*2))
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)
         estm = EngStartTimeMax()

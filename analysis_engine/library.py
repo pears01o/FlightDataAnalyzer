@@ -701,7 +701,8 @@ def calculate_slat(mode, slat_angle, model, series, family):
     :rtype: dict, np.ma.array, int or float
     '''
     values_mapping = at.get_slat_map(model.value, series.value, family.value)
-    array, frequency, offset = calculate_surface_angle(mode, slat_angle, values_mapping.keys())
+    array, frequency, offset = calculate_surface_angle(mode, slat_angle,
+                                                       list(values_mapping))
     return values_mapping, array, frequency, offset
 
 
@@ -718,7 +719,8 @@ def calculate_flap(mode, flap_angle, model, series, family):
     :rtype: dict, np.ma.array, int or float
     '''
     values_mapping = at.get_flap_map(model.value, series.value, family.value)
-    array, frequency, offset = calculate_surface_angle(mode, flap_angle, list(values_mapping.keys()))
+    array, frequency, offset = calculate_surface_angle(mode, flap_angle,
+                                                       list(values_mapping))
     '''
     import matplotlib.pyplot as plt
     plt.plot(flap_angle.array)
@@ -2546,10 +2548,10 @@ def runway_touchdown(runway):
     Distance from runway start to centre of touchdown markings.
     ref: https://www.icao.int/safety/Implementation/Library/Manual%20Aerodrome%20Stds.pdf
     page 68, taking lenth to beginning of marking plus half the minimum length of stripe.
-    
+
     :param runway: Runway location details dictionary.
     :type runway: Dictionary
-    
+
     :return
     :param tdn_dist: distance from start of runway to touchdown point
     :type tdn_dist: float, units = metres.
@@ -2566,21 +2568,21 @@ def runway_touchdown(runway):
             tdn_dist = 322.5
         elif length > 2400:
             tdn_dist = 422.5
-        
+
         r = tdn_dist / length
-        
+
         lat = (1.0-r) * runway['start']['latitude'] + r * runway['end']['latitude']
         lon = (1.0-r) * runway['start']['longitude'] + r * runway['end']['longitude']
         return tdn_dist, {'latitude':lat, 'longitude':lon}
-    
+
     else:
         # Helipads
-        if runway: 
-            locn = runway['start'] 
-        else: 
+        if runway:
+            locn = runway['start']
+        else:
             locn = None
         return 0.0, locn
-    
+
 
 def runway_heading(runway):
     '''
@@ -2656,7 +2658,6 @@ def runway_snap(runway, lat, lon):
 
     :returns new_lat, new_lon: Amended position now on runway centreline.
     :type float, float.
-
     http://www.flightdatacommunity.com/breaking-runways/
     """
     try:
@@ -3622,7 +3623,8 @@ def find_slices_overlap(first_slice, second_slice):
     else:
         step = first_slice.step
 
-    if second_slice.start is None or first_slice.start > second_slice.start:
+    if second_slice.start is None or \
+       (first_slice.start > second_slice.start if first_slice.start else False):
         start = first_slice.start
     else:
         start = second_slice.start
@@ -3688,7 +3690,7 @@ def slices_overlap_merge(first_list, second_list, extend_stop=0):
 
     return result_list
 
-    
+
 def slices_and(first_list, second_list):
     '''
     This is a simple AND function to allow two slice lists to be merged. This
@@ -3765,23 +3767,54 @@ def slices_not(slice_list, begin_at=None, end_at=None):
     if not slice_list:
         return [slice(begin_at, end_at)]
 
-    a = min([s.start for s in slice_list])
-    b = min([s.stop for s in slice_list])
-    c = max([s.step or 1 for s in slice_list])
-    if c>1:
-        raise ValueError("slices_not does not cater for non-unity steps")
+    start_slices = [s.start for s in slice_list]
+    if None in start_slices:
+        a = None
+    else:
+        a = min(start_slices)
 
-    startpoint = a if b is None else min(a,b)
+    stop_slices  = [s.stop for s in slice_list]
+    if None in stop_slices:
+        b = None
+    else:
+        b = min(stop_slices)
+
+    step_slices = [s.step or 1 for s in slice_list]
+    if None in step_slices: # is this the right behavior
+        c = None
+    else:
+        c = max(step_slices)
+        if c>1:
+            raise ValueError("slices_not does not cater for non-unity steps")
+
+    if a is None:
+        startpoint = None
+    else:
+        startpoint = a if b is None else min(a,b)
 
     if begin_at is not None and begin_at < startpoint:
         startpoint = begin_at
     if startpoint is None:
         startpoint = 0
 
-    c = max([s.start for s in slice_list])
-    d = max([s.stop for s in slice_list])
-    endpoint = max(c,d)
-    if end_at is not None and end_at > endpoint:
+    if [s for s in start_slices if s]:
+        c = max([s for s in start_slices if s])
+    else:
+        c = None
+
+    if [s for s in stop_slices if s]:
+        d = max([s for s in stop_slices if s])
+    else:
+        d = None
+
+    if c and d:
+        endpoint = max(c,d)
+    elif c != d:
+        endpoint = c or d
+    else:
+        endpoint = None
+
+    if end_at is not None and endpoint is not None and end_at > endpoint:
         endpoint = end_at
 
     workspace = np.ma.zeros(endpoint)
@@ -3813,9 +3846,10 @@ def slices_or(*slice_lists):
             modified = False
             for output_slice in copy(slices):
                 if slices_overlap(input_slice, output_slice):
-                    # min prefers None
-                    slice_start = min(input_slice.start, output_slice.start)
-                    # max prefers anything but None
+                    if input_slice.start is None or output_slice.start is None:
+                        slice_start = None
+                    else:
+                        slice_start = min(input_slice.start, output_slice.start)
                     if input_slice.stop is None or output_slice.stop is None:
                         slice_stop = None
                     else:
@@ -3914,7 +3948,7 @@ def slices_remove_small_slices(slices, time_limit=10, hz=1, count=None):
 def slices_find_small_slices(slices, time_limit=10, hz=1, count=None):
     '''
     Find small slices in a list of slices.
-    
+
     :param slice_list: list of slices to be processed
     :type slice_list: list of Python slices.
 
@@ -4764,7 +4798,7 @@ def blend_parameters_cubic(frequency, offset, params, result_slice):
     :type params: [Parameter]
     :param result_slice: the slice where results will be returned
     :type result_slice: slice
-    
+
     This provides cubic spline interpolation to support the generic routine
     blend_parameters. It uses cubic spline interpolation for each of the
     component parameters, then applies weighting to reflect both the
@@ -6222,7 +6256,7 @@ def slice_samples(_slice):
     if _slice.start is None or _slice.stop is None:
         return 0
     else:
-        return (abs(_slice.stop - _slice.start) - 1) / abs(step) + 1
+        return (abs(_slice.stop - _slice.start) - 1) // abs(step) + 1
 
 
 def slices_above(array, value):
@@ -7082,17 +7116,17 @@ def smooth_track_cost_function(lat_s, lon_s, lat, lon, ac_type, hz):
 def smooth_signal(array, window_len=11, window='hanning'):
     """
     Smooth the data using a window with requested size.
-    
+
     This method is based on the convolution of a scaled window with the signal.
-    The signal is prepared by introducing reflected copies of the signal 
+    The signal is prepared by introducing reflected copies of the signal
     (with the window size) in both ends so that transient parts are minimized
     in the begining and end part of the output signal.
-    
+
     input:
         array: the input signal array to be smoothed
-        window_len: the dimension of the smoothing window and should be an odd 
+        window_len: the dimension of the smoothing window and should be an odd
                     integer
-        window: the type of window from: 
+        window: the type of window from:
             'flat' - window will produce a moving average smoothing.
             'hanning'
             'hamming'
@@ -8439,7 +8473,7 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
         plt.plot(lon[-1],lat[-1], marker='o', color='g')
         plt.show()
         plt.clf()
-        
+
         plt.plot(u, label='u')
         plt.plot(heading, label='heading')
         plt.plot(param_arrays['Groundspeed'], label='groundspeed')
@@ -8448,7 +8482,7 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
         plt.legend()
         plt.show()
         plt.clf()
-        
+
         plt.plot(height)
         plt.plot(u)
         plt.plot(param_arrays['head_off_two_miles'])
@@ -8561,16 +8595,16 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
                 elif is_arda_aroa == False:
                     longest_approach_durn = slices_duration([this_slice], 1.0)
                     longest_approach_type = name
-                    longest_approach_slice = this_slice                    
+                    longest_approach_slice = this_slice
             if debug:
                 if max_durn_slice:
                     print(name,'longest period', max_durn, 'sec, from', max_durn_slice.start,'to', max_durn_slice.stop)
                 else:
                     print(name, 'not met at half mile point')
-                    
+
         if is_arda_aroa:
             break
-        
+
     if debug:
         print('\n'+'Longest slice overall was type', longest_approach_type, longest_approach_durn, 'sec')
 
@@ -8595,14 +8629,14 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
 
 def max_maintained_value(arrays, seconds, frequency, phase):
     """
-    For the given phase, return the indices of the maximum value maintained 
+    For the given phase, return the indices of the maximum value maintained
     for the given number of samples (this is the minimum value within the slice
     equal to the number of samples containing the highest values)
-    
-    E.g. 
+
+    E.g.
     arrays = [1,2,3,4,3,4,3,4,3,2,5,2]
     samples = 5
-    
+
     max_value = 5
     windows:
     0: [[1,2,3,4,3],4,3,4,3,2,5,2] => min_diff = sum(5-1 + 5-2 + 5-3 + 5-4 + 5-3) = 12
@@ -8617,12 +8651,12 @@ def max_maintained_value(arrays, seconds, frequency, phase):
     min_difference_index = 3
     array_index = 4
     value = 3
-    
+
     The slice starting at index 3 and ending at index 8 (5 samples) is the slice
     with the minimum difference from the maximum value in the array, therefore it contains
-    the samples with the highest values. The value returned along with this index is 3, 
-    as if we return the minimum value within this slice, we ensure that all other values 
-    will be higher than this. 
+    the samples with the highest values. The value returned along with this index is 3,
+    as if we return the minimum value within this slice, we ensure that all other values
+    will be higher than this.
     """
     indices = []
     values = []
@@ -8642,7 +8676,7 @@ def max_maintained_value(arrays, seconds, frequency, phase):
             index, value = min_value(array[min_difference_index:min_difference_index+samples])
             indices.append(min_difference_index + index + phase.start + unmasked_slice.start)
             values.append(value)
-            
+
     if len(values) == 1:
         return indices[0], values[0]
     elif len(values) > 1:

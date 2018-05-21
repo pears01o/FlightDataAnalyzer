@@ -782,6 +782,26 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
                 self.create_kpv(*bump(acc_norm, touchdown))
 
 
+class AccelerationNormalAboveWeightLimitAtTouchdown(KeyPointValueNode):
+    '''
+    Acceleration Normal at touchdown is above the limit for the aircraft's weight.
+    Specific to Embraer 170/175.
+    '''
+    units = ut.G
+
+    def derive(self,
+               tdwns=KTI('Touchdown'),
+               acc_norm = KPV('Acceleration Normal'),
+               acc_limit = P('Acceleration Normal Limit For Landing Weight'),
+               touch_and_go=KTI('Touch And Go'),
+               ):
+
+        for idx, tdwn in enumerate(tdwns+touch_and_go):
+            hard_landing = acc_limit.array[tdwn.index] < acc_norm.array[tdwn.index]
+            if hard_landing:
+                self.create_kpv(tdwn.index, acc_norm.array[tdwn.index])
+
+
 class LoadFactorThresholdAtTouchdown(KeyPointValueNode):
     '''
     A Boeing 767/757/737 specific KPV, which returns the difference between 

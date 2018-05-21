@@ -65,6 +65,7 @@ from analysis_engine.derived_parameters import (
     AccelerationLateralOffsetRemoved,
     AccelerationLateralSmoothed,
     AccelerationLongitudinalOffsetRemoved,
+    AccelerationNormalLimitForLandingWeight,
     AccelerationSideways,
     AccelerationVertical,
     AccelerationNormalOffsetRemoved,
@@ -599,6 +600,19 @@ class TestAccelerationAlongTrack(unittest.TestCase):
             P('Drift',np.ma.ones(2)*10.0,2)])
         expected = np.ma.array([0.13321041] * 8, mask=[0, 0, 0, 0, 0,   1, 1, 1])
         ma_test.assert_masked_array_approx_equal(acc_along.array, expected)
+
+
+class TestAccelerationNormalLimitForLandingWeight(unittest.TestCase):
+    def test_derive(self):
+        gross_weight = P('Gross Weight Smoothed',
+                         np.ma.array([99999, 35000, 35000, 34000 ,33400,
+                                      33300, 31000, 30000, 27000, 26000,
+                                      25000, 24500, 23500, 23000, 0.000,]))
+
+        acc_n_lim = AccelerationNormalLimitForLandingWeight()
+        acc_n_lim.derive(gross_weight)
+        expected = np.ma.array([1.75]*5 + [2.00]*5 + [2.10]*5)
+        ma_test.assert_array_equal(acc_n_lim.array, expected)
 
 
 class TestAirspeedSelectedForApproaches(unittest.TestCase):

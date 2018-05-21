@@ -38,7 +38,7 @@ from analysis_engine.node import (
 from analysis_engine.process_flight import process_flight
 from analysis_engine.settings import GRAVITY_IMPERIAL
 
-from flight_phase_test import buildsection, buildsections
+from analysis_engine.test_utils import buildsection, buildsections
 
 # Use pre-processed version 
 from analysis_engine.pre_processing.merge_parameters import (
@@ -2799,7 +2799,7 @@ class TestMGBOilTemp(unittest.TestCase):
         self.assertTrue(self.node_class.can_operate(('MGB Oil Temp (1)',
                                                      'MGB Oil Temp (2)'),
                                                     ac_type=helicopter))
-    
+
         opts = self.node_class.get_operational_combinations(ac_type=helicopter)
         self.assertEquals(len(opts), 3)
 
@@ -2809,10 +2809,10 @@ class TestMGBOilTemp(unittest.TestCase):
 
         oil_temp1 = P('MGB Oil Temp (1)', np.ma.array(t1))
         oil_temp2 = P('MGB Oil Temp (2)', np.ma.array(t2))
-        
+
         mgb_oil_temp = self.node_class()
         mgb_oil_temp.derive(oil_temp1, oil_temp2)
-        
+
         # array size should be double, 100
         self.assertEqual(mgb_oil_temp.array.size, (oil_temp1.array.size*2))
         self.assertEqual(mgb_oil_temp.array.size, (oil_temp2.array.size*2))
@@ -2843,7 +2843,7 @@ class TestMGBOilPress(unittest.TestCase):
         self.assertTrue(self.node_class.can_operate(('MGB Oil Press (1)',
                                                      'MGB Oil Press (2)'),
                                                     ac_type=helicopter))
-    
+
         opts = self.node_class.get_operational_combinations(ac_type=helicopter)
         self.assertEquals(len(opts), 3)
 
@@ -2852,10 +2852,10 @@ class TestMGBOilPress(unittest.TestCase):
         p2 = [26.51]*14 + [26.63] + [26.4]*20 + [26.29] + [26.4]*14
         oil_press1 = P('MGB Oil Press (1)', np.ma.array(p1))
         oil_press2 = P('MGB Oil Press (2)', np.ma.array(p2))
-        
+
         mgb_oil_press = self.node_class()
         mgb_oil_press.derive(oil_press1, oil_press2)
-        
+
         # array size should be double, 100
         self.assertEqual(mgb_oil_press.array.size, (oil_press1.array.size*2))
         self.assertEqual(mgb_oil_press.array.size, (oil_press2.array.size*2))
@@ -3101,12 +3101,28 @@ class TestGrossWeightSmoothed(unittest.TestCase):
         gw = load(os.path.join(test_data_path,
                                'gross_weight_smoothed_1_gw.nod'))
         gw_orig = gw.array.copy()
-        climbs = load(os.path.join(test_data_path,
-                                   'gross_weight_smoothed_1_climbs.nod'))
-        descends = load(os.path.join(test_data_path,
-                                     'gross_weight_smoothed_1_descends.nod'))
-        fast = load(os.path.join(test_data_path,
-                                 'gross_weight_smoothed_1_fast.nod'))
+        try:
+            climbs = load(os.path.join(test_data_path,
+                                       'gross_weight_smoothed_1_climbs.nod'))
+        except AttributeError: # Python 3
+            climbs = buildsection('Climbing', 1018, 1463, 1017.671875,
+                                  1462.671875)
+        try:
+            descends = load(os.path.join(test_data_path,
+                                         'gross_weight_smoothed_1_descends.nod'))
+        except AttributeError: # Python 3
+            descends = buildsections('Descending',
+                                     [1602, 2219, 1601.671875, 2218.671875],
+                                     [2230, 2248, 2229.671875, 2247.671875],
+                                     [2254, 2263, 2253.671875, 2262.671875],
+                                     [2269, 2278, 2268.671875, 2277.671875],
+                                     [2280, 2365, 2279.671875, 2364.671875],
+                                     [2416, 2607, 2415.671875, 2606.671875],)
+        try:
+            fast = load(os.path.join(test_data_path,
+                                     'gross_weight_smoothed_1_fast.nod'))
+        except AttributeError: # Python 3
+            fast = buildsection('Fast', 991, 2630, 990.53125, 2629.53125)
         gws = GrossWeightSmoothed()
         gws.derive(ff, gw, climbs, descends, fast)
         # Start is similar.
@@ -3122,12 +3138,28 @@ class TestGrossWeightSmoothed(unittest.TestCase):
         gw = load(os.path.join(test_data_path,
                                'gross_weight_smoothed_2_gw.nod'))
         gw_orig = gw.array.copy()
-        climbs = load(os.path.join(test_data_path,
-                                   'gross_weight_smoothed_2_climbs.nod'))
-        descends = load(os.path.join(test_data_path,
-                                     'gross_weight_smoothed_2_descends.nod'))
-        fast = load(os.path.join(test_data_path,
-                                 'gross_weight_smoothed_2_fast.nod'))
+        try:
+            climbs = load(os.path.join(test_data_path,
+                                       'gross_weight_smoothed_2_climbs.nod'))
+        except AttributeError: # Python 3
+            climbs = buildsection('Climbing',712, 1725, 711.671875,
+                                  1724.671875)
+        try:
+            descends = load(os.path.join(test_data_path,
+                                         'gross_weight_smoothed_2_descends.nod'))
+        except AttributeError: # Python 3
+            descends = buildsections('Descending',
+                                     [4739, 6109, 4738.671875, 6108.671875],
+                                     [6123, 6136, 6122.671875, 6135.671875],
+                                     [6138, 6174, 6137.671875, 6173.671875],
+                                     [6180, 6342, 6179.671875, 6341.671875],
+                                     [6392, 6523, 6391.671875, 6522.671875],)
+
+        try:
+            fast = load(os.path.join(test_data_path,
+                                     'gross_weight_smoothed_2_fast.nod'))
+        except AttributeError: # Python 3
+            fast = buildsection('Fast', 693, 6552, 692.53125, 6551.53125)
         gws = GrossWeightSmoothed()
         gws.derive(ff, gw, climbs, descends, fast)
         # Start is similar.
@@ -3365,9 +3397,9 @@ class TestGroundspeedSigned(unittest.TestCase):
 
     def test_can_operate(self):
         self.assertTrue(GroundspeedSigned.can_operate(['Groundspeed', 'Eng (*) Any Running',
-                                                       'Aircraft Type', 'Precise Positioning', 'Taxiing', 
+                                                       'Aircraft Type', 'Precise Positioning', 'Taxiing',
                                                        'Latitude Prepared', 'Longitude Prepared']))
-        
+
 
     def test_basic(self):
         gspd = P('Groundspeed', np.ma.ones(30))
@@ -3381,7 +3413,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         gs.derive(gspd, running, precision, taxiing, lat, lon)
         assert_equal(gs.array[4], -1.0)
         assert_equal(gs.array[24], 1.0)
-        
+
     def test_early_start(self):
         gspd = P('Groundspeed', np.ma.concatenate((np.ones(15), np.zeros(10), np.arange(15))))
         running = P('Eng (*) Any Running', np.ma.concatenate((np.zeros(20), np.ones(20))))
@@ -3390,7 +3422,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         assert_equal(gs.array[4], -1.0)
         assert_equal(gs.array[22], 0.0)
         assert_equal(gs.array[27], 2.0)
-        
+
     def test_no_pushback(self):
         gspd = P('Groundspeed', np.ma.concatenate((np.ones(15), np.zeros(10), np.arange(15))))
         running = P('Eng (*) Any Running', np.ma.ones(40))
@@ -3405,7 +3437,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         gspd_data = []
         this_test_data_path = os.path.join(test_data_path,
                                            'Groundspeed_test_data_Entebbe.csv')
-        with open(this_test_data_path, 'rb') as csvfile:
+        with open(this_test_data_path, 'rt') as csvfile:
             self.reader = csv.DictReader(csvfile)
             for row in self.reader:
                 lat_data.append(float(row['Latitude']))
@@ -3443,7 +3475,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         gspd_data=[]
         this_test_data_path = os.path.join(test_data_path,
                                            'Groundspeed_test_data_Entebbe.csv')
-        with open(this_test_data_path, 'rb') as csvfile:
+        with open(this_test_data_path, 'rt') as csvfile:
             self.reader = csv.DictReader(csvfile)
             for row in self.reader:
                 lat_data.append(float(row['Latitude']))
@@ -3459,7 +3491,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         gs = GroundspeedSigned()
         gs.derive(gspd, running, ac_type, precision, taxiing, lat, lon)
         self.assertGreater(np.max(gs.array), 40)
-            
+
 
 class TestGroundspeedAlongTrack(unittest.TestCase):
 
@@ -4218,13 +4250,13 @@ class TestHeadwind(unittest.TestCase):
         ])
 
     def test_real_example(self):
-        ws = P('Wind Speed', np.ma.array([84.0]))
+        ws = P('Wind Speed', np.ma.array([84.0,]))
         wd = P('Wind Direction', np.ma.array([350]))
         head=P('Heading True', np.ma.array([50]))
         hw = Headwind()
         hw.derive(None, ws, wd, head, None, None)
-        expected = np.ma.array([42])
-        self.assertAlmostEqual(hw.array.data, expected.data)
+        expected = np.ma.array([42.])
+        ma_test.assert_masked_array_almost_equal(hw.array, expected)
 
     def test_odd_angles(self):
         ws = P('Wind Speed', np.ma.ones(5) * 20)

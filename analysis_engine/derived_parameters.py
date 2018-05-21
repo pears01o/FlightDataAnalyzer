@@ -6132,6 +6132,38 @@ class RollRateAtTouchdownLimit(DerivedParameterNode):
         self.array[(38000 < gw.array) & (gw.array <= 40000)] = 6
 
 
+class AccelerationNormalLimitForLandingWeight(DerivedParameterNode):
+    '''
+    Maximum acceleration normal at touchdown for weight.
+    Applicable only for Embraer E-175.
+
+    If landing weight is higher than 33000kg, the threshold for a
+    hard landing is 1.75g
+
+    If between 22500 and 33000, the threshold for hard landing is 2.0g
+
+    If the landing weight is lighter than 25500 the threshold for a
+    hard landing is 2.1g
+    '''
+
+    @classmethod
+    def can_operate(cls, available,
+                    family=A('Family'),):
+        family_name = family.value if family else None
+        return family_name in ('ERJ-170/175',) and ('Gross Weight Smoothed' in available)
+
+    def derive(self,
+               gw=P('Gross Weight Smoothed')):
+
+        self.array = np_ma_masked_zeros_like(gw.array)
+        range1 = gw.array < 25500
+        self.array[range1] = 2.1
+        range2 = (25500 <= gw.array) & (gw.array <= 33300)
+        self.array[range2] = 2.0
+        range3 = (33300 < gw.array)
+        self.array[range3] = 1.75
+
+
 class Rudder(DerivedParameterNode):
     '''
     Combination of multi-part rudder elements.

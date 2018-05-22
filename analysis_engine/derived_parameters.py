@@ -6068,7 +6068,7 @@ class RollRateForTouchdown(DerivedParameterNode):
         RRi = (R(i) - R(i-1))/dt
         '''
         roc_array = np.ma.ediff1d(roll.array)*roll.hz
-        
+        roc_array = np.insert(roc_array, 0,0,axis=0) # roll rate array too short by one - prepend a zero
         self.array = np.array(roc_array)
 
 

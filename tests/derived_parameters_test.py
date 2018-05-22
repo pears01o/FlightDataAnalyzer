@@ -5492,7 +5492,7 @@ class TestRollRateForTouchdown(unittest.TestCase):
         roll_rate=P('Roll', np.array([-3.2, -0.5, 2.3, 0.9, 0.7, 0.7, 0.5, 0.5]), frequency=2)
         node = RollRateForTouchdown()
         node.derive(roll_rate)
-        assert_array_almost_equal(node.array, [5.4, 5.6, -2.8, -0.4, 0, -0.4, 0])
+        assert_array_almost_equal(node.array, [0, 5.4, 5.6, -2.8, -0.4, 0, -0.4, 0])
         
 
 class TestRollRateAtTouchdownLimit(unittest.TestCase):

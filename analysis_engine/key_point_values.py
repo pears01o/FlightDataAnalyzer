@@ -11519,22 +11519,23 @@ class EngOilPressMax(KeyPointValueNode):
 
     units = ut.PSI
 
+    @classmethod
+    def can_operate(cls, available):
+
+        return 'Eng (*) Oil Press Max' in available
+
     def derive(self, oil_press=P('Eng (*) Oil Press Max'),
-               eng_start=KTI('First Eng Fuel Flow Start'),
-               eng_stop=KTI('Last Eng Fuel Flow Stop')):
-        
-        # if engine start and stop KTIs are available, we use them
-        if eng_start and eng_stop:
-            self.create_kpvs_within_slices(
-                oil_press.array,
-                [slice(eng_start[0].index, eng_stop[-1].index),],
-                max_value
-            )
-        # if they're not available we simply look up the max value and 
-        # rely on the masking algorithm
-        else:
-            index, value = max_value(oil_press.array)
-            self.create_kpv(index, value)
+               taxi_outs=S('Taxi Out'),
+               eng_starts=KTI('First Eng Start Before Liftoff'),
+               eng_stops=KTI('Last Eng Fuel Flow Stop')):
+
+        self.create_kpvs_within_slices(
+            oil_press.array,
+            [slice(taxi_outs.get_first().slice.start if taxi_outs else
+                   (eng_starts.get_first().index if eng_starts else 0),
+                   eng_stops[-1].index if eng_stops else len(oil_press.array))],
+            max_value,
+        )
 
 
 class EngOilPressFor60SecDuringCruiseMax(KeyPointValueNode):

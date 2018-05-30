@@ -56,6 +56,7 @@ from analysis_engine.flight_phase import (
     TakeoffRoll,
     TakeoffRollOrRejectedTakeoff,
     TakeoffRotation,
+    TakeoffRunwayHeading,
     Taxiing,
     TaxiIn,
     TaxiOut,
@@ -64,7 +65,7 @@ from analysis_engine.flight_phase import (
     TwoDegPitchTo35Ft,
 )
 from analysis_engine.key_time_instances import BottomOfDescent, TopOfClimb, TopOfDescent
-from analysis_engine.library import integrate, np_ma_zeros_like, np_ma_ones_like
+from analysis_engine.library import integrate, np_ma_zeros_like, np_ma_ones_like, align
 from analysis_engine.node import (A, App, ApproachItem, KTI,
                                   KeyTimeInstance, KPV, KeyPointValue, M,
                                   Parameter, P, S, Section, SectionNode, load,
@@ -72,6 +73,7 @@ from analysis_engine.node import (A, App, ApproachItem, KTI,
 from analysis_engine.process_flight import process_flight
 
 from analysis_engine.settings import AIRSPEED_THRESHOLD
+from analysis_engine.utils import open_node_container
 
 
 test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -3025,3 +3027,31 @@ class TestOnDeck(unittest.TestCase):
         phase = OnDeck()
         phase.derive(self.gnds, pitch, roll)
         self.assertEqual(phase.get_first(), None)
+
+
+class TestTakeoffRunwayHeading(unittest.TestCase):
+
+
+    def setUp(self):
+        self.node_class = TakeoffRunwayHeading
+
+    def test_derive_rto_turnaround(self):
+        for flight_pk, nodes, attrs in open_node_container(
+              os.path.join(test_data_path, 'runway_takeoff_heading.zip')):
+            hdg = nodes['Heading Continuous']
+            groundeds = nodes['Grounded']
+            toffs = nodes['Takeoff Roll']
+
+        gnd_aligned = groundeds.get_aligned(hdg)
+        toff_aligned = toffs.get_aligned(hdg)
+
+        node = self.node_class()
+        node.derive(hdg, gnd_aligned, toff_aligned)
+
+        self.assertEqual(len(node),3)
+        self.assertEqual(node.get_slices(), [
+            slice(1626, 2102, None),
+            slice(2119, 2123, None),
+            slice(2525, 2632, None)
+        ])
+

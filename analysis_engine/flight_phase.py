@@ -23,6 +23,7 @@ from analysis_engine.library import (
     is_slice_within_slice,
     last_valid_sample,
     max_value,
+    min_value,
     moving_average,
     nearest_neighbour_mask_repair,
     peak_curvature,
@@ -36,6 +37,7 @@ from analysis_engine.library import (
     slices_and,
     slices_and_not,
     slices_below,
+    slices_between,
     slices_from_to,
     slices_not,
     slices_or,
@@ -1595,6 +1597,31 @@ class LandingRoll(FlightPhaseNode):
                 begin = land.slice.start
 
             self.create_phase(slice(begin, end), begin=begin, end=end)
+
+
+class TakeoffRunwayHeading(FlightPhaseNode):
+    '''
+    Return phases where the aircraft is traveling on the same heading as the
+    takeoff runway with a deviation of +/-10 degrees.
+    '''
+    def derive(self,
+               hdg=P('Heading Continuous'),
+               groundeds=S('Grounded'),
+               toffs=S('Takeoff Roll') ):
+        for toff in toffs:
+            for gnd in groundeds:
+                if not slices_and([toff.slice], [gnd.slice]):
+                    continue
+                rwy_hdg = int(np.ma.mean(hdg.array[toff.slice]))
+                min_hdg = int(min_value(hdg.array,gnd.slice).value)
+                max_hdg = int(max_value(hdg.array,gnd.slice).value)
+                hdg_cycles = [n for n in range(min_hdg, max_hdg) if n%360 == rwy_hdg%360]
+                hdg_slices = []
+                for hdg_cycle in hdg_cycles:
+                    _, s = slices_between(hdg.array, hdg_cycle-10, hdg_cycle+10)
+                    hdg_slices += slices_and(s, [gnd.slice])
+                if hdg_slices:
+                    self.create_phases(hdg_slices)
 
 
 class RejectedTakeoff(FlightPhaseNode):

@@ -8,6 +8,23 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.38.9
+-------
+  - AE-1667 New Event - Counting Automatic Power Reserve activations
+  - AE-1729 Add ability to print the ordered tree
+  - AE-1663/1664 Fixes for Acceleration and Pitch KPVs for AW139s
+  - AE-1741 Track Deviation From Runway fix
+  - AE-1738 New event - Hard Landing Roll Rate vs Aircraft Landing Weight
+  - AE-1755 Flap asymmetry synchro event
+  - AE-1626 Altitude ADH fix
+  - AE-1669 EngOilPressMax KPV improvements
+
+  Other Fixes:
+  - EngNpforXSecMaximumContinuousPowerMax (add 20 secs)
+  - EngNpDuringTakeoff5MinRatingMax includes Go Around 5 Min Rating
+  - Drift: derive from Heading Continuous rather than Heading
+  - Add the missing parameters to WRAPPING_PARAMS
+
 v0.38.8
 -------
   - AE-1753 Takeoff Configuration Warning KPVs will now trigger at any time the aircraft is on the ground.

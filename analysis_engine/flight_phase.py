@@ -1628,21 +1628,26 @@ class RejectedTakeoff(FlightPhaseNode):
     '''
     Rejected Takeoff based on Acceleration Longitudinal Offset Removed exceeding
     the TAKEOFF_ACCELERATION_THRESHOLD and not being followed by a liftoff.
-    
+
     Note: We cannot use Liftoff, Taxi Out or Airborne in this computation in case
     the rejected takeoff was followed by a taxi back to stand.
     '''
-    
+
     @classmethod
     def can_operate(cls, available):
-        return all_of(('Eng (*) All Running', 'Acceleration Longitudinal Offset Removed', 'Grounded'), available)
+        return all_of(('Eng (*) All Running',
+                       'Acceleration Longitudinal Offset Removed',
+                       'Grounded',
+                       'Takeoff Runway Heading'),
+                      available)
 
     def derive(self, accel_lon=P('Acceleration Longitudinal Offset Removed'),
                eng_running=M('Eng (*) All Running'),
                groundeds=S('Grounded'),
                takeoffs=S('Takeoff Roll'),
                eng_n1=P('Eng (*) N1 Max'),
-               toff_acc=KTI('Takeoff Acceleration Start')):
+               toff_acc=KTI('Takeoff Acceleration Start'),
+               toff_rwy_hdg=S('Takeoff Runway Heading')):
 
         # We need all engines running to be a realistic attempt to get airborne
         runnings = runs_of_ones(eng_running.array=='Running')
@@ -1655,6 +1660,12 @@ class RejectedTakeoff(FlightPhaseNode):
         else:
             # We ignore the last slice in groundeds as this is usually the during the taxi in
             running_on_grounds = slices_and(runnings, groundeds.get_slices()[:-1])
+
+        # Narrow the RTO search to when the aircraft is traveling on the
+        # same heading as the takeoff runway.
+        rwy_hdgs = slices_remove_small_slices(toff_rwy_hdg.get_slices(),
+                                              time_limit=5, hz=hz)
+        running_on_grounds = slices_and(running_on_grounds, rwy_hdgs)
 
         if eng_n1 is not None:
             accel_above_thres = runs_of_ones(repair_mask(accel_lon.array, frequency=hz, repair_duration=None) >= TAKEOFF_ACCELERATION_THRESHOLD)
@@ -1673,7 +1684,6 @@ class RejectedTakeoff(FlightPhaseNode):
                         if len(rto_list) > 0 and (rto.start - rto_list[-1].stop)/hz < 60.0:
                             continue
                         rto_list.append(rto)
-            #potential_rtos = slices_remove_small_slices(potential_rtos, count=1)
             if rto_list:
                 self.create_phases(rto_list)
         else:

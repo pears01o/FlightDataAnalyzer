@@ -1602,11 +1602,6 @@ class Touchdown(KeyTimeInstanceNode):
                             index_daz = i+1+period.start
                             break
 
-            '''
-            open("touchdown_test","a").write(str([index_alt, index_gog, index_ax, index_dax, index_daz, index_az]))
-            open("touchdown_test","a").write("\n")
-            '''
-
             # Pick the first of the two normal accelerometer measures to
             # avoid triggering a touchdown from a single faulty sensor:
             index_z_list = [x for x in (index_az, index_daz) if x is not None]

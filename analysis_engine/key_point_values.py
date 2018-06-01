@@ -13234,6 +13234,52 @@ class FlapAtGearUpSelectionDuringGoAround(KeyPointValueNode):
         self.create_kpvs_at_ktis(flap.array, gear_up_sel, interpolate=False)
 
 
+class FlapLeverAtGearDownSelection(KeyPointValueNode):
+    '''
+    Flap lever at gear down selection.
+
+    For Embraer, Recorded Lever positions are mapped to powers of two
+    Lever 0: 1, Lever 1: 2, Lever 2: 4, Lever 3: 8, Lever 4: 16, Lever 5: 32, Lever 6 (full): 64
+    '''
+    @classmethod
+    def can_operate(cls,
+                    available,
+                    family=A('Family')):
+        embraer = family and family.value in ('ERJ-170/175', 'ERJ-190/195')
+        return embraer and ('Flap Lever' in available)
+
+    units = ut.DEGREE
+
+    def derive(self,
+               flap_lever=M('Flap Lever'),
+               gear_dn_sel=KTI('Gear Down Selection')):
+
+        flap_lever_position = np.log2(flap_lever.array.raw)
+        self.create_kpvs_at_ktis(flap_lever_position, gear_dn_sel, interpolate=False)
+
+
+class FlapLeverAtGearUpSelectionDuringGoAround(KeyPointValueNode):
+    '''
+    Flap lever at gear up selection during go around.
+    '''
+    @classmethod
+    def can_operate(cls,
+                    available,
+                    family=A('Family')):
+        embraer = family and family.value in ('ERJ-170/175', 'ERJ-190/195')
+        return embraer and ('Flap Lever' in available)
+
+    units = ut.DEGREE
+
+    def derive(self,
+               flap_lever=M('Flap Lever'),
+               gear_up_sel=KTI('Gear Up Selection During Go Around')):
+
+        flap_lever_position = np.log2(flap_lever.array.raw)
+        self.create_kpvs_at_ktis(flap_lever_position, gear_up_sel, interpolate=False)
+
+
+
 class FlapWithGearUpMax(KeyPointValueNode):
     '''
     Maximum flap angle while the landing gear is up.

@@ -409,6 +409,8 @@ from analysis_engine.key_point_values import (
     FlapAt500Ft,
     FlapAtGearDownSelection,
     FlapAtGearUpSelectionDuringGoAround,
+    FlapLeverAtGearDownSelection,
+    FlapLeverAtGearUpSelectionDuringGoAround,
     FlapAtFirstMovementAfterEngineStart,
     FlapAtLiftoff,
     FlapAtTouchdown,
@@ -15448,6 +15450,82 @@ class TestFlapAtGearUpSelectionDuringGoAround(unittest.TestCase, NodeTest):
             KeyPointValue(index=30.00, value=30, name=name),
             KeyPointValue(index=30.25, value=30, name=name),
         ]))
+
+
+class TestFlapLeverAtGearDownSelection(unittest.TestCase, NodeTest):
+    def setUp(self):
+        self.node_class = FlapLeverAtGearDownSelection
+        self.operational_combinations = [('Flap Lever',),('Gear Down Selection',)]
+        self.values_mapping = {
+            1:  'Level 0',
+            2:  'Level 1',
+            4:  'Level 2',
+            8:  'Level 3',
+            16: 'Level 4',
+            32: 'Level 5',
+            64: 'Level 6',
+        }
+
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(('Flap Lever','Gear Down Selection',),
+                                                    family=A('Family','ERJ-170/175')))
+        self.assertTrue(self.node_class.can_operate(('Flap Lever','Gear Down Selection',),
+                                                    family=A('Family','ERJ-170/175')))
+        self.assertFalse(self.node_class.can_operate(('Flap Lever','Gear Down Selection',),
+                                                    family=A('Family','Learjet')))
+
+    def test_derive(self):
+        array = np.ma.repeat((4,1,1,4,32,1), 5)
+        flap_lever = M(name='Flap Lever', array=array, values_mapping=self.values_mapping)
+        gear = KTI(name='Gear Down Selection', items=[
+            KeyTimeInstance(index=21, name='Gear Down Selection',)
+        ])
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(flap_lever, gear)
+
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=21, value=5, name=name),
+        ]))
+
+
+class TestFlapLeverAtGearUpSelectionDuringGoAround(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = FlapLeverAtGearUpSelectionDuringGoAround
+        self.operational_combinations = [('Flap Lever', 'Gear Up Selection During Go Around')]
+        self.values_mapping = {
+            1:  'Level 0',
+            2:  'Level 1',
+            4:  'Level 2',
+            8:  'Level 3',
+            16: 'Level 4',
+            32: 'Level 5',
+            64: 'Level 6',
+        }
+
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(('Flap Lever','Gear Down Selection',),family=A('Family','ERJ-170/175')))
+        self.assertTrue(self.node_class.can_operate(('Flap Lever','Gear Down Selection',),family=A('Family','ERJ-170/175')))
+        self.assertFalse(self.node_class.can_operate(('Flap Lever','Gear Down Selection',),family=A('Family','Learjet')))
+
+    def test_derive(self):
+        array = np.ma.repeat((4,1,1,4,32,1,2,4,32), 5)
+
+        flap_lever = M(name='Flap Lever', array=array, values_mapping=self.values_mapping)
+
+        gear = KTI(name='Gear Up Selection During Go Around', items=[
+            KeyTimeInstance(index=25, name='Gear Up Selection During Go Around'),
+        ])
+
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(flap_lever, gear)
+
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=25, value=np.log2(array[25]), name=name),
+        ]))
+
 
 
 class TestFlapOrConfigurationMaxOrMin(unittest.TestCase):

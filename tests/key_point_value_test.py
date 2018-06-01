@@ -21674,10 +21674,16 @@ class TestTCASFailureDuration(unittest.TestCase, CreateKPVsWhereTest):
 # Warnings: Takeoff Configuration
 
 
-class TestTakeoffConfigurationWarningDuration(unittest.TestCase, NodeTest):
+class TestTakeoffConfigurationWarningDuration(unittest.TestCase):
     def setUp(self):
         self.node_class = TakeoffConfigurationWarningDuration
-        self.operational_combinations = [('Takeoff Configuration Warning', 'Movement Start', 'Liftoff')]
+
+    def test_can_operate(self):
+        self.assertEqual(self.node_class.get_operational_combinations(
+            manufacturer=A('Manufacturer', 'Airbus')), [])
+        self.assertEqual(self.node_class.get_operational_combinations(
+            manufacturer=A('Manufacturer', 'Boeing')),
+                         [('Takeoff Configuration Warning', 'Movement Start', 'Liftoff')])
 
     def test_derive(self):
         node = self.node_class()

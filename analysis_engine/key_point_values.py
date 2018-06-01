@@ -18218,6 +18218,12 @@ class TakeoffConfigurationWarningDuration(KeyPointValueNode):
 
     units = ut.SECOND
 
+    @classmethod
+    def can_operate(cls, available, manufacturer=A('Manufacturer')):
+        if manufacturer and manufacturer.value == 'Airbus':
+            return False
+        return all_of(('Takeoff Configuration Warning', 'Movement Start', 'Liftoff'), available)
+
     def derive(self, takeoff_warn=M('Takeoff Configuration Warning'),
                movement_starts=S('Movement Start'),
                liftoffs=S('Liftoff')):

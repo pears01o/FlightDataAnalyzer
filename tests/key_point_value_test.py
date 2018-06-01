@@ -16474,11 +16474,12 @@ class TestGroundspeedDuringRejectedTakeoffMax(unittest.TestCase):
         accel = P('Acceleration Longitudinal Offset Removed',
                   testwave, frequency=4.0, offset=0.2)
         gnds = buildsections('Grounded', [0, 125], [400, 500])
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel.array), 
-                            values_mapping={0: 'Not Running', 1: 'Running'})        
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel.array),
+                            values_mapping={0: 'Not Running', 1: 'Running'})
+        trh = buildsections('Takeoff Runway Heading', [0, 125])
         # Create RTO here to ensure it operates as expected
         rto = RejectedTakeoff()
-        rto.get_derived((accel, eng_running, gnds, None, None, None))
+        rto.get_derived((accel, eng_running, gnds, None, None, None, trh))
         # The data passes 0.1g on the 6th and 72nd samples of the sine wave.
         # With the 24 sample offset and 4Hz sample rate this gives an RTO
         # section thus:

@@ -18217,10 +18217,24 @@ class TakeoffConfigurationWarningDuration(KeyPointValueNode):
 
     units = ut.SECOND
 
+    @classmethod
+    def can_operate(cls, available, manufacturer=A('Manufacturer')):
+        if manufacturer and manufacturer.value == 'Airbus':
+            return False
+        return all_of(('Takeoff Configuration Warning', 'Movement Start', 'Liftoff'), available)
+
     def derive(self, takeoff_warn=M('Takeoff Configuration Warning'),
-               grounded=S('Grounded')):
-        self.create_kpvs_where(takeoff_warn.array == 'Warning',
-                               takeoff_warn.hz, phase=grounded)
+               movement_starts=S('Movement Start'),
+               liftoffs=S('Liftoff')):
+        if not liftoffs:
+            return
+        movement_start = movement_starts.get_first()
+        self.create_kpvs_where(
+            takeoff_warn.array == 'Warning',
+            takeoff_warn.hz,
+            phase=slice(movement_start.index if movement_start else None,
+                        liftoffs.get_first().index),
+        )
 
 
 class TakeoffConfigurationFlapWarningDuration(KeyPointValueNode):

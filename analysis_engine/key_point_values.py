@@ -13241,14 +13241,14 @@ class FlapLeverAtGearDownSelection(KeyPointValueNode):
     For Embraer, Recorded Lever positions are mapped to powers of two
     Lever 0: 1, Lever 1: 2, Lever 2: 4, Lever 3: 8, Lever 4: 16, Lever 5: 32, Lever 6 (full): 64
     '''
+    units = ut.DEGREE
+
     @classmethod
     def can_operate(cls,
                     available,
                     family=A('Family')):
         embraer = family and family.value in ('ERJ-170/175', 'ERJ-190/195')
         return embraer and ('Flap Lever' in available)
-
-    units = ut.DEGREE
 
     def derive(self,
                flap_lever=M('Flap Lever'),
@@ -13262,6 +13262,8 @@ class FlapLeverAtGearUpSelectionDuringGoAround(KeyPointValueNode):
     '''
     Flap lever at gear up selection during go around.
     '''
+    units = ut.DEGREE
+
     @classmethod
     def can_operate(cls,
                     available,
@@ -13269,15 +13271,12 @@ class FlapLeverAtGearUpSelectionDuringGoAround(KeyPointValueNode):
         embraer = family and family.value in ('ERJ-170/175', 'ERJ-190/195')
         return embraer and ('Flap Lever' in available)
 
-    units = ut.DEGREE
-
     def derive(self,
                flap_lever=M('Flap Lever'),
                gear_up_sel=KTI('Gear Up Selection During Go Around')):
 
         flap_lever_position = np.log2(flap_lever.array.raw)
         self.create_kpvs_at_ktis(flap_lever_position, gear_up_sel, interpolate=False)
-
 
 
 class FlapWithGearUpMax(KeyPointValueNode):

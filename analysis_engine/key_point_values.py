@@ -11527,13 +11527,13 @@ class EngOilPressMax(KeyPointValueNode):
     def derive(self, oil_press=P('Eng (*) Oil Press Max'),
                taxi_outs=S('Taxi Out'),
                eng_starts=KTI('First Eng Start Before Liftoff'),
-               eng_stops=KTI('Last Eng Fuel Flow Stop')):
+               touchdowns=KTI('Touchdown')):
 
         self.create_kpvs_within_slices(
             oil_press.array,
             [slice(taxi_outs.get_first().slice.start if taxi_outs else
                    (eng_starts.get_first().index if eng_starts else 0),
-                   eng_stops[-1].index if eng_stops else len(oil_press.array))],
+                   touchdowns.get_last().index if touchdowns else len(oil_press.array))],
             max_value,
         )
 

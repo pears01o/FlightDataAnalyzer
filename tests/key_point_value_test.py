@@ -12342,11 +12342,11 @@ class TestEngOilPressMax(unittest.TestCase, NodeTest):
             ('Eng (*) Oil Press Max',),
             ('Taxi Out', 'Eng (*) Oil Press Max',),
             ('First Eng Start Before Liftoff', 'Eng (*) Oil Press Max'),
-            ('Eng (*) Oil Press Max', 'Last Eng Fuel Flow Stop'),
+            ('Eng (*) Oil Press Max', 'Touchdown'),
             ('Taxi Out', 'First Eng Start Before Liftoff', 'Eng (*) Oil Press Max'),
-            ('Taxi Out', 'Eng (*) Oil Press Max', 'Last Eng Fuel Flow Stop'),
-            ('First Eng Start Before Liftoff', 'Eng (*) Oil Press Max', 'Last Eng Fuel Flow Stop'),
-            ('Taxi Out', 'First Eng Start Before Liftoff', 'Eng (*) Oil Press Max', 'Last Eng Fuel Flow Stop'),
+            ('Taxi Out', 'Eng (*) Oil Press Max', 'Touchdown'),
+            ('First Eng Start Before Liftoff', 'Eng (*) Oil Press Max', 'Touchdown'),
+            ('Taxi Out', 'First Eng Start Before Liftoff', 'Eng (*) Oil Press Max', 'Touchdown'),
         ]
         self.oil_press = P(name='Eng (*) Oil Press Max',
                            array=np.ma.array([
@@ -12360,8 +12360,8 @@ class TestEngOilPressMax(unittest.TestCase, NodeTest):
                         items=[KeyTimeInstance(name='First Eng Start Before Liftoff',
                                                index=2),])
 
-        end_kti = KTI(name='Last Eng Fuel Flow Stop',
-                      items=[KeyTimeInstance(name='Last Eng Fuel Flow Stop',
+        end_kti = KTI(name='Touchdown',
+                      items=[KeyTimeInstance(name='Touchdown',
                                              index=13),])
         node = self.node_class()
         node.derive(self.oil_press, None, start_kti, end_kti)
@@ -12376,10 +12376,10 @@ class TestEngOilPressMax(unittest.TestCase, NodeTest):
                             KeyTimeInstance(name='First Eng Start Before Liftoff',index=3),
                         ])
 
-        end_kti = KTI(name='Last Eng Fuel Flow Stop',
+        end_kti = KTI(name='Touchdown',
                       items=[
-                          KeyTimeInstance(name='Last Eng Fuel Flow Stop', index=13),
-                          KeyTimeInstance(name='Last Eng Fuel Flow Stop', index=15),
+                          KeyTimeInstance(name='Touchdown', index=13),
+                          KeyTimeInstance(name='Touchdown', index=15),
                       ])
         node = self.node_class()
         node.derive(self.oil_press, None, start_kti, end_kti)
@@ -12410,8 +12410,8 @@ class TestEngOilPressMax(unittest.TestCase, NodeTest):
         start_kti = KTI(name='First Eng Start Before Liftoff',
                         items=[KeyTimeInstance(name='First Eng Start Before Liftoff',
                                                index=2),])
-        end_kti = KTI(name='Last Eng Fuel Flow Stop',
-                      items=[KeyTimeInstance(name='Last Eng Fuel Flow Stop',
+        end_kti = KTI(name='Touchdown',
+                      items=[KeyTimeInstance(name='Touchdown',
                                              index=13),])
         node = self.node_class()
         node.derive(

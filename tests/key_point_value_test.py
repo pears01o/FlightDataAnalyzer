@@ -272,6 +272,7 @@ from analysis_engine.key_point_values import (
     EngEPRDuringGoAround5MinRatingMax,
     EngEPRDuringMaximumContinuousPowerMax,
     EngEPRDuringTakeoff5MinRatingMax,
+    EngEPRDuringTakeoffMax,
     EngEPRDuringTaxiMax,
     EngEPRDuringTaxiInMax,
     EngEPRDuringTaxiOutMax,
@@ -10739,6 +10740,41 @@ class TestEngEPRDuringApproachMin(unittest.TestCase):
         self.assertEqual(node[0].index, 107)
         self.assertEqual(node[0].value, 0)
         self.assertEqual(node[0].name, 'Eng EPR During Approach Min')
+
+
+class TestEngEPRDuringTakeoffMax(unittest.TestCase, CreateKPVFromSlicesTest):
+
+    def setUp(self):
+        self.node_class = EngEPRDuringTakeoffMax
+        self.operational_combinations = [('Eng (*) EPR Max', 'Takeoff')]
+        self.function = max_value
+
+    def test_can_operate(self):
+        ops = self.node_class.get_operational_combinations()
+        expected = [('Eng (*) EPR Max', 'Takeoff')]
+        self.assertEqual(ops, expected)
+
+    def test_derive(self):
+        takeoff = buildsection('Takeoff', 15, 50)
+        epr_array = np.ma.array([1.00, 1.00, 1.00, 1.00, 1.00,
+                                 1.01, 1.01, 1.00, 1.00, 1.00,
+                                 1.00, 1.00, 1.00, 1.00, 1.00,
+                                 1.01, 1.01, 1.01, 1.01, 1.02,
+                                 1.06, 1.12, 1.23, 1.38, 1.41,
+                                 1.42, 1.43, 1.42, 1.42, 1.42,
+                                 1.42, 1.42, 1.42, 1.42, 1.42,
+                                 1.42, 1.42, 1.42, 1.41, 1.41,
+                                 1.41, 1.41, 1.41, 1.41, 1.41,
+                                 1.40, 1.40, 1.40, 1.40, 1.40,
+                                 1.39, 1.39, 1.39, 1.38, 1.38,
+                                 1.38, 1.38, 1.38, 1.38, 1.38,
+                                 ])
+        epr = P(name='Eng (*) EPR Max', array=epr_array)
+        node = self.node_class()
+        node.derive(epr, takeoff)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 26)
+        self.assertEqual(node[0].value, 1.43)
 
 
 class TestEngEPRDuringTaxiMax(unittest.TestCase, CreateKPVFromSlicesTest):

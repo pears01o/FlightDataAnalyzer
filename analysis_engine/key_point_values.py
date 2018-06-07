@@ -1869,6 +1869,25 @@ class Airspeed2NMToOffshoreTouchdown(KeyPointValueNode):
                 self.create_kpvs_at_ktis(airspeed.array, [dist_to_touchdown])
 
 
+class AirspeedAbove101PercentRotorSpeed(KeyPointValueNode):
+    '''
+    Airspeed At or Above 101% Rotor Speed. Helicopter only.
+    '''
+    name = 'Airspeed Above 101 Percent Rotor Speed'
+    can_operate = helicopter_only
+
+    def derive(self,
+               airspeed=P('Airspeed'),
+               airborne=S('Airborne'),
+               nr=P('Nr'),
+               ):
+        air_spd_above_101_pct_nr = airspeed.array >= (nr.array * 1.01)
+        airborne_slices = airborne.get_slices()
+        slices_above_101_pct = runs_of_ones(air_spd_above_101_pct_nr)
+        above_101_while_airborne = slices_and(airborne_slices, slices_above_101_pct)
+        self.create_kpvs_within_slices(airspeed.array, above_101_while_airborne, max_value)
+
+
 class AirspeedAbove500FtMin(KeyPointValueNode):
     '''
     Minimum airspeed above 500ft AGL during standard approaches (helicopter only)

@@ -94,6 +94,7 @@ from analysis_engine.key_point_values import (
     Airspeed8000To5000FtMax,
     Airspeed20FtToTouchdownMax,
     Airspeed2NMToOffshoreTouchdown,
+    AirspeedAbove101PercentRotorSpeed,
     AirspeedAbove500FtMin,
     AirspeedAbove500FtMinOffshoreSpecialProcedure,
     AirspeedAt200FtDuringOnshoreApproach,
@@ -3079,6 +3080,91 @@ class TestAirspeed2NMToOffshoreTouchdown(unittest.TestCase):
         self.assertAlmostEqual(node[0].value, 54.5, places=1)
         self.assertEqual(node[1].index, 27)
         self.assertAlmostEqual(node[1].value, 72.8, places=1)
+
+class TestAirspeedAbove101PercentRotorSpeed(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = AirspeedAbove101PercentRotorSpeed
+        
+    def test_can_operate(self):
+        self.assertEqual(self.node_class.get_operational_combinations(ac_type=aeroplane), [])
+        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
+        self.assertEqual(opts, [('Airspeed', 'Airborne', 'Nr')])
+
+    def test_derive(self):
+        air_spd_array = np.ma.array([40.0]*30)
+        air_spd = P('Airspeed', air_spd_array)
+        nr_array = np.ma.array([
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 35.0, 35.0, 35.0,
+                                35.0, 35.0, 35.0, 35.0, 35.0,
+                                35.0, 35.0, 35.0, 35.0, 40.1,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                ])
+        nr = P('Nr', nr_array)
+        airborne = buildsection('Airborne', 5, 25)
+        node = self.node_class()
+        node.derive(air_spd, airborne, nr)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 7)
+        self.assertEqual(node[0].value, 40.0)
+
+    def test_derive_masked(self):
+        air_spd_array = np.ma.array([40.0]*30)
+        air_spd = P('Airspeed', air_spd_array)
+        nr_array = np.ma.array([
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                1.0,  2.0,  3.0,  4.0,  5.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                ])
+        nr_array[10:15] = np.ma.masked
+        nr = P('Nr', nr_array)
+        airborne = buildsection('Airborne', 5, 25)
+        node = self.node_class()
+        node.derive(air_spd, airborne, nr)
+        self.assertEqual(len(node), 0)
+
+    def test_derive_no_exceeding(self):
+        air_spd_array = np.ma.array([40.0]*30)
+        air_spd = P('Airspeed', air_spd_array)
+        nr_array = np.ma.array([
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                ])
+        nr = P('Nr', nr_array) 
+        airborne = buildsection('Airborne', 5, 25)
+        node = self.node_class()
+        node.derive(air_spd, airborne, nr)
+        self.assertEqual(len(node), 0)
+
+    def test_derive_multiple_exceeds(self):
+        air_spd_array = np.ma.array([40.0]*30)
+        air_spd = P('Airspeed', air_spd_array)
+        nr_array = np.ma.array([
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                40.0, 40.0, 35.0, 35.0, 35.0,
+                                35.0, 35.0, 35.0, 35.0, 35.0,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                35.0, 35.0, 35.0, 35.0, 40.1,
+                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                ])
+        nr = P('Nr', nr_array)
+        airborne = buildsection('Airborne', 5, 28)
+        node = self.node_class()
+        node.derive(air_spd, airborne, nr)
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].index, 7)
+        self.assertEqual(node[0].value, 40.0)
+        self.assertEqual(node[1].index, 20)
+        self.assertEqual(node[1].value, 40.0)
 
 
 class TestAirspeedAbove500FtMin(unittest.TestCase):

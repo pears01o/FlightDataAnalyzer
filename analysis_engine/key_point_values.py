@@ -1881,9 +1881,9 @@ class AirspeedAbove101PercentRotorSpeed(KeyPointValueNode):
                airborne=S('Airborne'),
                nr=P('Nr'),
                ):
-        air_spd_above_101_pct_nr = airspeed.array >= (nr.array * 1.01)
+        nr_above_101 = nr.array >= 101.0
         airborne_slices = airborne.get_slices()
-        slices_above_101_pct = runs_of_ones(air_spd_above_101_pct_nr)
+        slices_above_101_pct = runs_of_ones(nr_above_101)
         above_101_while_airborne = slices_and(airborne_slices, slices_above_101_pct)
         self.create_kpvs_within_slices(airspeed.array, above_101_while_airborne, max_value)
 

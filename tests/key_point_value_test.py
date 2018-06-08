@@ -3092,34 +3092,34 @@ class TestAirspeedAbove101PercentRotorSpeed(unittest.TestCase):
         self.assertEqual(opts, [('Airspeed', 'Airborne', 'Nr')])
 
     def test_derive(self):
-        air_spd_array = np.ma.array([40.0]*30)
+        air_spd_array = np.ma.array(np.repeat([0, 15, 35, 80, 90],6))
         air_spd = P('Airspeed', air_spd_array)
         nr_array = np.ma.array([
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 35.0, 35.0, 35.0,
-                                35.0, 35.0, 35.0, 35.0, 35.0,
-                                35.0, 35.0, 35.0, 35.0, 40.1,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                101.0, 101.0, 101.0, 101.0, 101.0,
+                                101.0, 101.0, 101.0, 101.0, 101.0,
+                                101.0, 101.0, 101.0, 101.0, 101.0,
+                                101.0, 101.0, 101.0, 101.0, 101.0,
+                                101.0, 101.0, 101.0, 101.0, 100.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
                                 ])
         nr = P('Nr', nr_array)
-        airborne = buildsection('Airborne', 5, 25)
+        airborne = buildsection('Airborne', 5, 29)
         node = self.node_class()
         node.derive(air_spd, airborne, nr)
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 7)
-        self.assertEqual(node[0].value, 40.0)
+        self.assertEqual(node[0].index, 18)
+        self.assertEqual(node[0].value, 80)
 
     def test_derive_masked(self):
-        air_spd_array = np.ma.array([40.0]*30)
+        air_spd_array = np.ma.array([90.0]*30)
         air_spd = P('Airspeed', air_spd_array)
         nr_array = np.ma.array([
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                1.0,  2.0,  3.0,  4.0,  5.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                101.0, 102.0, 103.0, 104.0, 105.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
                                 ])
         nr_array[10:15] = np.ma.masked
         nr = P('Nr', nr_array)
@@ -3129,15 +3129,15 @@ class TestAirspeedAbove101PercentRotorSpeed(unittest.TestCase):
         self.assertEqual(len(node), 0)
 
     def test_derive_no_exceeding(self):
-        air_spd_array = np.ma.array([40.0]*30)
+        air_spd_array = np.ma.array(np.repeat([0, 15, 35, 80, 90],6))
         air_spd = P('Airspeed', air_spd_array)
         nr_array = np.ma.array([
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
                                 ])
         nr = P('Nr', nr_array) 
         airborne = buildsection('Airborne', 5, 25)
@@ -3146,15 +3146,15 @@ class TestAirspeedAbove101PercentRotorSpeed(unittest.TestCase):
         self.assertEqual(len(node), 0)
 
     def test_derive_multiple_exceeds(self):
-        air_spd_array = np.ma.array([40.0]*30)
+        air_spd_array = np.ma.array([90.0]*30)
         air_spd = P('Airspeed', air_spd_array)
         nr_array = np.ma.array([
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                40.0, 40.0, 35.0, 35.0, 35.0,
-                                35.0, 35.0, 35.0, 35.0, 35.0,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
-                                35.0, 35.0, 35.0, 35.0, 40.1,
-                                40.0, 40.0, 40.0, 40.0, 40.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                100.0, 100.0, 101.0, 101.0, 101.0,
+                                101.0, 102.0, 103.0, 104.0, 105.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
+                                101.0, 102.0, 103.0, 104.0, 105.0,
+                                100.0, 100.0, 100.0, 100.0, 100.0,
                                 ])
         nr = P('Nr', nr_array)
         airborne = buildsection('Airborne', 5, 28)
@@ -3162,9 +3162,9 @@ class TestAirspeedAbove101PercentRotorSpeed(unittest.TestCase):
         node.derive(air_spd, airborne, nr)
         self.assertEqual(len(node), 2)
         self.assertEqual(node[0].index, 7)
-        self.assertEqual(node[0].value, 40.0)
+        self.assertEqual(node[0].value, 90.0)
         self.assertEqual(node[1].index, 20)
-        self.assertEqual(node[1].value, 40.0)
+        self.assertEqual(node[1].value, 90.0)
 
 
 class TestAirspeedAbove500FtMin(unittest.TestCase):

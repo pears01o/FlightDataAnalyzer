@@ -17446,15 +17446,18 @@ class MasterWarningDuration(KeyPointValueNode):
                family=A('Family'),
                airborne=S('Airborne')):
         
+        # min duration is a greater than or equal to operator
+        single_sample = (1/warning.hz) + 1
+
         if family and family.value in 'AW139':
-            self.create_kpvs_where(warning.array == 'Warning', warning.hz, phase=airborne)
+            self.create_kpvs_where(warning.array == 'Warning', warning.hz, phase=airborne, min_duration=single_sample)
         
         elif any_engine:
             self.create_kpvs_where(np.ma.logical_and(warning.array == 'Warning',
                                                      any_engine.array == 'Running'),
-                                   warning.hz)
+                                   warning.hz, min_duration=single_sample)
         else:
-            self.create_kpvs_where(warning.array == 'Warning', warning.hz)
+            self.create_kpvs_where(warning.array == 'Warning', warning.hz, min_duration=single_sample)
 
 
 class MasterWarningDuringTakeoffDuration(KeyPointValueNode):
@@ -17468,8 +17471,11 @@ class MasterWarningDuringTakeoffDuration(KeyPointValueNode):
                warning=M('Master Warning'),
                takeoff_rolls=S('Takeoff Roll Or Rejected Takeoff')):
 
+        # min duration is a greater than or equal to operator
+        single_sample = (1/warning.hz) + 1
+
         self.create_kpvs_where(warning.array == 'Warning',
-                               warning.hz, phase=takeoff_rolls)
+                               warning.hz, phase=takeoff_rolls, min_duration=single_sample)
 
 
 class MasterCautionDuringTakeoffDuration(KeyPointValueNode):

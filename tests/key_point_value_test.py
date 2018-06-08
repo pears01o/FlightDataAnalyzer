@@ -20668,7 +20668,6 @@ class TestMasterWarningDuration(unittest.TestCase, NodeTest):
         self.assertEqual(len(warn), 0)
         
     def test_derive_AW139(self):
-        
         master_warning = M(array=np.ma.array([0,0,0,1,1,1,1,1,1,1,0,0]),
                            values_mapping={1: 'Warning'})        
         family = A('Family', value='AW139')
@@ -20678,7 +20677,19 @@ class TestMasterWarningDuration(unittest.TestCase, NodeTest):
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 5)
         self.assertEqual(node[0].value, 3)
-        
+
+    def test_derive_single_sample(self):
+        node = MasterWarningDuration()
+        master_warning = M(array=np.ma.array([0,1]*10),
+                           values_mapping={1: 'Warning'},
+                           )
+        engine_running = M(array=np.ma.array([1]*20),
+                           values_mapping={1:'Running'},
+                           )
+        node.derive(master_warning, engine_running)
+        self.assertEqual(len(node), 0)
+
+
 class TestEngRunningDuration(unittest.TestCase):
 
     def test_can_operate(self):
@@ -20794,9 +20805,30 @@ class TestMasterWarningDuringTakeoffDuration(unittest.TestCase, NodeTest):
         self.operational_combinations = [('Master Warning',
                                           'Takeoff Roll Or Rejected Takeoff')]
 
-    @unittest.skip('Test Not Implemented')
     def test_derive(self):
-        self.assertTrue(False, msg='Test not implemented.')
+        node = self.node_class()
+        takeoff_rolls = buildsection('Takeoff Roll Or Rejected Takeoff', 5, 15)
+        master_warning = M(array=np.ma.array([0, 1, 1, 1, 0,
+                                              0, 0, 0, 0, 0,
+                                              0, 1, 1, 1, 0,
+                                              0, 0, 0, 0, 0,
+                                              0, 1, 1, 1, 0,
+                                              ]),
+                           values_mapping={1: 'Warning'},
+                           )
+        node.derive(master_warning, takeoff_rolls)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 11)
+        self.assertEqual(node[0].value, 3)
+
+    def test_derive_single_sample(self):
+        node = self.node_class()
+        takeoff_rolls = buildsection('Takeoff Roll Or Rejected Takeoff', 0, 20)
+        master_warning = M(array=np.ma.array([0,1]*10),
+                           values_mapping={1: 'Warning'},
+                           )
+        node.derive(master_warning, takeoff_rolls)
+        self.assertEqual(len(node), 0)
 
 
 class TestMasterCautionDuringTakeoffDuration(unittest.TestCase, NodeTest):

@@ -916,7 +916,7 @@ class TestDualInput(unittest.TestCase, NodeTest):
         self.node_class = DualInput
         self.pilot_map = {0: '-', 1: 'Captain', 2: 'First Officer'}
         self.operational_combinations = [
-            ('Pilot Flying', 'Sidestick Angle (Capt)', 'Sidestick Angle (FO)')
+            ('Pilot Flying', 'Sidestick Angle (Capt)', 'Sidestick Angle (FO)', 'Family')
         ]
 
     def test_derive(self):
@@ -926,17 +926,21 @@ class TestDualInput(unittest.TestCase, NodeTest):
         fo_array = np.ma.concatenate((np.zeros(30), 15 + np.arange(20)))
         # Dual input
         fo_array[5:10] = 15
+        capt_array[30:35] = 1.2
         pilot = M('Pilot Flying', pilot_array, values_mapping=self.pilot_map)
         capt = P('Sidestick Angle (Capt)', capt_array)
         fo = P('Sidestick Angle (FO)', fo_array)
+        family = A('Family', 'A330')
         node = self.node_class()
-        node.derive(pilot, capt, fo)
+        node.derive(pilot, capt, fo, family)
 
         expected_array = MappedArray(
             np.ma.zeros(capt_array.size),
             values_mapping=self.node_class.values_mapping)
+
         expected_array[5:10] = 'Dual'
         np.testing.assert_array_equal(node.array, expected_array)
+        np.testing.assert_array_equal(node.array[30:35], ['-']*5)
 
     def test_derive_from_hdf(self):
         (capt, fo), phase = self.get_params_from_hdf(
@@ -946,13 +950,15 @@ class TestDualInput(unittest.TestCase, NodeTest):
         pilot_array = MappedArray([1] * 840,
                                   values_mapping=self.pilot_map)
         pilot = M('Pilot Flying', pilot_array, values_mapping=self.pilot_map)
+        family = A('Family', 'A330')
 
         node = self.node_class()
-        node.derive(pilot, capt, fo)
+        node.derive(pilot, capt, fo, family)
 
         expected_array = MappedArray(
             np.ma.zeros(pilot.array.size),
             values_mapping=self.node_class.values_mapping)
+
         expected_array[178:188] = 'Dual'
         expected_array[421:464] = 'Dual'
         expected_array[487:506] = 'Dual'
@@ -975,8 +981,10 @@ class TestDualInput(unittest.TestCase, NodeTest):
         pilot = M('Pilot Flying', np.ma.array([1]*20), values_mapping=self.pilot_map)
         capt = P('Sidestick Angle (Capt)', capt_array)
         fo = P('Sidestick Angle (FO)', fo_array)
+
+        family = A('Family', 'A330')
         node = self.node_class()
-        node.derive(pilot, capt, fo)
+        node.derive(pilot, capt, fo, family)
 
         expected_array = MappedArray(
             np.ma.zeros(capt_array.size),
@@ -984,7 +992,29 @@ class TestDualInput(unittest.TestCase, NodeTest):
         expected_array[5:10] = '-'
         np.testing.assert_array_equal(node.array, expected_array)
 
+    def test_derive_A320(self):
+        pilot_array = MappedArray([1] * 20 + [0] * 10 + [2] * 20,
+                                  values_mapping=self.pilot_map)
+        capt_array = np.ma.concatenate((15 + np.arange(20), np.zeros(30)))
+        fo_array = np.ma.concatenate((np.zeros(30), 15 + np.arange(20)))
 
+        # Dual input
+        fo_array[5:10] = 15
+        capt_array[30:35] = 1.2
+        pilot = M('Pilot Flying', pilot_array, values_mapping=self.pilot_map)
+        capt = P('Sidestick Angle (Capt)', capt_array)
+        fo = P('Sidestick Angle (FO)', fo_array)
+        family = A('Family', 'A320')
+        node = self.node_class()
+        node.derive(pilot, capt, fo, family)
+
+        expected_array = MappedArray(
+            np.ma.zeros(capt_array.size),
+            values_mapping=self.node_class.values_mapping)
+
+        expected_array[5:10] = 'Dual'
+        expected_array[30:35] = 'Dual'
+        np.testing.assert_array_equal(node.array, expected_array)
 
 class TestEng_1_Fire(unittest.TestCase, NodeTest):
 

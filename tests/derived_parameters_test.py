@@ -2242,9 +2242,24 @@ class TestEng_EPRMax(unittest.TestCase, NodeTest):
             ('Eng (1) EPR', 'Eng (2) EPR', 'Eng (3) EPR', 'Eng (4) EPR',),
         ]
 
-    @unittest.skip('Test Not Implemented')
     def test_derive(self):
-        self.assertTrue(False, msg='Test not implemented.')
+        eng_1_array = np.ma.array([ 1.02,  1.09,  1.16,  1.23,  1.3 ,  1.37,  1.44,  1.51,  1.58,
+                                    1.65,  1.72,  1.79])
+
+        eng_2_array = np.ma.array([ 1.04,  1.11,  1.16,  1.2 ,  1.33,  1.34,  1.44,  1.51,  1.6,
+                                    1.63,  1.71,  1.79])
+
+        expected_array = eng_1_array
+        expected_array[[0,1,4,8]] = eng_2_array[[0,1,4,8]]
+
+        eng_1 = P(name='Eng (1) EPR', array=eng_1_array, frequency=1, offset=0.02734375)
+        eng_2 = P(name='Eng (2) EPR', array=eng_2_array, frequency=1, offset=0.52734375)
+
+        node = self.node_class()
+        node.derive(eng_1, eng_2, None, None)
+
+        assert_array_equal(node.array, expected_array)
+        self.assertEqual(node.offset, 0.27734375)
 
 
 class TestEng_EPRMin(unittest.TestCase, NodeTest):
@@ -2258,9 +2273,24 @@ class TestEng_EPRMin(unittest.TestCase, NodeTest):
             ('Eng (1) EPR', 'Eng (2) EPR', 'Eng (3) EPR', 'Eng (4) EPR',),
         ]
 
-    @unittest.skip('Test Not Implemented')
     def test_derive(self):
-        self.assertTrue(False, msg='Test not implemented.')
+        eng_1_array = np.ma.array([ 1.02,  1.09,  1.16,  1.23,  1.3 ,  1.37,  1.44,  1.51,  1.58,
+                                    1.65,  1.72,  1.79])
+
+        eng_2_array = np.ma.array([ 1.04,  1.11,  1.16,  1.2 ,  1.33,  1.34,  1.44,  1.51,  1.6,
+                                    1.63,  1.71,  1.79])
+
+        expected_array = eng_2_array
+        expected_array[[0,1,4,8]] = eng_1_array[[0,1,4,8]]
+
+        eng_1 = P(name='Eng (1) EPR', array=eng_1_array, frequency=1, offset=0.02734375)
+        eng_2 = P(name='Eng (2) EPR', array=eng_2_array, frequency=1, offset=0.52734375)
+
+        node = self.node_class()
+        node.derive(eng_1, eng_2, None, None)
+
+        assert_array_equal(node.array, expected_array)
+        self.assertEqual(node.offset, 0.27734375)
 
 
 class TestEng_EPRMinFor5Sec(unittest.TestCase, NodeTest):

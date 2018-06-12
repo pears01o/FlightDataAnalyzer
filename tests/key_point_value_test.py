@@ -272,7 +272,6 @@ from analysis_engine.key_point_values import (
     EngEPRDuringGoAround5MinRatingMax,
     EngEPRDuringMaximumContinuousPowerMax,
     EngEPRDuringTakeoff5MinRatingMax,
-    EngEPRDuringTakeoffMax,
     EngEPRDuringTaxiMax,
     EngEPRDuringTaxiInMax,
     EngEPRDuringTaxiOutMax,
@@ -282,6 +281,7 @@ from analysis_engine.key_point_values import (
     EngEPRFor5SecDuringGoAround5MinRatingMax,
     EngEPRFor5SecDuringMaximumContinuousPowerMax,
     EngEPRFor5SecDuringTakeoff5MinRatingMax,
+    EngEPRLowDuringTakeoff,
     EngFireWarningDuration,
     EngGasTempAboveNormalMaxLimitDuringTakeoff5MinRatingDuration,
     EngGasTempAboveNormalMaxLimitDuringMaximumContinuousPowerDuration,
@@ -10742,16 +10742,16 @@ class TestEngEPRDuringApproachMin(unittest.TestCase):
         self.assertEqual(node[0].name, 'Eng EPR During Approach Min')
 
 
-class TestEngEPRDuringTakeoffMax(unittest.TestCase, CreateKPVFromSlicesTest):
+class TestEngEPRLowDuringTakeoff(unittest.TestCase):
 
     def setUp(self):
-        self.node_class = EngEPRDuringTakeoffMax
-        self.operational_combinations = [('Eng (*) EPR Max', 'Takeoff')]
+        self.node_class = EngEPRLowDuringTakeoff
+        self.operational_combinations = [('Eng (*) EPR Min', 'Takeoff')]
         self.function = max_value
 
     def test_can_operate(self):
         ops = self.node_class.get_operational_combinations()
-        expected = [('Eng (*) EPR Max', 'Takeoff')]
+        expected = [('Eng (*) EPR Min', 'Takeoff')]
         self.assertEqual(ops, expected)
 
     def test_derive(self):
@@ -10769,7 +10769,7 @@ class TestEngEPRDuringTakeoffMax(unittest.TestCase, CreateKPVFromSlicesTest):
                                  1.39, 1.39, 1.39, 1.38, 1.38,
                                  1.38, 1.38, 1.38, 1.38, 1.38,
                                  ])
-        epr = P(name='Eng (*) EPR Max', array=epr_array)
+        epr = P(name='Eng (*) EPR Min', array=epr_array)
         node = self.node_class()
         node.derive(epr, takeoff)
         self.assertEqual(len(node), 1)

@@ -9427,21 +9427,6 @@ class EngEPRDuringApproachMin(KeyPointValueNode):
         self.create_kpv_from_slices(eng_epr_min.array, approaches, min_value)
 
 
-class EngEPRDuringTakeoffMax(KeyPointValueNode):
-    '''
-    Maximum recorded EPR during takeoff
-    '''
-
-    name = 'Eng EPR During Takeoff Max'
-    units = None
-
-    def derive(self,
-               eng_epr_max=P('Eng (*) EPR Max'),
-               takeoff=S('Takeoff')
-               ):
-        self.create_kpv_from_slices(eng_epr_max.array, takeoff, max_value)
-
-
 class EngEPRDuringTaxiMax(KeyPointValueNode):
     '''
     Maximum recorded engine EPR during taxi.
@@ -9865,6 +9850,22 @@ class EngEPRExceedEPRRedlineDuration(KeyPointValueNode):
             if eng_epr and eng_epr_red:
                 epr_diff = eng_epr.array - eng_epr_red.array
                 self.create_kpvs_where(epr_diff > 0, self.hz)
+
+
+class EngEPRLowDuringTakeoff(KeyPointValueNode):
+    '''
+    Maximum recorded EPR during takeoff
+    '''
+
+    name = 'Eng EPR During Takeoff Max'
+    units = None
+
+    def derive(self,
+               eng_epr_max=P('Eng (*) EPR Min'),
+               takeoff=S('Takeoff')
+               ):
+        self.create_kpv_from_slices(eng_epr_max.array, takeoff, max_value)
+
 
 
 ##############################################################################

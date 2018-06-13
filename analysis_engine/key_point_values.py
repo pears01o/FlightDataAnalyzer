@@ -19758,13 +19758,13 @@ class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
                         self.create_kpv(index, value, durations=duration)
 
 
-class EngN2MaxDuringTakeoff(KeyPointValueNode):
+class EngN2DuringTakeoffMax(KeyPointValueNode):
     '''
     The maximum value of Eng (*) N2 Max during Takeoff 5 Min Rating phase
     maintained for the specified duration
     '''
     
-    NAME_FORMAT = 'Eng (*) N2 Max During Takeoff %(durations)s'
+    NAME_FORMAT = 'Eng (*) N2 During Takeoff For %(durations)s Max'
     NAME_VALUES = {'durations': ['10 Sec', '20 Sec', '5 Min']}
     units = ut.PERCENT
     
@@ -19794,13 +19794,13 @@ class EngN2MaxDuringTakeoff(KeyPointValueNode):
                             self.create_kpv(index, value, durations=duration)
                             
                             
-class EngN2MaxDuringMaximumContinuousPower(KeyPointValueNode):
+class EngN2DuringMaximumContinuousPowerMax(KeyPointValueNode):
     '''
     The maximum value of Eng (*) N2 Max during Maximum Continous Power phase 
     maintained for the specified duration
     '''
     
-    NAME_FORMAT = 'Eng (*) N2 Max During Maximum Continuous Power %(durations)s'
+    NAME_FORMAT = 'Eng (*) N2 During Maximum Continuous Power For %(durations)s Max'
     NAME_VALUES = {'durations': ['10 Sec', '20 Sec', '5 Min', '10 Min']}
     units = ut.PERCENT
     

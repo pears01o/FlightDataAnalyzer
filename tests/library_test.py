@@ -1043,9 +1043,9 @@ class TestAlignStringArrays(unittest.TestCase):
         first = P(frequency=1.0, offset=0.6,
                   array=np.ma.array([11,12,13,14,15], dtype=float))
         second = P(frequency=1.0, offset=0.0,
-                   array=np.ma.array(["0","1","2","3","4"]))
+                   array=np.ma.array([b"0",b"1",b"2",b"3",b"4"]))
 
-        expected = np.ma.array(("1", "2", "3", "4", "0"), mask=[0,0,0,0,1])
+        expected = np.ma.array((b"1", b"2", b"3", b"4", b"0"), mask=[0,0,0,0,1])
         result = align(second, first)
 
         np.testing.assert_array_equal(result, expected)
@@ -1054,10 +1054,11 @@ class TestAlignStringArrays(unittest.TestCase):
         first = P(frequency=10, offset=0.0,
                   array=np.ma.array([11,12,13,14,15,16,17,18,19,20], dtype=float))
         second = P(frequency=5.0, offset=0.0,
-                   array=np.ma.array(["1","3","4","5","6"]))
+                   array=np.ma.array([b"1",b"3",b"4",b"5",b"6"]))
 
         result = align(second, first)
-        expected = np.ma.array(["1","3","3","4","4","5","5","6","0","0"], mask=[0,0,0,0,0,0,0,0,1,1])
+        expected = np.ma.array([b"1",b"3",b"3",b"4",b"4",b"5",b"5",b"6",b"0",b"0"],
+                               mask=[0,0,0,0,0,0,0,0,1,1])
 
         np.testing.assert_array_equal(result, expected)
 
@@ -4726,17 +4727,17 @@ class TestNpMaConcatenate(unittest.TestCase, M):
                array = np.ma.array(data=[1,0,1,0],
                                    mask=False),
                data_type = 'Derived Multi-state',
-               values_mapping = {0: 'No', 1: 'Yes'}
+               values_mapping = {0: b'No', 1: b'Yes'}
                )
         a2 = M(name = 'a2',
-               array = np.ma.array(data=['No','No','Yes','Yes'],
-                                   mask=False),
+               array = np.ma.array(data=[b'No',b'No',b'Yes',b'Yes'],
+                                   mask=False, dtype=np.bytes_),
                data_type = 'Derived Multi-state',
-               values_mapping = {0: 'No', 1: 'Yes'}
+               values_mapping = {0: b'No', 1: b'Yes'}
                )
         result = np_ma_concatenate([a1.array, a2.array])
         self.assertEqual([x for x in result],
-                         ['Yes','No','Yes','No','No','No','Yes','Yes'])
+                         [b'Yes',b'No',b'Yes',b'No',b'No',b'No',b'Yes',b'Yes'])
         self.assertEqual(list(result.raw), [1,0,1,0,0,0,1,1])
 
     def test_single_file(self):
@@ -6519,6 +6520,15 @@ class TestSlicesNot(unittest.TestCase):
         slice_list = [slice(10,13)]
         self.assertEqual(slices_not(slice_list, begin_at=2, end_at=18),
                          [slice(2,10),slice(13,18)])
+        self.assertEqual(slices_not(slice_list, begin_at=0, end_at=18),
+                         [slice(0,10),slice(13,18)])
+        #self.assertEqual(slices_not(slice_list, begin_at=None, end_at=18),
+                         #[slice(0,10),slice(13,18)])
+
+    def test_slices_not_extended_2(self):
+        slice_list = [slice(None, None, None)]
+        self.assertEqual(slices_not(slice_list, begin_at=0, end_at=10), [])
+        self.assertEqual(slices_not(slice_list, begin_at=None, end_at=10), [])
 
     def test_slices_not_to_none(self):
         slice_list = [slice(10,None),slice(2,3)]
@@ -8448,6 +8458,19 @@ class TestMaxMaintainedValue(unittest.TestCase):
             index, value = max_maintained_value(array, sec, hz, phase)
             self.assertAlmostEqual(index, idx, places=0)
             self.assertAlmostEqual(value, val, places=3)
+
+
+class TestPy2Round(unittest.TestCase):
+    def test_py2round(self):
+        test_range = list(np.arange(0,100,0.1))
+        rounded = [py2round(n) for n in test_range]
+        expected = [float(0)]*5
+        for n in range(1,100):
+            expected += [float(n)]*10
+        expected += [float(100)]*5
+        self.assertEqual(len(rounded), len(expected))
+        self.assertEqual(rounded, expected)
+
 
 if __name__ == '__main__':
     suite = unittest.TestSuite()

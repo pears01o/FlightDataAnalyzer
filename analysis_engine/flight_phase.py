@@ -1724,7 +1724,7 @@ class RejectedTakeoff(FlightPhaseNode):
 
                 trough_index = 0
                 for peak in accel_lon_slices:
-                    if peak.start < trough_index:
+                    if trough_index and peak.start < trough_index:
                         continue
                     # Look for the deceleration characteristic of a rejected
                     # takeoff.

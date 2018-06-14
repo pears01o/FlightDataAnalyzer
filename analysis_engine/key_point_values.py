@@ -10677,7 +10677,7 @@ class EngN1For5Sec500To50FtMin(KeyPointValueNode):
             for alt_slice in alt_slices:
                 array = eng_n1_min_param.array[alt_slice]
                 samples = 5 * eng_n1_min_param.frequency
-                if len(array) - samples < 0:
+                if len(array) <= samples:
                     continue
                 
                 # For each 5 seconds window, get the sum of differences between 

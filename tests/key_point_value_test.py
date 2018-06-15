@@ -325,8 +325,8 @@ from analysis_engine.key_point_values import (
     EngN2DuringGoAround5MinRatingMax,
     EngN2DuringMaximumContinuousPowerMax,
     EngN2DuringMaximumContinuousPowerMin,
-    EngN2DuringTakeoffMax,
-    EngN2DuringMaximumContinuousPowerMax,
+    EngN2DuringTakeoffForXSecMax,
+    EngN2DuringMaximumContinuousPowerForXSecMax,
     EngN2DuringTakeoff5MinRatingMax,
     EngN2DuringTaxiMax,
     EngN2ExceededN2RedlineDuration,
@@ -10672,10 +10672,10 @@ class TestEngTorqueMaxDuringTakeoff(unittest.TestCase):
         ]))
 
 
-class TestEngN2DuringTakeoffMax(unittest.TestCase):
+class TestEngN2DuringTakeoffForXSecMax(unittest.TestCase):
     
     def setUp(self):
-        self.node_class = EngN2DuringTakeoffMax
+        self.node_class = EngN2DuringTakeoffForXSecMax
         
     def test_can_operate(self):
         self.assertTrue(self.node_class.can_operate(('Eng (*) N2 Max', 'Takeoff 5 Min Rating')))
@@ -10793,10 +10793,10 @@ class TestEngN2DuringTakeoffMax(unittest.TestCase):
         ]))
 
 
-class TestEngN2DuringMaximumContinuousPowerMax(unittest.TestCase):
+class TestEngN2DuringMaximumContinuousPowerForXSecMax(unittest.TestCase):
     
     def setUp(self):
-        self.node_class = EngN2DuringMaximumContinuousPowerMax
+        self.node_class = EngN2DuringMaximumContinuousPowerForXSecMax
         
     def test_can_operate(self):
         self.assertTrue(self.node_class.can_operate(('Eng (*) N2 Max', 'Maximum Continuous Power')))

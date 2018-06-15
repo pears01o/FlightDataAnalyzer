@@ -19758,7 +19758,7 @@ class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
                         self.create_kpv(index, value, durations=duration)
 
 
-class EngN2DuringTakeoffMax(KeyPointValueNode):
+class EngN2DuringTakeoffForXSecMax(KeyPointValueNode):
     '''
     The maximum value of Eng (*) N2 Max during Takeoff 5 Min Rating phase
     maintained for the specified duration
@@ -19772,14 +19772,14 @@ class EngN2DuringTakeoffMax(KeyPointValueNode):
     def can_operate(cls, available):
         return all_of(('Eng (*) N2 Max', 'Takeoff 5 Min Rating'), available)
     
-    def derive(self, eng_torq_max=P('Eng (*) N2 Max'),
+    def derive(self, eng_n2_max=P('Eng (*) N2 Max'),
                takeoffs=S('Takeoff 5 Min Rating'),
                go_arounds=S('Go Around 5 Min Rating')):
         
         seconds = np.array([10, 20, 300])
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for takeoff in takeoffs.get_slices():
-                arrays = eng_torq_max.array[takeoff]
+                arrays = eng_n2_max.array[takeoff]
                 if len(arrays) > 0:
                     index, value = max_maintained_value(arrays, samples, takeoff)
                     if index is not None and value is not None:
@@ -19787,14 +19787,14 @@ class EngN2DuringTakeoffMax(KeyPointValueNode):
         if go_arounds:
             for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
                 for go_around in go_arounds.get_slices():
-                    arrays = eng_torq_max.array[go_around]
+                    arrays = eng_n2_max.array[go_around]
                     if len(arrays) > 0:
                         index, value = max_maintained_value(arrays, samples, go_around)
                         if index is not None and value is not None:
                             self.create_kpv(index, value, durations=duration)
                             
                             
-class EngN2DuringMaximumContinuousPowerMax(KeyPointValueNode):
+class EngN2DuringMaximumContinuousPowerForXSecMax(KeyPointValueNode):
     '''
     The maximum value of Eng (*) N2 Max during Maximum Continous Power phase 
     maintained for the specified duration
@@ -19809,13 +19809,13 @@ class EngN2DuringMaximumContinuousPowerMax(KeyPointValueNode):
         return all_of(('Eng (*) N2 Max', 'Maximum Continuous Power'), available)
     
     def derive(self,
-               eng_torq_max=P('Eng (*) N2 Max'),
+               eng_n2_max=P('Eng (*) N2 Max'),
                ratings=S('Maximum Continuous Power')):
         
         seconds = np.array([10, 20, 300, 600])
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for mcp in ratings.get_slices():
-                arrays = eng_torq_max.array[mcp]
+                arrays = eng_n2_max.array[mcp]
                 if len(arrays) > 0:
                     index, value = max_maintained_value(arrays, samples, mcp)
                     if index is not None and value is not None:

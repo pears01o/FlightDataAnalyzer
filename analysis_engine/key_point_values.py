@@ -9857,7 +9857,7 @@ class EngEPRLowDuringTakeoff(KeyPointValueNode):
     Maximum recorded EPR during takeoff
     '''
 
-    name = 'Eng EPR During Takeoff Max'
+    name = 'Eng EPR Low During Takeoff'
     units = None
 
     def derive(self,

@@ -9806,7 +9806,7 @@ class EngTPRAtTOGADuringTakeoffMin(KeyPointValueNode):
 
     def derive(self,
                toga=M('Takeoff And Go Around'),
-               eng_tpr_max=P('Eng (*) TPR Min'),
+               eng_tpr_min=P('Eng (*) TPR Min'),
                takeoff=S('Takeoff')):
         '''
         Originally coded for 787, but the event has been disabled since it lacks a
@@ -9819,7 +9819,7 @@ class EngTPRAtTOGADuringTakeoffMin(KeyPointValueNode):
         for index in indexes:
             # Measure at known state instead of interpolated transition
             index = ceil(index)
-            value = value_at_index(eng_tpr_max.array, index)
+            value = value_at_index(eng_tpr_min.array, index)
             self.create_kpv(index, value)
 
 
@@ -9861,10 +9861,10 @@ class EngEPRLowDuringTakeoff(KeyPointValueNode):
     units = None
 
     def derive(self,
-               eng_epr_max=P('Eng (*) EPR Min'),
-               takeoff=S('Takeoff')
+               eng_epr_min=P('Eng (*) EPR Min'),
+               takeoff=S('Takeoff'),
                ):
-        self.create_kpv_from_slices(eng_epr_max.array, takeoff, max_value)
+        self.create_kpv_from_slices(eng_epr_min.array, takeoff, max_value)
 
 
 

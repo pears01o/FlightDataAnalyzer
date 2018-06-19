@@ -18448,6 +18448,8 @@ class ThrottleLeverVariationAbove80KtsToTakeoff(KeyPointValueNode):
         for takeoff in takeoffs:
             index_80kt = index_at_value(speed.array, 80, takeoff.slice)
             lever_80kt = value_at_index(levers.array, index_80kt)
+            if lever_80kt is None:
+                continue
             index, value = max_abs_value(levers.array - lever_80kt,
                                          slice(index_80kt, takeoff.slice.stop))
             self.create_kpv(index, value)

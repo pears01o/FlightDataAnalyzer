@@ -18247,16 +18247,18 @@ class TakeoffConfigurationWarningDuration(KeyPointValueNode):
         return all_of(('Takeoff Configuration Warning', 'Movement Start', 'Liftoff'), available)
 
     def derive(self, takeoff_warn=M('Takeoff Configuration Warning'),
-               movement_starts=S('Movement Start'),
-               liftoffs=S('Liftoff')):
+               movement_starts=KTI('Movement Start'),
+               liftoffs=KTI('Liftoff')):
         if not liftoffs:
             return
         movement_start = movement_starts.get_first()
+        liftoff_index = liftoffs.get_first().index
         self.create_kpvs_where(
             takeoff_warn.array == 'Warning',
             takeoff_warn.hz,
-            phase=slice(movement_start.index if movement_start else None,
-                        liftoffs.get_first().index),
+            phase=slice(movement_start.index if movement_start and
+                        movement_start.index < liftoff_index else None,
+                        liftoff_index),
         )
 
 

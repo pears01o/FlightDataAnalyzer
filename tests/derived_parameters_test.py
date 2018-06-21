@@ -236,7 +236,6 @@ from analysis_engine.derived_parameters import (
     WheelSpeedRight,
     WindAcrossLandingRunway,
     WindDirection,
-    WindDirectionTrue,
     ZeroFuelWeight,
 )
 
@@ -6007,18 +6006,6 @@ class TestWindDirection(unittest.TestCase):
         self.assertTrue(WindDirection.can_operate(('Wind Direction (2)',)))
         self.assertTrue(WindDirection.can_operate(('Wind Direction (1)',
                                                    'Wind Direction (2)',)))
-
-    @unittest.skip('Test Not Implemented')
-    def test_derive(self):
-        self.assertTrue(False, msg='Test not implemented.')
-
-
-class TestWindDirectionTrue(unittest.TestCase):
-    def test_can_operate(self):
-        self.assertEqual(WindDirectionTrue.get_operational_combinations(),
-                         [('Wind Direction', 'Magnetic Variation From Runway'),
-                          ('Wind Direction', 'Magnetic Variation'),
-                          ('Wind Direction', 'Magnetic Variation From Runway', 'Magnetic Variation')])
 
     @unittest.skip('Test Not Implemented')
     def test_derive(self):

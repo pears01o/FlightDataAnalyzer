@@ -6367,19 +6367,6 @@ class WindDirectionContinuous(DerivedParameterNode):
         self.array = straighten_headings(wind_head.array)
 
 
-class WindDirectionTrueContinuous(DerivedParameterNode):
-    # TODO: Get rid of that parameter
-    '''
-    Like the aircraft heading, this does not jump as it passes through North.
-    '''
-
-    units = ut.DEGREE
-
-    def derive(self, wind_head=P('Wind Direction True')):
-
-        self.array = straighten_headings(wind_head.array)
-
-
 class Headwind(DerivedParameterNode):
     '''
     Headwind calculates the headwind component based upon the Wind Speed and
@@ -7309,28 +7296,6 @@ class WindSpeed(DerivedParameterNode):
     def derive(self, wind_1=P('Wind Speed (1)'), wind_2=P('Wind Speed (2)')):
         self.array, self.frequency, self.offset = \
             blend_two_parameters(wind_1, wind_2)
-
-
-class WindDirectionTrue(DerivedParameterNode):
-    # TODO: Get rid of that, wind direction is always true
-    '''
-    Compensates for magnetic variation, which will have been computed
-    previously.
-    '''
-
-    units = ut.DEGREE
-
-    @classmethod
-    def can_operate(cls, available):
-        return 'Wind Direction' in available and \
-               any_of(('Magnetic Variation From Runway', 'Magnetic Variation'),
-                      available)
-
-    def derive(self, wind=P('Wind Direction'),
-               rwy_var=P('Magnetic Variation From Runway'),
-               mag_var=P('Magnetic Variation')):
-        var = rwy_var.array if rwy_var and np.ma.count(rwy_var.array) else mag_var.array
-        self.array = (wind.array + var) % 360.0
 
 
 class WindDirection(DerivedParameterNode):

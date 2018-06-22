@@ -4156,13 +4156,13 @@ class TestHeadwind(unittest.TestCase):
 class TestWindAcrossLandingRunway(unittest.TestCase):
     def test_can_operate(self):
         opts = WindAcrossLandingRunway.get_operational_combinations()
-        expected = [('Wind Speed', 'Wind Direction True Continuous', 'FDR Landing Runway'),
-                    ('Wind Speed', 'Wind Direction Continuous', 'Heading During Landing'),
-                    ('Wind Speed', 'Wind Direction True Continuous', 'Wind Direction Continuous', 'FDR Landing Runway'),
-                    ('Wind Speed', 'Wind Direction True Continuous', 'Wind Direction Continuous', 'Heading During Landing'),
-                    ('Wind Speed', 'Wind Direction True Continuous', 'FDR Landing Runway', 'Heading During Landing'),
+        expected = [('Wind Speed', 'Wind Direction Continuous', 'FDR Landing Runway'),
+                    ('Wind Speed', 'Wind Direction Magnetic Continuous', 'Heading During Landing'),
+                    ('Wind Speed', 'Wind Direction Continuous', 'Wind Direction Magnetic Continuous', 'FDR Landing Runway'),
+                    ('Wind Speed', 'Wind Direction Continuous', 'Wind Direction Magnetic Continuous', 'Heading During Landing'),
                     ('Wind Speed', 'Wind Direction Continuous', 'FDR Landing Runway', 'Heading During Landing'),
-                    ('Wind Speed', 'Wind Direction True Continuous', 'Wind Direction Continuous', 'FDR Landing Runway', 'Heading During Landing')]
+                    ('Wind Speed', 'Wind Direction Magnetic Continuous', 'FDR Landing Runway', 'Heading During Landing'),
+                    ('Wind Speed', 'Wind Direction Continuous', 'Wind Direction Magnetic Continuous', 'FDR Landing Runway', 'Heading During Landing')]
         self.assertEqual(opts, expected)
 
     def test_real_example(self):
@@ -4181,7 +4181,7 @@ class TestWindAcrossLandingRunway(unittest.TestCase):
 
     def test_error_cases(self):
         ws = P('Wind Speed', np.ma.array([84.0]))
-        wd = P('Wind Direction True Continuous', np.ma.array([-21]))
+        wd = P('Wind Direction Continuous', np.ma.array([-21]))
         land_rwy = A('FDR Landing Runway')
         land_rwy.value = {}
         walr = WindAcrossLandingRunway()

@@ -145,7 +145,7 @@ WRAPPING_PARAMS = (
     'Wind Direction',
     'Wind Direction (1)',
     'Wind Direction (2)',
-    'Wind Direction True',
+    'Wind Direction Magnetic',
     'FMC Wind Direction True',
     # Altitude in wrapped format
     'Altitude STD (Fine)',

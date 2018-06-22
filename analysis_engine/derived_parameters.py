@@ -6367,6 +6367,18 @@ class WindDirectionContinuous(DerivedParameterNode):
         self.array = straighten_headings(wind_head.array)
 
 
+class WindDirectionMagneticContinuous(DerivedParameterNode):
+    '''
+    Like the aircraft heading, this does not jump as it passes through North.
+    '''
+
+    units = ut.DEGREE
+
+    def derive(self, wind_head=P('Wind Direction Magnetic')):
+
+        self.array = straighten_headings(wind_head.array)
+
+
 class Headwind(DerivedParameterNode):
     '''
     Headwind calculates the headwind component based upon the Wind Speed and
@@ -6532,13 +6544,13 @@ class WindAcrossLandingRunway(DerivedParameterNode):
 
     @classmethod
     def can_operate(cls, available):
-        return all_of(('Wind Speed', 'Wind Direction True Continuous', 'FDR Landing Runway'), available) \
+        return all_of(('Wind Speed', 'Wind Direction Continuous', 'FDR Landing Runway'), available) \
                or \
-               all_of(('Wind Speed', 'Wind Direction Continuous', 'Heading During Landing'), available)
+               all_of(('Wind Speed', 'Wind Direction Magnetic Continuous', 'Heading During Landing'), available)
 
     def derive(self, windspeed=P('Wind Speed'),
-               wind_dir_true=P('Wind Direction True Continuous'),
-               wind_dir_mag=P('Wind Direction Continuous'),
+               wind_dir_true=P('Wind Direction Continuous'),
+               wind_dir_mag=P('Wind Direction Magnetic Continuous'),
                land_rwy=A('FDR Landing Runway'),
                land_hdg=KPV('Heading During Landing')):
 
@@ -7320,6 +7332,27 @@ class WindDirection(DerivedParameterNode):
         if wind_1 or wind_2:
             self.array, self.frequency, self.offset = \
                 blend_two_parameters(wind_1, wind_2)
+
+
+class WindDirectionMagnetic(DerivedParameterNode):
+    '''
+    Compensates for magnetic variation, which will have been computed
+    previously.
+    '''
+
+    units = ut.DEGREE
+
+    @classmethod
+    def can_operate(cls, available):
+        return 'Wind Direction' in available and \
+               any_of(('Magnetic Variation From Runway', 'Magnetic Variation'),
+                      available)
+
+    def derive(self, wind=P('Wind Direction'),
+               rwy_var=P('Magnetic Variation From Runway'),
+               mag_var=P('Magnetic Variation')):
+        var = rwy_var.array if rwy_var and np.ma.count(rwy_var.array) else mag_var.array
+        self.array = (wind.array - var) % 360.0
 
 
 class WheelSpeedLeft(DerivedParameterNode):

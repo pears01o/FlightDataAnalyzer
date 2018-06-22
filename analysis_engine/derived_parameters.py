@@ -6355,16 +6355,35 @@ class Turbulence(DerivedParameterNode):
 
 
 class WindDirectionContinuous(DerivedParameterNode):
-    # TODO: Get rid of that parameter
     '''
     Like the aircraft heading, this does not jump as it passes through North.
     '''
 
     units = ut.DEGREE
 
-    def derive(self, wind_head=P('Wind Direction')):
+    def derive(self, wind_head=P('Wind Direction'),):
 
         self.array = straighten_headings(wind_head.array)
+        
+
+class WindDirectionTrueContinuous(DerivedParameterNode):
+    '''
+    Like the aircraft heading, this does not jump as it passes through North.
+    
+    This is a copy of the above parameter - Wind Direction Continuous.
+    We need to keep that for now as some data exports use Wind Direction True 
+    Continuous.
+    
+    Previously this parameter was based on Wind Direction + magnetic variation, 
+    and was created in assumption that Wind Direction was magnetic, not true, 
+    which has been proven to be incorrect.
+    '''
+
+    units = ut.DEGREE
+
+    def derive(self, wind_dir_cont=P('Wind Direction Continuous'),):
+
+        self.array = wind_dir_cont.array
 
 
 class WindDirectionMagneticContinuous(DerivedParameterNode):
@@ -7333,6 +7352,24 @@ class WindDirection(DerivedParameterNode):
             self.array, self.frequency, self.offset = \
                 blend_two_parameters(wind_1, wind_2)
 
+
+class WindDirectionTrue(DerivedParameterNode):
+    '''
+    This is a copy of the above parameter - Wind Direction.
+    We need to keep that for now as some data exports use Wind Direction True.
+    
+    Previously this parameter was Wind Direction + magnetic variation, and was
+    created in assumption that Wind Direction was magnetic, not true, which has
+    been proven to be incorrect.
+    '''
+
+    align = False
+    units = ut.DEGREE
+
+    def derive(self, wind_dir=P('Wind Direction'),):
+
+        self.array = wind_dir.array
+            
 
 class WindDirectionMagnetic(DerivedParameterNode):
     '''

@@ -7388,7 +7388,7 @@ class WindDirectionMagnetic(DerivedParameterNode):
     def derive(self, wind=P('Wind Direction'),
                rwy_var=P('Magnetic Variation From Runway'),
                mag_var=P('Magnetic Variation')):
-        var = rwy_var.array if rwy_var and np.ma.count(rwy_var.array) else mag_var.array
+        var = mag_var.array if mag_var and np.ma.count(mag_var.array) else rwy_var.array
         self.array = (wind.array - var) % 360.0
 
 

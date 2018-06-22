@@ -4967,7 +4967,11 @@ class CoordinatesSmoothed(object):
             this_app_slice = approach.slice
             
             # Set a default reference point that can be be used for Go-Arounds
-            low_point = this_app_slice.stop - 2
+            # Find the last valid sample
+            low_point = this_app_slice.start + np.max(
+                np.ma.where(app_range.array[this_app_slice.start:
+                                            this_app_slice.stop - 1]))
+
             # If we really did touchdown, that is the better point to use.
             for tdwn in tdwns:
                 if not is_index_within_slice(tdwn.index, this_app_slice):
@@ -5058,8 +5062,8 @@ class CoordinatesSmoothed(object):
                     # Work out the touchdown or lowest point of go-around.
                     # The reference point is the end of the runway where no ILS is available.
                     ref_point = runway['end']
-                    lat_tdwn, lon_tdwn = latitudes_and_longitudes \
-                        (bearing, distance, ref_point)
+                    lat_tdwn, lon_tdwn = latitudes_and_longitudes(
+                        bearing, distance, ref_point)
 
                     lat_err = value_at_index(lat.array, low_point) - lat_tdwn
                     lon_err = value_at_index(lon.array, low_point) - lon_tdwn

@@ -4965,19 +4965,25 @@ class CoordinatesSmoothed(object):
         for approach in approaches:
 
             this_app_slice = approach.slice
-            
+
             # Set a default reference point that can be be used for Go-Arounds
-            # Find the last valid sample
-            low_point = this_app_slice.start + np.max(
-                np.ma.where(app_range.array[this_app_slice.start:
-                                            this_app_slice.stop - 1]))
 
             # If we really did touchdown, that is the better point to use.
-            for tdwn in tdwns:
-                if not is_index_within_slice(tdwn.index, this_app_slice):
-                    continue
+            try:
+                low_point = next(t.index for t in tdwns if 
+                                 is_index_within_slice(t.index, this_app_slice))
+            except StopIteration:
+                low_point_array = app_range.array[this_app_slice.start:
+                                                  this_app_slice.stop - 1]
+                if np.ma.count(low_point_array):
+                    # Find the last valid sample
+                    low_point = this_app_slice.start + np.max(np.ma.where(
+                        low_point_array))
                 else:
-                    low_point = tdwn.index
+                    # No valid Approach Range samples, probably due to missing
+                    # runway identification
+                    # TODO: fallback low_point calculation
+                    low_point = this_app_slice.stop
 
             if approach.type == 'LANDING':
                 runway = approach.landing_runway

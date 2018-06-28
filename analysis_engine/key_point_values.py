@@ -18719,6 +18719,25 @@ class ThrustAsymmetryWithThrustReversersDeployedDuration(KeyPointValueNode):
 
 
 ##############################################################################
+# Thrust Rating 
+
+class ThrustRatingCLB1Duration(KeyPointValueNode):
+    '''
+    Duration for which CLB1 thrust rating was active.
+    Applicable to E170-190 family.
+    '''
+
+    units = ut.SECOND
+    name = 'Thrust Rating CLB1 Duration'
+
+    def derive(self,
+               thrust_rating=M('Thrust Rating Mode'),
+               airs=S('Airborne')):
+        self.create_kpvs_where(thrust_rating.array == 'CLB1',
+                               thrust_rating.hz, phase=airs)
+
+
+##############################################################################
 
 
 class TouchdownToElevatorDownDuration(KeyPointValueNode):

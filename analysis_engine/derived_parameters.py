@@ -8299,8 +8299,13 @@ class VLSLookup(DerivedParameterNode):
         table = lookup_table(self, 'vls', *attrs)
 
         # Repair gaps in Gross Weight up to 2 superframes in length:
-        repaired_gw = repair_mask(gw.array, repair_duration=130,
-                                          extrapolate=True)
+        try:
+            repaired_gw = repair_mask(gw.array, repair_duration=130,
+                                      extrapolate=True)
+        except ValueError:
+            self.warning("'%s' will be fully masked because '%s' array "
+                         "could not be repaired.", self.name, gw.name)
+            return
 
         parameter = flap_lever or flap_synth
 

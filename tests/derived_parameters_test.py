@@ -232,7 +232,7 @@ from analysis_engine.derived_parameters import (
     VerticalSpeedInertial,
     Vref,
     VrefLookup,
-    VLS,
+    VLSLookup,
     WheelSpeed,
     WheelSpeedLeft,
     WheelSpeedRight,
@@ -6964,7 +6964,7 @@ class TestVrefLookup(unittest.TestCase, NodeTest):
 # Lowest Selectable Speed (VLS)
 
 
-    class TestVLS(unittest.TestCase, NodeTest):
+    class TestVLSLookup(unittest.TestCase, NodeTest):
         class VSNoCG(VelocitySpeed):
             '''
             Table for aircraft with configuration-only lookup (A319, A320, A321).
@@ -7000,7 +7000,7 @@ class TestVrefLookup(unittest.TestCase, NodeTest):
     
         
         def setUp(self):
-            self.node_class = VLS
+            self.node_class = VLSLookup
             self.approach = buildsection('Approach And Landing', 2, 15)
             self.airspeed = airspeed = P('Airspeed', np.ma.repeat(200, 16))
             self.flap_lever = M('Flap Lever', 
@@ -7558,6 +7558,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
         self.node_class = MinimumAirspeed
         self.operational_combinations = [
             ('Airborne', 'Airspeed', 'VLS'),
+            ('Airborne', 'Airspeed', 'VLS Lookup'),
             ('Airborne', 'Airspeed', 'Min Operating Speed'),
             ('Airborne', 'Airspeed', 'FC Min Operating Speed'),
             ('Airborne', 'Airspeed', 'FMF Min Manoeuvre Speed'),
@@ -7577,15 +7578,23 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
     def test_derive__vls(self):
         vls = P('VLS', np.ma.repeat(180, 100))
         node = self.node_class()
-        node.derive(self.airspeed, None, None, None, None, vls, None, None, self.airborne)
+        node.derive(self.airspeed, None, None, None, None, vls, None, None, None, self.airborne)
         expected = np.ma.array(vls.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
+        
+    def test_derive__vls_lookup(self):
+        vls_lookup = P('VLS Lookup', np.ma.repeat(180, 100))
+        node = self.node_class()
+        node.derive(self.airspeed, None, None, None, None, None, vls_lookup, None, None, self.airborne)
+        expected = np.ma.array(vls_lookup.array)
+        expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
+        ma_test.assert_masked_array_equal(node.array, expected)        
 
     def test_derive__mos(self):
         mos = P('Min Operating Speed', np.ma.repeat(190, 100))
         node = self.node_class()
-        node.derive(self.airspeed, None, None, None, mos, None, None, None, self.airborne)
+        node.derive(self.airspeed, None, None, None, mos, None, None, None, None, self.airborne)
         expected = np.ma.array(mos.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
@@ -7593,7 +7602,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
     def test_derive__mos_fc(self):
         mos_fc = P('FC Min Operating Speed', np.ma.repeat(200, 100))
         node = self.node_class()
-        node.derive(self.airspeed, None, None, mos_fc, None, None, None, None, self.airborne)
+        node.derive(self.airspeed, None, None, mos_fc, None, None, None, None, None, self.airborne)
         expected = np.ma.array(mos_fc.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
@@ -7603,7 +7612,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
         array = np.ma.repeat((20, 10, 10, 0, 0, 0, 0, 10, 10, 20), 10)
         flap = M('Flap Lever', array, values_mapping={0: '0', 10: '10', 20: '20'})
         node = self.node_class()
-        node.derive(self.airspeed, None, mms_fmc, None, None, None, flap, None, self.airborne)
+        node.derive(self.airspeed, None, mms_fmc, None, None, None, None, flap, None, self.airborne)
         expected = np.ma.array(mms_fmc.array)
         expected.mask = np.repeat((1, 1, 1, 0, 0, 0, 0, 1, 1, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
@@ -7611,7 +7620,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
     def test_derive__mms_fmf(self):
         mms_fmf = P('FMF Min Manoeuvre Speed', np.ma.repeat(210, 100))
         node = self.node_class()
-        node.derive(self.airspeed, mms_fmf, None, None, None, None, None, None, self.airborne)
+        node.derive(self.airspeed, mms_fmf, None, None, None, None, None, None, None, self.airborne)
         expected = np.ma.array(mms_fmf.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
@@ -8071,18 +8080,27 @@ class TestAirspeedMinusVLS(unittest.TestCase, NodeTest):
     def setUp(self):
         self.node_class = AirspeedMinusVLS
         self.operational_combinations = [
-            ('Airspeed', 'VLS', 'Approach And Landing'),
+            ('Airspeed', 'VLS', 'Approach And Landing',),
+            ('Airspeed', 'VLS Lookup', 'Approach And Landing',)
         ]
         self.airspeed = P('Airspeed', np.ma.repeat(102, 2000))
         self.vls_record = P('VLS', np.ma.repeat((90, 120), 1000))
+        self.vls_lookup = P('VLS Lookup', np.ma.repeat((90, 120), 1000))
         self.approaches = buildsection('Approach And Landing', 500, 999.5)
 
     def test_derive(self):
         node = self.node_class()
-        node.derive(self.airspeed, self.vls_record, self.approaches)
+        node.derive(self.airspeed, self.vls_record, None, self.approaches)
         expected = np.ma.repeat((0, 12, 0, 0), 500)
         expected[expected == 0] = np.ma.masked
         ma_test.assert_masked_array_equal(node.array, expected)
+        
+    def test_lookup(self):
+        node = self.node_class()
+        node.derive(self.airspeed, None, self.vls_lookup, self.approaches)
+        expected = np.ma.repeat((0, 12, 0, 0), 500)
+        expected[expected == 0] = np.ma.masked
+        ma_test.assert_masked_array_equal(node.array, expected)    
 
 
 class TestAirspeedMinusVLSFor3Sec(unittest.TestCase, NodeTest):

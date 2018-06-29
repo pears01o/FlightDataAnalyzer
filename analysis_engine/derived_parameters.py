@@ -8238,7 +8238,7 @@ class VappLookup(DerivedParameterNode):
 ########################################
 # Lowest Selectable Speed (VLS)
 
-class VLS(DerivedParameterNode):
+class VLSLookup(DerivedParameterNode):
     '''
     Lowest Selectable Speed (VLS) can be derived for Airbus aircraft.
 
@@ -8248,7 +8248,7 @@ class VLS(DerivedParameterNode):
     For VLS, looking up a value requires configuration and in some cases CG.
     '''
 
-    name = 'VLS'
+    name = 'VLS Lookup'
     units = ut.KT
 
     @classmethod
@@ -8455,6 +8455,7 @@ class MinimumAirspeed(DerivedParameterNode):
             'FC Min Operating Speed',
             'Min Operating Speed',
             'VLS',
+            'VLS Lookup',
         ), available)
         b = any_of((
             'FMC Min Manoeuvre Speed',
@@ -8469,12 +8470,13 @@ class MinimumAirspeed(DerivedParameterNode):
                mos_fc=P('FC Min Operating Speed'),
                mos=P('Min Operating Speed'),
                vls=P('VLS'),
+               vls_lookup=P('VLS Lookup'),
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                airborne=S('Airborne')):
 
         # Use whatever minimum speed parameter we have available:
-        parameter = first_valid_parameter(vls, mms_fmf, mms_fmc, mos_fc, mos)
+        parameter = first_valid_parameter(vls, vls_lookup, mms_fmf, mms_fmc, mos_fc, mos)
         if not parameter:
             self.array = np_ma_masked_zeros_like(airspeed.array)
             return
@@ -8899,13 +8901,12 @@ class AirspeedMinusVLS(DerivedParameterNode):
         return all_of((
             'Airspeed',
             'Approach And Landing',
-            'VLS'
-        ), available)
+        ), available) and any_of(('VLS', 'VLS Lookup'), available)
 
     def derive(self,
                airspeed=P('Airspeed'),
                vls_recorded=P('VLS'),
-               #vls_lookup=P('VLS Lookup'), - TODO
+               vls_lookup=P('VLS Lookup'),
                approaches=S('Approach And Landing')):
 
         # Prepare a zeroed, masked array based on the airspeed:
@@ -8915,7 +8916,7 @@ class AirspeedMinusVLS(DerivedParameterNode):
         phases = [approach.slice for approach in approaches]
 
         # Using first_valid_parameter so that once lookup tables are introduced we'll just add it here
-        vls = first_valid_parameter(vls_recorded, phases=phases) 
+        vls = first_valid_parameter(vls_recorded, vls_lookup, phases=phases) 
 
         if vls is None:
             return

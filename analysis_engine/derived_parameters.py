@@ -1979,8 +1979,9 @@ class DistanceTravelled(DerivedParameterNode):
     units = ut.NM
 
     def derive(self, gspd=P('Groundspeed')):
-
-        self.array = integrate(gspd.array, gspd.frequency, scale=1.0 / 3600.0)
+        gspdarray = repair_mask(gspd.array, gspd.frequency,
+                                repair_duration=None)
+        self.array = integrate(gspdarray, gspd.frequency, scale=1.0 / 3600.0)
 
 
 class Drift(DerivedParameterNode):

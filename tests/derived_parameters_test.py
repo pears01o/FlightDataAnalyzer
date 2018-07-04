@@ -2192,12 +2192,16 @@ class TestDistanceTravelled(unittest.TestCase):
         self.assertEqual(opts, expected)
 
     @patch('analysis_engine.derived_parameters.integrate')
-    def test_derive(self, integrate):
+    @patch('analysis_engine.derived_parameters.repair_mask')
+    def test_derive(self, repair_mask, integrate):
         gndspeed = Mock()
         gndspeed.array = Mock()
         gndspeed.frequency = Mock()
+        repair_mask.return_value = Mock()
         DistanceTravelled().derive(gndspeed)
-        integrate.assert_called_once_with(gndspeed.array, gndspeed.frequency,
+        repair_mask.assert_called_once_with(gndspeed.array, gndspeed.frequency,
+                                            repair_duration=None)
+        integrate.assert_called_once_with(repair_mask.return_value, gndspeed.frequency,
                                           scale=1.0 / 3600)
 
 

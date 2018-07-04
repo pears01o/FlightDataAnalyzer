@@ -12194,6 +12194,26 @@ class EngTorque7FtToTouchdownMax(KeyPointValueNode):
         )
 
 
+class EngTorqueWithin1SecOfTouchdownMax(KeyPointValueNode):
+    '''
+    Maximum recorded engine torque on either engine within 1 second of Touchdown.
+    
+    As per ATR's 'Remaining power at touchdown' event specification.
+    '''
+    
+    units = ut.PERCENT
+    name = 'Eng Torque +/- 1 Sec To Touchdown Max'
+    
+    def derive(self, 
+               tdwns=KTI('Touchdown'),
+               torque=P('Eng (*) Torque Max'),):
+        
+        freq = self.hz if self.hz >= 1 else 1
+        
+        for tdwn in tdwns:
+            self.create_kpv_between(torque.array, tdwn.index-freq, tdwn.index+freq, max_value)
+
+
 ##############################################################################
 # Torque
 

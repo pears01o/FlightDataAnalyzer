@@ -400,6 +400,7 @@ from analysis_engine.key_point_values import (
     EngTorqueWhileDescendingMax,
     EngTorqueWithOneEngineInoperativeMax,
     EngTorque7FtToTouchdownMax,
+    EngTorqueWithin1SecOfTouchdownMax,
     EngVibAMax,
     EngVibBMax,
     EngVibBroadbandMax,
@@ -13986,6 +13987,51 @@ class TestEngTorque7FtToTouchdownMax(unittest.TestCase):
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 4)
         self.assertEqual(node[0].value, 90)
+
+
+class TestEngTorqueWithin1SecOfTouchdownMax(unittest.TestCase):
+    def setUp(self):
+        self.node_class = EngTorqueWithin1SecOfTouchdownMax
+        self.touchdown = KTI(name='Touchdown',
+                             items=[KeyTimeInstance(name='Touchdown',
+                                                    index=5),])
+    def test_basic(self):
+        torque=P('Eng (*) Torque Max',
+                 np.ma.arange(10,0,-1))
+        
+        node = self.node_class()
+        node.derive(self.touchdown,torque)
+        
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 6)
+        self.assertEqual(node[0].index, 4)
+        
+    def test_half_hertz(self):
+        torque=P('Eng (*) Torque Max',
+                 np.ma.arange(10,0,-1), 
+                 frequency=0.5)
+        
+        node = self.node_class()
+        node.derive(self.touchdown,torque)
+        
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 6)
+        self.assertEqual(node[0].index, 4)
+    
+    def test_hi_frequency(self):
+        touchdown = KTI(name='Touchdown',
+                             items=[KeyTimeInstance(name='Touchdown',
+                                                    index=13),])
+        torque=P('Eng (*) Torque Max',
+                 np.ma.arange(30,0,-1), 
+                 frequency=8)
+        
+        node = self.node_class()
+        node.derive(touchdown, torque)
+        
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 18)
+        self.assertEqual(node[0].index, 12)
 
 
 class TestTorqueAsymmetryWhileAirborneMax(unittest.TestCase):

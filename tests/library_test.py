@@ -5333,7 +5333,8 @@ class TestRunwayDeviation(unittest.TestCase):
         runway =  {'end': {'latitude': 60.280151,
                            'longitude': 5.222579},
                    'start': {'latitude': 60.30662494,
-                             'longitude': 5.21370074}}
+                             'longitude': 5.21370074},
+                   'magnetic_heading': 160}
         head=np.ma.array([170.568, 180.568, 160.568, 3050.568, -1269.432])
         expected=np.ma.array([0.0, 10.0, -10.0, 0.0, 0.0])
         result = runway_deviation(head, runway)
@@ -5356,7 +5357,8 @@ class TestRunwayHeading(unittest.TestCase):
                                     'longitude': 5.223,
                                     'heading': 999},
                       'start': {'latitude': 60.30662494,
-                                'longitude': 5.21370074}}
+                                'longitude': 5.21370074},
+                      'magnetic_heading':170}
         rwy_hdg = runway_heading(runway)
         self.assertLess(abs(rwy_hdg - 170.6), 0.3)
 
@@ -5367,10 +5369,24 @@ class TestRunwayHeading(unittest.TestCase):
                                            'longitude': 55.347572},
                                    'start': {'latitude': 25.243322,
                                              'longitude': 55.381519},
-                                   }}])
+                                   'magnetic_heading':300}}])
         result = runway_heading(rwy.value[0]['runway'])
         self.assertGreater(result, 298)
         self.assertLess(result, 302)
+        
+    # This case tests handling of a rare database error in open source airport databases.
+    def test_database_reversed(self):
+        rwy = A(name='Nadi',
+                value=[{'runway': {'end': {'latitude': -17.7727,
+                                           'longitude': 177.429},
+                                   'start': {'latitude': -17.7499, 
+                                             'longitude': 177.44756},
+                                   'magnetic_heading': 2.4,
+                                   'identifier': '20'}}])
+        result = runway_heading(rwy.value[0]['runway'])
+        # Runway 20 at Nadi is 37 deg by Google Earth
+        self.assertGreater(result, 35)
+        self.assertLess(result, 40) 
 
 
 class TestRunwayLength(unittest.TestCase):

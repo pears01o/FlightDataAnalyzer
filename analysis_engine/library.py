@@ -2600,7 +2600,10 @@ def runway_heading(runway):
                                            np.ma.array(end_lon),
                                            runway['start'])
         rwy_brg = float(brg.data)
-        rwy_data = runway['magnetic_heading']
+        try:
+            rwy_data = runway['magnetic_heading']
+        except KeyError:
+            return rwy_brg
         diff = (rwy_brg - rwy_data + 180) % 360 - 180
         if abs(diff) > 90.0:
             rwy_brg = (rwy_brg + 180) % 360.0

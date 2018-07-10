@@ -8,6 +8,24 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.39.1
+-------
+  - AE-1543: VLS Lookup tables
+  - AE-1691: Runway Headings Sometimes Reversed
+  - AE-1837: Distance to landing parameter broken
+  - AE-1456: Headwind and wind direction derived parameters issues
+  - AE-1733: EngN2MaxDuringTakeoff and EngN2MaxDuringMaximumContinuousPower KPVs and tests
+
+  Other Fixes:
+  - EngOilPressMax: KPV end limit to Touchdown
+  - EngN1For5Sec500To50FtMin: require correct min samples
+  - Added exception handling for gross weight repair
+  - add kpvs and tests: FlapLeverAtGearUpSelectionDuringGoAround and FlapLeverAtGearDownSelection
+  - New Embraer-specific KPV AccelerationNormalAboveWeightLimitAtTouchdown plus tests
+  - add kpv and tests for aispeed above 101% rotor speed
+  - CoordinatesSmoothed: low_point fallback if ApproachRange masked and find last valid ApproachRange sample
+  - TakeoffConfigurationWarningDuration: handle Movement after Liftoff
+  - ThrottleLeverVariation...: handle masked lever
 
 v0.38.10
 --------

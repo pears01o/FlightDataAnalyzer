@@ -10104,10 +10104,16 @@ class EngGasTempDuringMaximumContinuousPowerForXMinMax(KeyPointValueNode):
     power settings are not in force. 
     '''
 
-    NAME_FORMAT = 'Eng Gas Temp During Maximum Continuous Power For %(minutes)d Min Max'
-    NAME_VALUES = {'minutes': [3, 5]}
+    NAME_FORMAT = 'Eng Gas Temp During Maximum Continuous Power For %(duration)d %(unit)s Max'
+    NAME_VALUES = {'duration': [10, 20, 3, 5],
+                   'unit': ['Sec', 'Min']}
     align_frequency = 1
     units = ut.CELSIUS
+
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Eng (*) Gas Temp Max', 'Takeoff 5 Min Rating', 'Airborne'),
+                      available)
 
     def derive(self,
                eng_egt_max=P('Eng (*) Gas Temp Max'),
@@ -10117,20 +10123,67 @@ class EngGasTempDuringMaximumContinuousPowerForXMinMax(KeyPointValueNode):
 
         if not airborne:
             return
-        high_power_ratings = to_ratings.get_slices() + ga_ratings.get_slices()
+        if to_ratings and ga_ratings:
+            high_power_ratings = to_ratings.get_slices() + ga_ratings.get_slices()
+        else:
+            high_power_ratings = to_ratings.get_slices()      
+        
         max_cont_rating = slices_not(
             high_power_ratings,
             begin_at=min(air.slice.start for air in airborne),
             end_at=max(air.slice.stop for air in airborne),
         )
-        for minutes in self.NAME_VALUES['minutes']:
+        for minutes in [3, 5]:
             seconds = minutes * 60
             self.create_kpvs_within_slices(
-                second_window(eng_egt_max.array.astype(int), eng_egt_max.hz, seconds),
+                second_window(eng_egt_max.array.astype(int), eng_egt_max.hz,
+                              seconds),
                 max_cont_rating,
                 max_value,
-                minutes=minutes,
+                duration=minutes,
+                unit='Min'
             )
+        for seconds in [10, 20]:
+            self.create_kpvs_within_slices(
+                second_window(eng_egt_max.array.astype(int), eng_egt_max.hz,
+                              seconds),
+                max_cont_rating,
+                max_value,
+                duration=seconds,
+                unit='Sec'
+            )
+
+
+class EngGasTempMaxDuringTakeoffMaxMaintained(KeyPointValueNode):
+    '''
+    The maximum value of "Eng (*) Torque Max" during the Takeoff 5 or Go 
+    Around 5 Min Rating phase maintained for the specified duration.
+    '''
+
+    NAME_FORMAT = 'Eng Gas Temp Max During Takeoff %(durations)s Max Maintained'
+    NAME_VALUES = {'durations': ['5 Sec', '10 Sec', '20 Sec', '5 Min']}
+    align_frequency = 1
+    units = ut.CELSIUS
+
+    def derive(self,
+               eng_egt_max=P('Eng (*) Gas Temp Max'),
+               takeoffs=S('Takeoff 5 Min Rating'),
+               go_arounds=S('Go Around 5 Min Rating')):
+
+        seconds = np.array([5, 10, 20, 300])
+        hz = eng_egt_max.frequency
+        if takeoffs and go_arounds:
+            t_slices= takeoffs.get_slices() + go_arounds.get_slices()
+        else:
+            t_slices= takeoffs.get_slices()
+
+        for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
+            for takeoff in t_slices:
+                arrays = eng_egt_max.array[takeoff]
+                if len(arrays) > 0:
+                    index, value = max_maintained_value(arrays, samples, hz, takeoff)
+                    if index is not None and value is not None:
+                        self.create_kpv(index, value, durations=duration)
 
 
 class EngGasTempDuringEngStartMax(KeyPointValueNode):
@@ -10231,7 +10284,7 @@ class EngGasTempDuringEngStartForXSecMax(KeyPointValueNode):
     '''
 
     NAME_FORMAT = 'Eng Gas Temp During Eng Start For %(seconds)d Sec Max'
-    NAME_VALUES = {'seconds': [5, 10, 40]}
+    NAME_VALUES = {'seconds': [5, 10, 20, 40]}
     align_frequency = 1
     units = ut.CELSIUS
 
@@ -19758,16 +19811,16 @@ class EngNpMaxDuringTakeoff(KeyPointValueNode):
     def can_operate(cls, available):
         return all_of(('Takeoff 5 Min Rating', 'Eng (*) Np Max'), available)
     
-    def derive(self, takeoffs=S('Takeoff 5 Min Rating'),
+    def derive(self,
                eng_np_max=P('Eng (*) Np Max'),
+               takeoffs=S('Takeoff 5 Min Rating'),
                go_arounds=S('Go Around 5 Min Rating')):
-        
+        hz = eng_np_max.frequency
         for duration in self.NAME_VALUES['seconds']:
             for takeoff in takeoffs.get_slices():
                 arrays = eng_np_max.array[takeoff]
-                samples = int(duration * eng_np_max.frequency)
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, takeoff)
+                    index, value = max_maintained_value(arrays, duration, hz, takeoff)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, seconds=duration)
 
@@ -19775,9 +19828,8 @@ class EngNpMaxDuringTakeoff(KeyPointValueNode):
             for duration in self.NAME_VALUES['seconds']:
                 for go_around in go_arounds.get_slices():
                     arrays = eng_np_max.array[go_around]
-                    samples = int(duration * eng_np_max.frequency)
                     if len(arrays) > 0:
-                        index, value = max_maintained_value(arrays, samples, go_around)
+                        index, value = max_maintained_value(arrays, duration, hz, go_around)
                         if index is not None and value is not None:
                             self.create_kpv(index, value, seconds=duration)
 
@@ -19796,16 +19848,17 @@ class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
     def can_operate(cls, available):
         return all_of(('Eng (*) Torque Max', 'Takeoff 5 Min Rating'), available)
     
-    def derive(self, eng_torq_max=P('Eng (*) Torque Max'),
+    def derive(self,
+               eng_torq_max=P('Eng (*) Torque Max'),
                takeoffs=S('Takeoff 5 Min Rating'),
                go_arounds=S('Go Around 5 Min Rating')):
-        
+        hz = eng_torq_max.frequency
         seconds = np.array([10, 20, 300])
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for takeoff in takeoffs.get_slices():
                 arrays = eng_torq_max.array[takeoff]
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, takeoff)
+                    index, value = max_maintained_value(arrays, samples, hz, takeoff)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)
         if go_arounds:
@@ -19813,7 +19866,7 @@ class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
                 for go_around in go_arounds.get_slices():
                     arrays = eng_torq_max.array[go_around]
                     if len(arrays) > 0:
-                        index, value = max_maintained_value(arrays, samples, go_around)
+                        index, value = max_maintained_value(arrays, samples, hz, go_around)
                         if index is not None and value is not None:
                             self.create_kpv(index, value, durations=duration)
 
@@ -19835,13 +19888,13 @@ class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
     def derive(self,
                eng_torq_max=P('Eng (*) Torque Max'),
                ratings=S('Maximum Continuous Power')):
-        
+        hz = eng_torq_max.frequency
         seconds = np.array([10, 20, 300, 600])
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for mcp in ratings.get_slices():
                 arrays = eng_torq_max.array[mcp]
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, mcp)
+                    index, value = max_maintained_value(arrays, samples, hz, mcp)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)
 

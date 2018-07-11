@@ -293,6 +293,7 @@ from analysis_engine.key_point_values import (
     EngGasTempDuringGoAround5MinRatingMax,
     EngGasTempDuringMaximumContinuousPowerForXMinMax,
     EngGasTempDuringMaximumContinuousPowerMax,
+    EngGasTempMaxDuringTakeoffMaxMaintained,
     EngGasTempDuringTakeoff5MinRatingMax,
     EngGasTempExceededEngGasTempRedlineDuration,
     EngGasTempFor5SecDuringGoAround5MinRatingMax,
@@ -10344,7 +10345,7 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
                                                          [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(takeoffs, eng_np_max)
+        node.derive(eng_np_max, takeoffs, None)
         self.assertEqual(node, KPV(name=name, items=[
             KeyPointValue(index=18, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
             KeyPointValue(index=23, value=98, name='Eng (*) Np Max During Takeoff 20 Sec'),
@@ -10359,7 +10360,7 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
         
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(takeoffs, eng_np_max)
+        node.derive(eng_np_max, takeoffs, None)
         self.assertEqual(node, KPV(name=name, items=[
                 KeyPointValue(index=15, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
             ]))
@@ -10374,7 +10375,7 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
         
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(takeoffs, eng_np_max)
+        node.derive(eng_np_max, takeoffs, None)
         self.assertEqual(node, KPV(name=name, items=[
                 KeyPointValue(index=34, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
             ]))
@@ -10390,9 +10391,10 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
         
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(takeoffs, eng_np_max)
+        node.derive(eng_np_max, takeoffs, None)
         self.assertEqual(node, KPV(name=name, items=[
             KeyPointValue(index=18, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
+            KeyPointValue(index=10, value=85, name='Eng (*) Np Max During Takeoff 20 Sec'),
         ]))    
         
     def test_derive_all_data_masked(self):
@@ -10405,7 +10407,7 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
         
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(takeoffs, eng_np_max)
+        node.derive(eng_np_max, takeoffs, None)
         self.assertEqual(node, KPV(name=name, items=[]))    
     
     def test_derive_not_enough_high_samples(self):
@@ -10415,7 +10417,7 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
                                                           99, 86, 82, 80, 80, 81, 82]))
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(takeoffs, eng_np_max)
+        node.derive(eng_np_max, takeoffs, None)
         self.assertEqual(node, KPV(name=name, items=[
                 KeyPointValue(index=15, value=86, name='Eng (*) Np Max During Takeoff 5 Sec'),
             ]))        
@@ -10430,7 +10432,7 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
                                        [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(takeoffs, eng_np_max)
+        node.derive(eng_np_max, takeoffs, None)
         self.assertEqual(node, KPV(name=name, items=[
                 KeyPointValue(index=25, value=98, name='Eng (*) Np Max During Takeoff 5 Sec'),
                 KeyPointValue(index=12, value=92, name='Eng (*) Np Max During Takeoff 20 Sec'),
@@ -10444,7 +10446,7 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
                                                              [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]))
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(takeoffs, eng_np_max)
+        node.derive(eng_np_max, takeoffs, None)
         self.assertEqual(node, KPV(name=name, items=[
                 KeyPointValue(index=18, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
                 KeyPointValue(index=15, value=99, name='Eng (*) Np Max During Takeoff 20 Sec'),
@@ -10459,7 +10461,7 @@ class TestEngNpMaxDuringTakeoff(unittest.TestCase):
                                                                  [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]), 2))
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(takeoffs, eng_np_max, go_arounds)
+        node.derive(eng_np_max, takeoffs, go_arounds)
         self.assertEqual(node, KPV(name=name, items=[
             KeyPointValue(index=68, value=99, name='Eng (*) Np Max During Takeoff 5 Sec'),
             KeyPointValue(index=73, value=98, name='Eng (*) Np Max During Takeoff 20 Sec'),
@@ -11745,11 +11747,165 @@ class TestEngGasTempDuringMaximumContinuousPowerForXMinMax(unittest.TestCase, No
 
     def setUp(self):
         self.node_class = EngGasTempDuringMaximumContinuousPowerForXMinMax
-        self.operational_combinations = [('Eng (*) Gas Temp Max', 'Takeoff 5 Min Rating', 'Go Around 5 Min Rating', 'Airborne')]
+        self.operational_combinations =  [
+            ('Takeoff 5 Min Rating', 'Eng (*) Gas Temp Max', 'Airborne'),
+            ('Takeoff 5 Min Rating', 'Eng (*) Gas Temp Max',
+             'Go Around 5 Min Rating', 'Airborne')
+        ]
+        self.eng_egt_max = load(
+            os.path.join(test_data_path, 'ebe456663820_eng_egt_max.nod'))
+        self.to_ratings = load(
+            os.path.join(test_data_path, 'ebe456663820_takeoffs.nod'))
+        self.ga_ratings = load(
+            os.path.join(test_data_path, 'ebe456663820_go_arounds.nod'))
+        self.airborne = load(
+            os.path.join(test_data_path, 'ebe456663820_airborne.nod'))
 
-    @unittest.skip('Test Not Implemented')
+
     def test_derive(self):
-        self.assertTrue(False, msg='Test not implemented.')
+        node = self.node_class()
+        node.derive(self.eng_egt_max, self.to_ratings,
+                    self.ga_ratings, self.airborne)
+
+        expected_results = [
+             (1438.0, 724.0, 'Eng Gas Temp During Maximum Continuous Power For 3 Min Max'),
+             (3362.0, 724.0, 'Eng Gas Temp During Maximum Continuous Power For 3 Min Max'),
+             (1208.0, 709.0, 'Eng Gas Temp During Maximum Continuous Power For 5 Min Max'),
+             (3277.0, 716.0, 'Eng Gas Temp During Maximum Continuous Power For 5 Min Max'),
+             (1516.0, 735.0, 'Eng Gas Temp During Maximum Continuous Power For 10 Sec Max'),
+             (3456.0, 738.0, 'Eng Gas Temp During Maximum Continuous Power For 10 Sec Max'),
+             (1510.0, 734.0, 'Eng Gas Temp During Maximum Continuous Power For 20 Sec Max'),
+             (3446.0, 737.0, 'Eng Gas Temp During Maximum Continuous Power For 20 Sec Max'),
+        ]
+
+        self.assertEqual(len(node), 8)
+        self.assertEqual(node.name, 'Eng Gas Temp During Maximum Continuous Power For X Min Max')
+        for kpv_node, expected  in zip(node, expected_results):
+            expected_index, expected_value, expected_name = expected
+            self.assertAlmostEqual(kpv_node.index, expected_index, places=0)
+            self.assertAlmostEqual(kpv_node.value, expected_value, places=0)
+            self.assertAlmostEqual(kpv_node.name, expected_name, places=0)
+
+
+    def test_derive_no_goaround(self):
+        node = self.node_class()
+        node.derive(self.eng_egt_max, self.to_ratings,
+                    S('Go Around 5 Min Rating'), self.airborne)
+
+        expected_results = [
+             (1438.0, 724.0, 'Eng Gas Temp During Maximum Continuous Power For 3 Min Max'),
+             (3277.0, 716.0, 'Eng Gas Temp During Maximum Continuous Power For 5 Min Max'),
+             (2927.0, 804.0, 'Eng Gas Temp During Maximum Continuous Power For 10 Sec Max'),
+             (2918.0, 777.0, 'Eng Gas Temp During Maximum Continuous Power For 20 Sec Max'),
+        ]
+        self.assertEqual(len(node), 4)
+        self.assertEqual(node.name, 'Eng Gas Temp During Maximum Continuous Power For X Min Max')
+        for kpv_node, expected  in zip(node, expected_results):
+            expected_index, expected_value, expected_name = expected
+            self.assertAlmostEqual(kpv_node.index, expected_index, places=0)
+            self.assertAlmostEqual(kpv_node.value, expected_value, places=0)
+            self.assertAlmostEqual(kpv_node.name, expected_name, places=0)
+
+    def test_derive_no_goaround(self):
+        '''
+        Helicopters do not generate go-around phases, so the argument to
+        derive would be None instead of an empty list
+        '''        
+        node = self.node_class()
+        node.derive(self.eng_egt_max, self.to_ratings,
+                    None, self.airborne)
+
+        expected_results = [
+             (1438.0, 724.0, 'Eng Gas Temp During Maximum Continuous Power For 3 Min Max'),
+             (3277.0, 716.0, 'Eng Gas Temp During Maximum Continuous Power For 5 Min Max'),
+             (2927.0, 804.0, 'Eng Gas Temp During Maximum Continuous Power For 10 Sec Max'),
+             (2918.0, 777.0, 'Eng Gas Temp During Maximum Continuous Power For 20 Sec Max'),
+        ]
+
+        self.assertEqual(len(node), 4)
+        self.assertEqual(node.name, 'Eng Gas Temp During Maximum Continuous Power For X Min Max')
+        for kpv_node, expected  in zip(node, expected_results):
+            expected_index, expected_value, expected_name = expected
+            self.assertAlmostEqual(kpv_node.index, expected_index, places=0)
+            self.assertAlmostEqual(kpv_node.value, expected_value, places=0)
+            self.assertAlmostEqual(kpv_node.name, expected_name, places=0)
+
+class TestEngGasTempMaxDuringTakeoffMaxMaintained(unittest.TestCase, NodeTest):
+    def setUp(self):
+        self.node_class = EngGasTempMaxDuringTakeoffMaxMaintained
+        self.operational_combinations = [
+            ('Eng (*) Gas Temp Max', 'Takeoff 5 Min Rating', 'Go Around 5 Min Rating',),
+            ('Eng (*) Gas Temp Max', 'Takeoff 5 Min Rating' )
+        ]
+        self.eng_egt_max = load(
+            os.path.join(test_data_path, 'ebe456663820_eng_egt_max.nod'))
+        self.takeoffs = load(
+            os.path.join(test_data_path, 'ebe456663820_takeoffs.nod'))
+        self.go_arounds = load(
+            os.path.join(test_data_path, 'ebe456663820_go_arounds.nod'))
+
+
+    def test_derive(self):
+        node = self.node_class()
+        node.derive(self.eng_egt_max, self.takeoffs, self.go_arounds)
+
+        expected_results = [
+            (926.8359375, 722.3524525, 'Eng Gas Temp Max During Takeoff 5 Sec Max Maintained'),
+            (2934.5546875, 810.2792775, 'Eng Gas Temp Max During Takeoff 5 Sec Max Maintained'),
+            (923.8359375, 721.096355, 'Eng Gas Temp Max During Takeoff 10 Sec Max Maintained'),
+            (2929.5546875, 805.568911875, 'Eng Gas Temp Max During Takeoff 10 Sec Max Maintained'),
+            (913.8359375, 718.898184375, 'Eng Gas Temp Max During Takeoff 20 Sec Max Maintained'),
+            (2919.5546875, 784.52927875, 'Eng Gas Temp Max During Takeoff 20 Sec Max Maintained'),
+            (2740.5546875, 444.318, 'Eng Gas Temp Max During Takeoff 5 Min Max Maintained'),
+        ]
+
+        self.assertEqual(len(node), 7)
+        self.assertEqual(node.name, 'Eng Gas Temp Max During Takeoff Max Maintained')
+        for kpv_node, expected  in zip(node, expected_results):
+            expected_index, expected_value, expected_name = expected
+            self.assertAlmostEqual(kpv_node.index, expected_index, places=0)
+            self.assertAlmostEqual(kpv_node.value, expected_value, places=0)
+            self.assertAlmostEqual(kpv_node.name, expected_name, places=0)
+
+    def test_derive_no_goaround(self):
+        node = self.node_class()
+        node.derive(self.eng_egt_max, self.takeoffs, S('Go Around 5 Min Rating'))
+
+        expected_results = [
+            (926.8359375, 722.3524525, 'Eng Gas Temp Max During Takeoff 5 Sec Max Maintained'),
+            (923.8359375, 721.096355, 'Eng Gas Temp Max During Takeoff 10 Sec Max Maintained'),
+            (913.8359375, 718.898184375, 'Eng Gas Temp Max During Takeoff 20 Sec Max Maintained'),
+        ]
+
+        self.assertEqual(len(node), 3)
+        self.assertEqual(node.name, 'Eng Gas Temp Max During Takeoff Max Maintained')
+        for kpv_node, expected  in zip(node, expected_results):
+            expected_index, expected_value, expected_name = expected
+            self.assertAlmostEqual(kpv_node.index, expected_index, places=0)
+            self.assertAlmostEqual(kpv_node.value, expected_value, places=0)
+            self.assertAlmostEqual(kpv_node.name, expected_name, places=0)
+
+    def test_derive_heli(self):
+        '''
+        Helicopters do not generate go-around phases, so the argument to
+        derive would be None instead of an empty list
+        '''
+        node = self.node_class()
+        node.derive(self.eng_egt_max, self.takeoffs, None)
+
+        expected_results = [
+            (926.8359375, 722.3524525, 'Eng Gas Temp Max During Takeoff 5 Sec Max Maintained'),
+            (923.8359375, 721.096355, 'Eng Gas Temp Max During Takeoff 10 Sec Max Maintained'),
+            (913.8359375, 718.898184375, 'Eng Gas Temp Max During Takeoff 20 Sec Max Maintained'),
+        ]
+
+        self.assertEqual(len(node), 3)
+        self.assertEqual(node.name, 'Eng Gas Temp Max During Takeoff Max Maintained')
+        for kpv_node, expected  in zip(node, expected_results):
+            expected_index, expected_value, expected_name = expected
+            self.assertAlmostEqual(kpv_node.index, expected_index, places=0)
+            self.assertAlmostEqual(kpv_node.value, expected_value, places=0)
+            self.assertAlmostEqual(kpv_node.name, expected_name, places=0)
 
 
 class TestEngGasTempDuringEngStartMax(unittest.TestCase, NodeTest):
@@ -11781,12 +11937,35 @@ class TestEngGasTempDuringEngStartForXSecMax(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = EngGasTempDuringEngStartForXSecMax
-        self.operational_combinations = [('Eng (*) Gas Temp Max', 'Eng (*) N2 Min', 'Takeoff Turn Onto Runway')]
+        self.operational_combinations = [('Eng (*) Gas Temp Max',
+                                          'Eng (*) N2 Min',
+                                          'Takeoff Turn Onto Runway')]
 
     def test_derive(self):
-        egt = EngGasTempDuringEngStartForXSecMax()
-        # frequency is forced to 1Hz
-        self.assertEqual(egt.frequency, 1.0)
+        eng_egt_max = load(
+            os.path.join(test_data_path, 'ebe456663820_eng_egt_max.nod'))
+        toff_turn_rwy = load(
+            os.path.join(test_data_path, 'ebe456663820_toff_turn_rwy.nod'))
+        eng_n2_min = load(
+            os.path.join(test_data_path, 'ebe456663820_eng_n2_min.nod'))
+
+        node = self.node_class()
+        node.derive(eng_egt_max, eng_n2_min, toff_turn_rwy)
+
+        self.assertEqual(
+            node,
+            KPV('Eng Gas Temp During Eng Start For X Sec Max',
+                items=[
+                    KeyPointValue(index=224, value=513,
+                                  name='Eng Gas Temp During Eng Start For 5 Sec Max'),
+                    KeyPointValue(index=1, value=510,
+                                  name='Eng Gas Temp During Eng Start For 10 Sec Max'),
+                    KeyPointValue(index=1, value=510,
+                                  name='Eng Gas Temp During Eng Start For 20 Sec Max'),
+                    KeyPointValue(index=1, value=510,
+                                  name='Eng Gas Temp During Eng Start For 40 Sec Max'),
+                ])
+        )
 
 
 class TestEngGasTempDuringFlightMin(unittest.TestCase, CreateKPVsWithinSlicesTest):

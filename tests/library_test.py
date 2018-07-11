@@ -8325,6 +8325,31 @@ class TestMb2Ft(unittest.TestCase):
         self.assertAlmostEqual(mb2ft(1024), -292.21, places=2)
 
 
+class TestMaxMaintainedValue(unittest.TestCase):
+    def test_example_max_maintained_value(self):
+        arrays = np.ma.array([1,2,3,4,3,4,3,4,3,2,5,2])
+        index, value = max_maintained_value(arrays, 5, 1, slice(0,12))
+        self.assertEquals(index, 4)
+        self.assertEquals(value, 3)
+
+    def test_max_maintained_value(self):
+        eng_torq_max=load(os.path.join(test_data_path,
+                                       'ebe456663820_eng_torq_max.nod'))
+        go_arounds=load(os.path.join(test_data_path,
+                                     'ebe456663820_go_arounds.nod'))
+        phase = go_arounds.get_slices()[0]
+        array = eng_torq_max.array[phase]
+        expected = (
+            (10, 2922, 148.697),
+            (20, 2920, 146.5),
+            (300, 2750, 4.248)
+        )
+        hz = eng_torq_max.frequency
+        for sec, idx, val in expected:
+            index, value = max_maintained_value(array, sec, hz, phase)
+            self.assertAlmostEqual(index, idx, places=0)
+            self.assertAlmostEqual(value, val, places=3)
+
 if __name__ == '__main__':
     suite = unittest.TestSuite()
     suite.addTest(TestIndexAtValue('test_index_at_value_slice_beyond_top_end_of_data'))

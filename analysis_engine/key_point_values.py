@@ -10165,6 +10165,10 @@ class EngGasTempMaxDuringTakeoffMaxMaintained(KeyPointValueNode):
     align_frequency = 1
     units = ut.CELSIUS
 
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Eng (*) Gas Temp Max', 'Takeoff 5 Min Rating'), available)
+
     def derive(self,
                eng_egt_max=P('Eng (*) Gas Temp Max'),
                takeoffs=S('Takeoff 5 Min Rating'),
@@ -19922,7 +19926,7 @@ class EngN2DuringTakeoffForXSecMax(KeyPointValueNode):
             for takeoff in takeoffs.get_slices():
                 arrays = eng_n2_max.array[takeoff]
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, takeoff)
+                    index, value = max_maintained_value(arrays, samples, eng_n2_max.hz, takeoff)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)
         if go_arounds:
@@ -19930,7 +19934,7 @@ class EngN2DuringTakeoffForXSecMax(KeyPointValueNode):
                 for go_around in go_arounds.get_slices():
                     arrays = eng_n2_max.array[go_around]
                     if len(arrays) > 0:
-                        index, value = max_maintained_value(arrays, samples, go_around)
+                        index, value = max_maintained_value(arrays, samples, eng_n2_max.hz, go_around)
                         if index is not None and value is not None:
                             self.create_kpv(index, value, durations=duration)
                             
@@ -19958,6 +19962,6 @@ class EngN2DuringMaximumContinuousPowerForXSecMax(KeyPointValueNode):
             for mcp in ratings.get_slices():
                 arrays = eng_n2_max.array[mcp]
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, mcp)
+                    index, value = max_maintained_value(arrays, samples, eng_n2_max.hz, mcp)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)

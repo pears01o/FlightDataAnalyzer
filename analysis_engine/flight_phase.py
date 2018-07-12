@@ -127,10 +127,13 @@ class Airborne(FlightPhaseNode):
             # Stop here if there is inadequate airborne data to process.
             if working_alt is None or np.ma.ptp(working_alt)==0.0:
                 continue
-            airs = slices_remove_small_gaps(
-                    np.ma.clump_unmasked(np.ma.masked_less_equal(working_alt, 1.0)),
-                    time_limit=40, # 10 seconds was too short for Herc which flies below 0  AAL for 30 secs.
-                    hz=alt_aal.frequency)
+
+            # Ignore alt value below 1ft
+            airs = np.ma.clump_unmasked(np.ma.masked_less_equal(working_alt, 1.0))
+            # Remove small spikes from altitude radio
+            airs = slices_remove_small_slices(airs, time_limit=10, hz=alt_aal.frequency)
+            # 10 seconds was too short for Herc which flies below 0  AAL for 30 secs.
+            airs = slices_remove_small_gaps(airs, time_limit=40, hz=alt_aal.frequency)
             # Make sure we propogate None ends to data which starts or ends in
             # midflight.
             for air in airs:

@@ -9,6 +9,10 @@ You can view the differences in tagged versions as follows:
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
 
+v0.40.2
+-------
+  - AE-1846: Added ThrustRatingCLB1Duration KPV
+
 v0.40.1
 -------
   - AE-1732: Added Gas Temp during Takeoff and MCP events

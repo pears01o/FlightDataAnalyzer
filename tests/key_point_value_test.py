@@ -755,6 +755,7 @@ from analysis_engine.key_point_values import (
     ThrustAsymmetryDuringTakeoffMax,
     ThrustAsymmetryWithThrustReversersDeployedDuration,
     ThrustAsymmetryWithThrustReversersDeployedMax,
+    ThrustRatingCLB1Duration,
     ThrustReversersCancelToEngStopDuration,
     ThrustReversersDeployedDuration,
     ThrustReversersDeployedDuringFlightDuration,
@@ -6411,6 +6412,31 @@ class TestThrustReversersDeployedDuration(unittest.TestCase):
         self.assertEqual(len(dur), 1)
         self.assertEqual(dur[0].index, 5)
         self.assertEqual(dur[0].value, 10)
+
+
+class TestThrustRatingCLB1Duration(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = ThrustRatingCLB1Duration
+        self.operational_combinations = [('Thrust Rating Mode', 'Airborne')]
+
+    def test_derive(self):
+        array = np.ma.zeros(10)
+        thrust = M(array=array, values_mapping={0: '-', 1: 'CLB1'})
+        airs = buildsection('Airborne', 3, 9)
+        node = self.node_class()
+        node.derive(thrust, airs)
+        self.assertEqual(len(node), 0)
+        
+        array[2:5] = 1
+        array[7:8] = 1
+        node = self.node_class()
+        node.derive(thrust, airs)
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, 2)
+        self.assertEqual(node[1].index, 7)
+        self.assertEqual(node[1].value, 1)
 
 
 class TestThrustReversersDeployedDuringFlightDuration(unittest.TestCase):

@@ -22128,22 +22128,24 @@ class TestTCASRAWarningDuration(unittest.TestCase, NodeTest):
                                          ('TCAS RA', 'TCAS Combined Control', 'Airborne')]
 
     def test_derive_cc_only(self):
+        ''' Values from ARINC 735 '''
         values_mapping = {
-            0: 'A',
-            1: 'B',
-            2: 'Drop Track',
-            3: 'Altitude Lost',
+            0: 'No Advisory',
+            1: 'Clear of Conflict',
+            2: 'Spare',
+            3: 'Spare',
             4: 'Up Advisory Corrective',
             5: 'Down Advisory Corrective',
-            6: 'G',
+            6: 'Preventive',
+            7: 'Not Used',
         }
         tcas = M(
-            'TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6]),
+            'TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6,1,0,0]),
             values_mapping=values_mapping)
-        airborne = buildsection('Airborne', 2, 6)
+        airborne = buildsection('Airborne', 2, 10)
         node = self.node_class()
         node.derive(None, tcas, airborne)
-        self.assertEqual([KeyPointValue(2, 5.0, 'TCAS RA Warning Duration')],
+        self.assertEqual([KeyPointValue(4, 5.0, 'TCAS RA Warning Duration')],
                          node)
 
     def test_derive_ra_only(self):
@@ -22157,14 +22159,16 @@ class TestTCASRAWarningDuration(unittest.TestCase, NodeTest):
                          node)
 
     def test_derive_ra_takes_precedence(self):
+        ''' Values from ARINC 735 '''
         values_mapping_cc = {
-            0: 'A',
-            1: 'B',
-            2: 'Drop Track',
-            3: 'Altitude Lost',
+            0: 'No Advisory',
+            1: 'Clear of Conflict',
+            2: 'Spare',
+            3: 'Spare',
             4: 'Up Advisory Corrective',
             5: 'Down Advisory Corrective',
-            6: 'G',
+            6: 'Preventive',
+            7: 'Not Used',
         }
         tcas_cc = M('TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6]),
                     values_mapping=values_mapping_cc)

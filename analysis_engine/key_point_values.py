@@ -18154,9 +18154,7 @@ class TCASRAWarningDuration(KeyPointValueNode):
                 ras_local = tcas_ra.array[air.slice] == 'RA'
             else:
                 # If the RA is not recorded separately:
-                ras_local = tcas.array[air.slice].any_of('Drop Track',
-                                                         'Altitude Lost',
-                                                         'Up Advisory Corrective',
+                ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
                                                          'Down Advisory Corrective',
                                                          'Preventive',
                                                          ignore_missing=True)
@@ -18182,9 +18180,7 @@ class TCASRAReactionDelay(KeyPointValueNode):
                tcas=M('TCAS Combined Control'), airs=S('Airborne')):
         acc_array = repair_mask(acc.array, repair_duration=None)
         for air in airs:
-            ras_local = tcas.array[air.slice].any_of('Drop Track',
-                                                     'Altitude Lost',
-                                                     'Up Advisory Corrective',
+            ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
                                                      'Down Advisory Corrective',
                                                      'Preventive',
                                                      ignore_missing=True)
@@ -18220,15 +18216,13 @@ class TCASRAInitialReactionStrength(KeyPointValueNode):
     '''
 
     name = 'TCAS RA Initial Reaction Strength'
-    units = None  # FIXME
+    units = ut.GPS
 
     def derive(self, acc=P('Acceleration Normal Offset Removed'),
                tcas=M('TCAS Combined Control'), airs=S('Airborne')):
 
         for air in airs:
-            ras_local = tcas.array[air.slice].any_of('Drop Track',
-                                                     'Altitude Lost',
-                                                     'Up Advisory Corrective',
+            ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
                                                      'Down Advisory Corrective',
                                                      'Preventive',
                                                      ignore_missing=True)
@@ -18282,9 +18276,7 @@ class TCASRAToAPDisengagedDuration(KeyPointValueNode):
                airs=S('Airborne')):
 
         for air in airs:
-            ras_local = tcas.array[air.slice].any_of('Drop Track',
-                                                     'Altitude Lost',
-                                                     'Up Advisory Corrective',
+            ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
                                                      'Down Advisory Corrective',
                                                      'Preventive',
                                                      ignore_missing=True)

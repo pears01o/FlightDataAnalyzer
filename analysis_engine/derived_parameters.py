@@ -8512,6 +8512,9 @@ class MinimumCleanLookup(DerivedParameterNode):
         # Prepare a zeroed, masked array based on the airspeed:
         self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
         
+        if not family or not family.value in ('B767', 'B757',):
+            return
+        
         # Initialise the velocity speed lookup table:
         attrs = (model, series, family, engine_type, engine_series)
         table = lookup_table(self, 'vref', *attrs)
@@ -8519,24 +8522,23 @@ class MinimumCleanLookup(DerivedParameterNode):
         # Determine the sections of flight to populate:
         phases = airborne.get_slices()
         
-        if family and family.value in ('B767', 'B757',):
-            # Need Vref30, so detent is pre set.
-            detent = '30'
+        # Need Vref30, so detent is pre set.
+        detent = '30'
 
-            for phase in phases:
-                self.array[phase] = table.vref(detent, gw.array[phase])
-                # Add 80kts to the whole array to get Vref30+80kts
-                self.array[phase] += 80
-            
-            # above_FL250 includes S('Cruise') slices to avoid spikes when cruise
-            # level is FL250. This will also add 100kts to any cruise phase below 
-            # FL250 but 767s don't usually fly that low so it shouldn't be an issue
-            above_FL250 = slices_or(alt_std.slices_above(25000),
-                                    crz.get_slices())
-            
-            # Add 20kts to get Vref30+100kts above FL250
-            for section in above_FL250:
-                self.array[section] += 20
+        for phase in phases:
+            self.array[phase] = table.vref(detent, gw.array[phase])
+            # Add 80kts to the whole array to get Vref30+80kts
+            self.array[phase] += 80
+        
+        # above_FL250 includes S('Cruise') slices to avoid spikes when cruise
+        # level is FL250. This will also add 100kts to any cruise phase below 
+        # FL250 but 767s don't usually fly that low so it shouldn't be an issue
+        above_FL250 = slices_or(alt_std.slices_above(25000),
+                                crz.get_slices())
+        
+        # Add 20kts to get Vref30+100kts above FL250
+        for section in above_FL250:
+            self.array[section] += 20
 
 
 ########################################

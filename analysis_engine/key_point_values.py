@@ -12202,7 +12202,6 @@ class EngTorqueWithin1SecOfTouchdownMax(KeyPointValueNode):
     '''
     
     units = ut.PERCENT
-    name = 'Eng Torque +/- 1 Sec To Touchdown Max'
     
     def derive(self, 
                tdwns=KTI('Touchdown'),

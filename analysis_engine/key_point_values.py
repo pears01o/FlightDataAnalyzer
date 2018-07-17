@@ -17401,7 +17401,7 @@ class AirspeedBelowMinimumAirspeedMin(KeyPointValueNode):
                airborne = S('Airborne'),
                min_clean = P('Minimum Clean Lookup'),):
         mspd = min_clean or min_spd or f_m_spd        
-        if mspd.name == 'Minimum Airspeed' or 'Minimum Clean Lookup':
+        if mspd.name in ('Minimum Airspeed', 'Minimum Clean Lookup'):
             to_test = air_spd.array - mspd.array
             spd_slices = runs_of_ones(to_test < 0)
         else:

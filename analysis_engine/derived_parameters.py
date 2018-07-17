@@ -8517,7 +8517,7 @@ class MinimumCleanLookup(DerivedParameterNode):
         table = lookup_table(self, 'vref', *attrs)
         
         # Determine the sections of flight to populate:
-        phases = [air.slice for air in airborne]
+        phases = airborne.get_slices()
         
         if family and family.value in ('B767', 'B757',):
             # Need Vref30, so detent is pre set.

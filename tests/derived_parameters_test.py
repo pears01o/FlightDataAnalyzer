@@ -195,6 +195,7 @@ from analysis_engine.derived_parameters import (
     MagneticVariation,
     MagneticVariationFromRunway,
     MinimumAirspeed,
+    MinimumCleanLookup,
     Nr,
     Pitch,
     PotentialEnergy,
@@ -7623,6 +7624,76 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
         node.derive(self.airspeed, mms_fmf, None, None, None, None, None, None, None, self.airborne)
         expected = np.ma.array(mms_fmf.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
+        ma_test.assert_masked_array_equal(node.array, expected)
+
+
+class TestMinimumCleanLookup(unittest.TestCase, NodeTest):
+
+    class VS0(VelocitySpeed):
+        '''
+        Table for aircraft with flap and weight.
+        '''
+        weight_unit = ut.TONNE
+        tables = {
+            'vref': {
+                'weight': ( 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190),
+                    '20': (122, 128, 135, 141, 146, 151, 157, 162, 168, 173, 179),
+                    '25': (117, 123, 129, 135, 141, 146, 151, 156, 161, 166, 170),
+                    '30': (113, 119, 125, 131, 137, 142, 148, 156, 164, 171, 179),
+            },
+            'vmo': 360,
+            'mmo': 0.860,
+        }        
+        
+        
+    def setUp(self):
+        self.node_class = MinimumCleanLookup
+        self.alt = P('Altitude STD Smoothed', 
+                np.ma.repeat((15000, 20000, 26000, 27000), 10))
+        self.airborne = buildsection('Airborne', 5, 35)
+        self.air_spd = P('Airspeed', np.ma.repeat((170, 180, 190, 230), 10))
+        self.operational_combinations = [
+        ('Airspeed', 'Gross Weight Smoothed', 'Airborne', 'Model', 
+         'Series', 'Family', 'Engine Type', 'Engine Series', 
+         'Altitude STD Smoothed', 'Cruise',)]
+
+    @patch('analysis_engine.derived_parameters.at')
+    @patch('analysis_engine.library.at')        
+    def test_767(self, at0, at1):
+        at0.get_vspeed_map.return_value = self.VS0
+        at1.get_fms_map.return_value = {}
+        gw = P('Gross Weight Smoothed', np.ma.repeat((130000, 150000, 180000, 190000), 10))
+        model = A('Model', 'B767-3JHF(ER)')
+        series = A('Series', 'B767-300')
+        family = A('Family', 'B767')
+        eng_type = A('Engine Type', 'CF6-80C2B7F')
+        eng_series = A('Engine Series', 'CF6-80C2')
+        
+        node = self.node_class()
+        node.derive(self.air_spd, gw, self.airborne, model, series, family, 
+                    eng_type, eng_series, self.alt)
+        expected = np.ma.repeat((217, 228, 271, 279), 10)
+        expected.mask = np.array([1]*5 + [0]*31 + [1]*4)
+        ma_test.assert_masked_array_equal(node.array, expected)
+        
+    @patch('analysis_engine.derived_parameters.at')
+    @patch('analysis_engine.library.at')        
+    def test_767_cruise(self, at0, at1):
+        at0.get_vspeed_map.return_value = self.VS0
+        at1.get_fms_map.return_value = {}
+        gw = P('Gross Weight Smoothed', np.ma.repeat((130000, 150000, 180000, 190000), 10))
+        crz = buildsection('Cruise', 10,35)
+        model = A('Model', 'B767-3JHF(ER)')
+        series = A('Series', 'B767-300')
+        family = A('Family', 'B767')
+        eng_type = A('Engine Type', 'CF6-80C2B7F')
+        eng_series = A('Engine Series', 'CF6-80C2')
+        
+        node = self.node_class()
+        node.derive(self.air_spd, gw, self.airborne, model, series, family, 
+                    eng_type, eng_series, self.alt, crz)
+        expected = np.ma.repeat((217, 248, 271, 279), 10)
+        expected.mask = np.array([1]*5 + [0]*31 + [1]*4)
         ma_test.assert_masked_array_equal(node.array, expected)
 
 

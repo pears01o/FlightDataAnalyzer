@@ -17388,7 +17388,8 @@ class AirspeedBelowMinimumAirspeedMin(KeyPointValueNode):
     @classmethod
     def can_operate(cls, available):
         core = all_of(['Airspeed', 'Airborne', 'Flap'], available)
-        min_spd = any_of(['Minimum Airspeed', 'Flap Manoeuvre Speed'],
+        min_spd = any_of(['Minimum Airspeed', 'Flap Manoeuvre Speed', 
+                          'Minimum Clean Lookup',],
                          available)
         return core and min_spd
 
@@ -17397,9 +17398,10 @@ class AirspeedBelowMinimumAirspeedMin(KeyPointValueNode):
                min_spd=P('Minimum Airspeed'),
                flap = M('Flap'),
                f_m_spd = P('Flap Manoeuvre Speed'),
-               airborne = S('Airborne')):
-        mspd = min_spd or f_m_spd
-        if mspd.name == 'Minimum Airspeed':
+               airborne = S('Airborne'),
+               min_clean = P('Minimum Clean Lookup'),):
+        mspd = min_clean or min_spd or f_m_spd        
+        if mspd.name == 'Minimum Airspeed' or 'Minimum Clean Lookup':
             to_test = air_spd.array - mspd.array
             spd_slices = runs_of_ones(to_test < 0)
         else:

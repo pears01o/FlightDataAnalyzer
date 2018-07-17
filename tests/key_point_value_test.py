@@ -21117,12 +21117,12 @@ class TestAirspeedBelowMinimumAirspeedMin(unittest.TestCase):
 
     def test_can_operate(self):
         opts = self.node_class.get_operational_combinations()
-        self.assertEqual(len(opts), 3) 
+        self.assertEqual(len(opts), 7) 
         for opt in opts:
             self.assertIn('Airspeed', opt)
             self.assertIn('Airborne', opt)
             self.assertIn('Flap', opt)
-            self.assertTrue(any_of(['Flap Manoeuvre Speed','Minimum Airspeed'],
+            self.assertTrue(any_of(['Flap Manoeuvre Speed','Minimum Airspeed', 'Minimum Clean Lookup'],
                                    opt))
 
     def test_derive_flap_manoeuvre_speed(self):
@@ -21135,7 +21135,8 @@ class TestAirspeedBelowMinimumAirspeedMin(unittest.TestCase):
                     min_spd=None,
                     flap=self.flap,
                     f_m_spd=self.f_m_spd,
-                    airborne=self.airborne)
+                    airborne=self.airborne,
+                    min_clean=None,)
 
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 34)
@@ -21152,7 +21153,8 @@ class TestAirspeedBelowMinimumAirspeedMin(unittest.TestCase):
                     min_spd=self.min_spd,
                     flap=self.flap,
                     f_m_spd=None,
-                    airborne=self.airborne)
+                    airborne=self.airborne,
+                    min_clean=None,)
 
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 34)
@@ -21170,7 +21172,46 @@ class TestAirspeedBelowMinimumAirspeedMin(unittest.TestCase):
                     min_spd=self.min_spd,
                     flap=self.flap,
                     f_m_spd=self.f_m_spd,
-                    airborne=self.airborne)
+                    airborne=self.airborne,
+                    min_clean=None,)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 34)
+        self.assertEqual(node[0].value, -25)
+        
+    def test_derive_min_clean_only(self):
+        '''
+        Uses Minimum Clean Lookup as the only available Minimum Airspeed.
+        Same array as test_derive_minimum_airspeed used in min_clean, so the
+        results should be the same.
+        '''
+        node = self.node_class()
+        node.derive(air_spd=self.air_spd,
+                    min_spd=None,
+                    flap=self.flap,
+                    f_m_spd=self.f_m_spd,
+                    airborne=self.airborne,
+                    min_clean=self.min_spd,)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 34)
+        self.assertEqual(node[0].value, -25)
+        
+    def test_derive_min_clean_preference(self):
+        '''
+        Uses Minimum Clean Lookup as the only available Minimum Airspeed.
+        Same array as test_derive_minimum_airspeed used in min_clean, so the
+        results should be the same.
+        Has both - min_spd and min_clean, and here we're testing if min_clean
+        is used in preference to min_spd.
+        '''
+        node = self.node_class()
+        node.derive(air_spd=self.air_spd,
+                    min_spd=self.air_spd,
+                    flap=self.flap,
+                    f_m_spd=self.f_m_spd,
+                    airborne=self.airborne,
+                    min_clean=self.min_spd,)
 
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 34)

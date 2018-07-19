@@ -2083,7 +2083,38 @@ class TCASTA(FlightPhaseNode):
                 slices_and_not(ta_slices, wipe_clear),
                 time_limit=1.0, hz=tcas_ta.frequency)
             self.create_phases(ta_only_slices)
-    
+
+class TCASRA(FlightPhaseNode):
+    '''
+    TCAS RA active.
+    '''
+
+    name = 'TCAS RA'
+
+    @classmethod
+    def can_operate(cls, available):
+        return any_of(('TCAS RA', 'TCAS Combined Control'), available) \
+            and 'Airborne' in available
+
+    def derive(self, tcas_ra=M('TCAS RA'),
+               tcas=M('TCAS Combined Control'),
+               airs=S('Airborne')):
+
+        for air in airs:
+            if tcas_ra:
+                ras_local = tcas_ra.array[air.slice] == 'RA'
+            else:
+                # If the RA is not recorded separately:
+                ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
+                                                         'Down Advisory Corrective',
+                                                         'Preventive',
+                                                         ignore_missing=True)
+
+            ras_slices = shift_slices(runs_of_ones(ras_local), air.slice.start)
+            # Where data is corrupted, single samples are a common source of error
+            # time_limit rejects single samples, but 2+ sample events are retained.
+            ra_slices = slices_remove_small_slices(ras_slices, time_limit=1)
+            self.create_phases(ra_slices)
                         
 ################################################################################
 

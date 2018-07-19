@@ -59,6 +59,7 @@ from analysis_engine.flight_phase import (
     Taxiing,
     TaxiIn,
     TaxiOut,
+    TCASRA,
     TCASTA,
     TurningInAir,
     TurningOnGround,
@@ -3026,6 +3027,76 @@ class TestOnDeck(unittest.TestCase):
         phase = OnDeck()
         phase.derive(self.gnds, pitch, roll)
         self.assertEqual(phase.get_first(), None)
+
+
+class TestTCASRA(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = TCASRA
+        self.operational_combinations = [('TCAS RA', 'Airborne'),
+                                         ('TCAS Combined Control', 'Airborne'),
+                                         ('TCAS RA', 'TCAS Combined Control', 'Airborne')]
+
+    def test_derive_cc_only(self):
+        ''' Values from ARINC 735 '''
+        values_mapping = {
+            0: 'No Advisory',
+            1: 'Clear of Conflict',
+            2: 'Spare',
+            3: 'Spare',
+            4: 'Up Advisory Corrective',
+            5: 'Down Advisory Corrective',
+            6: 'Preventive',
+            7: 'Not Used',
+        }
+        tcas = M(
+            'TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6,1,0,0]),
+            values_mapping=values_mapping)
+        airborne = buildsection('Airborne', 2, 10)
+        node = self.node_class()
+        node.derive(None, tcas, airborne)
+        self.assertEqual(node.get_first().name, 'TCAS RA')
+        self.assertEqual(node.get_first().slice, slice(4, 9)) 
+         
+    def test_derive_ra_only(self):
+        values_mapping = {0: '-', 1: 'RA'}
+        ra = M('TCAS RA', array=np.ma.array([0,0,1,1,1,1,0,0,0]),
+               values_mapping=values_mapping)
+        airborne = buildsection('Airborne', 2, 7)
+        node = self.node_class()
+        node.derive(ra, None, airborne)
+        self.assertEqual(node.get_first().slice, slice(2, 6)) 
+
+    def test_derive_ra_takes_precedence(self):
+        ''' Values from ARINC 735 '''
+        values_mapping_cc = {
+            0: 'No Advisory',
+            1: 'Clear of Conflict',
+            2: 'Spare',
+            3: 'Spare',
+            4: 'Up Advisory Corrective',
+            5: 'Down Advisory Corrective',
+            6: 'Preventive',
+            7: 'Not Used',
+        }
+        tcas_cc = M('TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6]),
+                    values_mapping=values_mapping_cc)
+        values_mapping_ra = {0: '-', 1: 'RA'}
+        ra = M('TCAS RA', array=np.ma.array([0,0,0,1,1,1,0,0,0]),
+               values_mapping=values_mapping_ra)
+        airborne = buildsection('Airborne', 2, 7)
+        node = self.node_class()
+        node.derive(ra, tcas_cc, airborne)
+        self.assertEqual(node.get_first().slice, slice(3, 6))
+        
+    def test_single_samples_rejected(self):
+        values_mapping = {0: '-', 1: 'RA'}
+        ra = M('TCAS RA', array=np.ma.array([0,0,1,1,0,0,1,0,0,0]),
+               values_mapping=values_mapping)
+        airborne = buildsection('Airborne', 1, 8)
+        node = self.node_class()
+        node.derive(ra, None, airborne)
+        self.assertEqual(node.get_first().slice, slice(2, 4)) 
 
 
 class TestTCASTA(unittest.TestCase, NodeTest):

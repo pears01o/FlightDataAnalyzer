@@ -36,6 +36,7 @@ from analysis_engine.settings import (ACCEL_LAT_OFFSET_LIMIT,
                                       REVERSE_THRUST_EFFECTIVE_EPR,
                                       REVERSE_THRUST_EFFECTIVE_N1,
                                       SPOILER_DEPLOYED,
+                                      TCAS_THRESHOLD,
                                       VERTICAL_SPEED_FOR_LEVEL_FLIGHT)
 
 from analysis_engine.node import (
@@ -18107,29 +18108,44 @@ class TAWSUnspecifiedDuration(KeyPointValueNode):
 
 ##############################################################################
 # Warnings: Traffic Collision Avoidance System (TCAS)
-
+# The KPVs are listed in the sequence given in the "TCAS Data Review" document.
 
 class TCASTAWarningDuration(KeyPointValueNode):
     '''
     The duration for which the TCAS TA Warning was active.
-
-    One second warnings are commonplace around airports, hence the 2 second
-    minimum threshold.
     '''
 
     name = 'TCAS TA Warning Duration'
     units = ut.SECOND
 
-    def derive(self, tcas_ta=M('TCAS TA'),
-               airs=S('Airborne')):
+    def derive(self, tcas_tas=S('TCAS Traffic Advisory')):
+        self.create_kpvs_from_slice_durations(tcas_tas, self.frequency,
+                                              mark='start')
 
-        for air in airs:
-            ras_local = tcas_ta.array[air.slice] == 'TA'
+class TCASTAAcceleration(KeyPointValueNode):
+    '''
+    Where TA Alerts are raised the pilot should not react, but, as we are 
+    interested in misoperation, we will create a TCAS TA Acceleration to 
+    record the peak acceleration reached where this is a change of more 
+    than the system constant TCAS THRESHOLD.
+    '''
 
-            ras_slices = shift_slices(runs_of_ones(ras_local), air.slice.start)
-            self.create_kpvs_from_slice_durations(ras_slices, self.frequency,
-                                                  min_duration=2.0,
-                                                  mark='start')
+    name = 'TCAS TA Acceleration'
+    units = ut.G
+
+    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+               tcas_tas=S('TCAS Traffic Advisory')):
+
+        for ta_slice in tcas_tas:
+            index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=ta_slice.slice)            
+            if not index:
+                continue
+            exceed_index = int(index) + 1
+            if acc.array[exceed_index] > 1.0:
+                value = np.ma.max(acc.array[exceed_index:ta_slice.slice.stop]) - 1.0
+            else:
+                value = np.ma.min(acc.array[exceed_index:ta_slice.slice.stop]) - 1.0
+            self.create_kpv(exceed_index, value)
 
 
 class TCASRAWarningDuration(KeyPointValueNode):
@@ -18140,33 +18156,33 @@ class TCASRAWarningDuration(KeyPointValueNode):
     name = 'TCAS RA Warning Duration'
     units = ut.SECOND
 
-    @classmethod
-    def can_operate(cls, available):
-        return any_of(('TCAS RA', 'TCAS Combined Control'), available) \
-            and 'Airborne' in available
+    def derive(self, tcas_ras=S('TCAS Resolution Advisory')):
+        self.create_kpvs_from_slice_durations(tcas_ras, self.frequency,
+                                              mark='start')
 
-    def derive(self, tcas_ra=M('TCAS RA'),
-               tcas=M('TCAS Combined Control'),
-               airs=S('Airborne')):
+class TCASRADirection(KeyPointValueNode):
+    '''
+    This is simply +1 for up and -1 for down
+    '''
 
-        for air in airs:
-            if tcas_ra:
-                ras_local = tcas_ra.array[air.slice] == 'RA'
+    name = 'TCAS RA Direction'
+    units = None
+    
+    def derive(self, tcas_ras=S('TCAS Resolution Advisory'),
+               tcas=M('TCAS Combined Control')):
+        
+        for tcas_ra in tcas_ras:
+            index = tcas_ra.slice.start + 1 # To avoid any transient issues.
+            if tcas.array[index] == 'Up Advisory Corrective':
+                self.create_kpv(index, +1)
+            elif tcas.array[index] == 'Down Advisory Corrective':
+                self.create_kpv(index, -1)
+            elif tcas.array[index] == 'Preventive':
+                self.create_kpv(index, 0)
             else:
-                # If the RA is not recorded separately:
-                ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
-                                                         'Down Advisory Corrective',
-                                                         'Preventive',
-                                                         ignore_missing=True)
+                raise ValueError('Unrecognised combined control in TCAS RA')
 
-            ras_slices = shift_slices(runs_of_ones(ras_local), air.slice.start)
-            # Where data is corrupted, single samples are a common source of error
-            # time_limit rejects single samples, but 2+ sample events are retained.
-            ras_slices = slices_remove_small_slices(ras_slices, time_limit=1)
-            self.create_kpvs_from_slice_durations(ras_slices, self.frequency,
-                                                  mark='start')
-
-
+                    
 class TCASRAReactionDelay(KeyPointValueNode):
     '''
     This measures the time taken for the pilot to react, determined by the onset
@@ -18177,88 +18193,65 @@ class TCASRAReactionDelay(KeyPointValueNode):
     units = ut.SECOND
 
     def derive(self, acc=P('Acceleration Normal Offset Removed'),
-               tcas=M('TCAS Combined Control'), airs=S('Airborne')):
+               tcas_ras=S('TCAS Resolution Advisory')):
         acc_array = repair_mask(acc.array, repair_duration=None)
-        for air in airs:
-            ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
-                                                     'Down Advisory Corrective',
-                                                     'Preventive',
-                                                     ignore_missing=True)
-            ras = shift_slices(runs_of_ones(ras_local), air.slice.start)
-            # Assume that the reaction takes place during the TCAS RA period:
-            for ra in ras:
-                if np.ma.count(acc_array[ra]) == 0:
+        for ra in tcas_ras:
+            if np.ma.count(acc_array[ra.slice]) == 0:
                     continue
-                i, p = cycle_finder(acc_array[ra] - 1.0, 0.15)
-                # i, p will be None if the data is too short or invalid and so
-                # no cycles can be found.
-                if i is None:
-                    continue
-                indexes = np.array(i)
-                peaks = np.array(p)
-                # Look beyond 2 seconds to find slope from point of initiation.
-                slopes = np.ma.where(indexes > 17, abs(peaks / indexes), 0.0)
-                start_to_peak = slice(ra.start, ra.start + i[np.argmax(slopes)])
-                peek_curvature_ix = peak_curvature(
-                    acc_array, _slice=start_to_peak, curve_sense='Bipolar')
-                if peek_curvature_ix is not None:
-                    react_index = peek_curvature_ix - ra.start
-                    self.create_kpv(ra.start + react_index,
-                                    react_index / acc.frequency)
+            index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=ra.slice)            
+            if not index:
+                continue
+            self.create_kpv(index, index - ra.slice.start)
 
 
-class TCASRAInitialReactionStrength(KeyPointValueNode):
+class TCASRAAcceleration(KeyPointValueNode):
     '''
-    This measures the strength of the first reaction to the RA, in g per second.
-    Most importantly, this is positive if the reaction is in the same sense as
-    the Resolution Advisory (up for up or down for down) but negative in sign if
-    the action is in the opposite direction to the RA.
+    This measures the strength of the first reaction to the RA, in +/- from 1.0g
     '''
 
-    name = 'TCAS RA Initial Reaction Strength'
-    units = ut.GPS
+    name = 'TCAS RA Acceleration'
+    units = ut.G
 
     def derive(self, acc=P('Acceleration Normal Offset Removed'),
-               tcas=M('TCAS Combined Control'), airs=S('Airborne')):
-
-        for air in airs:
-            ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
-                                                     'Down Advisory Corrective',
-                                                     'Preventive',
-                                                     ignore_missing=True)
-            ras = shift_slices(runs_of_ones(ras_local), air.slice.start)
-            # We assume that the reaction takes place during the TCAS RA
-            # period.
-            for ra in ras:
-                if np.ma.count(acc.array[ra]) == 0:
+               tcas_ras=S('TCAS Resolution Advisory')):
+        acc_array = repair_mask(acc.array, repair_duration=None)
+        for ra in tcas_ras:
+            if np.ma.count(acc_array[ra.slice]) == 0:
                     continue
-                i, p = cycle_finder(acc.array[ra] - 1.0, 0.1)
-                if i is None:
-                    continue
-                # Convert to Numpy arrays for ease of arithmetic
-                indexes = np.array(i)
-                peaks = np.array(p)
-                slopes = np.ma.where(indexes > 17, abs(peaks / indexes), 0.0)
-                s_max = np.argmax(slopes)
-
-                # So we look for the steepest slope to the peak, which
-                # ignores little early peaks or slightly high later peaks.
-                # From inspection of many traces, this is the best way to
-                # distinguish the peak of interest.
-                if s_max == 0:
-                    slope = peaks[0] / indexes[0]
-                else:
-                    slope = (peaks[s_max] - peaks[s_max - 1]) / \
-                        (indexes[s_max] - indexes[s_max - 1])
-                # Units of g/sec:
-                slope *= acc.frequency
-
-                if tcas.array[ra.start] == 5:
-                    # Down advisory, so negative is good.
-                    slope = -slope
-                self.create_kpv(ra.start, slope)
+            index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=ra.slice)            
+            if not index:
+                continue
+            exceed_index = int(index) + 1
+            i, p = cycle_finder(acc.array[exceed_index:ra.slice.stop], include_ends=False)
+            self.create_kpv(exceed_index + i[0], p[0])
 
 
+class TCASRAChangeOfVerticalSpeed(KeyPointValueNode):
+    '''
+    This is the largest change in vertical speed from the start of the RA 
+    to the peak within the period of the advisory.
+    '''
+
+    name = 'TCAS RA Change Of Vertical Speed'
+    units = ut.FPM
+
+    def derive(self, vs=P('Vertical Speed'),
+               tcas_ras=S('TCAS Resolution Advisory')):
+
+        for tcas_ra in tcas_ras:
+            ra = tcas_ra.slice
+            vs_ra = vs.array[ra]
+            vs_0 = first_valid_sample(vs_ra).value
+            if np.ma.count(vs_ra) == 0:
+                continue
+            up = np.ma.max(vs_ra) - vs_0
+            down = np.ma.min(vs_ra) - vs_0
+            if up > abs(down):
+                self.create_kpv(ra.start, up)
+            else:
+                self.create_kpv(ra.start, down)
+
+    
 class TCASRAToAPDisengagedDuration(KeyPointValueNode):
     '''
     Time between the onset of the RA and disconnection of the autopilot.
@@ -18272,23 +18265,121 @@ class TCASRAToAPDisengagedDuration(KeyPointValueNode):
 
     def derive(self,
                ap_offs=KTI('AP Disengaged Selection'),
-               tcas=M('TCAS Combined Control'),
-               airs=S('Airborne')):
+               tcas_ras=S('TCAS Resolution Advisory')):
 
-        for air in airs:
-            ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
-                                                     'Down Advisory Corrective',
-                                                     'Preventive',
-                                                     ignore_missing=True)
-            ras = shift_slices(runs_of_ones(ras_local), air.slice.start)
-            # Assume that the reaction takes place during the TCAS RA period:
-            for ra in ras:
-                ap_off = ap_offs.get_next(ra.start, within_slice=ra)
-                if not ap_off:
-                    continue
-                index = ap_off.index
-                duration = (index - ra.start) / self.frequency
-                self.create_kpv(index, duration)
+        for tcas_ra in tcas_ras:
+            index = None
+            for ap_off in ap_offs:
+                if is_index_within_slice(ap_off.index, tcas_ra.slice):
+                    index = ap_off.index
+                    duration = index - tcas_ra.slice.start
+                    self.create_kpv(index, duration)
+            if not index:
+                self.create_kpv(tcas_ra.slice.start, -1)
+
+class TCASRAErroneousAcceleration(KeyPointValueNode):
+    '''
+    '''
+    
+    name = 'TCAS RA Erroneous Acceleration'
+    units = ut.G
+    
+    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+               tcas_ras=S('TCAS Resolution Advisory'),
+               tcas_dirs=KPV('TCAS Direction')):
+        
+        acc_array = repair_mask(acc.array, repair_duration=None)
+        for tcas_ra in tcas_ras:
+            for tcas_dir in tcas_dirs:
+                if is_index_within_slice(tcas_dir.index, tcas_ra.slice):
+                    index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=tcas_ra.slice)
+                    if not index:
+                        continue
+                    exceed_index = int(index) + 1
+                    i, p = cycle_finder(acc.array[exceed_index:tcas_ra.slice.stop], include_ends=False)
+                    if p[0] > 1.0 and tcas_dir.value == -1 or \
+                       p[0] < 1.0 and tcas_dir.value == +1:
+                        self.create_kpv(exceed_index + i[0], p[0] - 1.0)            
+        
+
+class TCASRASubsequentAcceleration(KeyPointValueNode):
+    '''
+    '''
+    
+    name = 'TCAS RA Subsequent Acceleration'
+    units = ut.G
+
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control'), available)
+
+    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+               tcas_ras=S('TCAS Resolution Advisory'),
+               tcas_cc=M('TCAS Combined Control'),
+               rate_1=P('TCAS Altitude Rate Advisory'),
+               rate_2=P('TCAS Advisory Rate To Maintain'),
+               rate_3=P('TCAS Altitude Rate To Maintain'),
+               rate_4=P('TCAS Advisory Rate')):
+        
+        rates = [rate_1, rate_2, rate_3, rate_4]
+        rate = next((item for item in rates if item is not None), None)
+        if rate:
+            array = rate.array
+        else:
+            array = tcas_cc.array.data
+            
+        for tcas_ra in tcas_ras:
+            # For the data of interest, ediff1d finds the changes, nonzero picks the first non-zero change and
+            # we extract just the first index from the array then reset the datum.
+            try:
+                change_index = np.ma.nonzero(np.ma.ediff1d(array[tcas_ra.slice]))[0][0] + tcas_ra.slice.start
+            except:
+                # If no change present, skip to the next RA
+                continue
+            exceed_index = int(change_index) + 1
+            i, p = cycle_finder(acc.array[exceed_index:tcas_ra.slice.stop], include_ends=False)
+            self.create_kpv(exceed_index + i[0], p[0] - 1.0) 
+
+
+class TCASRASubsequentReactionDelay(KeyPointValueNode):
+    '''
+    '''
+    
+    name = 'TCAS RA Subsequent Reaction Delay'
+    units = ut.SECOND
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control'), available)
+
+    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+               tcas_ras=S('TCAS Resolution Advisory'),
+               tcas_cc=M('TCAS Combined Control'),
+               rate_1=P('TCAS Altitude Rate Advisory'),
+               rate_2=P('TCAS Advisory Rate To Maintain'),
+               rate_3=P('TCAS Altitude Rate To Maintain'),
+               rate_4=P('TCAS Advisory Rate')):
+        
+        rates = [rate_1, rate_2, rate_3, rate_4]
+        rate = next((item for item in rates if item is not None), None)
+        if rate:
+            array = rate.array
+        else:
+            array = tcas_cc.array.data
+            
+        for tcas_ra in tcas_ras:
+            # For the data of interest, ediff1d finds the changes, nonzero picks the first non-zero change and
+            # we extract just the first index from the array then reset the datum.
+            try:
+                change_index = np.ma.nonzero(np.ma.ediff1d(array[tcas_ra.slice]))[0][0] + tcas_ra.slice.start
+            except:
+                # If no change present, skip to the next RA
+                continue
+            react_index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=slice(change_index, tcas_ra.slice.stop))
+            if not react_index:
+                continue
+            self.create_kpv(react_index, (react_index - change_index) * self.frequency)
+
 
 
 class TCASFailureDuration(KeyPointValueNode):
@@ -18300,11 +18391,168 @@ class TCASFailureDuration(KeyPointValueNode):
     units = ut.SECOND
 
     def derive(self, tcas_failure=M('TCAS Failure'),
-               airborne=S('Airborne')):
-        self.create_kpvs_where(tcas_failure.array == 'Failed',
-                               tcas_failure.hz, phase=airborne)
+               tcas_cc=M('TCAS Combined Control'),
+               airs=S('Airborne')):
+        for air in airs:
+            changes = np.ma.nonzero(np.ma.ediff1d(tcas_cc.array[air.slice]))
+            if len(changes[0]) > 10:
+                # Treat the signal an entirely Failed
+                self.create_kpv(air.slice.start, slice_duration(air.slice, self.frequency))
+            elif tcas_failure:
+                self.create_kpvs_where(tcas_failure.array == 'Failed',
+                                       tcas_failure.hz, phase=air)
 
+class TCASRAAltitudeSTD(KeyPointValueNode):
+    
+    name = 'TCAS RA Altitude STD'
+    units = ut.FT
+    
+    def derive(self, alt=P('Altitude STD'),
+               tcas_ras=S('TCAS Resolution Advisory')):
+        for tcas_ra in tcas_ras:
+            index = tcas_ra.slice.start
+            self.create_kpv(index, alt.array[index])
+    
+class TCASRAAltitudeAAL(KeyPointValueNode):
+    
+    name = 'TCAS RA Altitude AAL'
+    units = ut.FT
+    
+    def derive(self, alt=P('Altitude AAL'),
+               tcas_ras=S('TCAS Resolution Advisory')):
+        for tcas_ra in tcas_ras:
+            index = tcas_ra.slice.start
+            self.create_kpv(index, alt.array[index])
 
+class TCASRAHeading(KeyPointValueNode):
+    
+    name = 'TCAS RA Heading'
+    units = ut.DEGREE
+    
+    def derive(self, hdg=P('Heading'),
+               tcas_ras=S('TCAS Resolution Advisory')):
+        for tcas_ra in tcas_ras:
+            index = tcas_ra.slice.start
+            self.create_kpv(index, hdg.array[index])
+
+class TCASDevelopmentPlot(KeyPointValueNode):
+    '''
+    '''
+    @classmethod
+    def can_operate(cls, available):
+        # For development purposes we will worry about operation within the plotting section.
+        return True
+
+    def derive(self,
+               acc=P('Acceleration Normal Offset Removed'),
+               pitch=P('Pitch'),
+               tcas_ta=P('TCAS TA'),
+               tcas=M('TCAS Combined Control'),
+               ap_offs=KTI('AP Disengaged Selection'),
+               vs=P('Vertical Speed'),
+               elevator=P('Elevator'),
+               
+               arm_1=P('TCAS Altitude Rate Advisory'),
+               arm_2=P('TCAS Advisory Rate To Maintain'),
+               arm_3=P('TCAS Altitude Rate To Maintain'),
+               arm_4=P('TCAS Advisory Rate'),
+               arm_5=P('TCAS Advance Rate To Maintain'),
+               arm_6=P('TCAS Advisory Rate To Maintain (Capt)'),
+               arm_7=P('TCAS RA Advisory Rate'),
+               arm_8=P('TCAS RA Rate'),
+               
+               ri_1=P('TCAS Reply Information'),
+               ri_2=P('TCAS Reply Info Air - Air'),
+               ri_3=P('TCAS Operational Mode Status Reply Information'),
+               ri_4=P('TCAS Reply Info Air'),
+               ri_5=P('TCAS Reply Info Air-Air'),
+               
+               ra_delay=KPV('TCAS RA Reaction Delay'),
+               cvs=KPV('TCAS RA Change Of Vertical Speed'),
+               ):
+        
+        dt = 10
+        
+        import matplotlib.pyplot as plt
+        #font = {'size' : 6}
+        #plt.rc('font', **font)
+        fig = plt.figure(1, figsize=(12,5), linewidth=3)
+
+        ras = runs_of_ones(tcas.array.any_of('Up Advisory Corrective',
+                                             'Down Advisory Corrective',
+                                             'Preventive',
+                                             ignore_missing=True))        
+        #assert len(ras) == 1
+        scope = slice(ras[0].start - dt * tcas.frequency,
+                      ras[0].stop + dt * tcas.frequency)
+
+        ax1 = fig.add_subplot(414)
+        ax1.tick_params(labelsize=6)
+        ax1.plot(tcas.array.data[scope])
+        #ax1.set_ylim(0, 6.5)
+        ax1.set_ylabel('TCAS Mode')
+        ax1.set_yticklabels([tcas.values_mapping[n] for n in tcas.values_mapping])
+
+        if ri_1:
+            ax1.plot(ri_1.array.data[scope])
+        elif ri_2:
+            ax1.plot(ri_2_2.array.data[scope])
+        elif ri_3:
+            ax1.plot(ri_3.array.data[scope])
+        elif ri_4:
+            ax1.plot(ri_4.array.data[scope])
+        elif ri_5:
+            ax1.plot(ri_5.array.data[scope])
+        
+        ax2 = fig.add_subplot(413, sharex=ax1)
+        plt.setp(ax2.get_xticklabels(), visible=False)
+        ax2.plot(vs.array[scope])
+        if arm_1:
+            # Correct incorrect sign scaling
+            ax2.plot(np.ma.where(arm_1.array[scope] > 6400,
+                                 arm_1.array[scope] - 12800,
+                                 arm_1.array[scope]),
+                                 '-r')            
+        elif arm_2:
+            ax2.plot(arm_2.array[scope], '-r')
+        elif arm_3:
+            ax2.plot(arm_3.array[scope], '-r')
+        elif arm_4:
+            ax2.plot(arm_4.array[scope], '-r')
+        elif arm_5:
+            ax2.plot(arm_5.array[scope], '-r')
+        elif arm_6:
+            ax2.plot(arm_6.array[scope], '-r')
+        elif arm_7:
+            ax2.plot(arm_7.array[scope], '-r')
+        elif arm_8:
+            ax2.plot(arm_8.array[scope], '-r')
+
+        for cvs_kpv in cvs:
+            vs0 = vs.array[ras[0].start]
+            vs1 = vs0 + cvs_kpv.value
+            ix = cvs_kpv.index - scope.start
+            ax2.plot([ix, ix], [vs0, vs1], '-ob', markersize=8)
+        ax2.set_ylabel('vert spd')
+        
+        ax3 = fig.add_subplot(412, sharex=ax1)
+        plt.setp(ax3.get_xticklabels(), visible=False)
+        ax3.plot(pitch.array[scope])
+        ax3.set_ylabel('Pitch')
+
+        ax4 = fig.add_subplot(411, sharex=ax1)
+        plt.setp(ax4.get_xticklabels(), visible=False)
+        ax4.plot(acc.array[scope])
+        ##for delay_kpv in delay:
+            ##ix = delay_kpv.index - scope.start
+            ##ax4.arrow(dt * tcas.frequency, 1.0, delay_kpv.value * tcas.frequency, 0.0)       
+        ax4.set_ylabel('norm g')
+        
+        #plt.show()        
+        plt.savefig('C:\\Temp\\figures\\TCAS_plot_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
+        plt.clf()
+        plt.close()
+    
 ##############################################################################
 # Warnings: Takeoff Configuration
 

@@ -389,6 +389,10 @@ MU_GOOD = 0.2
 MU_MEDIUM = 0.1
 MU_POOR = 0.05 # dimensionless.
 '''
+
+# Pilot action threshold for TCAS responses
+TCAS_THRESHOLD = 0.1 # g
+
 # Transition altitude - above use Altitude STD, below use Altitude AAL.
 # Note: This affects the generic KTIs and dependent nodes only. Some KPVs are 
 # "hard wired", e.g. 8000-10000 ft ranges. 

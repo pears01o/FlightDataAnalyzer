@@ -2058,12 +2058,12 @@ class TaxiOut(FlightPhaseNode):
 ################################################################################
 # TCAS periods of alert
 
-class TCASTA(FlightPhaseNode):
+class TCASTrafficAdvisory(FlightPhaseNode):
     """
     TCAS Traffic Advisory phase (excluding those with associated RA phases)
     """
 
-    name = 'TCAS TA'
+    name = 'TCAS Traffic Advisory'
 
     def derive(self, tcas_ta=M('TCAS TA'),
                tcas_ra=M('TCAS RA'),
@@ -2084,12 +2084,12 @@ class TCASTA(FlightPhaseNode):
                 time_limit=1.0, hz=tcas_ta.frequency)
             self.create_phases(ta_only_slices)
 
-class TCASRA(FlightPhaseNode):
+class TCASResolutionAdvisory(FlightPhaseNode):
     '''
     TCAS RA active.
     '''
 
-    name = 'TCAS RA'
+    name = 'TCAS Resolution Advisory'
 
     @classmethod
     def can_operate(cls, available):

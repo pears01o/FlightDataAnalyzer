@@ -59,8 +59,8 @@ from analysis_engine.flight_phase import (
     Taxiing,
     TaxiIn,
     TaxiOut,
-    TCASRA,
-    TCASTA,
+    TCASResolutionAdvisory,
+    TCASTrafficAdvisory,
     TurningInAir,
     TurningOnGround,
     TwoDegPitchTo35Ft,
@@ -3029,10 +3029,10 @@ class TestOnDeck(unittest.TestCase):
         self.assertEqual(phase.get_first(), None)
 
 
-class TestTCASRA(unittest.TestCase, NodeTest):
+class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):
-        self.node_class = TCASRA
+        self.node_class = TCASResolutionAdvisory
         self.operational_combinations = [('TCAS RA', 'Airborne'),
                                          ('TCAS Combined Control', 'Airborne'),
                                          ('TCAS RA', 'TCAS Combined Control', 'Airborne')]
@@ -3055,7 +3055,7 @@ class TestTCASRA(unittest.TestCase, NodeTest):
         airborne = buildsection('Airborne', 2, 10)
         node = self.node_class()
         node.derive(None, tcas, airborne)
-        self.assertEqual(node.get_first().name, 'TCAS RA')
+        self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_first().slice, slice(4, 9)) 
          
     def test_derive_ra_only(self):
@@ -3099,10 +3099,10 @@ class TestTCASRA(unittest.TestCase, NodeTest):
         self.assertEqual(node.get_first().slice, slice(2, 4)) 
 
 
-class TestTCASTA(unittest.TestCase, NodeTest):
+class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):
-        self.node_class = TCASTA
+        self.node_class = TCASTrafficAdvisory
         self.operational_combinations = [('TCAS TA', 'TCAS RA', 'Airborne'),]
 
     def test_derive(self):
@@ -3113,7 +3113,7 @@ class TestTCASTA(unittest.TestCase, NodeTest):
         airborne = buildsection('Airborne', 2, 6)
         node = self.node_class()
         node.derive(ta, ra, airborne)
-        self.assertEqual(node.get_first().name, 'TCAS TA')
+        self.assertEqual(node.get_first().name, 'TCAS Traffic Advisory')
         self.assertEqual(node.get_first().slice, slice(5, 7))
 
     def test_ignore_one_second_TAs(self):

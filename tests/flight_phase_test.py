@@ -3126,12 +3126,12 @@ class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
         node.derive(ta, ra, airborne)
         self.assertEqual(node.get_first(), None)
 
-    def test_not_close_to_ra(self):
-        ta = M('TCAS TA', array=np.ma.array([0,0,1,0,0,0,0,0,1,0]),
+    def test_close_to_ra(self):
+        ta = M('TCAS TA', array=np.ma.array([0,0,1,1,0,0,0,1,1,0]),
                values_mapping={0: '-', 1: 'TA'})
-        ra = M('TCAS RA', array=np.ma.array([0,0,0,0,1,1,0,0,0,0]),
+        ra = M('TCAS RA', array=np.ma.array([0,0,0,0,1,1,1,0,0,0]),
                values_mapping={0: '-', 1: 'RA'})        
         airborne = buildsection('Airborne', 1, 9)
         node = self.node_class()
         node.derive(ta, ra, airborne)
-        self.assertEqual(node.get_first(), None)
+        self.assertEqual(len(node), 2)

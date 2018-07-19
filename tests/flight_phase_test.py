@@ -59,6 +59,7 @@ from analysis_engine.flight_phase import (
     Taxiing,
     TaxiIn,
     TaxiOut,
+    TCASTA,
     TurningInAir,
     TurningOnGround,
     TwoDegPitchTo35Ft,
@@ -3025,3 +3026,41 @@ class TestOnDeck(unittest.TestCase):
         phase = OnDeck()
         phase.derive(self.gnds, pitch, roll)
         self.assertEqual(phase.get_first(), None)
+
+
+class TestTCASTA(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = TCASTA
+        self.operational_combinations = [('TCAS TA', 'TCAS RA', 'Airborne'),]
+
+    def test_derive(self):
+        ta = M('TCAS TA', array=np.ma.array([0,0,0,0,0,1,1,1,0,0]),
+               values_mapping={0: '-', 1: 'TA'})
+        ra = M('TCAS RA', array=np.ma.array([0,0,0,0,0,0,0,0,0,0]),
+               values_mapping={0: '-', 1: 'RA'})        
+        airborne = buildsection('Airborne', 2, 6)
+        node = self.node_class()
+        node.derive(ta, ra, airborne)
+        self.assertEqual(node.get_first().name, 'TCAS TA')
+        self.assertEqual(node.get_first().slice, slice(5, 7))
+
+    def test_ignore_one_second_TAs(self):
+        ta = M('TCAS TA', array=np.ma.array([0,0,1,0,0,1,0,0,1,0]),
+               values_mapping={0: '-', 1: 'TA'})
+        ra = M('TCAS RA', array=np.ma.array([0,0,0,0,0,0,0,0,0,0]),
+               values_mapping={0: '-', 1: 'RA'})        
+        airborne = buildsection('Airborne', 1, 9)
+        node = self.node_class()
+        node.derive(ta, ra, airborne)
+        self.assertEqual(node.get_first(), None)
+
+    def test_not_close_to_ra(self):
+        ta = M('TCAS TA', array=np.ma.array([0,0,1,0,0,0,0,0,1,0]),
+               values_mapping={0: '-', 1: 'TA'})
+        ra = M('TCAS RA', array=np.ma.array([0,0,0,0,1,1,0,0,0,0]),
+               values_mapping={0: '-', 1: 'RA'})        
+        airborne = buildsection('Airborne', 1, 9)
+        node = self.node_class()
+        node.derive(ta, ra, airborne)
+        self.assertEqual(node.get_first(), None)

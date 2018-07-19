@@ -2055,6 +2055,39 @@ class TaxiOut(FlightPhaseNode):
                                           name="Taxi Out")
 
 
+################################################################################
+# TCAS periods of alert
+
+class TCASTA(FlightPhaseNode):
+    """
+    TCAS Traffic Advisory phase (excluding those with associated RA phases)
+    """
+
+    name = 'TCAS TA'
+
+    def derive(self, tcas_ta=M('TCAS TA'),
+               tcas_ra=M('TCAS RA'),
+               airs=S('Airborne')):
+
+        for air in airs:
+            tas_local = tcas_ta.array[air.slice] == 'TA'
+            ta_slices = shift_slices(runs_of_ones(tas_local), air.slice.start)
+            ras_local = tcas_ra.array[air.slice] == 'RA'
+            ra_slices = shift_slices(runs_of_ones(ras_local), air.slice.start)
+            wipe_clear = []
+            for ras_slice in ra_slices:
+                # Ignore TAs that arise one minute either side of an RA
+                wipe_clear.append(slice(ras_slice.start - 60 * tcas_ta.frequency, 
+                                        ras_slice.stop + 60 * tcas_ta.frequency))
+            ta_only_slices = slices_remove_small_slices(
+                slices_and_not(ta_slices, wipe_clear),
+                time_limit=1.0, hz=tcas_ta.frequency)
+            self.create_phases(ta_only_slices)
+    
+                        
+################################################################################
+
+
 class TransitionHoverToFlight(FlightPhaseNode):
     '''
     The pilot normally makes a clear nose down pitching motion to initiate the

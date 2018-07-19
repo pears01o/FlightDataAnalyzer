@@ -3055,10 +3055,12 @@ class TestTakeoffRunwayHeading(unittest.TestCase):
     def test_derive_rto_turnaround(self):
         for flight_pk, nodes, attrs in open_node_container(
               os.path.join(test_data_path, 'runway_takeoff_heading.zip')):
-            hdg = nodes['Heading Continuous']
+            hdg_con = nodes['Heading Continuous']
             groundeds = nodes['Grounded']
             toffs = nodes['Takeoff Roll']
 
+        hdg_array = hdg_con.array %360
+        hdg = P('Heading', hdg_array, frequency=hdg_con.frequency)
         gnd_aligned = groundeds.get_aligned(hdg)
         toff_aligned = toffs.get_aligned(hdg)
 
@@ -3067,7 +3069,7 @@ class TestTakeoffRunwayHeading(unittest.TestCase):
 
         self.assertEqual(len(node),3)
         self.assertEqual(node.get_slices(), [
-            slice(1626, 2102, None),
+            slice(1627, 2102, None),
             slice(2119, 2123, None),
             slice(2525, 2632, None)
         ])

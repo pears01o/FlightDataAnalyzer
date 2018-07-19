@@ -1605,23 +1605,25 @@ class TakeoffRunwayHeading(FlightPhaseNode):
     takeoff runway with a deviation of +/-10 degrees.
     '''
     def derive(self,
-               hdg=P('Heading Continuous'),
+               hdg=P('Heading'),
                groundeds=S('Grounded'),
                toffs=S('Takeoff Roll') ):
+        diff = 10
+        overflow = 360
         for toff in toffs:
             for gnd in groundeds:
-                if not slices_and([toff.slice], [gnd.slice]):
+                if not slices_overlap(toff.slice, gnd.slice):
                     continue
-                rwy_hdg = int(np.ma.mean(hdg.array[toff.slice]))
-                min_hdg = int(min_value(hdg.array,gnd.slice).value)
-                max_hdg = int(max_value(hdg.array,gnd.slice).value)
-                hdg_cycles = [n for n in range(min_hdg, max_hdg) if n%360 == rwy_hdg%360]
-                hdg_slices = []
-                for hdg_cycle in hdg_cycles:
-                    _, s = slices_between(hdg.array, hdg_cycle-10, hdg_cycle+10)
-                    hdg_slices += slices_and(s, [gnd.slice])
-                if hdg_slices:
-                    self.create_phases(hdg_slices)
+                gnd_hdg = hdg.array[gnd.slice]
+                rwy_hdg = np.ma.mean(hdg.array[toff.slice])
+                max_hdg = (rwy_hdg + diff) % overflow
+                min_hdg = (rwy_hdg - diff) % overflow
+                min_hdg, max_hdg = min(min_hdg, max_hdg), max(min_hdg, max_hdg)
+                if (max_hdg - min_hdg) > diff * 2:
+                    match = ((gnd_hdg >= 0) & (gnd_hdg <= min_hdg) | (gnd_hdg >= max_hdg) & (gnd_hdg <= overflow))
+                else:
+                    match = (gnd_hdg >= min_hdg) & (gnd_hdg <= max_hdg)
+                self.create_phases(shift_slices(runs_of_ones(match), gnd.slice.start))
 
 
 class RejectedTakeoff(FlightPhaseNode):

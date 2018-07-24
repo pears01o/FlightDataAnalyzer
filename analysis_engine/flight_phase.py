@@ -2066,7 +2066,7 @@ class TCASTrafficAdvisory(FlightPhaseNode):
     name = 'TCAS Traffic Advisory'
 
     def derive(self, tcas_ta=M('TCAS TA'),
-               tcas_ra=M('TCAS RA'),
+               tcas_cc=M('TCAS Combined Control'),
                airs=S('Airborne')):
 
         for air in airs:
@@ -2089,18 +2089,22 @@ class TCASResolutionAdvisory(FlightPhaseNode):
             and 'Airborne' in available
 
     def derive(self, tcas_ra=M('TCAS RA'),
-               tcas=M('TCAS Combined Control'),
+               tcas_cc=M('TCAS Combined Control'),
                airs=S('Airborne')):
 
         for air in airs:
+            if tcas_cc:
+                if np.ma.count_masked(tcas_cc.array[air.slice]) / float(np.ma.count(tcas_cc.array[air.slice])) > 0.05:
+                    # Most probably faulty TCAS system reporting No Computed Data
+                    continue
             if tcas_ra:
                 ras_local = tcas_ra.array[air.slice] == 'RA'
             else:
                 # If the RA is not recorded separately:
-                ras_local = tcas.array[air.slice].any_of('Up Advisory Corrective',
-                                                         'Down Advisory Corrective',
-                                                         'Preventive',
-                                                         ignore_missing=True)
+                ras_local = tcas_cc.array[air.slice].any_of('Up Advisory Corrective',
+                                                            'Down Advisory Corrective',
+                                                            'Preventive',
+                                                            ignore_missing=True)
 
             ras_slices = shift_slices(runs_of_ones(ras_local), air.slice.start)
             # Where data is corrupted, single samples are a common source of error

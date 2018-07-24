@@ -597,7 +597,7 @@ class AccelerationNormalMax(KeyPointValueNode):
     units = ut.G
 
     def derive(self,
-               acc_norm=P('Acceleration Normal Offset Removed'),
+               acc_norm=P('Acceleration Vertical'),
                mobile=S('Mobile')):
 
         self.create_kpv_from_slices(acc_norm.array, mobile, max_value)
@@ -613,7 +613,7 @@ class AccelerationNormal20FtTo5FtMax(KeyPointValueNode):
     units = ut.G
 
     def derive(self,
-               acc_norm=P('Acceleration Normal Offset Removed'),
+               acc_norm=P('Acceleration Vertical'),
                alt_aal=P('Altitude AAL For Flight Phases')):
 
         self.create_kpvs_within_slices(
@@ -636,10 +636,10 @@ class AccelerationNormalWithFlapUpWhileAirborneMax(KeyPointValueNode):
     def can_operate(cls, available):
 
         return any_of(('Flap Lever', 'Flap Lever (Synthetic)'), available) and \
-            all_of(('Acceleration Normal Offset Removed', 'Airborne'), available)
+            all_of(('Acceleration Vertical', 'Airborne'), available)
 
     def derive(self,
-               acc_norm=P('Acceleration Normal Offset Removed'),
+               acc_norm=P('Acceleration Vertical'),
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                airborne=S('Airborne')):
@@ -666,10 +666,10 @@ class AccelerationNormalWithFlapUpWhileAirborneMin(KeyPointValueNode):
     def can_operate(cls, available):
 
         return any_of(('Flap Lever', 'Flap Lever (Synthetic)'), available) and \
-            all_of(('Acceleration Normal Offset Removed', 'Airborne'), available)
+            all_of(('Acceleration Vertical', 'Airborne'), available)
 
     def derive(self,
-               acc_norm=P('Acceleration Normal Offset Removed'),
+               acc_norm=P('Acceleration Vertical'),
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                airborne=S('Airborne')):
@@ -697,7 +697,7 @@ class AccelerationNormalWithFlapDownWhileAirborneMax(KeyPointValueNode):
     def can_operate(cls, available):
 
         return any_of(('Flap Lever', 'Flap Lever (Synthetic)'), available) and \
-            all_of(('Acceleration Normal Offset Removed', 'Airborne'), available)
+            all_of(('Acceleration Vertical', 'Airborne'), available)
 
     def derive(self,
                acc_norm=P('Acceleration Normal Offset Removed'),
@@ -18135,9 +18135,9 @@ class TCASTAAcceleration(KeyPointValueNode):
 
     @classmethod
     def can_operate(cls, available):
-        return all_of(('Acceleration Normal Offset Removed', 'TCAS Traffic Advisory'), available)
+        return all_of(('Acceleration Vertical', 'TCAS Traffic Advisory'), available)
     
-    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+    def derive(self, acc=P('Acceleration Vertical'),
                tcas_tas=S('TCAS Traffic Advisory'),
                tcas_ras=S('TCAS Resolution Advisory')):
 
@@ -18209,9 +18209,9 @@ class TCASRAReactionDelay(KeyPointValueNode):
 
     @classmethod
     def can_operate(cls, available):
-        return all_of(('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory'), available)
+        return all_of(('Acceleration Vertical', 'TCAS Resolution Advisory'), available)
 
-    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+    def derive(self, acc=P('Acceleration Vertical'),
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_tas=S('TCAS Traffic Advisory')):
         
@@ -18228,11 +18228,12 @@ class TCASRAReactionDelay(KeyPointValueNode):
 
             if np.ma.count(acc.array[to_scan]) == 0:
                 continue
-            index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=to_scan)            
-            if not index:
+            react_index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=to_scan)            
+            if not react_index:
                 # The pilot reaction was unclear.
                 continue
-            self.create_kpv(tcas_ra.slice.start, (index - tcas_ra.slice.start) / acc.frequency)
+            peak_curve = peak_curvature(acc.array, _slice=slice(react_index + 5, to_scan.start, -1), curve_sense='Bipolar', gap=3, ttp=5)
+            self.create_kpv(tcas_ra.slice.start, (peak_curve - tcas_ra.slice.start) / acc.frequency)
 
 
 """
@@ -18244,7 +18245,7 @@ class TCASRAAcceleration(KeyPointValueNode):
     name = 'TCAS RA Acceleration'
     units = ut.G
 
-    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+    def derive(self, acc=P('Acceleration Vertical'),
                tcas_ras=S('TCAS Resolution Advisory')):
         acc_array = repair_mask(acc.array, repair_duration=None)
         for ra in tcas_ras:
@@ -18272,11 +18273,11 @@ class TCASRAAcceleration(KeyPointValueNode):
     
     @classmethod
     def can_operate(cls, available):
-        return all_of(('Acceleration Normal Offset Removed', 
+        return all_of(('Acceleration Vertical', 
                        'TCAS Resolution Advisory', 
                        'TCAS RA Direction'), available)
 
-    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+    def derive(self, acc=P('Acceleration Vertical'),
                tcas_tas=S('TCAS Traffic Advisory'),
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_dirs=KPV('TCAS RA Direction')):
@@ -18345,7 +18346,7 @@ class TCASRAToAPDisengagedDuration(KeyPointValueNode):
 
     # Note: acc included to ensure all TCAS durations are aligned to the same 
     # reference time, otherwise the durations may differ by up to half a second.
-    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+    def derive(self, acc=P('Acceleration Vertical'),
                ap_offs=KTI('AP Disengaged Selection'),
                tcas_ras=S('TCAS Resolution Advisory')):
 
@@ -18368,11 +18369,11 @@ class TCASRAErroneousAcceleration(KeyPointValueNode):
     
     @classmethod
     def can_operate(cls, available):
-        return all_of(('Acceleration Normal Offset Removed', 
+        return all_of(('Acceleration Vertical', 
                        'TCAS Resolution Advisory', 
                        'TCAS RA Direction'), available)
 
-    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+    def derive(self, acc=P('Acceleration Vertical'),
                tcas_tas=S('TCAS Traffic Advisory'),
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_ra_accs=KPV('TCAS RA Acceleration'),
@@ -18423,9 +18424,9 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
 
     @classmethod
     def can_operate(cls, available):
-        return all_of(('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control'), available)
+        return all_of(('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control'), available)
 
-    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+    def derive(self, acc=P('Acceleration Vertical'),
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
                ## rate_1=P('TCAS Altitude Rate Advisory'),
@@ -18468,9 +18469,9 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
     
     @classmethod
     def can_operate(cls, available):
-        return all_of(('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control'), available)
+        return all_of(('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control'), available)
 
-    def derive(self, acc=P('Acceleration Normal Offset Removed'),
+    def derive(self, acc=P('Acceleration Vertical'),
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
                ## rate_1=P('TCAS Altitude Rate Advisory'), # Wrongly scaled so produces changes with the wrong sign. See EI-DRA
@@ -18506,12 +18507,16 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
                     sense = -1
                 else:
                     sense = +1
-
-            react_index = index_at_value(acc.array - 1.0, TCAS_THRESHOLD * sense, _slice=slice(change_index, tcas_ra.slice.stop))
-            if not react_index:
+                    
+            to_scan = slice(change_index, tcas_ra.slice.stop)
+            if np.ma.count(acc.array[to_scan]) == 0:
                 continue
-            self.create_kpv(change_index, (react_index - change_index) / acc.frequency)
-
+            react_index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=to_scan)            
+            if not react_index:
+                # The pilot reaction was unclear.
+                continue
+            peak_curve = peak_curvature(acc.array, _slice=slice(react_index + 5, to_scan.start, -1), curve_sense='Bipolar', gap=3, ttp=5)
+            self.create_kpv(change_index, (peak_curve - change_index) / acc.frequency)
 
 
 class TCASFailureDuration(KeyPointValueNode):
@@ -18576,7 +18581,7 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         return True
 
     def derive(self,
-               acc=P('Acceleration Normal Offset Removed'),
+               acc=P('Acceleration Vertical'),
                tcas_tas=S('TCAS Traffic Advisory'),
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
@@ -18690,14 +18695,14 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         ax3 = fig.add_subplot(311, sharex=ax1)
         plt.setp(ax3.get_xticklabels(), visible=False)
         ax3.plot(x_scale, acc.array[scope])
-        ax3.set_ylim(0.5, 1.5)
+        ax3.set_ylim(0.6, 1.4)
         ax3.set_ylabel('norm g')
         if trrd: #'TCAS RA Reaction Delay'
-            ax3.arrow(to_sec(trrd[0].index, tcas_ras), 1.0, trrd[0].value, 0, color='red')
+            ax3.arrow(to_sec(trrd[0].index, tcas_ras), 0.65, trrd[0].value, 0, color='red')
         if tradd: #'TCAS RA To AP Disengaged Duration'
-            ax3.arrow(to_sec(tradd[0].index, tcas_ras), 1.05, tradd[0].value, 0, color='green')
+            ax3.arrow(to_sec(tradd[0].index, tcas_ras), 0.7, tradd[0].value, 0, color='green')
         if trsdd: #'TCAS RA Subsequent Reaction Delay'
-            ax3.arrow(to_sec(trsdd[0].index, tcas_ras), 1.0, trsdd[0].value, 0, color='orange')
+            ax3.arrow(to_sec(trsdd[0].index, tcas_ras), 0.75, trsdd[0].value, 0, color='orange')
 
         if tta:
             ax3.plot(to_sec(tta[0].index, tcas_ras), tta[0].value + 1.0, 'og')
@@ -18707,8 +18712,11 @@ class TCASDevelopmentPlot(KeyPointValueNode):
             ax3.plot(to_sec(trea[0].index, tcas_ras), trea[0].value + 1.0, 'ok')
         if trsa:
             ax3.plot(to_sec(trsa[0].index, tcas_ras), trsa[0].value + 1.0, 'oc')
+        
+        with open('C:\\Temp\\TCAS_plot_names.txt', 'a') as the_file:
+            the_file.write(str(int(abs(np.ma.sum(vs.array[scope])))) + '\n')
             
-        plt.show()        
+        # plt.show()        
         plt.savefig('C:\\Temp\\figures\\TCAS_plot_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
         plt.clf()
         plt.close()

@@ -22184,13 +22184,13 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
     def test_basic(self):
         # For this simple test, acceleration sample rate = 1.0 
         acc = P('Acceleration Normal Offset Removed',
-                array=np.ma.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.2, 1.3, 1.45, 1.0]))
-        ra = buildsection('TCAS Resolution Advisory', 2, 10)
+                array=np.ma.array([1.0]*20 + [1.1, 1.2, 1.3, 1.4, 1.5, 1.6] + [1.7]*4))
+        ra = buildsection('TCAS Resolution Advisory', 10, 30)
         node = self.node_class()
         node.derive(acc, ra, None)
         self.assertEqual(node[0].name, 'TCAS RA Reaction Delay')
-        self.assertEqual(node[0].index, 2)
-        self.assertAlmostEqual(node[0].value, 3.5)
+        self.assertEqual(node[0].index, 19.5)
+        self.assertAlmostEqual(node[0].value, 9.5)
 
     def test_ta_overlap(self):
         acc = P('Acceleration Normal Offset Removed',

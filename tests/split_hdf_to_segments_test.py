@@ -397,7 +397,8 @@ class TestSplitSegments(unittest.TestCase):
                           ('START_AND_STOP', slice(9952.0, 21799.0, None), 0),
                           ('START_AND_STOP', slice(21799.0, 24665.0, None), 3),
                           ('START_AND_STOP', slice(24665.0, 27898.0, None), 1),
-                          ('START_AND_STOP', slice(27898.0, 31424.0, None), 2)])
+                          ('START_AND_STOP', slice(27898.0, 31358.0, None), 2),
+                          ('NO_MOVEMENT', slice(31358.0, 31424.0, None), 2),])
 
     def test_split_segments_data_2(self):
         '''Splits on both DFC Jump and Engine parameters.'''
@@ -412,7 +413,8 @@ class TestSplitSegments(unittest.TestCase):
                           ('START_AND_STOP', slice(6362.0, 9912.0, None), 26),
                           ('START_AND_STOP', slice(9912.0, 13064.0, None), 56),
                           ('START_AND_STOP', slice(13064.0, 16467.0, None), 8),
-                          ('START_AND_STOP', slice(16467.0, 19200.0, None), 19)])
+                          ('START_AND_STOP', slice(16467.0, 19065.0, None), 19),
+                          ('GROUND_ONLY', slice(19065.0, 19200.0, None), 57)])
 
     def test_split_segments_data_3(self):
         '''Splits on both Engine and Heading parameters.'''
@@ -433,7 +435,8 @@ class TestSplitSegments(unittest.TestCase):
                           ('START_AND_STOP', slice(24209.0, 26607.0, None), 1),
                           ('START_AND_STOP', slice(26607.0, 28534.0, None), 3),
                           ('START_AND_STOP', slice(28534.0, 30875.0, None), 2),
-                          ('START_AND_STOP', slice(30875.0, 33680.0, None), 3)])
+                          ('START_AND_STOP', slice(30875.0, 33488.0, None), 3),
+                          ('NO_MOVEMENT', slice(33488.0, 33680.0, None), 0),])
 
     @unittest.skipIf(not os.path.isfile(os.path.join(test_data_path,
                                                      "4_3377853_146-301.hdf5")),
@@ -510,7 +513,8 @@ class TestSplitSegments(unittest.TestCase):
         self.assertEqual(
             segment_tuples,
             [('START_AND_STOP', slice(0, split_idx, None), 0),
-             ('START_AND_STOP', slice(split_idx, 22784.0, None), 52)]
+             ('START_AND_STOP', slice(split_idx, 21997.0, None), 52),
+             ('GROUND_ONLY', slice(21997.0, 22784.0, None), 45),]
         )
 
 

@@ -545,9 +545,9 @@ def split_segments(hdf, aircraft_info):
             # Since we are working with masked slices, masked padded superframe
             # data will be included within the first slow_slice.
             continue
-        if slow_slice.stop == len(speed_array):
-            # After the loop we will add the remaining data to a segment.
-            break
+        #if slow_slice.stop == len(speed_array):
+            ## After the loop we will add the remaining data to a segment.
+            #break
 
         if last_fast_index is not None:
             fast_duration = (slow_slice.start -
@@ -654,7 +654,7 @@ def split_segments(hdf, aircraft_info):
 
     '''
     import matplotlib.pyplot as plt
-    for look in [speed_array, heading.array, dfc.array, split_params_min]:
+    for look in [speed_array, heading.array, split_params_min]:
         plt.plot(np.linspace(0, speed_secs, len(look)), look/np.ptp(look))
     for seg in segments:
         plt.plot([seg[1].start, seg[1].stop], [-0.5,+1])

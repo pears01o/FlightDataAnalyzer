@@ -16479,7 +16479,8 @@ class TestGroundspeedDuringRejectedTakeoffMax(unittest.TestCase):
         trh = buildsections('Takeoff Runway Heading', [0, 125])
         # Create RTO here to ensure it operates as expected
         rto = RejectedTakeoff()
-        rto.get_derived((accel, eng_running, gnds, None, None, None, trh))
+        rto.get_derived((accel, None, eng_running, gnds, None, None, trh, A(
+            'Segment Type', 'START_AND_STOP')))
         # The data passes 0.1g on the 6th and 72nd samples of the sine wave.
         # With the 24 sample offset and 4Hz sample rate this gives an RTO
         # section thus:

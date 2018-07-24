@@ -22189,7 +22189,7 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ra, None)
         self.assertEqual(node[0].name, 'TCAS RA Reaction Delay')
-        self.assertEqual(node[0].index, 5.5)
+        self.assertEqual(node[0].index, 2)
         self.assertAlmostEqual(node[0].value, 3.5)
 
     def test_ta_overlap(self):
@@ -22199,7 +22199,7 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
         ta = buildsection('TCAS Traffic Advisory', 3, 10)
         node = self.node_class()
         node.derive(acc, ra, ta)
-        self.assertEqual(node[0].index, 4.5)
+        self.assertEqual(node[0].index, 10)
         self.assertAlmostEqual(node[0].value, -5.5)        
 
     def test_not_second_ta_overlap(self):
@@ -22209,7 +22209,7 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
         ta = buildsections('TCAS Traffic Advisory', [3, 10], [16, 20])
         node = self.node_class()
         node.derive(acc, ra, ta)
-        self.assertEqual(node[0].index, 4.5)
+        self.assertEqual(node[0].index, 10)
         self.assertAlmostEqual(node[0].value, -5.5)        
 
 class TestTCASRADirection(unittest.TestCase, NodeTest):
@@ -22316,44 +22316,53 @@ class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
         self.node_class = TCASRAErroneousAcceleration
         self.operational_combinations = [('Acceleration Normal Offset Removed',
                                           'TCAS Resolution Advisory',
-                                          'TCAS Direction'),
+                                          'TCAS RA Direction'),
                                          ('Acceleration Normal Offset Removed',
                                           'TCAS Traffic Advisory',
                                           'TCAS Resolution Advisory',
-                                          'TCAS Direction')]        
+                                          'TCAS RA Direction'),
+                                         ('Acceleration Normal Offset Removed',
+                                          'TCAS Resolution Advisory',
+                                          'TCAS RA Acceleration',
+                                          'TCAS RA Direction'),                                         
+                                         ('Acceleration Normal Offset Removed',
+                                          'TCAS Traffic Advisory',
+                                          'TCAS Resolution Advisory',
+                                          'TCAS RA Acceleration',
+                                          'TCAS RA Direction')]        
 
     def test_not_up(self):
         acc = P('Acceleration Normal Offset Removed',
                 array=np.ma.array([1.0]*13 + [0.95, 0.85, 0.6, 1.15, 1.2, 1.0, 1.0]))
         ra = buildsection('TCAS Resolution Advisory', 12, 20)
-        tcas_dir = KPV(name='TCAS Direction', items=[
-            KeyPointValue(name='TCAS Direction', index=13, value=1)])
+        tcas_dir = KPV(name='TCAS RA Direction', items=[
+            KeyPointValue(name='TCAS RA Direction', index=13, value=1)])
         node = self.node_class()
-        node.derive(acc, None, ra, tcas_dir)
+        node.derive(acc, None, ra, None, tcas_dir)
         self.assertEqual(node[0].name, 'TCAS RA Erroneous Acceleration')
-        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].index, 15)
         self.assertAlmostEqual(node[0].value, -0.4)
 
     def test_not_down(self):
         acc = P('Acceleration Normal Offset Removed',
                 array=np.ma.array([1.0]*13 + [1.05, 1.15, 1.6, 1.15, 0.2, 1.0, 1.0]))
         ra = buildsection('TCAS Resolution Advisory', 12, 20)
-        tcas_dir = KPV(name='TCAS Direction', items=[
-            KeyPointValue(name='TCAS Direction', index=13, value=-1)])
+        tcas_dir = KPV(name='TCAS RA Direction', items=[
+            KeyPointValue(name='TCAS RA Direction', index=13, value=-1)])
         node = self.node_class()
-        node.derive(acc, None, ra, tcas_dir)
+        node.derive(acc, None, ra, None, tcas_dir)
         self.assertEqual(node[0].name, 'TCAS RA Erroneous Acceleration')
-        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].index, 15)
         self.assertAlmostEqual(node[0].value, 0.6)
         
     def test_neither_up_nor_down(self):
         acc = P('Acceleration Normal Offset Removed',
                 array=np.ma.array([1.0]*13 + [0.95, 0.85, 0.6, 1.15, 1.2, 1.0, 1.0]))
         ra = buildsection('TCAS Resolution Advisory', 12, 20)
-        tcas_dir = KPV(name='TCAS Direction', items=[
-            KeyPointValue(name='TCAS Direction', index=13, value=0)])
+        tcas_dir = KPV(name='TCAS RA Direction', items=[
+            KeyPointValue(name='TCAS RA Direction', index=13, value=0)])
         node = self.node_class()
-        node.derive(acc, None, ra, tcas_dir)
+        node.derive(acc, None, ra, None, tcas_dir)
         self.assertEqual(node, [])
         
     def test_ta_overlap(self):
@@ -22361,11 +22370,11 @@ class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
                 array=np.ma.array([1.0]*5 + [1.2]*2 + [1.35] + [1.0]*12))
         ra = buildsection('TCAS Resolution Advisory', 10, 20)
         ta = buildsection('TCAS Traffic Advisory', 3, 10)
-        tcas_dir = KPV(name='TCAS Direction', items=[
-            KeyPointValue(name='TCAS Direction', index=10, value=-1)])
+        tcas_dir = KPV(name='TCAS RA Direction', items=[
+            KeyPointValue(name='TCAS RA Direction', index=10, value=-1)])
         node = self.node_class()
-        node.derive(acc, ta, ra, tcas_dir)
-        self.assertEqual(node[0].index, -3)
+        node.derive(acc, ta, ra, None, tcas_dir)
+        self.assertEqual(node[0].index, 7)
         self.assertAlmostEqual(node[0].value, 0.35)     
         
 class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
@@ -22373,7 +22382,6 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         self.node_class = TCASRASubsequentReactionDelay
         self.operational_combinations = [
             ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control'),
-            ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Altitude Rate Advisory'),
             ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Advisory Rate To Maintain'),
             ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Altitude Rate To Maintain'),
             ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Advisory Rate'),
@@ -22389,14 +22397,13 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         ta = buildsection('TCAS Resolution Advisory', 5, 20)
         cc = M('TCAS Combined Control', array=np.ma.array([4]*20),
                values_mapping=self.values_mapping)        
-        rate_1 = P('TCAS Altitude Rate Advisory', array=np.ma.array([0]*10 + [1000]*10))
         rate_2 = None #TCAS Advisory Rate To Maintain
-        rate_3 = None #TCAS Altitude Rate To Maintain
+        rate_3 = P('TCAS Altitude Rate To Maintain', array=np.ma.array([0]*10 + [1000]*10))
         rate_4 = None #TCAS Advisory Rate
         node = self.node_class()
-        node.derive(acc, ta, cc, rate_1, rate_2, rate_3, rate_4)
+        node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
-        self.assertEqual(node[0].index, 14.75)
+        self.assertEqual(node[0].index, 9)
         self.assertAlmostEqual(node[0].value, 5.75)
 
     def test_rate_advisory_data_down(self):
@@ -22404,14 +22411,13 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         ta = buildsection('TCAS Resolution Advisory', 5, 20)
         cc = M('TCAS Combined Control', array=np.ma.array([4]*20),
                values_mapping=self.values_mapping)        
-        rate_1 = P('TCAS Altitude Rate Advisory', array=np.ma.array([0]*10 + [-1000]*10))
-        rate_2 = None #TCAS Advisory Rate To Maintain
+        rate_2 = P('TCAS Advisory Rate To Maintain', array=np.ma.array([0]*10 + [-1000]*10))
         rate_3 = None #TCAS Altitude Rate To Maintain
         rate_4 = None #TCAS Advisory Rate
         node = self.node_class()
-        node.derive(acc, ta, cc, rate_1, rate_2, rate_3, rate_4)
+        node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
-        self.assertEqual(node[0].index, 14.75)
+        self.assertEqual(node[0].index, 9)
         self.assertAlmostEqual(node[0].value, 5.75)
 
     def test_combined_control_data_up(self):
@@ -22420,9 +22426,9 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*8 + [4]*10),
                values_mapping=self.values_mapping)        
         node = self.node_class()
-        node.derive(acc, ta, cc, None, None, None, None)
+        node.derive(acc, ta, cc, None, None, None)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
-        self.assertEqual(node[0].index, 14.5)
+        self.assertEqual(node[0].index, 9)
         self.assertAlmostEqual(node[0].value, 5.5)
 
     def test_combined_control_data_down(self):
@@ -22431,9 +22437,9 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*8 + [5]*10),
                values_mapping=self.values_mapping)        
         node = self.node_class()
-        node.derive(acc, ta, cc, None, None, None, None)
+        node.derive(acc, ta, cc, None, None, None)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
-        self.assertEqual(node[0].index, 14.5)
+        self.assertEqual(node[0].index, 9)
         self.assertAlmostEqual(node[0].value, 5.5)
 
     def test_combined_control_data_clear(self):
@@ -22442,7 +22448,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*8 + [1]*10),
                values_mapping=self.values_mapping)        
         node = self.node_class()
-        node.derive(acc, ta, cc, None, None, None, None)
+        node.derive(acc, ta, cc, None, None, None)
         self.assertEqual(node, [])
         
     def test_combined_control_no_change(self):
@@ -22451,7 +22457,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*18),
                values_mapping=self.values_mapping)        
         node = self.node_class()
-        node.derive(acc, ta, cc, None, None, None, None)
+        node.derive(acc, ta, cc, None, None, None)
         self.assertEqual(node, [])
 
     def test_no_reaction(self):
@@ -22459,12 +22465,12 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         ta = buildsection('TCAS Resolution Advisory', 2, 20)
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*8 + [4]*10),
                values_mapping=self.values_mapping)        
-        rate_1 = None #TCAS Altitude Rate Advisory
+        ##rate_1 = None #TCAS Altitude Rate Advisory
         rate_2 = None #TCAS Advisory Rate To Maintain
         rate_3 = None #TCAS Altitude Rate To Maintain
         rate_4 = None #TCAS Advisory Rate
         node = self.node_class()
-        node.derive(acc, ta, cc, rate_1, rate_2, rate_3, rate_4)
+        node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
         self.assertEqual(node, [])
         
 class TestTCASRASubsequentAcceleration (unittest.TestCase, NodeTest):
@@ -22472,7 +22478,6 @@ class TestTCASRASubsequentAcceleration (unittest.TestCase, NodeTest):
         self.node_class = TCASRASubsequentAcceleration
         self.operational_combinations = [
             ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control'),
-            ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Altitude Rate Advisory'),
             ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Advisory Rate To Maintain'),
             ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Altitude Rate To Maintain'),
             ('Acceleration Normal Offset Removed', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Advisory Rate'),
@@ -22489,12 +22494,11 @@ class TestTCASRASubsequentAcceleration (unittest.TestCase, NodeTest):
         ta = buildsection('TCAS Resolution Advisory', 5, 20)
         cc = M('TCAS Combined Control', array=np.ma.array([4]*20),
                values_mapping=self.values_mapping)
-        rate_1 = None #TCAS Altitude Rate Advisory
         rate_2 = None #TCAS Advisory Rate To Maintain
         rate_3 = P('TCAS Altitude Rate To Maintain', array=np.ma.array([0]*10 + [1000]*10))
         rate_4 = None #TCAS Advisory Rate
         node = self.node_class()
-        node.derive(acc, ta, cc, rate_1, rate_2, rate_3, rate_4)
+        node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Acceleration')
         self.assertEqual(node[0].index, 17)
         self.assertAlmostEqual(node[0].value, -0.4)

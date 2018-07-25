@@ -597,7 +597,7 @@ class AccelerationNormalMax(KeyPointValueNode):
     units = ut.G
 
     def derive(self,
-               acc_norm=P('Acceleration Vertical'),
+               acc_norm=P('Acceleration Normal Offset Removed'),
                mobile=S('Mobile')):
 
         self.create_kpv_from_slices(acc_norm.array, mobile, max_value)
@@ -613,7 +613,7 @@ class AccelerationNormal20FtTo5FtMax(KeyPointValueNode):
     units = ut.G
 
     def derive(self,
-               acc_norm=P('Acceleration Vertical'),
+               acc_norm=P('Acceleration Normal Offset Removed'),
                alt_aal=P('Altitude AAL For Flight Phases')):
 
         self.create_kpvs_within_slices(
@@ -636,10 +636,10 @@ class AccelerationNormalWithFlapUpWhileAirborneMax(KeyPointValueNode):
     def can_operate(cls, available):
 
         return any_of(('Flap Lever', 'Flap Lever (Synthetic)'), available) and \
-            all_of(('Acceleration Vertical', 'Airborne'), available)
+            all_of(('Acceleration Normal Offset Removed', 'Airborne'), available)
 
     def derive(self,
-               acc_norm=P('Acceleration Vertical'),
+               acc_norm=P('Acceleration Normal Offset Removed'),
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                airborne=S('Airborne')):
@@ -666,10 +666,10 @@ class AccelerationNormalWithFlapUpWhileAirborneMin(KeyPointValueNode):
     def can_operate(cls, available):
 
         return any_of(('Flap Lever', 'Flap Lever (Synthetic)'), available) and \
-            all_of(('Acceleration Vertical', 'Airborne'), available)
+            all_of(('Acceleration Normal Offset Removed', 'Airborne'), available)
 
     def derive(self,
-               acc_norm=P('Acceleration Vertical'),
+               acc_norm=P('Acceleration Normal Offset Removed'),
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                airborne=S('Airborne')):
@@ -697,7 +697,7 @@ class AccelerationNormalWithFlapDownWhileAirborneMax(KeyPointValueNode):
     def can_operate(cls, available):
 
         return any_of(('Flap Lever', 'Flap Lever (Synthetic)'), available) and \
-            all_of(('Acceleration Vertical', 'Airborne'), available)
+            all_of(('Acceleration Normal Offset Removed', 'Airborne'), available)
 
     def derive(self,
                acc_norm=P('Acceleration Normal Offset Removed'),

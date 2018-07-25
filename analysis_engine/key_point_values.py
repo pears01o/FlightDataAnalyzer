@@ -18147,25 +18147,14 @@ class TCASTAAcceleration(KeyPointValueNode):
     
     def derive(self, acc=P('Acceleration Vertical'),
                tcas_tas=S('TCAS Traffic Advisory'),
-               tcas_ras=S('TCAS Resolution Advisory')):
+               tcas_warns=KPV('TCAS TA Warning Duration')):
 
         for tcas_ta in tcas_tas:
-            following = False
-            if tcas_ras:
-                for tcas_ra in tcas_ras:
-                    if abs(tcas_ta.slice.start - tcas_ra.slice.stop) < 2:
-                        following = True
-            index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=tcas_ta.slice)            
-            if not index or following:
-                continue
-            exceed_index = int(index) + 1
-            # We do not know the TA threat, and don't yet know the RA sense, so just see how the pilot reacted.
-            if acc.array[exceed_index] > 1.0:
-                index = np.ma.argmax(acc.array[exceed_index:tcas_ta.slice.stop])
-            else:
-                index = np.ma.argmin(acc.array[exceed_index:tcas_ta.slice.stop])
-            index += exceed_index
-            self.create_kpv(index, acc.array[index] - 1.0)
+            for tcas_warn in tcas_warns:
+                if is_index_within_slice(tcas_warn.index, tcas_ta.slice):
+                    index = np.ma.argmax(np.ma.abs(acc.array[tcas_ta.slice] - 1.0)) + tcas_ta.slice.start
+                    if index:
+                        self.create_kpv(index, acc.array[index] - 1.0)
 
 
 class TCASRAWarningDuration(KeyPointValueNode):
@@ -18312,7 +18301,7 @@ class TCASRAAcceleration(KeyPointValueNode):
                         index = np.ma.argmax(acc.array[to_scan]) + to_scan.start
                     elif direction == -1:
                         index = np.ma.argmin(acc.array[to_scan]) + to_scan.start
-                    self.create_kpv(index, acc.array[index])
+                    self.create_kpv(index, acc.array[index] - 1.0)
  
 
 class TCASRAChangeOfVerticalSpeed(KeyPointValueNode):
@@ -18508,7 +18497,8 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
                     # and there is nothing to do.
                     return
                 
-                if array[change_index + 1] == 'Clear of Conflict':
+                # Some LFLs have "Of" while others have "of", hence:
+                if array[change_index + 1].lower() == 'clear of conflict':
                     continue
                 if array[change_index + 1] == 'Down Advisory Corrective' or \
                    array[change_index] == 'Up Advisory Corrective':
@@ -18580,6 +18570,39 @@ class TCASRAHeading(KeyPointValueNode):
             index = tcas_ra.slice.start
             self.create_kpv(index, hdg.array[index])
 
+class TCASTAAltitudeSTD(KeyPointValueNode):
+    
+    name = 'TCAS TA Altitude STD'
+    units = ut.FT
+    
+    def derive(self, alt=P('Altitude STD'),
+               ta_warns=KPV('TCAS TA Warning Duration')):
+        for ta_warn in ta_warns:
+            index = ta_warn.index
+            self.create_kpv(index, alt.array[index])
+    
+class TCASTAAltitudeAAL(KeyPointValueNode):
+    
+    name = 'TCAS TA Altitude AAL'
+    units = ut.FT
+    
+    def derive(self, alt=P('Altitude AAL'),
+               ta_warns=KPV('TCAS TA Warning Duration')):
+        for ta_warn in ta_warns:
+            index = ta_warn.index
+            self.create_kpv(index, alt.array[index])
+
+class TCASTAHeading(KeyPointValueNode):
+    
+    name = 'TCAS TA Heading'
+    units = ut.DEGREE
+    
+    def derive(self, hdg=P('Heading'),
+               ta_warns=KPV('TCAS TA Warning Duration')):
+        for ta_warn in ta_warns:
+            index = ta_warn.index
+            self.create_kpv(index, hdg.array[index])
+
 class TCASDevelopmentPlot(KeyPointValueNode):
     '''
     '''
@@ -18647,6 +18670,7 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         extend_samples = dt * tcas_cc.frequency
         scope = slice(_slice.start - extend_samples,
                       _slice.stop + extend_samples)
+        scope = slice(0, len(tcas_cc.array))
         x_scale = np.linspace(to_sec(_slice.start, tcas_ras) - dt, 
                               to_sec(_slice.stop, tcas_ras) + dt, 
                               num=_slice.stop - _slice.start + 2 * extend_samples, 
@@ -18656,7 +18680,7 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         ax1.plot(x_scale, tcas_cc.array.data[scope])
         ax1.set_ylim(0, 6.5)
         ax1.set_ylabel('TCAS Mode')
-        ax1.set_yticklabels([tcas_cc.values_mapping[n] for n in tcas_cc.values_mapping])
+        ax1.set_yticklabels(['No TCAS', 'Clear', '', '', 'RA Up', 'RA Down', 'Preventive'])
             
         # Draw the phase periods
         if tcas_tas:
@@ -18715,7 +18739,7 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         if tta:
             ax3.plot(to_sec(tta[0].index, tcas_ras), tta[0].value + 1.0, 'og')
         if tra:
-            ax3.plot(to_sec(tra[0].index, tcas_ras), tra[0].value, 'or')
+            ax3.plot(to_sec(tra[0].index, tcas_ras), tra[0].value + 1.0, 'or')
         if trea:
             ax3.plot(to_sec(trea[0].index, tcas_ras), trea[0].value + 1.0, 'ok')
         if trsa:
@@ -18724,7 +18748,7 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         with open('C:\\Temp\\TCAS_plot_names.txt', 'a') as the_file:
             the_file.write(str(int(abs(np.ma.sum(vs.array[scope])))) + '\n')
             
-        # plt.show()        
+        plt.show()        
         plt.savefig('C:\\Temp\\figures\\TCAS_plot_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
         plt.clf()
         plt.close()

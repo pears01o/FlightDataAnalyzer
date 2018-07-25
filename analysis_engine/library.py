@@ -5435,7 +5435,7 @@ def peak_curvature(array, _slice=slice(None), curve_sense='Concave',
                     continue
             if _slice.step and _slice.step < 0 and (_slice.start and _slice.stop):
                 # stepping backwards through data, change index
-                return _slice.stop - curve_index - valid_slice.stop + 1
+                return _slice.start - curve_index -1
             elif _slice.step and _slice.step < 0:
                 # stepping backwards without slices
                 return len(array) - (curve_index + 1 + valid_slice.start + (_slice.start or 0))

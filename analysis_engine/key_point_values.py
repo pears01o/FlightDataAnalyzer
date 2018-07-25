@@ -18118,9 +18118,17 @@ class TCASTAWarningDuration(KeyPointValueNode):
     name = 'TCAS TA Warning Duration'
     units = ut.SECOND
 
-    def derive(self, tcas_tas=S('TCAS Traffic Advisory')):
-        self.create_kpvs_from_slice_durations(tcas_tas, self.frequency,
-                                              mark='start')
+    def derive(self, tcas_tas=S('TCAS Traffic Advisory'),
+               tcas_ras=S('TCAS Resolution Advisory')):
+        
+        # Extend the 
+        ras = [slice(s.slice.start - 2, s.slice.stop + 2) for s in tcas_ras]
+        for tcas_ta in tcas_tas:
+            if is_index_within_slices(tcas_ta.slice.start, ras) or \
+               is_index_within_slices(tcas_ta.slice.stop, ras):
+                continue
+            self.create_kpvs_from_slice_durations([tcas_ta.slice], self.frequency,
+                                                  mark='start')
 
 class TCASTAAcceleration(KeyPointValueNode):
     '''

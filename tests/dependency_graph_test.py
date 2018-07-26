@@ -368,7 +368,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         # try a bigger cyclic dependency on top of the above one
 
     def _get_dependancy_order(self, requested, aircraft_info, lfl_params,
-                                      draw=False, raise_cir_dep=True):
+                              draw=False, raise_cir_dep=True, segment_info={}):
         #derived_nodes = get_derived_nodes(settings.NODE_MODULES)
         if aircraft_info['Aircraft Type'] == 'helicopter':
             node_modules = settings.NODE_MODULES + settings.NODE_HELICOPTER_MODULE_PATHS
@@ -380,8 +380,12 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         if requested == []:
             # Use all derived nodes if requested is empty
             requested = [p for p in derived_nodes.keys() if p not in lfl_params]
-
-        node_mgr= NodeManager({'Start Datetime': datetime.now()}, 10, lfl_params,
+        if not segment_info:
+            segment_info = {
+                'Start Datetime': datetime.now(),
+                'Segment Type': 'START_AND_STOP',
+            }
+        node_mgr= NodeManager(segment_info, 10, lfl_params,
                               requested, [], derived_nodes, aircraft_info, {})
         order, gr_st = dependency_order(node_mgr, draw=draw,
                                         raise_cir_dep=raise_cir_dep)

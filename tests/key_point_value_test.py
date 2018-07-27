@@ -112,6 +112,7 @@ from analysis_engine.key_point_values import (
     AirspeedAtThrustReversersSelection,
     AirspeedAtTouchdown,
     AirspeedBelow10000FtDuringDescentMax,
+    DifferenceBetweenAirspeedAndMinimumCleanMax,
     AirspeedDuringCruiseMax,
     AirspeedDuringCruiseMin,
     AirspeedDuringLevelFlightMax,
@@ -5696,6 +5697,53 @@ class TestAirspeedBelow10000FtDuringDescentMax(unittest.TestCase, NodeTest):
     @unittest.skip('Test Not Implemented')
     def test_derive(self):
         self.assertTrue(False, msg='Test not implemented.')
+
+
+class TestDifferenceBetweenAirspeedAndMinimumCleanMax(unittest.TestCase, NodeTest):
+    
+    def setUp(self):
+        self.node_class = DifferenceBetweenAirspeedAndMinimumCleanMax
+        self.operational_combinations = [('Airspeed', 'Flap', 'Airborne', 'Minimum Clean Lookup',)]
+        
+        self.airborne = buildsection('Airborne', 5, 95)
+        self.min_clean = P('Minimum Clean Lookup', np.array([180]*150))
+        
+        flap_array = np.ma.array([1]*10 + [0]*4 + [1]*11 + [0]*40 + [1]*60 + [0]*25)
+        mapping = {int(f): str(f) for f in np.ma.unique(flap_array)}
+        self.flap=M(name='Flap', array=flap_array, values_mapping=mapping)        
+        
+    def test_derive(self):
+        '''
+        This test covers the following:
+        Airspeed below VMc for less than 5s with flaps up at index 10:14
+        Airspeed below VMc for less than 5s and then above VMc with flaps 0 at index 25 onwards
+        Airspeed below VMc for more than 5s with flaps 0, starting at index 125, KPV expected at 130 (5s of delay)
+        '''
+        air_spd=P('Airspeed', np.ma.array([200]*10 + [170]*18 + [200]*57 + [170]*65))
+        
+        node = self.node_class()
+        node.derive(air_spd, self.flap, self.airborne, self.min_clean)
+        
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 10)
+        self.assertEqual(node[0].index, 130)
+        
+    def test_multiple_kpvs(self):
+        '''
+        This test checks if multiple KPVs are generated. Airspeed has a fixed 
+        value of 170kts, which is 10kts below VMc and flaps were at 0 degrees 
+        twice, more than 60s apart. Two separate KPVs expected.
+        '''
+        air_spd=P('Airspeed', np.ma.array([170]*150))
+        
+        node = self.node_class()
+        node.derive(air_spd, self.flap, self.airborne, self.min_clean)
+        
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].value, 10)
+        self.assertEqual(node[0].index, 30)
+        self.assertEqual(node[1].value, 10)
+        self.assertEqual(node[1].index, 130)        
 
 
 class TestAirspeedTopOfDescentTo10000FtMax(unittest.TestCase, NodeTest):

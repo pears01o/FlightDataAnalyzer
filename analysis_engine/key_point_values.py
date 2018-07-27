@@ -17417,6 +17417,42 @@ class AirspeedBelowMinimumAirspeedMin(KeyPointValueNode):
         self.create_kpv_from_slices(to_test, slices, min_value)
 
 
+class DifferenceBetweenAirspeedAndMinimumCleanMax(KeyPointValueNode):
+    '''
+    Maximum value of difference between Minimum Clean and Airspeed.
+    
+    Occurences within 60 seconds of each other are ignored.
+    
+    The KPV will only trigger if the flaps were up for at least 5 seconds, to 
+    account for SOP on 757/767, where pilots are allowed to retract flaps below
+    minimum clean during climbout.
+    '''
+    def derive(self,
+               air_spd=P('Airspeed'),
+               flap = M('Flap'),
+               airborne = S('Airborne'),
+               min_clean = P('Minimum Clean Lookup'),):
+        
+        # create an array with diff between min_clean and air_spd
+        diff = min_clean.array - air_spd.array
+        
+        # get slices where diff is > 0 and flaps are up
+        spd_slices = runs_of_ones(diff > 0)
+        flap_slices = runs_of_ones(flap.array == '0')
+        
+        # remove first 5 seconds of Flaps 0 from each slice
+        number_of_samples = self.hz * 5
+        flap_slices = [slice(s.start + number_of_samples, s.stop) for s in
+                       flap_slices if s.start + number_of_samples < s.stop]
+        
+        # define sections where flaps were up for at least 5s and airspeed was
+        # below minimum clean, remove small gaps (<60s) and create a KPV for 
+        # each occurence
+        sections = slices_and(spd_slices, flap_slices)
+        sections = slices_remove_small_gaps(sections, 60, self.hz)
+        self.create_kpvs_within_slices(diff, sections, max_value)
+
+    
 ##############################################################################
 # Tail Clearance
 

@@ -10,6 +10,7 @@ from analysis_engine.library import (
     all_deps,
     all_of,
     any_of,
+    any_one_of,
     bearing_and_distance,
     cycle_finder,
     find_low_alts,
@@ -36,6 +37,7 @@ from analysis_engine.library import (
     slices_and,
     slices_and_not,
     slices_below,
+    slices_extend_duration,
     slices_from_to,
     slices_not,
     slices_or,
@@ -2060,21 +2062,61 @@ class TaxiOut(FlightPhaseNode):
 
 class TCASTrafficAdvisory(FlightPhaseNode):
     """
-    TCAS Traffic Advisory phase (excluding those with associated RA phases)
+    TCAS Traffic Advisory phase
+    
+    We exclude those with associated RA phases, and aircraft on the ground.
+
+    [TCAS will] determine the approximate altitude of each aircraft above the ground. 
+    If this difference is less than 360 feet, TCAS considers the reporting aircraft 
+    to be on the ground.
+    FAA Introduction to TCAS II V7.1
     """
 
     name = 'TCAS Traffic Advisory'
 
-    def derive(self, tcas_ta=M('TCAS TA'),
-               tcas_cc=M('TCAS Combined Control'),
-               airs=S('Airborne')):
+    @classmethod
+    def can_operate(cls, available):
+        return any_one_of(('TCAS TA', 'TCAS TA Detected', 'TCAS All Threat Traffic', 'TCAS Traffic Alert', 'TCAS TA (1)'), available) \
+            and 'Altitude AAL' in available
+    
+    def derive(self, alt_aal=P('Altitude AAL'),
+               tcas_ta1=M('TCAS TA'),
+               tcas_ta2=M('TCAS TA Detected'),
+               tcas_ta3=M('TCAS All Threat Traffic'),
+               tcas_ta4=M('TCAS Traffic Alert'),
+               tcas_ta5=M('TCAS TA (1)'),
+               tcas_ras=S('TCAS Resolution Advisory')):
 
+        # Accept the TCAS TA parameter from the variously named options
+        tas = [tcas_ta1, tcas_ta2, tcas_ta3, tcas_ta4, tcas_ta5]
+        tcas_ta = next((item for item in tas if item is not None), None)
+
+        all_slices = []
+        airs = np.ma.clump_unmasked(np.ma.masked_less(alt_aal.array, 360.0))
         for air in airs:
-            tas_local = tcas_ta.array[air.slice] == 'TA'
-            ta_slices = slices_remove_small_slices(
-                shift_slices(runs_of_ones(tas_local), air.slice.start),
-                time_limit=1.0, hz=tcas_ta.frequency)
-            self.create_phases(ta_slices)
+            tas_local = tcas_ta.array[air].data == 1
+            ta_slices = shift_slices(runs_of_ones(tas_local), air.start)
+            if tas_local[0]:
+                ta_slices.pop(0)
+            if tas_local[-1]:
+                ta_slices.pop(-1)
+            ta_slices = slices_remove_small_slices(ta_slices,
+                                                   time_limit=1.0, 
+                                                   hz=tcas_ta.frequency)
+            all_slices.extend(ta_slices)
+
+        if tcas_ras:
+            # We will be removing some items from the list after iterating across that list.
+            to_pop = []
+            for n, each_slice in enumerate(all_slices):
+                # Extend to ensure overlap
+                for tcas_ra in slices_extend_duration(tcas_ras.get_slices(), alt_aal.frequency, 5.0):
+                    if slices_overlap(each_slice, tcas_ra):
+                        to_pop.append(n)
+            for pop in to_pop[::-1]:
+                all_slices.pop(pop)
+        
+        self.create_phases(all_slices)
 
 class TCASResolutionAdvisory(FlightPhaseNode):
     '''

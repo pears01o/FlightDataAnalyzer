@@ -3111,35 +3111,41 @@ class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = TCASTrafficAdvisory
-        self.operational_combinations = [('TCAS TA', 'TCAS RA', 'Airborne'),]
+        self.operational_combinations = [('Altitude AAL', 'TCAS TA'),
+                                         ('Altitude AAL', 'TCAS TA Detected'),
+                                         ('Altitude AAL', 'TCAS All Threat Traffic'),
+                                         ('Altitude AAL', 'TCAS Traffic Alert'),
+                                         ('Altitude AAL', 'TCAS TA (1)'),
+                                         ('Altitude AAL', 'TCAS TA', 'TCAS Resolution Advisory'),
+                                         ('Altitude AAL', 'TCAS TA Detected', 'TCAS Resolution Advisory'),
+                                         ('Altitude AAL', 'TCAS All Threat Traffic', 'TCAS Resolution Advisory'),
+                                         ('Altitude AAL', 'TCAS Traffic Alert', 'TCAS Resolution Advisory'),
+                                         ('Altitude AAL', 'TCAS TA (1)', 'TCAS Resolution Advisory')]
 
-    def test_derive(self):
-        ta = M('TCAS TA', array=np.ma.array([0,0,0,0,0,1,1,1,0,0]),
+       
+    def test_in_flight_but_not_pre_takeoff_or_close_to_landing(self):
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 100)+range(1000, -100, -100))
+        ta = M('TCAS TA', array=np.ma.array([0,1,1,0,0,0,1,1,1,1,1,0,0,0,0,0,1,1,1,0,0]),
                values_mapping={0: '-', 1: 'TA'})
-        ra = M('TCAS RA', array=np.ma.array([0,0,0,0,0,0,0,0,0,0]),
-               values_mapping={0: '-', 1: 'RA'})        
-        airborne = buildsection('Airborne', 2, 6)
         node = self.node_class()
-        node.derive(ta, ra, airborne)
+        node.derive(alt_aal, ta, None, None, None, None, None)
         self.assertEqual(node.get_first().name, 'TCAS Traffic Advisory')
-        self.assertEqual(node.get_first().slice, slice(5, 7))
+        self.assertEqual(node.get_first().slice, slice(6, 11))
+        self.assertEqual(len(node), 1)
 
-    def test_ignore_one_second_TAs(self):
-        ta = M('TCAS TA', array=np.ma.array([0,0,1,0,0,1,0,0,1,0]),
+    def test_not_after_takeoff_or_short(self):
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 100)+range(1000, -100, -100))
+        ta = M('TCAS TA', array=np.ma.array([0,1,1,1,1,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0]),
                values_mapping={0: '-', 1: 'TA'})
-        ra = M('TCAS RA', array=np.ma.array([0,0,0,0,0,0,0,0,0,0]),
-               values_mapping={0: '-', 1: 'RA'})        
-        airborne = buildsection('Airborne', 1, 9)
         node = self.node_class()
-        node.derive(ta, ra, airborne)
-        self.assertEqual(node.get_first(), None)
-
-    def test_close_to_ra(self):
-        ta = M('TCAS TA', array=np.ma.array([0,0,1,1,0,0,0,1,1,0]),
+        node.derive(alt_aal, None, ta, None, None, None, None)
+        self.assertEqual(len(node), 0)
+        
+    def test_not_close_to_ra(self):
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 100)+range(1000, -100, -100))
+        ta = M('TCAS TA', array=np.ma.array([0,0,0,0,0,1,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0]),
                values_mapping={0: '-', 1: 'TA'})
-        ra = M('TCAS RA', array=np.ma.array([0,0,0,0,1,1,1,0,0,0]),
-               values_mapping={0: '-', 1: 'RA'})        
-        airborne = buildsection('Airborne', 1, 9)
+        ra = buildsection('TCAS Resolution Advisory', 8, 13)
         node = self.node_class()
-        node.derive(ta, ra, airborne)
-        self.assertEqual(len(node), 2)
+        node.derive(alt_aal, None, None, ta, None, None, ra)
+        self.assertEqual(len(node), 0)

@@ -94,6 +94,13 @@ def any_of(names, available):
     return any(name in available for name in names)
 
 
+def any_one_of(names, available):
+    '''
+    Returns True if any ONE, and only one, of the names is within the available list.
+    '''
+    return sum(name in available for name in names) == 1
+    
+
 def air_track(lat_start, lon_start, lat_end, lon_end, spd, hdg, alt_aal, frequency):
     """
 Computation of the air track for cases where recorded latitude and longitude

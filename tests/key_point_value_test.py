@@ -22526,13 +22526,22 @@ class TestTCASRAChangeOfVerticalSpeed(unittest.TestCase, NodeTest):
         self.node_class = TCASRAChangeOfVerticalSpeed
         self.operational_combinations = [('Vertical Speed', 'TCAS Resolution Advisory')]
 
-    def test_derive(self):
+    def test_derive_downward(self):
         vs=P('Vertical Speed', array=np.ma.array([0]*5+[200,-300]))
         tcas_ra = buildsection('TCAS Resolution Advisory', 3, 8)
         node = self.node_class()
         node.derive(vs, tcas_ra)
         self.assertEqual(node.name, 'TCAS RA Change Of Vertical Speed')
-        self.assertEqual(node[0].value, -300.0)
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, -500.0)
+
+    def test_derive_upward(self):
+        vs=P('Vertical Speed', array=np.ma.array([0]*5+[-200,300]))
+        tcas_ra = buildsection('TCAS Resolution Advisory', 3, 8)
+        node = self.node_class()
+        node.derive(vs, tcas_ra)
+        self.assertEqual(node[0].value, 500.0)
+        
         
 class TestTCASRAAltitudeSTD (unittest.TestCase, NodeTest):
     def setUp(self):

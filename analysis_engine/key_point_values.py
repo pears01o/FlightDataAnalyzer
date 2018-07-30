@@ -18233,34 +18233,6 @@ class TCASRAReactionDelay(KeyPointValueNode):
             self.create_kpv(tcas_ra.slice.start, (peak_curve - tcas_ra.slice.start) / acc.frequency)
 
 
-"""
-class TCASRAAcceleration(KeyPointValueNode):
-    '''
-    This measures the strength of the first reaction to the RA, in +/- from 1.0g
-    '''
-
-    name = 'TCAS RA Acceleration'
-    units = ut.G
-
-    def derive(self, acc=P('Acceleration Vertical'),
-               tcas_ras=S('TCAS Resolution Advisory')):
-        acc_array = repair_mask(acc.array, repair_duration=None)
-        for ra in tcas_ras:
-            if np.ma.count(acc_array[ra.slice]) == 0:
-                    continue
-            index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=ra.slice)            
-            if not index:
-                continue
-            exceed_index = int(index) + 1
-            i, p = cycle_finder(acc.array[exceed_index:ra.slice.stop], TCAS_THRESHOLD)
-            index = None
-            for count in range(4):
-                
-            try:
-                self.create_kpv(exceed_index + i[0], p[0])
-            except:
-                pass
-"""
 class TCASRAAcceleration(KeyPointValueNode):
     '''
     '''
@@ -18306,8 +18278,9 @@ class TCASRAAcceleration(KeyPointValueNode):
 
 class TCASRAChangeOfVerticalSpeed(KeyPointValueNode):
     '''
-    This is the largest change in vertical speed from the start of the RA 
-    to the peak within the period of the advisory.
+    This is the change in vertical speed over the period of the RA.
+    We do not take account of whether the change was in the right sense, 
+    and any erroneous movements will simply increase the peak to peak difference.
     '''
 
     name = 'TCAS RA Change Of Vertical Speed'
@@ -18317,18 +18290,14 @@ class TCASRAChangeOfVerticalSpeed(KeyPointValueNode):
                tcas_ras=S('TCAS Resolution Advisory')):
 
         for tcas_ra in tcas_ras:
-            ra = tcas_ra.slice
-            vs_ra = vs.array[ra]
-            vs_0 = first_valid_sample(vs_ra).value
-            if np.ma.count(vs_ra) == 0:
-                continue
-            up = np.ma.max(vs_ra) - vs_0
-            down = np.ma.min(vs_ra) - vs_0
-            if up > abs(down):
-                self.create_kpv(ra.start, up)
-            else:
-                self.create_kpv(ra.start, down)
-
+            argmax = np.ma.argmax(vs.array[tcas_ra.slice]) + tcas_ra.slice.start
+            argmin = np.ma.argmin(vs.array[tcas_ra.slice]) + tcas_ra.slice.start
+            diff = vs.array[argmax] - vs.array[argmin]
+            if argmax < argmin:
+                # The vertical speed dropped during the RA
+                diff = -diff
+            self.create_kpv(tcas_ra.slice.start, diff)
+            
     
 class TCASRAToAPDisengagedDuration(KeyPointValueNode):
     '''
@@ -18603,6 +18572,80 @@ class TCASTAHeading(KeyPointValueNode):
             index = ta_warn.index
             self.create_kpv(index, hdg.array[index])
 
+class TCASTADevelopmentPlot(KeyPointValueNode):
+    '''
+    '''
+    @classmethod
+    def can_operate(cls, available):
+        # For development purposes we will worry about operation within the plotting section.
+        return True
+
+    def derive(self,
+               acc=P('Acceleration Vertical'),
+               tcas_tas=S('TCAS Traffic Advisory'),
+               vs=P('Vertical Speed'),
+               ttwd=KPV('TCAS TA Warning Duration'),
+               tta=KPV('TCAS TA Acceleration'),
+               ):
+            
+        def to_sec(index, _slice, tcas_tas):
+            datum = _slice.start
+            hz = tcas_tas.frequency
+            return (index - datum) / hz
+      
+        dt = 20
+        
+        import matplotlib.pyplot as plt
+        font = {'size' : 10}
+        plt.rc('font', **font)
+        fig = plt.figure(1, figsize=(8,4), linewidth=4)
+        
+        if not tcas_tas:
+            return
+        
+        for _slice in tcas_tas.get_slices():
+            extend_samples = dt * tcas_tas.frequency
+            scope = slice(_slice.start - extend_samples,
+                          _slice.stop + extend_samples)
+            x_scale = np.linspace(to_sec(_slice.start, _slice, tcas_tas) - dt,
+                                  to_sec(_slice.stop, _slice, tcas_tas) + dt, 
+                                  num=_slice.stop - _slice.start + 2 * extend_samples, 
+                                  endpoint=True)
+            ax1 = fig.add_subplot(313)
+            ax1.tick_params(labelsize=12)
+            ax1.plot([to_sec(_slice.start, _slice, tcas_tas), to_sec(_slice.stop, _slice, tcas_tas)],
+                     [0.5, 0.5], '-g')
+    
+            ax2 = fig.add_subplot(312, sharex=ax1)
+            plt.setp(ax2.get_xticklabels(), visible=False)
+            ax2.plot(x_scale, vs.array[scope])
+    
+            vs0 = max(vs.array[_slice])
+            vs1 = min(vs.array[_slice])
+            ix = to_sec(np.ma.argmax(vs.array[_slice]) + _slice.start, _slice, tcas_tas)
+            ax2.plot([ix, ix], [vs0, vs1], '-ob', markersize=4)
+            ax2.set_ylabel('vert spd')
+            
+            ax3 = fig.add_subplot(311, sharex=ax1)
+            plt.setp(ax3.get_xticklabels(), visible=False)
+            ax3.plot(x_scale, acc.array[scope])
+            ax3.set_ylim(0.6, 1.4)
+            ax3.set_ylabel('norm g')
+            ##if trrd: #'TCAS RA Reaction Delay'
+                ##ax3.arrow(to_sec(trrd[0].index, _slice), 0.65, trrd[0].value, 0, color='red')
+    
+            if tta:
+                ax3.plot(to_sec(tta[0].index, _slice, tcas_tas), tta[0].value + 1.0, 'og')
+
+            with open('C:\\Temp\\TCAS_plot_names.txt', 'a') as the_file:
+                the_file.write(str(int(abs(np.ma.sum(vs.array[scope])))) + '\n')
+                
+            # plt.show()        
+            plt.savefig('C:\\Temp\\figures\\TCAS_plot_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
+            plt.clf()
+            plt.close()
+
+"""
 class TCASDevelopmentPlot(KeyPointValueNode):
     '''
     '''
@@ -18670,7 +18713,6 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         extend_samples = dt * tcas_cc.frequency
         scope = slice(_slice.start - extend_samples,
                       _slice.stop + extend_samples)
-        scope = slice(0, len(tcas_cc.array))
         x_scale = np.linspace(to_sec(_slice.start, tcas_ras) - dt, 
                               to_sec(_slice.stop, tcas_ras) + dt, 
                               num=_slice.stop - _slice.start + 2 * extend_samples, 
@@ -18748,11 +18790,13 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         with open('C:\\Temp\\TCAS_plot_names.txt', 'a') as the_file:
             the_file.write(str(int(abs(np.ma.sum(vs.array[scope])))) + '\n')
             
-        plt.show()        
+        # plt.show()        
         plt.savefig('C:\\Temp\\figures\\TCAS_plot_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
         plt.clf()
         plt.close()
-    
+"""
+
+
 ##############################################################################
 # Warnings: Takeoff Configuration
 

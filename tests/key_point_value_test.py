@@ -735,6 +735,7 @@ from analysis_engine.key_point_values import (
     TCASTAAcceleration,
     TCASTAAltitudeAAL,
     TCASTAAltitudeSTD,
+    TCASTAChangeOfVerticalSpeed,
     TCASTAHeading,
     TCASTAWarningDuration,
     TOGASelectedDuringFlightDuration,
@@ -22170,6 +22171,30 @@ class TestTCASTAAcceleration(unittest.TestCase, NodeTest):
         node.derive(acc, ta, ta_warns)
         self.assertEqual(node, [])
         
+
+class TestTCASRAChangeOfVerticalSpeed(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = TCASRAChangeOfVerticalSpeed
+        self.operational_combinations = [('Vertical Speed', 'TCAS Resolution Advisory')]
+
+    def test_derive_downward(self):
+        vs=P('Vertical Speed', array=np.ma.array([0]*5+[200,-300]))
+        tcas_ra = buildsection('TCAS Resolution Advisory', 3, 8)
+        node = self.node_class()
+        node.derive(vs, tcas_ra)
+        self.assertEqual(node.name, 'TCAS RA Change Of Vertical Speed')
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, -500.0)
+
+    def test_derive_upward(self):
+        vs=P('Vertical Speed', array=np.ma.array([0]*5+[-200,300]))
+        tcas_ra = buildsection('TCAS Resolution Advisory', 3, 8)
+        node = self.node_class()
+        node.derive(vs, tcas_ra)
+        self.assertEqual(node[0].value, 500.0)
+
+
 class TestTCASRAWarningDuration(unittest.TestCase, NodeTest):
 
     def setUp(self):

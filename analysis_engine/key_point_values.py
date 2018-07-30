@@ -18157,6 +18157,29 @@ class TCASTAAcceleration(KeyPointValueNode):
                         self.create_kpv(index, acc.array[index] - 1.0)
 
 
+class TCASTAChangeOfVerticalSpeed(KeyPointValueNode):
+    '''
+    Where TA Alerts are raised the pilot should not react, but, as we are 
+    interested in misoperation, we monitor the change in vertical speed 
+    over the period of the TA.
+    '''
+
+    name = 'TCAS TA Change Of Vertical Speed'
+    units = ut.FPM
+
+    def derive(self, vs=P('Vertical Speed'),
+               tcas_tas=S('TCAS Traffic Advisory')):
+
+        for tcas_ta in tcas_tas:
+            argmax = np.ma.argmax(vs.array[tcas_ta.slice]) + tcas_ta.slice.start
+            argmin = np.ma.argmin(vs.array[tcas_ta.slice]) + tcas_ta.slice.start
+            diff = vs.array[argmax] - vs.array[argmin]
+            if argmax < argmin:
+                # The vertical speed dropped during the RA
+                diff = -diff
+            self.create_kpv(tcas_ta.slice.start, diff)
+
+
 class TCASRAWarningDuration(KeyPointValueNode):
     '''
     The duration for which the TCAS RA Warning was active.

@@ -18322,6 +18322,40 @@ class TCASRAChangeOfVerticalSpeed(KeyPointValueNode):
             self.create_kpv(tcas_ra.slice.start, diff)
             
     
+class TCASRAAPDisengaged(KeyPointValueNode):
+    '''
+    In the event of an RA, did the pilot disconnect the autopilot?
+    '''
+
+    name = 'TCAS RA AP Disengaged'
+    # units = ut.LOGICAL
+
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('AP Disengaged Selection', 'TCAS Resolution Advisory'), available)
+
+    def derive(self, ap_offs=KTI('AP Disengaged Selection'),
+               tcas_ras=S('TCAS Resolution Advisory'),
+               tcas_tas=S('TCAS Traffic Advisory')):
+        
+        for tcas_ra in tcas_ras:
+            to_scan = slice(tcas_ra.slice.start - 10.0 * tcas_ras.frequency, tcas_ra.slice.stop)
+            if tcas_tas:
+                found = False
+                for tcas_ta in tcas_tas:
+                    if not found and slices_overlap(to_scan, tcas_ta.slice):
+                        to_scan = slice(tcas_ta.slice.start, tcas_ra.slice.stop)
+                        found = True
+
+            index = None
+            for ap_off in ap_offs:
+                if not index and is_index_within_slice(ap_off.index, to_scan):
+                    index = ap_off.index
+                    self.create_kpv(ap_off.index, 1.0)
+            if not index:
+                self.create_kpv(tcas_ra.slice.start, 0.0)
+
+
 class TCASRAToAPDisengagedDuration(KeyPointValueNode):
     '''
     Time between the onset of the RA and disconnection of the autopilot.
@@ -18333,21 +18367,33 @@ class TCASRAToAPDisengagedDuration(KeyPointValueNode):
     name = 'TCAS RA To AP Disengaged Duration'
     units = ut.SECOND
 
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Acceleration Vertical', 'AP Disengaged Selection', 'TCAS Resolution Advisory'), available)
+
     # Note: acc included to ensure all TCAS durations are aligned to the same 
     # reference time, otherwise the durations may differ by up to half a second.
     def derive(self, acc=P('Acceleration Vertical'),
                ap_offs=KTI('AP Disengaged Selection'),
-               tcas_ras=S('TCAS Resolution Advisory')):
-
+               tcas_ras=S('TCAS Resolution Advisory'),
+               tcas_tas=S('TCAS Traffic Advisory')):
+        
         for tcas_ra in tcas_ras:
-            index = None
+            # Default scan from 10 seconds before the RA to the end of RA
+            to_scan = slice(tcas_ra.slice.start - 10.0 * acc.frequency, tcas_ra.slice.stop)
+            if tcas_tas:
+                found = False
+                # We can refine the start point
+                for tcas_ta in tcas_tas:
+                    if not found and slices_overlap(to_scan, tcas_ta.slice):
+                        to_scan = slice(tcas_ta.slice.start, tcas_ra.slice.stop)
+                        found = True
+
             for ap_off in ap_offs:
-                if is_index_within_slice(ap_off.index, tcas_ra.slice):
-                    index = ap_off.index
-                    duration = (index - tcas_ra.slice.start) / ap_offs.frequency
-                    self.create_kpv(tcas_ra.slice.start, duration)
-            if not index:
-                self.create_kpv(tcas_ra.slice.start, -1)
+                if is_index_within_slice(ap_off.index, to_scan):
+                    duration = (ap_off.index - tcas_ra.slice.start) / ap_offs.frequency
+                    self.create_kpv(ap_off.index, duration)
+
 
 class TCASRAErroneousAcceleration(KeyPointValueNode):
     '''

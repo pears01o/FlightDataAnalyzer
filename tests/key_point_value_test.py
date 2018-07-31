@@ -721,6 +721,8 @@ from analysis_engine.key_point_values import (
     TAWSWindshearSirenBelow1500FtDuration,
     TAWSWindshearWarningBelow1500FtDuration,
     TCASFailureDuration,
+    TCASRAAPDisengaged,
+    TCASRAToAPDisengagedDuration,
     TCASRAAcceleration,
     TCASRAAltitudeAAL,
     TCASRAAltitudeSTD,
@@ -730,7 +732,6 @@ from analysis_engine.key_point_values import (
     TCASRAReactionDelay,
     TCASRASubsequentAcceleration,
     TCASRASubsequentReactionDelay,
-    TCASRAToAPDisengagedDuration,
     TCASRAWarningDuration,
     TCASTAAcceleration,
     TCASTAAltitudeAAL,
@@ -22315,34 +22316,90 @@ class TestTCASRAAcceleration(unittest.TestCase, NodeTest):
         self.assertAlmostEqual(node[0].value, 0.45)
 
 
+class TestTCASRAAPDisengaged(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = TCASRAAPDisengaged
+        self.operational_combinations = [('AP Disengaged Selection', 'TCAS Traffic Advisory', 'TCAS Resolution Advisory'),
+                                         ('AP Disengaged Selection', 'TCAS Resolution Advisory')]
+
+    def test_derive(self):
+        kti_name = 'AP Disengaged Selection'
+        ap_offs = KTI(kti_name, items=[KeyTimeInstance(11, kti_name),
+                                       KeyTimeInstance(27, kti_name)])
+        tcas_ra = buildsection('TCAS Resolution Advisory', 22, 29)
+        node = self.node_class()
+        node.derive(ap_offs, tcas_ra, None)
+        self.assertEqual(node, 
+                         [KeyPointValue(27.0, 1.0, 'TCAS RA AP Disengaged')])
+
+    def test_no_disengagement(self):
+        kti_name = 'AP Disengaged Selection'
+        ap_offs = KTI(kti_name, items=[KeyTimeInstance(11, kti_name)])
+        tcas_ra = buildsection('TCAS Resolution Advisory', 22, 29)
+        node = self.node_class()
+        node.derive(ap_offs, tcas_ra, None)
+        self.assertEqual(node, 
+                         [KeyPointValue(22.0, 0.0, 'TCAS RA AP Disengaged')])
+
+    def test_long_ta(self):
+        kti_name = 'AP Disengaged Selection'
+        ap_offs = KTI(kti_name, items=[KeyTimeInstance(11, kti_name)])
+        tcas_ra = buildsection('TCAS Resolution Advisory', 22, 29)
+        tcas_ta = buildsection('TCAS Traffic Advisory', 10, 20)
+        node = self.node_class()
+        node.derive(ap_offs, tcas_ra, tcas_ta)
+        self.assertEqual(node, 
+                         [KeyPointValue(11.0, 1.0, 'TCAS RA AP Disengaged')])
+
+        
 class TestTCASRAToAPDisengagedDuration(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = TCASRAToAPDisengagedDuration
-        self.operational_combinations = [('AP Disengaged Selection', 'TCAS Resolution Advisory', 'Acceleration Vertical')]
+        self.operational_combinations = [('AP Disengaged Selection', 'TCAS Resolution Advisory', 'Acceleration Vertical', 'TCAS Traffic Advisory'),
+                                         ('AP Disengaged Selection', 'TCAS Resolution Advisory', 'Acceleration Vertical')]
 
     def test_derive(self):
         kti_name = 'AP Disengaged Selection'
-        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*80), frequency=8.0)        
-        ap_offs = KTI(kti_name, items=[KeyTimeInstance(1, kti_name),
-                                       KeyTimeInstance(7, kti_name)])
+        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*10))        
+        ap_offs = KTI(kti_name, items=[KeyTimeInstance(5, kti_name)])
         tcas_ra = buildsection('TCAS Resolution Advisory', 3, 9)
         node = self.node_class()
         node.derive(acc, ap_offs, tcas_ra)
         self.assertEqual(node, 
-                         [KeyPointValue(3.0, 4.0, 'TCAS RA To AP Disengaged Duration')])
+                         [KeyPointValue(5.0, 2.0, 'TCAS RA To AP Disengaged Duration')])
+
+    def test_preemptive_disengagement_by_time(self):
+        kti_name = 'AP Disengaged Selection'
+        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*100))        
+        ap_offs = KTI(kti_name, items=[KeyTimeInstance(10, kti_name)])
+        tcas_ra = buildsection('TCAS Resolution Advisory', 15, 70)
+        node = self.node_class()
+        node.derive(acc, ap_offs, tcas_ra)
+        self.assertEqual(node, 
+                         [KeyPointValue(10.0, -5.0, 'TCAS RA To AP Disengaged Duration')])
+
+    def test_preemptive_disengagement_by_ta(self):
+        kti_name = 'AP Disengaged Selection'
+        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*10))        
+        ap_offs = KTI(kti_name, items=[KeyTimeInstance(15, kti_name)])
+        tcas_ra = buildsection('TCAS Resolution Advisory', 30, 70)
+        tcas_ta = buildsection('TCAS Traffic Advisory', 10, 28)
+        node = self.node_class()
+        node.derive(acc, ap_offs, tcas_ra, tcas_ta)
+        self.assertEqual(node, 
+                         [KeyPointValue(15.0, -15.0, 'TCAS RA To AP Disengaged Duration')])
 
     def test_no_disengagement(self):
         kti_name = 'AP Disengaged Selection'
-        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*80), frequency=8.0)        
-        ap_offs = KTI(kti_name, items=[KeyTimeInstance(1, kti_name),
-                                       KeyTimeInstance(9, kti_name)])
+        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*10))        
+        ap_offs = KTI(kti_name, items=[KeyTimeInstance(9, kti_name)])
         tcas_ra = buildsection('TCAS Resolution Advisory', 3, 7)
         node = self.node_class()
         node.derive(acc, ap_offs, tcas_ra)
-        self.assertEqual(node,
-                         [KeyPointValue(3.0, -1.0, 'TCAS RA To AP Disengaged Duration')])
-        
+        self.assertEqual(len(node), 0)
+
 
 class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
     

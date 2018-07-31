@@ -18482,7 +18482,7 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
             try:
                 change_index = np.ma.nonzero(np.ma.ediff1d(array[tcas_ra.slice]))[0][0] + tcas_ra.slice.start
                 # If using CC, check this was not a change to Clear Of Conflict
-                if not rate and array[change_index] == 1:
+                if not rate and array[change_index + 1] == 1:
                     continue
             except:
                 # If no change present, skip to the next RA

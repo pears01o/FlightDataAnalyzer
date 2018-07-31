@@ -18721,7 +18721,7 @@ class TCASTADevelopmentPlot(KeyPointValueNode):
             plt.close()
 
 
-class TCASDevelopmentPlot(KeyPointValueNode):
+class TCASRADevelopmentPlot(KeyPointValueNode):
     '''
     '''
     @classmethod
@@ -18835,10 +18835,11 @@ class TCASDevelopmentPlot(KeyPointValueNode):
             ax2.plot(x_scale, arm_8.array[scope], '-r')
 
         for cvs_kpv in trcvs:
-            vs0 = vs.array[tcas_ras[0].slice.start]
+            argmax = np.ma.argmax(vs.array[tcas_ras.get_slices()[0]])
+            vs0 = vs.array[argmax]
             vs1 = vs0 + cvs_kpv.value
-            ix = to_sec(np.ma.argmax(vs.array[tcas_ras[0].slice]) + tcas_ras[0].slice.start,
-                                     tcas_ras)
+            ix = to_sec(argmax + tcas_ras.get_slices()[0].start,
+                        tcas_ras)
             ax2.plot([ix, ix], [vs0, vs1], '-ob', markersize=4)
         ax2.set_ylabel('vert spd')
         
@@ -18863,11 +18864,12 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         if trsa:
             ax3.plot(to_sec(trsa[0].index, tcas_ras), trsa[0].value + 1.0, 'oc')
         
+        ident = int(abs(np.ma.sum(vs.array[scope])))
         with open('C:\\Temp\\TCAS_plot_names.txt', 'a') as the_file:
-            the_file.write(str(int(abs(np.ma.sum(vs.array[scope])))) + '\n')
+            the_file.write(str(ident) + '\n')
             
         # plt.show()        
-        plt.savefig('C:\\Temp\\figures\\TCAS_plot_RA_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
+        plt.savefig('C:\\Temp\\figures\\TCAS_plot_RA_' + str(ident) + '.png')
         plt.clf()
         plt.close()
 

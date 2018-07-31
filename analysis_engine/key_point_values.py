@@ -18566,14 +18566,20 @@ class TCASFailureDuration(KeyPointValueNode):
     def derive(self, tcas_failure=M('TCAS Failure'),
                tcas_cc=M('TCAS Combined Control'),
                airs=S('Airborne')):
+        
         for air in airs:
             changes = np.ma.nonzero(np.ma.ediff1d(tcas_cc.array[air.slice]))
             if len(changes[0]) > 10:
                 # Treat the signal an entirely Failed
                 self.create_kpv(air.slice.start, slice_duration(air.slice, self.frequency))
+            
             elif tcas_failure:
-                self.create_kpvs_where(tcas_failure.array == 'Failed',
-                                       tcas_failure.hz, phase=air)
+                a = tcas_failure.array.data[air.slice]
+                b = a[:-1] + a[1:]
+                failures = shift_slices(np.ma.clump_masked(np.ma.masked_greater(b, 0)),
+                                        air.slice.start)
+                self.create_kpvs_from_slice_durations(failures, tcas_failure.frequency)
+
 
 class TCASRAAltitudeSTD(KeyPointValueNode):
     
@@ -18710,11 +18716,11 @@ class TCASTADevelopmentPlot(KeyPointValueNode):
                 the_file.write(str(int(abs(np.ma.sum(vs.array[scope])))) + '\n')
                 
             # plt.show()        
-            plt.savefig('C:\\Temp\\figures\\TCAS_plot_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
+            plt.savefig('C:\\Temp\\figures\\TCAS_plot_TA_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
             plt.clf()
             plt.close()
 
-"""
+
 class TCASDevelopmentPlot(KeyPointValueNode):
     '''
     '''
@@ -18831,14 +18837,15 @@ class TCASDevelopmentPlot(KeyPointValueNode):
         for cvs_kpv in trcvs:
             vs0 = vs.array[tcas_ras[0].slice.start]
             vs1 = vs0 + cvs_kpv.value
-            ix = to_sec(cvs_kpv.index, tcas_ras)
+            ix = to_sec(np.ma.argmax(vs.array[tcas_ras[0].slice]) + tcas_ras[0].slice.start,
+                                     tcas_ras)
             ax2.plot([ix, ix], [vs0, vs1], '-ob', markersize=4)
         ax2.set_ylabel('vert spd')
         
         ax3 = fig.add_subplot(311, sharex=ax1)
         plt.setp(ax3.get_xticklabels(), visible=False)
         ax3.plot(x_scale, acc.array[scope])
-        ax3.set_ylim(0.6, 1.4)
+        ax3.set_ylim(0.5, 1.5)
         ax3.set_ylabel('norm g')
         if trrd: #'TCAS RA Reaction Delay'
             ax3.arrow(to_sec(trrd[0].index, tcas_ras), 0.65, trrd[0].value, 0, color='red')
@@ -18860,10 +18867,9 @@ class TCASDevelopmentPlot(KeyPointValueNode):
             the_file.write(str(int(abs(np.ma.sum(vs.array[scope])))) + '\n')
             
         # plt.show()        
-        plt.savefig('C:\\Temp\\figures\\TCAS_plot_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
+        plt.savefig('C:\\Temp\\figures\\TCAS_plot_RA_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
         plt.clf()
         plt.close()
-"""
 
 
 ##############################################################################

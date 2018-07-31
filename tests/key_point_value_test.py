@@ -22752,6 +22752,19 @@ class TestTCASFailureDuration(unittest.TestCase, NodeTest):
         node.derive(None, cc, airs)
         self.assertEqual(node, [])
         
+    def test_alternate(self):
+        # Seen on one sample of data from an A330 aircraft
+        tcas_fail = M('TCAS Failure', array=np.ma.array([0, 1]*10),
+                      values_mapping=self.values_mapping)
+        cc = M('TCAS Combined Control', array=np.ma.array([0]*20),
+               values_mapping=self.values_mapping)
+        airs = buildsection('Airborne', 7, 17)
+        node = self.node_class()
+        node.derive(tcas_fail, cc, airs)
+        self.assertEqual(node[0].name, 'TCAS Failure Duration')
+        self.assertEqual(node[0].index, 7)
+        self.assertAlmostEqual(node[0].value, 10)
+        
 
 ##############################################################################
 # Warnings: Takeoff Configuration

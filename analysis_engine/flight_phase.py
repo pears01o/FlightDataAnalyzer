@@ -2121,32 +2121,25 @@ class TCASTrafficAdvisory(FlightPhaseNode):
 class TCASResolutionAdvisory(FlightPhaseNode):
     '''
     TCAS RA active.
+    
+    This uses the Combined Control parameter only because the TCAS RA signals are only 
+    present on aircraft with Combined Control as well, and the TCAS RA signals include 
+    the Clear Of Conflict period, making the duration of the phase inconsistent.
     '''
 
     name = 'TCAS Resolution Advisory'
 
-    @classmethod
-    def can_operate(cls, available):
-        return any_of(('TCAS RA', 'TCAS Combined Control'), available) \
-            and 'Airborne' in available
-
-    def derive(self, tcas_ra=M('TCAS RA'),
-               tcas_cc=M('TCAS Combined Control'),
+    def derive(self, tcas_cc=M('TCAS Combined Control'),
                airs=S('Airborne')):
 
         for air in airs:
-            if tcas_cc:
-                if np.ma.count_masked(tcas_cc.array[air.slice]) / float(np.ma.count(tcas_cc.array[air.slice])) > 0.05:
-                    # Most probably faulty TCAS system reporting No Computed Data
-                    continue
-            if tcas_ra:
-                ras_local = tcas_ra.array[air.slice] == 'RA'
-            else:
-                # If the RA is not recorded separately:
-                ras_local = tcas_cc.array[air.slice].any_of('Up Advisory Corrective',
-                                                            'Down Advisory Corrective',
-                                                            'Preventive',
-                                                            ignore_missing=True)
+            if np.ma.count_masked(tcas_cc.array[air.slice]) / float(np.ma.count(tcas_cc.array[air.slice])) > 0.05:
+                # Most probably faulty TCAS system reporting No Computed Data
+                continue
+            ras_local = tcas_cc.array[air.slice].any_of('Up Advisory Corrective',
+                                                        'Down Advisory Corrective',
+                                                        'Preventive',
+                                                        ignore_missing=True)
 
             ras_slices = shift_slices(runs_of_ones(ras_local), air.slice.start)
             # Where data is corrupted, single samples are a common source of error

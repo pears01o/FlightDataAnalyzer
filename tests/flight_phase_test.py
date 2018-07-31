@@ -3033,9 +3033,7 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = TCASResolutionAdvisory
-        self.operational_combinations = [('TCAS RA', 'Airborne'),
-                                         ('TCAS Combined Control', 'Airborne'),
-                                         ('TCAS RA', 'TCAS Combined Control', 'Airborne')]
+        self.operational_combinations = [('TCAS Combined Control', 'Airborne'),]
         ''' Values from ARINC 735 '''
         self.values_mapping_cc = {
             0: 'No Advisory',
@@ -3046,14 +3044,13 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
             5: 'Down Advisory Corrective',
             6: 'Preventive',
             7: 'Not Used'}
-        self.values_mapping_ra = {0: '-', 1: 'RA'}
         
     def test_derive_cc_only(self):
         tcas = M('TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6,1,0,0]),
                  values_mapping=self.values_mapping_cc)
         airborne = buildsection('Airborne', 2, 10)
         node = self.node_class()
-        node.derive(None, tcas, airborne)
+        node.derive(tcas, airborne)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_first().slice, slice(4, 9)) 
 
@@ -3063,47 +3060,19 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
                  values_mapping=self.values_mapping_cc)
         airborne = buildsection('Airborne', 2, 12)
         node = self.node_class()
-        node.derive(None, tcas, airborne)
+        node.derive(tcas, airborne)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_first().slice, slice(3, 8)) 
          
-    def test_derive_ra_only(self):
-        ra = M('TCAS RA', array=np.ma.array([0,0,1,1,1,1,0,0,0]),
-               values_mapping=self.values_mapping_ra)
-        airborne = buildsection('Airborne', 2, 7)
-        node = self.node_class()
-        node.derive(ra, None, airborne)
-        self.assertEqual(node.get_first().slice, slice(2, 6)) 
-
-    def test_derive_ra_takes_precedence(self):
-        tcas_cc = M('TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6]),
-                    values_mapping=self.values_mapping_cc)
-        ra = M('TCAS RA', array=np.ma.array([0,0,0,1,1,1,0,0,0]),
-               values_mapping=self.values_mapping_ra)
-        airborne = buildsection('Airborne', 2, 7)
-        node = self.node_class()
-        node.derive(ra, tcas_cc, airborne)
-        self.assertEqual(node.get_first().slice, slice(3, 6))
-        
-    def test_single_samples_rejected(self):
-        ra = M('TCAS RA', array=np.ma.array([0,0,1,1,0,0,1,0,0,0]),
-               values_mapping=self.values_mapping_ra)
-        airborne = buildsection('Airborne', 1, 8)
-        node = self.node_class()
-        node.derive(ra, None, airborne)
-        self.assertEqual(node.get_first().slice, slice(2, 4))
-        
     def test_masked(self):
         # This replicates the format seen from real data.
         tcas_cc = M('TCAS Combined Control', 
                     array=np.ma.array(data=[0,1,2,3,4,5,4,5,6,5],
                                       mask=[0,1]*5),
                     values_mapping=self.values_mapping_cc)        
-        ra = M('TCAS RA', array=np.ma.array(data=[0,0,1,1,0,0,1,0,0,0]),
-               values_mapping=self.values_mapping_ra)
         airborne = buildsection('Airborne', 1, 8)
         node = self.node_class()
-        node.derive(ra, tcas_cc, airborne)
+        node.derive(tcas_cc, airborne)
         self.assertEqual(node, [])
         
 

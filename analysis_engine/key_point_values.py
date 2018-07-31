@@ -18392,7 +18392,7 @@ class TCASRAToAPDisengagedDuration(KeyPointValueNode):
             for ap_off in ap_offs:
                 if is_index_within_slice(ap_off.index, to_scan):
                     duration = (ap_off.index - tcas_ra.slice.start) / ap_offs.frequency
-                    self.create_kpv(ap_off.index, duration)
+                    self.create_kpv(tcas_ra.slice.start, duration)
 
 
 class TCASRAErroneousAcceleration(KeyPointValueNode):

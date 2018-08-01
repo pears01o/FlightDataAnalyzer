@@ -3033,7 +3033,7 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = TCASResolutionAdvisory
-        self.operational_combinations = [('TCAS Combined Control', 'Airborne'),]
+        self.operational_combinations = [('TCAS Combined Control', 'Altitude AAL'),]
         ''' Values from ARINC 735 '''
         self.values_mapping_cc = {
             0: 'No Advisory',
@@ -3048,9 +3048,9 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
     def test_derive_cc_only(self):
         tcas = M('TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6,1,0,0]),
                  values_mapping=self.values_mapping_cc)
-        airborne = buildsection('Airborne', 2, 10)
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
         node = self.node_class()
-        node.derive(tcas, airborne)
+        node.derive(tcas, alt_aal)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_first().slice, slice(4, 9)) 
 
@@ -3058,23 +3058,41 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
         tcas = M('TCAS Combined Control', 
                  array=np.ma.array([0,0,0,4,5,4,5,6,1,1,0,0]),
                  values_mapping=self.values_mapping_cc)
-        airborne = buildsection('Airborne', 2, 12)
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
         node = self.node_class()
-        node.derive(tcas, airborne)
+        node.derive(tcas, alt_aal)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_first().slice, slice(3, 8)) 
          
+    def test_derive_cc_only_not_cofc(self):
+        tcas = M('TCAS Combined Control', 
+                 array=np.ma.array([0,0,0,4,5,4,5,6,1,1,0,0]),
+                 values_mapping=self.values_mapping_cc)
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
+        node = self.node_class()
+        node.derive(tcas, alt_aal)
+        self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
+        self.assertEqual(node.get_first().slice, slice(3, 8)) 
+
     def test_masked(self):
         # This replicates the format seen from real data.
         tcas_cc = M('TCAS Combined Control', 
                     array=np.ma.array(data=[0,1,2,3,4,5,4,5,6,5],
                                       mask=[0,1]*5),
                     values_mapping=self.values_mapping_cc)        
-        airborne = buildsection('Airborne', 1, 8)
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
         node = self.node_class()
-        node.derive(tcas_cc, airborne)
+        node.derive(tcas_cc, alt_aal)
         self.assertEqual(node, [])
-        
+    
+    def test_not_low(self):
+        tcas_cc = M('TCAS Combined Control', 
+                    array=np.ma.array(data=[4,4,4,4,0,0,0,0,5,5,5,5]),
+                    values_mapping=self.values_mapping_cc)        
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
+        node = self.node_class()
+        node.derive(tcas_cc, alt_aal)
+        self.assertEqual(node, [])        
 
 class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
 

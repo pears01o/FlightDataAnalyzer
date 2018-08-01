@@ -2130,21 +2130,25 @@ class TCASResolutionAdvisory(FlightPhaseNode):
     name = 'TCAS Resolution Advisory'
 
     def derive(self, tcas_cc=M('TCAS Combined Control'),
-               airs=S('Airborne')):
+               alt_aal=P('Altitude AAL')):
 
+        all_slices = []
+        airs = np.ma.clump_unmasked(np.ma.masked_less(alt_aal.array, 360.0))
         for air in airs:
-            if np.ma.count_masked(tcas_cc.array[air.slice]) / float(np.ma.count(tcas_cc.array[air.slice])) > 0.05:
-                # Most probably faulty TCAS system reporting No Computed Data
+            if np.ma.average(tcas_cc.array.data[air]) > 0.1:
+                # Cannot be working properly.
                 continue
-            ras_local = tcas_cc.array[air.slice].any_of('Up Advisory Corrective',
-                                                        'Down Advisory Corrective',
-                                                        'Preventive',
-                                                        ignore_missing=True)
-
-            ras_slices = shift_slices(runs_of_ones(ras_local), air.slice.start)
+            ras_local = tcas_cc.array[air].data > 3
+            ra_slices = shift_slices(runs_of_ones(ras_local), air.start)
+            if ras_local[0]:
+                ra_slices.pop(0) # RA at takeoff not valid
+            if ras_local[-1]:
+                ra_slices.pop(-1) # RA at landing not valid
             # Where data is corrupted, single samples are a common source of error
             # time_limit rejects single samples, but 2+ sample events are retained.
-            ra_slices = slices_remove_small_slices(ras_slices, time_limit=1)
+            ra_slices = slices_remove_small_slices(ra_slices,
+                                                   time_limit=2.0, 
+                                                   hz=tcas_cc.frequency)
             self.create_phases(ra_slices)
                         
 ################################################################################

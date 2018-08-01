@@ -36,6 +36,7 @@ from analysis_engine.settings import (ACCEL_LAT_OFFSET_LIMIT,
                                       REVERSE_THRUST_EFFECTIVE_EPR,
                                       REVERSE_THRUST_EFFECTIVE_N1,
                                       SPOILER_DEPLOYED,
+                                      TCAS_SCAN_TIME,
                                       TCAS_THRESHOLD,
                                       VERTICAL_SPEED_FOR_LEVEL_FLIGHT)
 
@@ -18212,7 +18213,7 @@ class TCASRADirection(KeyPointValueNode):
             elif tcas.array[index] == 'Preventive':
                 self.create_kpv(index, 0)
             else:
-                raise ValueError('Unrecognised combined control in TCAS RA')
+                pass # Can arise for masked data
 
                     
 class TCASRAReactionDelay(KeyPointValueNode):
@@ -18237,7 +18238,7 @@ class TCASRAReactionDelay(KeyPointValueNode):
         
         for tcas_ra in tcas_ras:
             # Default scan from 10 seconds before the RA to the end of RA
-            to_scan = slice(tcas_ra.slice.start - 10.0 * acc.frequency, tcas_ra.slice.stop)
+            to_scan = slice(tcas_ra.slice.start - TCAS_SCAN_TIME * acc.frequency, tcas_ra.slice.stop)
             if tcas_tas:
                 found = False
                 # We can refine the start point
@@ -18276,8 +18277,8 @@ class TCASRAAcceleration(KeyPointValueNode):
         
         for tcas_ra in tcas_ras:
             # Default scan 10 seconds either side of the RA start
-            begin = max(tcas_ra.slice.start - 10.0 * acc.frequency, 0)
-            end = tcas_ra.slice.start + 10.0 * acc.frequency
+            begin = max(tcas_ra.slice.start - TCAS_SCAN_TIME * acc.frequency, 0)
+            end = tcas_ra.slice.start + TCAS_SCAN_TIME * acc.frequency
             to_scan = slice(begin, end)
             if tcas_tas:
                 # We can refine the start point (looking for an overlap against the default scan avoids
@@ -18339,7 +18340,7 @@ class TCASRAAPDisengaged(KeyPointValueNode):
                tcas_tas=S('TCAS Traffic Advisory')):
         
         for tcas_ra in tcas_ras:
-            to_scan = slice(tcas_ra.slice.start - 10.0 * tcas_ras.frequency, tcas_ra.slice.stop)
+            to_scan = slice(tcas_ra.slice.start - TCAS_SCAN_TIME * tcas_ras.frequency, tcas_ra.slice.stop)
             if tcas_tas:
                 found = False
                 for tcas_ta in tcas_tas:
@@ -18380,7 +18381,7 @@ class TCASRAToAPDisengagedDuration(KeyPointValueNode):
         
         for tcas_ra in tcas_ras:
             # Default scan from 10 seconds before the RA to the end of RA
-            to_scan = slice(tcas_ra.slice.start - 10.0 * acc.frequency, tcas_ra.slice.stop)
+            to_scan = slice(tcas_ra.slice.start - TCAS_SCAN_TIME * acc.frequency, tcas_ra.slice.stop)
             if tcas_tas:
                 found = False
                 # We can refine the start point
@@ -18414,9 +18415,10 @@ class TCASRAErroneousAcceleration(KeyPointValueNode):
                tcas_ra_accs=KPV('TCAS RA Acceleration'),
                tcas_dirs=KPV('TCAS RA Direction')):
         
+        direction = 0
         for tcas_ra in tcas_ras:
             # Default scan from 10 seconds before the RA to the end of RA
-            begin = tcas_ra.slice.start - 10.0 * acc.frequency
+            begin = tcas_ra.slice.start - TCAS_SCAN_TIME * acc.frequency
             end = tcas_ra.slice.stop
             to_scan = slice(begin, end)
             if tcas_tas:

@@ -18649,6 +18649,11 @@ class TCASTAHeading(KeyPointValueNode):
             index = ta_warn.index
             self.create_kpv(index, hdg.array[index])
 
+"""
+####################################################################################
+## Development plotting routines for TA and RA KPVs.
+####################################################################################
+
 class TCASTADevelopmentPlot(KeyPointValueNode):
     '''
     '''
@@ -18775,8 +18780,8 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
             datum = tcas_ras.get_first().slice.start
             hz = tcas_ras.frequency
             return (index - datum) / hz
-      
-        if not tcas_ras.get_first():
+        
+        if not tcas_ras:
             return
         
         dt = 20
@@ -18874,7 +18879,7 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
         plt.savefig('C:\\Temp\\figures\\TCAS_plot_RA_' + str(ident) + '.png')
         plt.clf()
         plt.close()
-
+"""
 
 ##############################################################################
 # Warnings: Takeoff Configuration

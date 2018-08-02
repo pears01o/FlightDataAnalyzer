@@ -1506,7 +1506,7 @@ class Airspeed10000To5000FtMax(KeyPointValueNode):
 
 class Airspeed10000To8000FtMax(KeyPointValueNode):
     '''
-    Maximum airspeed during descent between 10000ft STD (smoothed) and 5000ft STD (smoothed).
+    Maximum airspeed during descent between 10000ft STD (smoothed) and 8000ft STD (smoothed).
     '''
 
     units = ut.KT
@@ -3420,7 +3420,7 @@ class AirspeedWithFlapMax(KeyPointValueNode, FlapOrConfigurationMaxOrMin):
             data = self.flap_or_conf_max_or_min(flap, airspeed, max_value, scope)
             for index, value, detent in data:
                 self.create_kpv(index, value, parameter=flap.name, flap=detent)
-            
+                
             ### Changing the current 'Flap Including Transition' parameter to monitor transitions 
             ### to a reading of 0.1 degrees for Boeing - there is a requirement for an inspection
             ### if airspeed is high for each flap setting, including the transition period, until 

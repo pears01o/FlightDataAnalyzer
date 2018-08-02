@@ -5144,24 +5144,24 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         manufacturer=A('Manufacturer', value='Boeing')
         
         node = self.node_class()
-        node.derive(airspeed, None, None, flap_inc_trans, None, fast, flap_angle, manufacturer)
+        node.derive(airspeed, None, None, flap_inc_trans, None, fast)
         
         self.assertEqual(len(node), 5)
         self.assertEqual(node[0].name, 'Airspeed With Flap Including Transition 1 Max')
         self.assertEqual(node[1].name, 'Airspeed With Flap Including Transition 5 Max')
         self.assertEqual(node[2].name, 'Airspeed With Flap Including Transition 10 Max')
         self.assertEqual(node[3].name, 'Airspeed With Flap Including Transition 15 Max')
-        #self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
-        self.assertEqual(node[0].index, 76)
-        self.assertEqual(node[1].index, 74)
-        self.assertEqual(node[2].index, 68)
-        self.assertEqual(node[3].index, 56)
-        #self.assertEqual(node[4].index, 44)
+        self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
+        self.assertEqual(node[0].index, 74)
+        self.assertEqual(node[1].index, 68)
+        self.assertEqual(node[2].index, 56)
+        self.assertEqual(node[3].index, 50)
+        self.assertEqual(node[4].index, 39)
         self.assertEqual(node[0].value, 39)
-        self.assertEqual(node[1].value, 39)
-        self.assertEqual(node[2].value, 37)
-        self.assertEqual(node[3].value, 33)
-        self.assertEqual(node[4].value, 29)
+        self.assertEqual(node[1].value, 37)
+        self.assertEqual(node[2].value, 33)
+        self.assertEqual(node[3].value, 31)
+        self.assertEqual(node[4].value, 27)
     
     @patch.dict('analysis_engine.key_point_values.AirspeedWithFlapMax.NAME_VALUES', {'flap': (0, 1, 5, 10, 15, 20)})
     def test_derive_Boeing_flap_angle_not_available(self):
@@ -5174,24 +5174,24 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         manufacturer=A('Manufacturer', value='Boeing')
     
         node = self.node_class()
-        node.derive(airspeed, None, None, flap_inc_trans, None, fast, None, manufacturer)
+        node.derive(airspeed, None, None, flap_inc_trans, None, fast)
         
         self.assertEqual(len(node), 5)
         self.assertEqual(node[0].name, 'Airspeed With Flap Including Transition 1 Max')
         self.assertEqual(node[1].name, 'Airspeed With Flap Including Transition 5 Max')
         self.assertEqual(node[2].name, 'Airspeed With Flap Including Transition 10 Max')
         self.assertEqual(node[3].name, 'Airspeed With Flap Including Transition 15 Max')
-        #self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
+        self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
         self.assertEqual(node[0].index, 74)
         self.assertEqual(node[1].index, 68)
         self.assertEqual(node[2].index, 56)
         self.assertEqual(node[3].index, 50)
-        #self.assertEqual(node[4].index, 39)
+        self.assertEqual(node[4].index, 39)
         self.assertEqual(node[0].value, 39)
         self.assertEqual(node[1].value, 37)
         self.assertEqual(node[2].value, 33)
         self.assertEqual(node[3].value, 31)
-        #self.assertEqual(node[4].value, 27)
+        self.assertEqual(node[4].value, 27)
     
     @patch.dict('analysis_engine.key_point_values.AirspeedWithFlapMax.NAME_VALUES', {'flap': (0, 1, 5, 10, 15, 20)})
     def test_derive_Boeing_flap_including_transition_not_available(self):
@@ -5210,7 +5210,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         manufacturer=A('Manufacturer', value='Boeing')
     
         node = self.node_class()
-        node.derive(airspeed, None, None, None, None, fast, flap_angle, manufacturer)
+        node.derive(airspeed, None, None, None, None, fast)
         
         self.assertEqual(len(node), 0)
 
@@ -5232,7 +5232,7 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         manufacturer=A('Manufacturer', value='Boeing')
     
         node = self.node_class()
-        node.derive(airspeed, None, None, flap_inc_trans, None, fast, flap_angle, manufacturer)
+        node.derive(airspeed, None, None, flap_inc_trans, None, fast)
         
         self.assertEqual(len(node), 5)
         self.assertEqual(node[0].name, 'Airspeed With Flap Including Transition 1 Max')
@@ -5268,24 +5268,24 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         manufacturer=A('Manufacturer', value='Boeing')
     
         node = self.node_class()
-        node.derive(airspeed, None, None, flap_inc_trans, None, fast, flap_angle, manufacturer)
+        node.derive(airspeed, None, None, flap_inc_trans, None, fast)
     
         self.assertEqual(len(node), 5)
         self.assertEqual(node[0].name, 'Airspeed With Flap Including Transition 1 Max')
         self.assertEqual(node[1].name, 'Airspeed With Flap Including Transition 5 Max')
         self.assertEqual(node[2].name, 'Airspeed With Flap Including Transition 10 Max')
         self.assertEqual(node[3].name, 'Airspeed With Flap Including Transition 15 Max')
-        #self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
-        self.assertEqual(node[0].index, 76)
-        self.assertEqual(node[1].index, 74)
-        self.assertEqual(node[2].index, 62)
-        self.assertEqual(node[3].index, 56)
-        #self.assertEqual(node[4].index, 44)
+        self.assertEqual(node[4].name, 'Airspeed With Flap Including Transition 20 Max')
+        self.assertEqual(node[0].index, 74)
+        self.assertEqual(node[1].index, 68)
+        self.assertEqual(node[2].index, 56)
+        self.assertEqual(node[3].index, 50)
+        self.assertEqual(node[4].index, 39)
         self.assertEqual(node[0].value, 39)
-        self.assertEqual(node[1].value, 39)
-        self.assertEqual(node[2].value, 35)
-        self.assertEqual(node[3].value, 33)
-        #self.assertEqual(node[4].value, 29)
+        self.assertEqual(node[1].value, 37)
+        self.assertEqual(node[2].value, 33)
+        self.assertEqual(node[3].value, 31)
+        self.assertEqual(node[4].value, 27)
 
 
 class TestAirspeedWithFlapMin(unittest.TestCase, NodeTest):

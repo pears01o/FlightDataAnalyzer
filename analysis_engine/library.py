@@ -8579,9 +8579,10 @@ def max_maintained_value(arrays, seconds, frequency, phase):
         if samples <= len(array):
             max_value = array.max()
             min_difference_index = 0
-            min_difference = np.ma.sum(max_value - array[:samples])
+            min_difference = sum = np.ma.sum(max_value - array[:samples])
             for i in range(1, len(array) - samples + 1):
-                sum = np.ma.sum(max_value - array[i:i + samples])
+                sum += array[i - 1]
+                sum -= array[samples + i - 1]
                 if sum < min_difference:
                     min_difference = sum
                     min_difference_index = i

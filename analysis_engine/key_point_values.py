@@ -4125,6 +4125,22 @@ class AirspeedAtThrustReversersSelection(KeyPointValueNode):
         self.create_kpv_from_slices(air_spd.array, to_scan, max_value)
 
 
+class AirspeedWithThrustReversersDeployedAnyPowerMin(KeyPointValueNode):
+    '''
+    Minimum true airspeed measured with Thrust Reversers deployed at any power 
+    setting.
+    '''
+
+    units = ut.KT
+
+    def derive(self,
+               air_spd=P('Airspeed True'),
+               tr=M('Thrust Reversers'),):
+
+        tr_deployed = runs_of_ones(tr.array == 'Deployed')
+        self.create_kpv_from_slices(air_spd.array, tr_deployed, min_value)
+
+
 ########################################
 # Airspeed: Other
 

@@ -276,9 +276,9 @@ def track_to_kml(hdf_path, kti_list, kpv_list, approach_list,
            (kpv_lat == 0.0 and kpv_lon == 0.0):
             continue
 
-        if not KEEP_KPVS and kti.name in SKIP_KPVS:
+        if not KEEP_KPVS and kpv.name in SKIP_KPVS:
             continue
-        elif len(KEEP_KPVS)>0 and (kti.name not in KEEP_KPVS):
+        elif len(KEEP_KPVS)>0 and (kpv.name not in KEEP_KPVS):
             continue
         
         style = simplekml.Style()

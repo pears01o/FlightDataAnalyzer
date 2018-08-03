@@ -172,6 +172,13 @@ class AccelerationLongitudinalOffsetRemoved(DerivedParameterNode):
 
     units = ut.G
 
+    @classmethod
+    def can_operate(cls, available, seg_type=A('Segment Type')):
+        if seg_type.value == 'GROUND_ONLY':
+            return 'Acceleration Longitudinal' in available
+        return all_of(('Acceleration Longitudinal',
+                       'Acceleration Longitudinal Offset'), available)
+
     def derive(self,
                acc=P('Acceleration Longitudinal'),
                offset=KPV('Acceleration Longitudinal Offset')):

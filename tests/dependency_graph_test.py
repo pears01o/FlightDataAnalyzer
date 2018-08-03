@@ -356,7 +356,11 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         lfl_params = ['Airspeed', 'Gear (L) Down', 'Gear (L) Red Warning']
         requested = ['Airspeed At Gear Down Selected']
         derived = get_derived_nodes([import_module('sample_circular_dependency_nodes')])
-        mgr = NodeManager({'Start Datetime': datetime.now()}, 10, lfl_params, requested, [],
+        segment_info = {
+            'Start Datetime': datetime.now(),
+            'Segment Type': 'START_AND_STOP',
+        }
+        mgr = NodeManager(segment_info, 10, lfl_params, requested, [],
                           derived, {}, {})
         order, _ = dependency_order(mgr, draw=False)
         # As Gear Selected Down depends upon Gear Down

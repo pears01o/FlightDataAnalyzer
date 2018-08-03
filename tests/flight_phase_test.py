@@ -1954,7 +1954,12 @@ class TestMobile(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = Mobile
-        self.operational_combinations = [('Heading Rate',), ('Heading Rate', 'Groundspeed'), ('Heading Rate', 'Airborne'), ('Heading Rate', 'Groundspeed', 'Airborne')]
+        self.operational_combinations = [
+            ('Heading Rate',),
+            ('Heading Rate', 'Groundspeed'),
+            ('Heading Rate', 'Airborne'),
+            ('Heading Rate', 'Groundspeed', 'Airborne')
+        ]
 
     def test_gspd(self):
         rot = np.ma.array([0, 0, 0, 0, 0, 0, 0])
@@ -2215,28 +2220,14 @@ class TestRejectedTakeoff(unittest.TestCase):
         expected = [
             ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
              'Grounded', 'Takeoff Runway Heading', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Takeoff Runway Heading', 'Segment Type'),
             ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
              'Grounded', 'Eng (*) N1 Max', 'Takeoff Runway Heading',
              'Segment Type'),
             ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
-             'Grounded', 'Takeoff Acceleration Start',
-             'Takeoff Runway Heading', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Eng (*) N1 Max', 'Takeoff Runway Heading', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Takeoff Acceleration Start', 'Takeoff Runway Heading',
+             'Grounded', 'Takeoff Acceleration Start', 'Takeoff Runway Heading',
              'Segment Type'),
             ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
              'Grounded', 'Eng (*) N1 Max', 'Takeoff Acceleration Start',
-             'Takeoff Runway Heading', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Eng (*) N1 Max', 'Takeoff Acceleration Start',
              'Takeoff Runway Heading', 'Segment Type')
         ]
         self.assertEqual(
@@ -2246,50 +2237,27 @@ class TestRejectedTakeoff(unittest.TestCase):
         )
 
         expected = [
-            ('Acceleration Longitudinal', 'Eng (*) All Running',
-             'Grounded','Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running',
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
              'Grounded', 'Segment Type'),
-            ('Acceleration Longitudinal', 'Eng (*) All Running',
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
              'Grounded', 'Eng (*) N1 Max', 'Segment Type'),
-            ('Acceleration Longitudinal', 'Eng (*) All Running',
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
              'Grounded', 'Takeoff Acceleration Start', 'Segment Type'),
-            ('Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Takeoff Runway Heading', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Eng (*) N1 Max', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Takeoff Acceleration Start', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Takeoff Runway Heading', 'Segment Type'),
-            ('Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Eng (*) N1 Max', 'Takeoff Acceleration Start', 'Segment Type'),
-            ('Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Eng (*) N1 Max', 'Takeoff Runway Heading', 'Segment Type'),
-            ('Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Takeoff Acceleration Start', 'Takeoff Runway Heading',
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Takeoff Runway Heading', 'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Eng (*) N1 Max', 'Takeoff Acceleration Start',
              'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Eng (*) N1 Max', 'Takeoff Acceleration Start', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Eng (*) N1 Max', 'Takeoff Runway Heading', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Takeoff Acceleration Start', 'Takeoff Runway Heading',
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Eng (*) N1 Max', 'Takeoff Runway Heading',
              'Segment Type'),
-            ('Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Eng (*) N1 Max', 'Takeoff Acceleration Start',
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Takeoff Acceleration Start', 'Takeoff Runway Heading',
+             'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Eng (*) N1 Max', 'Takeoff Acceleration Start',
              'Takeoff Runway Heading', 'Segment Type'),
-            ('Acceleration Longitudinal Offset Removed',
-             'Acceleration Longitudinal', 'Eng (*) All Running', 'Grounded',
-             'Eng (*) N1 Max', 'Takeoff Acceleration Start',
-             'Takeoff Runway Heading', 'Segment Type')]
+        ]
         self.assertEqual(
             RejectedTakeoff.get_operational_combinations(
                 seg_type=A('Segment Type', 'GROUND_ONLY')),
@@ -2314,7 +2282,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         node = RejectedTakeoff()
         # Set a low frequency to pass slice duration checks.
         node.frequency = 1/64.0
-        node.derive(accel_lon, None, eng_running, grounded, None, None,
+        node.derive(accel_lon, eng_running, grounded, None, None,
                     toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 15, 0)
@@ -2334,7 +2302,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         node = RejectedTakeoff()
         # Set a low frequency to pass slice duration checks.
         node.frequency = 1/64.0
-        node.derive(accel_lon, None, eng_running, grounded, None, None,
+        node.derive(accel_lon, eng_running, grounded, None, None,
                     toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 2)
         self.assertAlmostEqual(node[0].slice.start, 5, 0)
@@ -2357,7 +2325,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         node = RejectedTakeoff()
         # Set a low frequency to pass slice duration checks.
         node.frequency = 1/64.0
-        node.derive(accel_lon, None, eng_running, grounded, None, None,
+        node.derive(accel_lon, eng_running, grounded, None, None,
                     toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 15, 0)
@@ -2375,7 +2343,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         toff_rwy_hdg = buildsections('Takeoff Runway Heading',
                                      [3500, 4000], [5000, 5447])
         node = RejectedTakeoff()
-        node.derive(accel_lon, None, eng_running, grounded, None, None,
+        node.derive(accel_lon, eng_running, grounded, None, None,
                     toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 3622, 0)
@@ -2397,7 +2365,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         toff_rwy_hdg = buildsections('Takeoff Runway Heading',
                                      [2500, 4000], [7000,8000], [10000, 15305])
         node = RejectedTakeoff()
-        node.derive(accel_lon, None, eng_running, groundeds, eng_n1, None,
+        node.derive(accel_lon, eng_running, groundeds, eng_n1, None,
                     toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 2)
         self.assertAlmostEqual(node[0].slice.start, 2970, 0)
@@ -2417,7 +2385,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         toff_rwy_hdg = buildsections('Takeoff Runway Heading',
                                      [2300, 2500], [3000, 3731])
         node = RejectedTakeoff()
-        node.derive(accel_lon, None, eng_running, grounded, None, None,
+        node.derive(accel_lon, eng_running, grounded, None, None,
                     toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 2383, 0)
@@ -2436,7 +2404,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         toff_rwy_hdg = buildsections('Takeoff Runway Heading',
                                      [1900, 2000], [3500, 3796])
         node = RejectedTakeoff(frequency=4)
-        node.derive(accel_lon, None, eng_running, grounded, None, None,
+        node.derive(accel_lon, eng_running, grounded, None, None,
                     toff_rwy_hdg, A('Segment Type', 'START_AND_ONLY'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 1917, 0)
@@ -2452,7 +2420,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
                             values_mapping={0: 'Not Running', 1: 'Running'})
         node = RejectedTakeoff()
-        node.derive(accel_lon, None, eng_running, grounded, None, None,
+        node.derive(accel_lon, eng_running, grounded, None, None,
                     A('Segment Type','START_AND_STOP'))
         self.assertEqual(len(node), 0)
 
@@ -2466,7 +2434,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
                             values_mapping={0: 'Not Running', 1: 'Running'})
         node = RejectedTakeoff()
-        node.derive(accel_lon, None, eng_running, grounded, None, None,
+        node.derive(accel_lon, eng_running, grounded, None, None,
                     A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 0)
 
@@ -2480,7 +2448,7 @@ class TestRejectedTakeoff(unittest.TestCase):
         eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
                             values_mapping={0: 'Not Running', 1: 'Running'})
         node = RejectedTakeoff()
-        node.derive(accel_lon, None, eng_running, grounded, None, None,
+        node.derive(accel_lon, eng_running, grounded, None, None,
                     A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 0)
 

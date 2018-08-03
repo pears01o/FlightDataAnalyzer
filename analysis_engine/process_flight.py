@@ -571,6 +571,27 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
     # go through modules to get derived nodes
     derived_nodes = get_derived_nodes(node_modules)
 
+    if segment_info['Segment Type'] == 'GROUND_ONLY':
+        # Owing to the huge increase in circular dependancies when building
+        # the process_order for GROUND_ONLY segments. Logging on clery workers
+        # run out of disk space and then stops. Processing time also increases.
+        # Instead of trying to resolve the processing order for all the nodes,
+        # GROUND_ONLY will be restricted to processing only what is required
+        # for certain events. This reduce the circlar dependencies from
+        # 17,860 to 908 (worst case frame) and reduces frames with circular
+        # dependency issues from 100 to 33
+        # TODO: Fix circular dependancies for GROUND_ONLY
+        requested = [
+            'Groundspeed During Rejected Takeoff Max',
+            #'Eng Torque During Taxi Max',
+            #'Takeoff Configuration Warning Duration',
+            #'Eng Gas Temp During Eng Start Max',
+            #'Eng Torque During Taxi Max',
+            #'Eng Eng Start To N1 At 60 Percent Duration',
+            #'Eng N1 During Taxi Max',
+            #'Eng N1 During Taxi Out Max',
+        ]
+
     if requested:
         requested_subset = \
             list(set(requested).intersection(set(derived_nodes)))

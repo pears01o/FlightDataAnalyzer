@@ -1646,27 +1646,20 @@ class RejectedTakeoff(FlightPhaseNode):
 
     @classmethod
     def can_operate(cls, available, seg_type=A('Segment Type')):
+        req =  all_of(('Acceleration Longitudinal Offset Removed',
+                       'Eng (*) All Running',
+                       'Grounded',
+                       'Segment Type'
+                       ), available)
         if seg_type and seg_type.value == 'START_AND_STOP':
-            return all_of((
-                'Acceleration Longitudinal Offset Removed',
-                'Eng (*) All Running',
-                'Grounded',
-                'Takeoff Runway Heading',
-                'Segment Type'
-                ), available)
+            return req and 'Takeoff Runway Heading' in available
         elif seg_type and seg_type.value == 'GROUND_ONLY':
-            return all_of((
-                'Acceleration Longitudinal',
-                'Eng (*) All Running',
-                'Grounded',
-                'Segment Type'
-                ), available)
+            return req
         else:
             return False
 
     def derive(self,
                accel_lon=P('Acceleration Longitudinal Offset Removed'),
-               accel_lon_rec=P('Acceleration Longitudinal'),
                eng_running=M('Eng (*) All Running'),
                groundeds=S('Grounded'),
                eng_n1=P('Eng (*) N1 Max'),
@@ -1674,10 +1667,9 @@ class RejectedTakeoff(FlightPhaseNode):
                toff_rwy_hdg=S('Takeoff Runway Heading'),
                seg_type=A('Segment Type')):
 
-        accel = accel_lon or accel_lon_rec
         # We need all engines running to be a realistic attempt to get airborne
         runnings = runs_of_ones(eng_running.array=='Running')
-        hz = accel.frequency
+        hz = accel_lon.frequency
         # If Takeoff Acceleration Start KTI exists, include only slices
         # before this KTI and shorten the slice containing the it.
         if toff_acc:
@@ -1704,7 +1696,7 @@ class RejectedTakeoff(FlightPhaseNode):
 
         if eng_n1 is not None:
             accel_above_thres = runs_of_ones(
-                repair_mask(accel.array, frequency=hz, repair_duration=None) >=
+                repair_mask(accel_lon.array, frequency=hz, repair_duration=None) >=
                 TAKEOFF_ACCELERATION_THRESHOLD
             )
             n1_max_above_50 = runs_of_ones(
@@ -1730,7 +1722,7 @@ class RejectedTakeoff(FlightPhaseNode):
                 self.create_phases(rto_list)
         else:
             for running_on_ground in running_on_grounds:
-                accel_lon_ground = accel.array[running_on_ground]
+                accel_lon_ground = accel_lon.array[running_on_ground]
                 accel_lon_slices = runs_of_ones(
                     accel_lon_ground >= TAKEOFF_ACCELERATION_THRESHOLD
                 )
@@ -1750,7 +1742,7 @@ class RejectedTakeoff(FlightPhaseNode):
                     # looks like a rejection, we check the two accelerations
                     # happened fairly close together.
                     if trough_index and \
-                       (trough_index - peak.start)/accel.hz < 60.0:
+                       (trough_index - peak.start)/accel_lon.hz < 60.0:
                         self.create_phase(
                             slice(peak.start + running_on_ground.start,
                                   trough_index + running_on_ground.start)

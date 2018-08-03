@@ -7,7 +7,7 @@ import networkx as nx # pip install networkx or /opt/epd/bin/easy_install networ
 import six
 import copy
 
-from collections import deque
+from collections import deque, Counter
 
 from flightdatautilities.dict_helpers import dict_filter
 
@@ -211,6 +211,7 @@ def dependencies3(di_graph, root, node_mgr, raise_cir_dep=False):
                     dependency on the node is encountered.
     '''
     log_stuff = logger.getEffectiveLevel() >= logging.INFO
+    circular_log = Counter()
     def traverse_tree(node):
         "Begin the recursion at this node's position in the dependency tree"
         if node in path:
@@ -219,7 +220,15 @@ def dependencies3(di_graph, root, node_mgr, raise_cir_dep=False):
             # we've met this node before; start of circular dependency?
             tree_path.append(list(path) + ['CIRCULAR',])
             if log_stuff:
-                logger.info("Circular dependency avoided at node '%s'. "
+                if node_mgr.segment_info['Segment Type'] == 'START_AND_STOP':
+                    logger.info("Circular dependency avoided at node '%s'. "
+                                "Branch path: %s", node, path)
+                else:
+                    circular_log.update(
+                        ["Circular dependency avoided at node '%s'" % (node,),]
+                    )
+            if node_mgr.segment_info['Segment Type'] == 'GROUND_ONLY':
+                logger.debug("Circular dependency avoided at node '%s'. "
                             "Branch path: %s", node, path)
             if raise_cir_dep:
                 raise CircularDependency("Circular Dependency In Path "
@@ -263,6 +272,11 @@ def dependencies3(di_graph, root, node_mgr, raise_cir_dep=False):
     path_start_kpv = []#set()
     tree_path = [] # For viewing the tree in which nodes are add to path
     traverse_tree(root)  # start recursion
+    # log any circular dependencies caught
+    if log_stuff and circular_log:
+        logger.info('Circular dependency avoided %s times.', sum(circular_log.values()))
+        for l, v in circular_log.items():
+            logger.info("%s (%s times)", l, v)
     return ordering, tree_path
 
 

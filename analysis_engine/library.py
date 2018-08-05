@@ -663,15 +663,19 @@ def bump(acc, kti):
 
     :param acc: An acceleration parameter
     :type acc: A Parameter object
-    :param kti: A Key Time Instance
-    :type kti: A KTI object
+    :param kti: A Key Time Instance or simple Index
+    :type kti: A KTI object or an index (integer or float)
 
     :returns: The peak acceleration within +/- 3 seconds of the KTI
     :type: Acceleration, from the acc.array.
     """
+    try:
+        index = kti.index
+    except:
+        index = kti
     dt = BUMP_HALF_WIDTH # Half width of range to scan across for peak acceleration.
-    from_index = max(ceil(kti.index - dt * acc.hz), 0)
-    to_index = min(int(kti.index + dt * acc.hz)+1, len(acc.array))
+    from_index = max(ceil(index - dt * acc.hz), 0)
+    to_index = min(int(index + dt * acc.hz)+1, len(acc.array))
     bump_accel = acc.array[from_index:to_index]
 
     # Taking the absoulte value makes no difference for normal acceleration

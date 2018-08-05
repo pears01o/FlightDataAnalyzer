@@ -1256,7 +1256,6 @@ class TestBlendNonequispacedSensors(unittest.TestCase):
 
 
 class TestBump(unittest.TestCase):
-    @unittest.skip('Not Implemented')
     def test_bump(self):
         instant = KTI(items=[KeyTimeInstance(6.5, 'Test KTI')])
         accel = P('Test',
@@ -1269,6 +1268,16 @@ class TestBump(unittest.TestCase):
         # and did we find the right peak and miss the traps?
         self.assertEqual(bump(accel, instant[0])[1],1.0)
 
+    def test_bump_not_kti(self):
+        instant = 6.5
+        accel = P('Test',
+                  np.ma.array([2,0,0,0,1,0,0,0,0,0,0,0,0,3],
+                              dtype=float),
+                  frequency=2.0,
+                  offset=0.0)
+        self.assertEqual(bump(accel, instant)[0],4.0)
+        self.assertEqual(bump(accel, instant)[1],1.0)
+        
 
 class TestIncludingTransition(unittest.TestCase):
     flap_map_1 = {0: '0', 15: '15', 30: '30', 45: '45'}

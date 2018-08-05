@@ -774,12 +774,15 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
     def derive(self,
                acc_norm=P('Acceleration Normal Offset Removed'),
                touchdowns=KTI('Touchdown'),
-               touch_and_go=KTI('Touch And Go')):
+               touch_and_go=KTI('Touch And Go'),
+               bounces=S('Bounced Landing')):
         tdwns = touchdowns
         if touch_and_go:
             tdwns += touch_and_go
         for touchdown in tdwns:
                 self.create_kpv(*bump(acc_norm, touchdown))
+        for bounce in bounces:
+            self.create_kpv(*bump(acc_norm, bounce.slice.stop))
 
 
 class AccelerationNormalAboveWeightLimitAtTouchdown(KeyPointValueNode):

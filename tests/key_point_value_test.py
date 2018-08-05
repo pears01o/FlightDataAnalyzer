@@ -1848,6 +1848,8 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
     def setUp(self):
         self.node_class = AccelerationNormalAtTouchdown
         self.operational_combinations = [
+            ('Acceleration Normal Offset Removed', 'Touchdown', 'Touch And Go', 'Bounced Landing'),
+            ('Acceleration Normal Offset Removed', 'Touchdown', 'Bounced Landing'),
             ('Acceleration Normal Offset Removed', 'Touchdown', 'Touch And Go'),
             ('Acceleration Normal Offset Removed', 'Touchdown'),
         ]
@@ -1886,6 +1888,18 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
         self.assertEqual(node, [
             KeyPointValue(3, 4.0, 'Acceleration Normal At Touchdown', slice(None, None)),
             KeyPointValue(1, 2.0, 'Acceleration Normal At Touchdown', slice(None, None)),
+        ])
+        
+    def test_derive_bounced_landing(self):
+        acc_norm = P('Acceleration Normal', array=np.ma.array(range(10)) / 10.0 + 1.0)
+        touchdowns = KTI('Touchdown', items=[KeyTimeInstance(3, 'Touchdown')])
+        bounces = buildsection('Bounced Landing', 4, 6)
+        node = AccelerationNormalAtTouchdown()
+        node.derive(acc_norm, touchdowns, None, bounces)
+        # Bounce adds 3 to the 3 and 6 indices giving...
+        self.assertEqual(node, [
+            KeyPointValue(6, 1.6, 'Acceleration Normal At Touchdown', slice(None, None)),
+            KeyPointValue(9, 1.9, 'Acceleration Normal At Touchdown', slice(None, None)),
         ])
         
 

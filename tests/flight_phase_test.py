@@ -652,28 +652,25 @@ class TestAutorotation(unittest.TestCase):
 
 class TestBouncedLanding(unittest.TestCase):
     def test_bounce_basic(self):
-        fast = buildsection('Fast',2,13)
         airborne = buildsection('Airborne', 3,10)
         alt = np.ma.array([0,0,0,2,10,30,10,2,0,0,0,0,0,0])
         bl = BouncedLanding()
-        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne, fast)
+        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne)
         expected = []
         self.assertEqual(bl, expected)
 
     def test_bounce_with_bounce(self):
-        fast = buildsection('Fast',2,13)
-        airborne = buildsection('Airborne', 3,7)
+        airborne = buildsection('Airborne', 3,11)
         alt = np.ma.array([0,0,0,2,10,30,10,2,0,3,3,0,0,0])
         bl = BouncedLanding()
-        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne, fast)
+        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne)
         self.assertEqual(bl[0].slice, slice(9, 11))
 
     def test_bounce_with_double_bounce(self):
-        fast = buildsection('Fast',2,13)
-        airborne = buildsection('Airborne', 3,7)
+        airborne = buildsection('Airborne', 3,12)
         alt = np.ma.array([0,0,0,2,10,30,10,2,0,3,0,5,0])
         bl = BouncedLanding()
-        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne, fast)
+        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne)
         self.assertEqual(bl[0].slice, slice(9, 12))
 
     def test_bounce_not_detected_with_multiple_touch_and_go(self):
@@ -681,8 +678,7 @@ class TestBouncedLanding(unittest.TestCase):
         bl = BouncedLanding()
         aal = load(os.path.join(test_data_path, 'alt_aal_training.nod'))
         airs = load(os.path.join(test_data_path, 'airborne_training.nod'))
-        fast = load(os.path.join(test_data_path, 'fast_training.nod'))
-        bl.derive(aal, airs, fast)
+        bl.derive(aal, airs)
         # should not create any bounced landings (used to create 20 at 8000ft)
         self.assertEqual(len(bl), 0)
 

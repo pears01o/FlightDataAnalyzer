@@ -416,40 +416,24 @@ class Approach(FlightPhaseNode):
 
 class BouncedLanding(FlightPhaseNode):
     '''
-    TODO: Review increasing the frequency for more accurate indexing into the
-    altitude arrays.
-
-    Q: Should Airborne be first so we align to its offset?
+    Bounced landing, defined as from first moment on ground to the final moment on the ground.
+    
+    Note: Airborne includes rejection of short segments, so the bounced period is within
+    an airborne phase.
     '''
     def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
-               airs=S('Airborne'),
-               fast=S('Fast')):
-        for speedy in fast:
-            for air in airs:
-                if slices_overlap(speedy.slice, air.slice):
-                    start = air.slice.stop
-                    stop = speedy.slice.stop
-                    if (stop - start) / self.frequency > BOUNCED_MAXIMUM_DURATION:
-                        # duration too long to be a bounced landing!
-                        # possible cause: Touch and go.
-                        continue
-                    elif stop < start:
-                        # Possible condition for helicopters
-                        continue
-                    elif start == len(alt_aal.array):
-                        # Mid-flight segments.
-                        continue
-                    elif start == stop:
-                        stop += 1
-
-                    scan = alt_aal.array[start:stop]
-                    ht = max(scan)
-                    if ht > BOUNCED_LANDING_THRESHOLD:
-                        #TODO: Input maximum BOUNCE_HEIGHT check?
-                        up = np.ma.clump_unmasked(np.ma.masked_less_equal(scan,
-                                                                          0.0))
-                        self.create_phase(
-                            shift_slice(slice(up[0].start, up[-1].stop), start))
+               airs=S('Airborne')):
+        gnds = np.ma.clump_masked(np.ma.masked_less(alt_aal.array,
+                                                    BOUNCED_LANDING_THRESHOLD))        
+        for air in airs:
+            for gnd in gnds:
+                if not is_slice_within_slice(gnd, air.slice):
+                    continue
+                dt = (air.slice.stop - gnd.stop) / alt_aal.frequency
+                if dt > BOUNCED_MAXIMUM_DURATION or \
+                   dt <= 0.0:
+                    continue
+                self.create_phase(slice(gnd.stop, air.slice.stop - 1))
 
 
 class ClimbCruiseDescent(FlightPhaseNode):

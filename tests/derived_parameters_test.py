@@ -5888,9 +5888,11 @@ class TestVOR2Frequency(unittest.TestCase):
 
 
 class TestVerticalSpeedInertial(unittest.TestCase):
-    @unittest.skip('Test Not Implemented')
     def test_can_operate(self):
-        self.assertTrue(False, msg='Test not implemented.')
+        opts = VerticalSpeedInertial.get_operational_combinations()
+        self.assertEqual(opts, [('Acceleration Vertical', 'Altitude STD Smoothed',
+                                 'Altitude Radio Offset Removed', 'Fast',
+                                 'Aircraft Type')])
 
     def test_derive(self):
         time = np.arange(100)
@@ -5917,15 +5919,55 @@ class TestVerticalSpeedInertial(unittest.TestCase):
         alt_std = P('Altitude STD Smoothed', ht_values + 30.0) # Pressure offset
         alt_rad = P('Altitude STD Smoothed', ht_values-2.0) #Oleo compression
         fast = buildsection('Fast', 10, len(acc_values)-10)
-
+        ac_type = A(name='Aircraft Type', value = 'aeroplane')
+       
         vsi = VerticalSpeedInertial()
-        vsi.derive(az, alt_std, alt_rad, fast)
-
+        vsi.derive(az, alt_std, alt_rad, fast, ac_type)
+        
         expected = vel_values
-
-        # Just check the graphs are similar in shape - there will always be
-        # errors because of the integration technique used.
         np.testing.assert_almost_equal(vsi.array, expected, decimal=-2)
+        
+    def test_check_go_around(self):
+        # We build two cycles with a "touch and go" in between to check that the
+        # algorithm does not treat the first as the taxi out for the second, and the
+        # second the taxi in for the first.
+        time = np.arange(100)
+        zero = np.array([0]*50)
+        acc_values = np.concatenate([zero, 
+                                     np.cos(time*np.pi*0.02), 
+                                     zero,
+                                     np.cos(time*np.pi*0.02), 
+                                     zero                                     ])
+        vel_values = np.concatenate([zero, 
+                                     np.sin(time*np.pi*0.02), 
+                                     zero,
+                                     np.sin(time*np.pi*0.02), 
+                                     zero                                     ])
+        ht_values = np.concatenate([zero, 
+                                    1.0-np.cos(time*np.pi*0.02), 
+                                    zero,
+                                    1.0-np.cos(time*np.pi*0.02), 
+                                    zero                                    ])
+        
+        # For a 0-400ft leap over 100 seconds, the scaling is 200ft amplitude and 2*pi/100 for each differentiation.
+        amplitude = 200.0
+        diff = 2.0 * np.pi / 100.0
+        ht_values *= amplitude
+        vel_values *= amplitude * diff * 60.0 # fpm
+        acc_values *= amplitude * diff**2.0 / GRAVITY_IMPERIAL # g
+        
+        az = P('Acceleration Vertical', acc_values)
+        alt_std = P('Altitude STD Smoothed', ht_values + 30.0) # Pressure offset
+        alt_rad = P('Altitude STD Smoothed', ht_values-2.0) #Oleo compression
+        fast = buildsection('Fast', 10, len(acc_values)-10)
+        ac_type = A(name='Aircraft Type', value = 'aeroplane')
+       
+        vsi = VerticalSpeedInertial()
+        vsi.derive(az, alt_std, alt_rad, fast, ac_type)
+        
+        # The mean absolute signal should be 269. In the fault case we are checking, it drops
+        # to 4, hence 100 is a clear divide between success and failure.
+        self.assertGreater(np.ma.average(np.ma.abs(vsi.array)), 100.0)
 
 
 class TestRudder(unittest.TestCase):

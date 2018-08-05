@@ -5500,14 +5500,14 @@ class VerticalSpeedInertial(DerivedParameterNode):
             # TODO: Exclude insignificant rate of change.
             climbs = slices_remove_small_slices(climbs, time_limit=2,
                                                 hz=frequency)
-            for climb in climbs:
+            for n, climb in enumerate(climbs):
                 # From 5 seconds before lift to 100ft
                 lift_m5s = max(0, climb.start - 5*hz)
                 up = slice(lift_m5s if lift_m5s >= 0 else 0, climb.stop)
                 up_slope = integrate(az_washout[up], hz)
                 blend_end_error = roc[climb.stop-1] - up_slope[-1]
                 blend_slope = np.linspace(0.0, blend_end_error, climb.stop-climb.start)
-                if ac_type != helicopter:
+                if ac_type != helicopter and n == 0:
                     roc[:lift_m5s] = 0.0
                 roc[lift_m5s:climb.start] = up_slope[:climb.start-lift_m5s]
                 roc[climb] = up_slope[climb.start-lift_m5s:] + blend_slope
@@ -5529,14 +5529,14 @@ class VerticalSpeedInertial(DerivedParameterNode):
             # TODO: Exclude insignificant rate of change.
             descents = slices_remove_small_slices(descents, time_limit=2,
                                                   hz=frequency)
-            for descent in descents:
+            for n, descent in enumerate(descents):
                 down = slice(descent.start, descent.stop+5*hz)
                 down_slope = integrate(az_washout[down],
                                        hz,)
                 blend = roc[down.start] - down_slope[0]
                 blend_slope = np.linspace(blend, -down_slope[-1], len(down_slope))
                 roc[down] = down_slope + blend_slope
-                if ac_type != helicopter:
+                if ac_type != helicopter and n == len(descents) -1 :
                     roc[descent.stop+5*hz:] = 0.0
 
                 '''

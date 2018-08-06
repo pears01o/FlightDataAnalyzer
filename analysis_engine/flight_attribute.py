@@ -776,7 +776,7 @@ class FlightType(FlightAttributeNode):
         '''
         afr_type = afr_type.value if afr_type else None
 
-        if (seg_type and seg_type.value == 'START_AND_STOP') or not seg_type:
+        if not seg_type or seg_type.value == 'START_AND_STOP':
             if liftoffs and not touchdowns:
                 # In the air without having touched down.
                 self.warning("'Liftoff' KTI exists without 'Touchdown'.")

@@ -690,9 +690,9 @@ class DescentLowClimb(FlightPhaseNode):
     def can_operate(cls, available, seg_type=A('Segment Type'), ac_type=A('Aircraft Type')):
         if ac_type == helicopter:
             return False
-        else:
-            correct_seg_type = seg_type and seg_type.value not in ('GROUND_ONLY', 'NO_MOVEMENT')
-            return 'Altitude AAL For Flight Phases' in available and correct_seg_type
+
+        correct_seg_type = seg_type and seg_type.value not in ('GROUND_ONLY', 'NO_MOVEMENT')
+        return 'Altitude AAL For Flight Phases' in available and correct_seg_type
 
     def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
                level_flights=S('Level Flight')):
@@ -725,7 +725,7 @@ class Fast(FlightPhaseNode):
         if ac_type == helicopter:
             return 'Nr' in available
         else:
-            return seg_type.value=='START_AND_STOP' and 'Airspeed' in available
+            return seg_type and seg_type.value == 'START_AND_STOP' and 'Airspeed' in available
 
     def derive(self, airspeed=P('Airspeed'), rotor_speed=P('Nr'),
                ac_type=A('Aircraft Type')):
@@ -1369,9 +1369,9 @@ class Taxiing(FlightPhaseNode):
 
     @classmethod
     def can_operate(cls, available, seg_type=A('Segment Type')):
+        default = all_of(('Mobile', 'Takeoff', 'Landing', 'Airborne'), available)
         ground_only = seg_type and seg_type.value == 'GROUND_ONLY' and \
             'Mobile' in available
-        default = all_of(('Mobile', 'Takeoff', 'Landing', 'Airborne'), available)
         return default or ground_only
 
     def derive(self, mobiles=S('Mobile'), gspd=P('Groundspeed'),

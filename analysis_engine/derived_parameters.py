@@ -174,7 +174,7 @@ class AccelerationLongitudinalOffsetRemoved(DerivedParameterNode):
 
     @classmethod
     def can_operate(cls, available, seg_type=A('Segment Type')):
-        if seg_type.value == 'GROUND_ONLY':
+        if seg_type and seg_type.value == 'GROUND_ONLY':
             return 'Acceleration Longitudinal' in available
         return all_of(('Acceleration Longitudinal',
                        'Acceleration Longitudinal Offset'), available)

@@ -279,7 +279,7 @@ class AccelerationLateralAtTouchdown(KeyPointValueNode):
                touchdowns=KTI('Touchdown')):
 
         for touchdown in touchdowns:
-            self.create_kpv(*bump(acc_lat, touchdown))
+            self.create_kpv(*bump(acc_lat, touchdown.index))
 
 
 class AccelerationLateralDuringTakeoffMax(KeyPointValueNode):
@@ -756,7 +756,7 @@ class AccelerationNormalAtLiftoff(KeyPointValueNode):
                liftoffs=KTI('Liftoff')):
 
         for liftoff in liftoffs:
-            self.create_kpv(*bump(acc_norm, liftoff))
+            self.create_kpv(*bump(acc_norm, liftoff.index))
 
 
 class AccelerationNormalAtTouchdown(KeyPointValueNode):
@@ -780,7 +780,7 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
         if touch_and_go:
             tdwns += touch_and_go
         for touchdown in tdwns:
-                self.create_kpv(*bump(acc_norm, touchdown))
+            self.create_kpv(*bump(acc_norm, touchdown.index))
         for bounce in bounces:
             self.create_kpv(*bump(acc_norm, bounce.slice.stop))
 

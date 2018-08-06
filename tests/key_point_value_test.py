@@ -1253,8 +1253,8 @@ class TestAccelerationLateralAtTouchdown(unittest.TestCase, NodeTest):
         node = AccelerationLateralAtTouchdown()
         node.derive(acc_lat, touchdowns)
         bump.assert_has_calls([
-            call(acc_lat, touchdowns[0]),
-            call(acc_lat, touchdowns[1]),
+            call(acc_lat, touchdowns[0].index),
+            call(acc_lat, touchdowns[1].index),
         ])
         self.assertEqual(node, [
             KeyPointValue(3, 4.0, 'Acceleration Lateral At Touchdown', slice(None, None)),
@@ -1834,8 +1834,8 @@ class TestAccelerationNormalAtLiftoff(unittest.TestCase, NodeTest):
         node = AccelerationNormalAtLiftoff()
         node.derive(acc_norm, liftoffs)
         bump.assert_has_calls([
-            call(acc_norm, liftoffs[0]),
-            call(acc_norm, liftoffs[1]),
+            call(acc_norm, liftoffs[0].index),
+            call(acc_norm, liftoffs[1].index),
         ])
         self.assertEqual(node, [
             KeyPointValue(3, 4.0, 'Acceleration Normal At Liftoff', slice(None, None)),
@@ -1865,8 +1865,8 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
         node = AccelerationNormalAtTouchdown()
         node.derive(acc_norm, touchdowns, None)
         bump.assert_has_calls([
-            call(acc_norm, touchdowns[0]),
-            call(acc_norm, touchdowns[1]),
+            call(acc_norm, touchdowns[0].index),
+            call(acc_norm, touchdowns[1].index),
         ])
         self.assertEqual(node, [
             KeyPointValue(3, 4.0, 'Acceleration Normal At Touchdown', slice(None, None)),
@@ -1882,8 +1882,8 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
         node = AccelerationNormalAtTouchdown()
         node.derive(acc_norm, touchdowns,touch_and_go)
         bump.assert_has_calls([
-            call(acc_norm, touchdowns[0]),
-            call(acc_norm, touch_and_go[0]),
+            call(acc_norm, touchdowns[0].index),
+            call(acc_norm, touch_and_go[0].index),
         ])
         self.assertEqual(node, [
             KeyPointValue(3, 4.0, 'Acceleration Normal At Touchdown', slice(None, None)),

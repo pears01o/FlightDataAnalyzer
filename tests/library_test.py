@@ -60,10 +60,10 @@ class TestAnyOf(unittest.TestCase):
 class TestAnyOneOf(unittest.TestCase):
     def test_any_one_of(self):
         self.assertTrue(any_one_of(['Airspeed', 'Groundspeed'], ['Airspeed']))
-        self.assertTrue(any_of(['NOT PRESENT', 'Groundspeed'], ['Groundspeed']))
-        self.assertFalse(any_of(['Groundspeed'], []))
-        self.assertFalse(any_of(['Groundspeed'], ['Airspeed', 'Groudspeed']))
-        self.assertFalse(any_of(['NOT PRESENT', 'ALSO NOT THERE'], ['Altitude STD']))
+        self.assertTrue(any_one_of(['NOT PRESENT', 'Groundspeed'], ['Groundspeed']))
+        self.assertFalse(any_one_of(['Groundspeed'], []))
+        self.assertFalse(any_one_of(['Groundspeed'], ['Airspeed', 'Groudspeed']))
+        self.assertFalse(any_one_of(['NOT PRESENT', 'ALSO NOT THERE'], ['Altitude STD']))
 
 class TestAirTrack(unittest.TestCase):
 

@@ -94,6 +94,13 @@ def any_of(names, available):
     return any(name in available for name in names)
 
 
+def any_one_of(names, available):
+    '''
+    Returns True if any ONE, and only one, of the names is within the available list.
+    '''
+    return sum(name in available for name in names) == 1
+    
+
 def air_track(lat_start, lon_start, lat_end, lon_end, spd, hdg, alt_aal, frequency):
     """
 Computation of the air track for cases where recorded latitude and longitude
@@ -5435,7 +5442,7 @@ def peak_curvature(array, _slice=slice(None), curve_sense='Concave',
                     continue
             if _slice.step and _slice.step < 0 and (_slice.start and _slice.stop):
                 # stepping backwards through data, change index
-                return _slice.stop - curve_index - valid_slice.stop + 1
+                return _slice.start - curve_index -1
             elif _slice.step and _slice.step < 0:
                 # stepping backwards without slices
                 return len(array) - (curve_index + 1 + valid_slice.start + (_slice.start or 0))

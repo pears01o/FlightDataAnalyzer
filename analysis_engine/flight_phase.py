@@ -1,4 +1,6 @@
 import numpy as np
+
+from operator import itemgetter
 from scipy.ndimage import filters
 from scipy.signal import medfilt
 
@@ -1199,7 +1201,6 @@ class InitialClimb(FlightPhaseNode):
             to_scan = [[t.stop_edge, 'takeoff'] for t in takeoffs] + \
                 [[c.index, 'climb'] for c in climb_starts]+ \
                 [[c.index, 'climb'] for c in tocs]
-        from operator import itemgetter
         to_scan = sorted(to_scan, key=itemgetter(0))
         for i in range(len(to_scan)-1):
             if to_scan[i][1]=='takeoff' and to_scan[i+1][1]=='climb':

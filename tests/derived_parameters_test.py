@@ -1118,7 +1118,7 @@ class TestAltitudeAAL(unittest.TestCase):
         difs = np.diff(alt_aal.array)
         index, value = max_value(np.abs(difs))
         # Check to test that the step occurs during cruse and not the go-around
-        self.assertTrue(index in range(1290, 1850))
+        self.assertTrue(1290 <= index < 1850)
 
     def test_find_liftoff_start_on_herc(self):
         # Herc (L100) climbs in a straight line without noticable concave

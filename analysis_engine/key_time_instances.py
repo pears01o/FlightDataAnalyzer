@@ -1633,6 +1633,7 @@ class Touchdown(KeyTimeInstanceNode):
             # self.create_kti(index_tdn)
             self.create_kti(index_tdn)
 
+            '''
             # Plotting process to view the results in an easy manner.
             import matplotlib.pyplot as plt
             import os
@@ -1680,6 +1681,7 @@ class Touchdown(KeyTimeInstanceNode):
             #plt.show()
             plt.clf()
             plt.close()
+            '''
 
 
 class OffshoreTouchdown(KeyTimeInstanceNode):

@@ -662,7 +662,7 @@ def braking_action(gspd, landing, mu):
     return limit_point, mu[limit_point]
 """
 
-def bump(acc, kti):
+def bump(acc, index):
     """
     This scans an acceleration array for a short period either side of the
     moment of interest. Too wide and we risk monitoring flares and
@@ -670,15 +670,15 @@ def bump(acc, kti):
 
     :param acc: An acceleration parameter
     :type acc: A Parameter object
-    :param kti: A Key Time Instance
-    :type kti: A KTI object
+    :param index: A Key Time Instance or simple Index
+    :type index: int or float
 
     :returns: The peak acceleration within +/- 3 seconds of the KTI
     :type: Acceleration, from the acc.array.
     """
     dt = BUMP_HALF_WIDTH # Half width of range to scan across for peak acceleration.
-    from_index = max(ceil(kti.index - dt * acc.hz), 0)
-    to_index = min(int(kti.index + dt * acc.hz)+1, len(acc.array))
+    from_index = max(ceil(index - dt * acc.hz), 0)
+    to_index = min(int(index + dt * acc.hz)+1, len(acc.array))
     bump_accel = acc.array[from_index:to_index]
 
     # Taking the absoulte value makes no difference for normal acceleration
@@ -6592,50 +6592,104 @@ def step_local_cusp(array, span):
         return 0
 
 
-def including_transition(array, steps, threshold=0.20):
+def including_transition(array, steps, hz=1, mode='include'):
     '''
     Snaps signal to step values including transition, e.g.:
           _____
       ___|/   \|
     _|/        \|__
-
+    
     :type array: np.ma.array
     :param steps: Steps to align the signal to.
     :type steps: [int]
     :param threshold: Threshold of difference between two flap settings to apply the next flap setting.
     :type threshold: float
+    
+    threshold = 0.01 makes the system too late and too conservative.
     '''
-    # XXX: Problematic signals could benefit from second_window.
-    #array = second_window(array, 1, 10, extend_window=True)
     steps = sorted(steps)
+    mid_steps = [steps[0] - 10.0]
+    
+    for step_1, step_2 in zip(steps[:-1], steps[1:]):
+        mid_steps.append((step_1 + step_2) / 2.0)
+    mid_steps.append(steps[-1] + 10.0)
 
-    # Identify the angles which correspond to steps as these can differ.
-    # This is required as a 'tuned' threshold approach cannot match all cases.
-    step_data = defaultdict(list)
-    diff = np.ma.abs(np.ma.ediff1d(array))
-    for stable_slice in runs_of_ones(diff < 0.01, min_samples=5):
-        step_array = array[stable_slice]
-        step = min(steps, key=lambda s: abs(step_array[0] - s))
-        step_data[step].append(step_array)
-
-    step_angles = {s: float(np.ma.mean(np.ma.concatenate(a))) for s, a in six.iteritems(step_data)}
-
+    #ediff1d is slightly quicker than roc_array
+    #import timeit
+    #timeit.timeit('np.ma.abs(np.ma.ediff1d(array, to_begin=0.0))', 'import numpy as np; array = np.sin(np.ma.arange(0,100000))', number=1000)
+    #timeit.timeit('np.ma.abs(rate_of_change_array(array, hz=1, width=2))', 'import numpy as np; from analysis_engine.library import rate_of_change_array; array = np.sin(np.ma.arange(0,100000))', number=1000)
+    
+    change = np.ma.abs(np.ma.ediff1d(array, to_begin=0.0))
+    
     # first raise the array to the next step if it exceeds the previous step
     # plus a minimal threshold (step as early as possible)
-    output = np_ma_zeros_like(array, mask=array.mask)
+    output = np_ma_masked_zeros_like(array)
+    
+    for mid_1, flap, mid_2 in zip(mid_steps[:-1], steps, mid_steps[1:]):
+        # Slice the data into bands that are between the midpoint flap values
+        bands = slices_and(runs_of_ones(array > mid_1), runs_of_ones(array <= mid_2))
+        for band in bands:
+            # Find where the data did not change in this band...
+            partial = np.ma.where(change[band.start:band.stop+1] < 0.01, flap, np.ma.masked) # threshold of 0.01 to account for slight changes/flutter
+            
+            if band.stop-band.start != len(partial):
+                partial = partial[1:]
+            
+            '''
+            Mask short periods (<3s) where the rate of change was within 
+            limits (<0.01), as this is most likely caused by the low resolution
+            of signal, causing the array to 'snap' to the nearest value for 
+            'low' flap angles (0,1,2,5), e.g.:
+            ___
+               |__
+                  |____
+                       |________
+                       
+            This indicates that the flaps are still in transition, and in
+            case they are not we're checking if it passed through the flap
+            setting of interest below.
+            '''
+            
+            for s in runs_of_ones(partial == flap):
+                if s.stop-s.start < 3*hz:
+                    partial[s.start:s.stop] = np.ma.masked
 
-    for step, next_step in zip(steps, steps[1:]):
-        step_angle = step_angles.get(step, step)
-        next_step_angle = step_angles.get(next_step, next_step)
-
-        step_threshold = ((next_step_angle - step_angle) * threshold)
-        for above_slice in runs_of_ones(array >= step_angle + step_threshold):
-            # check that the section reached 2 * threshold, otherwise the
-            # 'early stepping' is being too eager.
-            if np.ma.max(array[above_slice]) >= step_angle + (2 * step_threshold):
-                output[above_slice] = next_step
+            if np.ma.count(partial):
+                # Unchanged data can be included in our output flap array directly
+                output[band] = partial
+            else:
+                # The data did not have a still moment, so see if it passed
+                # through the flap setting of interest.
+                index = index_at_value(array[band], flap)
+                if index:
+                    output[index + band.start] = flap
+                else:
+                    # The data may have just crept into this band without being a 
+                    # true change into the new flap setting. Let's just ignore this.
+                    pass
+                
+    for gap in np.ma.clump_masked(output):
+        before = output[max(gap.start - 1, 0)]
+        after = output[min(gap.stop, len(output) - 1)]
+        if mode == 'include':
+            output[gap] = max(before, after)
+        else:
+            output[gap] = min(before, after)
 
     return output
+
+    ##import matplotlib.pyplot as plt
+    ##thresholds = ['Flap', 0.0]
+    ##plt.figure(figsize=(14,8))
+    ##plt.plot(array)
+    ##plt.plot(incl_trans(steps, array, thresholds[1]))
+    ##plt.legend(thresholds, loc='upper centre')
+    ##name = 'Flap' + str(len(array))
+    ##print ('Look_At', name)
+    ##plt.savefig('C:\\FlightDataRunner\\88-Results\\' + name + '.png', dpi = (500))
+    ### plt.show()
+    ##plt.clf()
+    ##plt.close()
 
 
 def step_values(array, steps, hz=1, step_at='midpoint', rate_threshold=0.5):
@@ -8493,7 +8547,7 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
         return None, None, None
 
 
-def max_maintained_value(arrays, samples, phase):
+def max_maintained_value(arrays, seconds, frequency, phase):
     """
     For the given phase, return the indices of the maximum value maintained 
     for the given number of samples (this is the minimum value within the slice
@@ -8505,17 +8559,17 @@ def max_maintained_value(arrays, samples, phase):
     
     max_value = 5
     windows:
-    [1,2,3,4,3] => sum = min_difference = 5-1 + 5-2 + 5-3 + 5-4 + 5-3 = 12
-    [2,3,4,3,4] => sum = min_difference = 9
-    [3,4,3,4,3] => sum = min_difference = 8
-    [4,3,4,3,4] => sum = min_difference = 7 // min_difference_index = 3
-    [3,4,3,4,3] => sum = 8
-    [4,3,4,3,2] => sum = 9
-    [3,4,3,2,5] => sum = 8
-    [4,3,2,5,2] => sum = 9
-    
+    0: [[1,2,3,4,3],4,3,4,3,2,5,2] => min_diff = sum(5-1 + 5-2 + 5-3 + 5-4 + 5-3) = 12
+    1: [1,[2,3,4,3,4],3,4,3,2,5,2] => min_diff = sum(5-2 + 5-3 + 5-4 + 5-3 + 5-4) = 9
+    2: [1,2,[3,4,3,4,3],4,3,2,5,2] => min_diff = sum(5-3 + 5-4 + 5-3 + 5-4 + 5-3) = 8
+    3: [1,2,3,[4,3,4,3,4],3,2,5,2] => min_diff = sum(5-4 + 5-3 + 5-4 + 5-3 + 5-4) = 7 <-- min_difference_index = 3
+    4: [1,2,3,4,[3,4,3,4,3],2,5,2] => min_diff = sum(5-3 + 5-4 + 5-3 + 5-4 + 5-3) = 8
+    5: [1,2,3,4,3,[4,3,4,3,2],5,2] => min_diff = sum(5-4 + 5-3 + 5-4 + 5-3 + 5-2) = 9
+    6: [1,2,3,4,3,4,[3,4,3,2,5],2] => min_diff = sum(5-3 + 5-4 + 5-3 + 5-2 + 5-5) = 8
+    7: [1,2,3,4,3,4,3,[4,3,2,5,2]] => min_diff = sum(5-4 + 5-3 + 5-2 + 5-5 + 5-2) = 9
     The returned values will be:
-    index = 3
+    min_difference_index = 3
+    array_index = 4
     value = 3
     
     The slice starting at index 3 and ending at index 8 (5 samples) is the slice
@@ -8525,15 +8579,17 @@ def max_maintained_value(arrays, samples, phase):
     will be higher than this. 
     """
     indices = []
-    values = []    
+    values = []
+    samples = int(frequency * seconds)
     for unmasked_slice in np.ma.clump_unmasked(arrays):
         array = arrays[unmasked_slice]
-        if samples < len(array):
+        if samples <= len(array):
             max_value = array.max()
             min_difference_index = 0
-            min_difference = np.ma.sum(max_value - array[:samples])
+            min_difference = sum = np.ma.sum(max_value - array[:samples])
             for i in range(1, len(array) - samples + 1):
-                sum = np.ma.sum(max_value - array[i:i + samples])
+                sum += array[i - 1]
+                sum -= array[samples + i - 1]
                 if sum < min_difference:
                     min_difference = sum
                     min_difference_index = i

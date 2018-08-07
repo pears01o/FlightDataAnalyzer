@@ -393,11 +393,12 @@ class TestSplitSegments(unittest.TestCase):
 
         segment_tuples = split_segments(hdf, {})
         self.assertEqual(segment_tuples,
-                         [('START_AND_STOP', slice(0, 9953.0, None), 0),
-                          ('START_AND_STOP', slice(9953.0, 21799.0, None), 1),
+                         [('START_AND_STOP', slice(0, 9952.0, None), 0),
+                          ('START_AND_STOP', slice(9952.0, 21799.0, None), 0),
                           ('START_AND_STOP', slice(21799.0, 24665.0, None), 3),
                           ('START_AND_STOP', slice(24665.0, 27898.0, None), 1),
-                          ('START_AND_STOP', slice(27898.0, 31424.0, None), 2)])
+                          ('START_AND_STOP', slice(27898.0, 31358.0, None), 2),
+                          ('NO_MOVEMENT', slice(31358.0, 31424.0, None), 2),])
 
     def test_split_segments_data_2(self):
         '''Splits on both DFC Jump and Engine parameters.'''
@@ -412,7 +413,8 @@ class TestSplitSegments(unittest.TestCase):
                           ('START_AND_STOP', slice(6362.0, 9912.0, None), 26),
                           ('START_AND_STOP', slice(9912.0, 13064.0, None), 56),
                           ('START_AND_STOP', slice(13064.0, 16467.0, None), 8),
-                          ('START_AND_STOP', slice(16467.0, 19200.0, None), 19)])
+                          ('START_AND_STOP', slice(16467.0, 19065.0, None), 19),
+                          ('GROUND_ONLY', slice(19065.0, 19200.0, None), 57)])
 
     def test_split_segments_data_3(self):
         '''Splits on both Engine and Heading parameters.'''
@@ -433,7 +435,8 @@ class TestSplitSegments(unittest.TestCase):
                           ('START_AND_STOP', slice(24209.0, 26607.0, None), 1),
                           ('START_AND_STOP', slice(26607.0, 28534.0, None), 3),
                           ('START_AND_STOP', slice(28534.0, 30875.0, None), 2),
-                          ('START_AND_STOP', slice(30875.0, 33680.0, None), 3)])
+                          ('START_AND_STOP', slice(30875.0, 33488.0, None), 3),
+                          ('NO_MOVEMENT', slice(33488.0, 33680.0, None), 0),])
 
     @unittest.skipIf(not os.path.isfile(os.path.join(test_data_path,
                                                      "4_3377853_146-301.hdf5")),
@@ -489,6 +492,31 @@ class TestSplitSegments(unittest.TestCase):
                           'START_AND_STOP',
                           'START_AND_STOP',
                           'START_ONLY'))
+
+
+    @unittest.skipIf(not os.path.isfile(os.path.join(
+        test_data_path, "rto_split_segment.hdf5")), "Test file not present")
+    def test_rto_correct_side_of_split(self):
+        '''
+        Test to ensure that RTO's are on the correct side of splitting, i.e. at
+        the beginning of a flight. This example HDF5 file appears to have two
+        stationary engine activities and an RTO between the two flights.
+        This creates 6 sizeable slices (potential splitting points) where the
+        engine parameters normalised to 0.
+        We're interested in making the segment split within the first of these
+        eng_min_slices slices (Between indices 11959.5 to 12336.5).
+        Ideally the segment split should be halfway between this, at 12148.0.
+        '''
+        hdf = hdf_file(os.path.join(test_data_path, "rto_split_segment.hdf5"))
+        segment_tuples = split_segments(hdf, {})
+        split_idx = 12148.0
+        self.assertEqual(
+            segment_tuples,
+            [('START_AND_STOP', slice(0, split_idx, None), 0),
+             ('START_AND_STOP', slice(split_idx, 21997.0, None), 52),
+             ('GROUND_ONLY', slice(21997.0, 22784.0, None), 45),]
+        )
+
 
     def test__get_normalised_split_params(self):
         hdf = mock.Mock()
@@ -556,7 +584,7 @@ class mocked_hdf(object):
                 elif key == 'Day':
                     data = np.ma.array([31] * self.duration)
                 else:
-                    data = np.ma.array(range(0, self.duration))
+                    data = np.ma.arange(0, self.duration)
             else:
                 if key == 'Year':
                     if self.path == 'future timestamps':
@@ -570,7 +598,7 @@ class mocked_hdf(object):
                 elif key == 'Day':
                     data = np.ma.array([25] * self.duration)
                 else:
-                    data = np.ma.array(range(0, self.duration))
+                    data = np.ma.arange(0, self.duration)
         return P(key, array=data)
 
 

@@ -105,7 +105,10 @@ class ApproachInformation(ApproachNode):
     '''
 
     @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
+    def can_operate(cls, available, ac_type=A('Aircraft Type'),
+                    seg_type=A('Segment Type')):
+        if seg_type and seg_type.value == 'GROUND_ONLY':
+            return False
         required = ['Approach And Landing']
         required.append('Altitude AGL' if ac_type == helicopter else 'Altitude AAL')
         lat = 'Latitude Prepared' in available

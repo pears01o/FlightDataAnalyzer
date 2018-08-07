@@ -172,6 +172,13 @@ class AccelerationLongitudinalOffsetRemoved(DerivedParameterNode):
 
     units = ut.G
 
+    @classmethod
+    def can_operate(cls, available, seg_type=A('Segment Type')):
+        if seg_type and seg_type.value == 'GROUND_ONLY':
+            return 'Acceleration Longitudinal' in available
+        return all_of(('Acceleration Longitudinal',
+                       'Acceleration Longitudinal Offset'), available)
+
     def derive(self,
                acc=P('Acceleration Longitudinal'),
                offset=KPV('Acceleration Longitudinal Offset')):
@@ -5493,14 +5500,14 @@ class VerticalSpeedInertial(DerivedParameterNode):
             # TODO: Exclude insignificant rate of change.
             climbs = slices_remove_small_slices(climbs, time_limit=2,
                                                 hz=frequency)
-            for climb in climbs:
+            for n, climb in enumerate(climbs):
                 # From 5 seconds before lift to 100ft
                 lift_m5s = max(0, climb.start - 5*hz)
                 up = slice(lift_m5s if lift_m5s >= 0 else 0, climb.stop)
                 up_slope = integrate(az_washout[up], hz)
                 blend_end_error = roc[climb.stop-1] - up_slope[-1]
                 blend_slope = np.linspace(0.0, blend_end_error, climb.stop-climb.start)
-                if ac_type != helicopter:
+                if ac_type != helicopter and n == 0:
                     roc[:lift_m5s] = 0.0
                 roc[lift_m5s:climb.start] = up_slope[:climb.start-lift_m5s]
                 roc[climb] = up_slope[climb.start-lift_m5s:] + blend_slope
@@ -5522,14 +5529,14 @@ class VerticalSpeedInertial(DerivedParameterNode):
             # TODO: Exclude insignificant rate of change.
             descents = slices_remove_small_slices(descents, time_limit=2,
                                                   hz=frequency)
-            for descent in descents:
+            for n, descent in enumerate(descents):
                 down = slice(descent.start, descent.stop+5*hz)
                 down_slope = integrate(az_washout[down],
                                        hz,)
                 blend = roc[down.start] - down_slope[0]
                 blend_slope = np.linspace(blend, -down_slope[-1], len(down_slope))
                 roc[down] = down_slope + blend_slope
-                if ac_type != helicopter:
+                if ac_type != helicopter and n == len(descents) -1 :
                     roc[descent.stop+5*hz:] = 0.0
 
                 '''
@@ -8489,6 +8496,56 @@ class MinimumAirspeed(DerivedParameterNode):
 
         # We want to mask out grounded sections of flight:
         self.array = mask_outside_slices(self.array, airborne.get_slices())
+
+
+class MinimumCleanLookup(DerivedParameterNode):
+    '''
+    Minimum Clean Speed Lookup
+    
+    757/767: Vref30+80kts below FL250, Vref30+100kts above FL250
+    '''
+    def derive(self,
+               air_spd=P('Airspeed'),
+               gw=P('Gross Weight Smoothed'),
+               airborne=S('Airborne'),
+               model=A('Model'),
+               series=A('Series'),
+               family=A('Family'),
+               engine_type=A('Engine Type'),
+               engine_series=A('Engine Series'),
+               alt_std=P('Altitude STD Smoothed'),
+               crz=S('Cruise'),):
+
+        # Prepare a zeroed, masked array based on the airspeed:
+        self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
+        
+        if not family or not family.value in ('B767', 'B757',):
+            return
+        
+        # Initialise the velocity speed lookup table:
+        attrs = (model, series, family, engine_type, engine_series)
+        table = lookup_table(self, 'vref', *attrs)
+        
+        # Determine the sections of flight to populate:
+        phases = airborne.get_slices()
+        
+        # Need Vref30, so detent is pre set.
+        detent = '30'
+
+        for phase in phases:
+            self.array[phase] = table.vref(detent, gw.array[phase])
+            # Add 80kts to the whole array to get Vref30+80kts
+            self.array[phase] += 80
+        
+        # above_FL250 includes S('Cruise') slices to avoid spikes when cruise
+        # level is FL250. This will also add 100kts to any cruise phase below 
+        # FL250 but 767s don't usually fly that low so it shouldn't be an issue
+        above_FL250 = slices_or(alt_std.slices_above(25000),
+                                crz.get_slices())
+        
+        # Add 20kts to get Vref30+100kts above FL250
+        for section in above_FL250:
+            self.array[section] += 20
 
 
 ########################################

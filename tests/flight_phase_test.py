@@ -56,6 +56,7 @@ from analysis_engine.flight_phase import (
     TakeoffRoll,
     TakeoffRollOrRejectedTakeoff,
     TakeoffRotation,
+    TakeoffRunwayHeading,
     Taxiing,
     TaxiIn,
     TaxiOut,
@@ -66,7 +67,7 @@ from analysis_engine.flight_phase import (
     TwoDegPitchTo35Ft,
 )
 from analysis_engine.key_time_instances import BottomOfDescent, TopOfClimb, TopOfDescent
-from analysis_engine.library import integrate, np_ma_zeros_like, np_ma_ones_like
+from analysis_engine.library import integrate, np_ma_zeros_like, np_ma_ones_like, align
 from analysis_engine.node import (A, App, ApproachItem, KTI,
                                   KeyTimeInstance, KPV, KeyPointValue, M,
                                   Parameter, P, S, Section, SectionNode, load,
@@ -74,6 +75,7 @@ from analysis_engine.node import (A, App, ApproachItem, KTI,
 from analysis_engine.process_flight import process_flight
 
 from analysis_engine.settings import AIRSPEED_THRESHOLD
+from analysis_engine.utils import open_node_container
 
 
 test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -173,7 +175,7 @@ class TestAirborne(unittest.TestCase):
         self.assertEqual(list(air), expected)
 
     def test_airborne_aircraft_not_fast(self):
-        altitude_data = np.ma.array(range(0,10))
+        altitude_data = np.ma.arange(0, 10)
         alt_aal = Parameter('Altitude AAL For Flight Phases', altitude_data)
         fast = SectionNode('Fast')
         air = Airborne()
@@ -652,28 +654,25 @@ class TestAutorotation(unittest.TestCase):
 
 class TestBouncedLanding(unittest.TestCase):
     def test_bounce_basic(self):
-        fast = buildsection('Fast',2,13)
         airborne = buildsection('Airborne', 3,10)
         alt = np.ma.array([0,0,0,2,10,30,10,2,0,0,0,0,0,0])
         bl = BouncedLanding()
-        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne, fast)
+        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne)
         expected = []
         self.assertEqual(bl, expected)
 
     def test_bounce_with_bounce(self):
-        fast = buildsection('Fast',2,13)
-        airborne = buildsection('Airborne', 3,7)
+        airborne = buildsection('Airborne', 3,11)
         alt = np.ma.array([0,0,0,2,10,30,10,2,0,3,3,0,0,0])
         bl = BouncedLanding()
-        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne, fast)
+        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne)
         self.assertEqual(bl[0].slice, slice(9, 11))
 
     def test_bounce_with_double_bounce(self):
-        fast = buildsection('Fast',2,13)
-        airborne = buildsection('Airborne', 3,7)
+        airborne = buildsection('Airborne', 3,12)
         alt = np.ma.array([0,0,0,2,10,30,10,2,0,3,0,5,0])
         bl = BouncedLanding()
-        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne, fast)
+        bl.derive(Parameter('Altitude AAL For Flight Phases', alt), airborne)
         self.assertEqual(bl[0].slice, slice(9, 12))
 
     def test_bounce_not_detected_with_multiple_touch_and_go(self):
@@ -681,8 +680,7 @@ class TestBouncedLanding(unittest.TestCase):
         bl = BouncedLanding()
         aal = load(os.path.join(test_data_path, 'alt_aal_training.nod'))
         airs = load(os.path.join(test_data_path, 'airborne_training.nod'))
-        fast = load(os.path.join(test_data_path, 'fast_training.nod'))
-        bl.derive(aal, airs, fast)
+        bl.derive(aal, airs)
         # should not create any bounced landings (used to create 20 at 8000ft)
         self.assertEqual(len(bl), 0)
 
@@ -1420,12 +1418,16 @@ class TestDescent(unittest.TestCase):
 
 class TestFast(unittest.TestCase):
     def test_can_operate(self):
-        self.assertTrue(Fast.can_operate(('Airspeed',),
-                                        ac_type=aeroplane))
-        self.assertTrue(Fast.can_operate(('Nr',),
-                                        ac_type=helicopter))
-        self.assertFalse(Fast.can_operate(('Airspeed',),
-                                        ac_type=helicopter))
+        self.assertTrue(Fast.can_operate(
+            ('Airspeed',),
+            ac_type=aeroplane,
+            seg_type=A('Segment Type', 'START_AND_STOP')))
+        self.assertTrue(Fast.can_operate(
+            ('Nr',),
+            ac_type=helicopter))
+        self.assertFalse(Fast.can_operate(
+            ('Airspeed',),
+            ac_type=helicopter))
 
     def test_fast_phase_basic(self):
         slow_and_fast_data = np.ma.array(list(range(60, 120, 10)) + [120] * 300 + \
@@ -1950,7 +1952,12 @@ class TestMobile(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = Mobile
-        self.operational_combinations = [('Heading Rate',), ('Heading Rate', 'Groundspeed'), ('Heading Rate', 'Airborne'), ('Heading Rate', 'Groundspeed', 'Airborne')]
+        self.operational_combinations = [
+            ('Heading Rate',),
+            ('Heading Rate', 'Groundspeed'),
+            ('Heading Rate', 'Airborne'),
+            ('Heading Rate', 'Groundspeed', 'Airborne')
+        ]
 
     def test_gspd(self):
         rot = np.ma.array([0, 0, 0, 0, 0, 0, 0])
@@ -2199,7 +2206,7 @@ class TestShuttlingApproach(unittest.TestCase):
         node.derive(approaches)
         
         self.assertEqual(len(node), 0)
-        
+
 
 class TestRejectedTakeoff(unittest.TestCase):
     '''
@@ -2208,48 +2215,77 @@ class TestRejectedTakeoff(unittest.TestCase):
     scaling, hence the *1.5 factors.
     '''
     def test_can_operate(self):
-        expected = [('Acceleration Longitudinal Offset Removed',
-                     'Eng (*) All Running', 'Grounded'),
-                    ('Acceleration Longitudinal Offset Removed',
-                     'Eng (*) All Running', 'Grounded', 'Takeoff Roll'),
-                    ('Acceleration Longitudinal Offset Removed',
-                     'Eng (*) All Running', 'Grounded', 'Eng (*) N1 Max'),
-                    ('Acceleration Longitudinal Offset Removed',
-                     'Eng (*) All Running', 'Grounded',
-                     'Takeoff Acceleration Start'),
-                    ('Acceleration Longitudinal Offset Removed',
-                     'Eng (*) All Running', 'Grounded', 'Takeoff Roll',
-                     'Eng (*) N1 Max'),
-                    ('Acceleration Longitudinal Offset Removed',
-                     'Eng (*) All Running', 'Grounded', 'Takeoff Roll',
-                     'Takeoff Acceleration Start'),
-                    ('Acceleration Longitudinal Offset Removed',
-                     'Eng (*) All Running', 'Grounded', 'Eng (*) N1 Max',
-                     'Takeoff Acceleration Start'),
-                    ('Acceleration Longitudinal Offset Removed',
-                     'Eng (*) All Running', 'Grounded', 'Takeoff Roll',
-                     'Eng (*) N1 Max', 'Takeoff Acceleration Start')]
+        expected = [
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Takeoff Runway Heading', 'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Eng (*) N1 Max', 'Takeoff Runway Heading',
+             'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Takeoff Acceleration Start', 'Takeoff Runway Heading',
+             'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Eng (*) N1 Max', 'Takeoff Acceleration Start',
+             'Takeoff Runway Heading', 'Segment Type')
+        ]
         self.assertEqual(
-            expected,
-            RejectedTakeoff.get_operational_combinations())       
-        
+            RejectedTakeoff.get_operational_combinations(
+                seg_type=A('Segment Type', 'START_AND_STOP')),
+            expected
+        )
+
+        expected = [
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Eng (*) N1 Max', 'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Takeoff Acceleration Start', 'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Takeoff Runway Heading', 'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Eng (*) N1 Max', 'Takeoff Acceleration Start',
+             'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Eng (*) N1 Max', 'Takeoff Runway Heading',
+             'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Takeoff Acceleration Start', 'Takeoff Runway Heading',
+             'Segment Type'),
+            ('Acceleration Longitudinal Offset Removed', 'Eng (*) All Running',
+             'Grounded', 'Eng (*) N1 Max', 'Takeoff Acceleration Start',
+             'Takeoff Runway Heading', 'Segment Type'),
+        ]
+        self.assertEqual(
+            RejectedTakeoff.get_operational_combinations(
+                seg_type=A('Segment Type', 'GROUND_ONLY')),
+            expected
+        )
+
+        self.assertEqual(
+            RejectedTakeoff.get_operational_combinations(),
+            []
+        )
+
     def test_derive_one_rejected_takeoff(self):
         accel_lon = P('Acceleration Longitudinal Offset Removed',
                       np.ma.array([0] * 3 + [0.02, 0.05, 0.02, 0, -0.17,] + [0] * 7 +
                                   [0.2, 0.4, 0.1] + [0.11] * 4 + [0] * 6 + [-2] +
                                   [0] * 5 + [0.02, 0.08, 0.08, 0.08, 0.08] + [0] * 20)*1.5)
         grounded = buildsections('Grounded', [0,len(accel_lon.array)/2.0],[len(accel_lon.array)/2.0, len(accel_lon.array)])
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
                         values_mapping={0: 'Not Running', 1: 'Running'})
-        
+        toff_rwy_hdg = buildsections('Takeoff Runway Heading',[0, 30])
+
         node = RejectedTakeoff()
         # Set a low frequency to pass slice duration checks.
         node.frequency = 1/64.0
-        node.derive(accel_lon, eng_running, grounded, None, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None,
+                    toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 15, 0)
-        self.assertAlmostEqual(node[0].slice.stop, 27, 0)        
-        
+        self.assertAlmostEqual(node[0].slice.stop, 27, 0)
+
     def test_derive_two_rejected_takeoffs(self):
 
         accel_lon = P('Acceleration Longitudinal Offset Removed',
@@ -2257,37 +2293,41 @@ class TestRejectedTakeoff(unittest.TestCase):
                                   [0.2, 0.4, 0.1] + [0.11] * 4 + [0] * 6 + [-2] +
                                   [0] * 5 + [0.02, 0.08, 0.08, 0.08, 0.08] + [0] * 20)*1.5)
         grounded = buildsections('Grounded', [0,len(accel_lon.array)/2.0],[len(accel_lon.array)/2.0, len(accel_lon.array)])
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
                             values_mapping={0: 'Not Running', 1: 'Running'})
+        toff_rwy_hdg = buildsections('Takeoff Runway Heading',[0, 30])
 
         node = RejectedTakeoff()
         # Set a low frequency to pass slice duration checks.
         node.frequency = 1/64.0
-        node.derive(accel_lon, eng_running, grounded, None, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None,
+                    toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 2)
         self.assertAlmostEqual(node[0].slice.start, 5, 0)
-        self.assertAlmostEqual(node[0].slice.stop, 6, 0)        
+        self.assertAlmostEqual(node[0].slice.stop, 6, 0)
         self.assertAlmostEqual(node[1].slice.start, 15, 0)
         self.assertAlmostEqual(node[1].slice.stop, 27, 0)
-        
-        
+
+
     def test_derive_one_rejected_takeoff_with_two_acceleration_spikes(self):
         accel_lon = P('Acceleration Longitudinal Offset Removed',
-                          np.ma.array([0] * 3 + [0.02, 0.05, 0.02, 0, -0.17,] + [0] * 7 + 
-                                      [0.2, 0.4, 0.1] + [0.11] * 4 + [0] * 6 + [0.2, 0.4, 0.1] + 
-                                      [0.11] * 4 + [0] * 6  + [-0.2] + [0] * 5 + 
+                          np.ma.array([0] * 3 + [0.02, 0.05, 0.02, 0, -0.17,] + [0] * 7 +
+                                      [0.2, 0.4, 0.1] + [0.11] * 4 + [0] * 6 + [0.2, 0.4, 0.1] +
+                                      [0.11] * 4 + [0] * 6  + [-0.2] + [0] * 5 +
                                       [0.02, 0.08, 0.08, 0.08, 0.08] + [0] * 20)*1.5)
         grounded = buildsections('Grounded', [0,len(accel_lon.array) - 20],[len(accel_lon.array) - 20, len(accel_lon.array)])
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
                             values_mapping={0: 'Not Running', 1: 'Running'})
-    
+        toff_rwy_hdg = buildsections('Takeoff Runway Heading',[0, 50])
+
         node = RejectedTakeoff()
         # Set a low frequency to pass slice duration checks.
         node.frequency = 1/64.0
-        node.derive(accel_lon, eng_running, grounded, None, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None,
+                    toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 15, 0)
-        self.assertAlmostEqual(node[0].slice.stop, 40, 0)                
+        self.assertAlmostEqual(node[0].slice.stop, 40, 0)
 
     def test_derive_flight_with_rejected_takeoff_1(self):
         accel_lon = load(os.path.join(
@@ -2296,36 +2336,40 @@ class TestRejectedTakeoff(unittest.TestCase):
         accel_lon.array *= 1.5
         grounded = load(os.path.join(test_data_path,
                                      'RejectedTakeoff_Grounded_2.nod'))
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
                         values_mapping={0: 'Not Running', 1: 'Running'})
-        
+        toff_rwy_hdg = buildsections('Takeoff Runway Heading',
+                                     [3500, 4000], [5000, 5447])
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None,
+                    toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 3622, 0)
         self.assertAlmostEqual(node[0].slice.stop, 3663, 0)
-        
+
     def test_derive_flight_with_two_rejected_takeoff_1(self):
         accel_lon = load(os.path.join(
             test_data_path,
             'rejectedTakeoffAccelLon.nod'))
         eng_running = load(os.path.join(test_data_path,
-                                            'rejectedTakeoffEngRunning.nod'))        
+                                            'rejectedTakeoffEngRunning.nod'))
         groundeds = load(os.path.join(test_data_path,
                                      'rejectedTakeoffGroundeds.nod'))
-      
+
         takeoffs = load(os.path.join(test_data_path,
-                                         'rejectedTakeoffTakeoffs.nod'))   
+                                         'rejectedTakeoffTakeoffs.nod'))
         eng_n1 = load(os.path.join(test_data_path,
-                                       'rejectedTakeoffEngN1.nod'))       
-     
+                                       'rejectedTakeoffEngN1.nod'))
+        toff_rwy_hdg = buildsections('Takeoff Runway Heading',
+                                     [2500, 4000], [7000,8000], [10000, 15305])
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, groundeds,takeoffs, eng_n1, None)
+        node.derive(accel_lon, eng_running, groundeds, eng_n1, None,
+                    toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 2)
         self.assertAlmostEqual(node[0].slice.start, 2970, 0)
         self.assertAlmostEqual(node[0].slice.stop, 3015, 0)
         self.assertAlmostEqual(node[1].slice.start, 7689, 0)
-        self.assertAlmostEqual(node[1].slice.stop, 7727, 0)        
+        self.assertAlmostEqual(node[1].slice.stop, 7727, 0)
 
     def test_derive_flight_with_rejected_takeoff_2(self):
         accel_lon = load(os.path.join(
@@ -2334,11 +2378,13 @@ class TestRejectedTakeoff(unittest.TestCase):
         accel_lon.array *= 1.5
         grounded = load(os.path.join(test_data_path,
                                      'RejectedTakeoff_Grounded_5.nod'))
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
                             values_mapping={0: 'Not Running', 1: 'Running'})
-    
+        toff_rwy_hdg = buildsections('Takeoff Runway Heading',
+                                     [2300, 2500], [3000, 3731])
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None,
+                    toff_rwy_hdg, A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 2383, 0)
         self.assertAlmostEqual(node[0].slice.stop, 2413, 0)
@@ -2351,10 +2397,13 @@ class TestRejectedTakeoff(unittest.TestCase):
             test_data_path,
             'RejectedTakeoff_AccelerationLongitudinalOffsetRemoved_Short.nod'))
         grounded = buildsections('Grounded', [0, 3796], [23516, 24576])
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
-                            values_mapping={0: 'Not Running', 1: 'Running'})        
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
+                            values_mapping={0: 'Not Running', 1: 'Running'})
+        toff_rwy_hdg = buildsections('Takeoff Runway Heading',
+                                     [1900, 2000], [3500, 3796])
         node = RejectedTakeoff(frequency=4)
-        node.derive(accel_lon, eng_running, grounded, None, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None,
+                    toff_rwy_hdg, A('Segment Type', 'START_AND_ONLY'))
         self.assertEqual(len(node), 1)
         self.assertAlmostEqual(node[0].slice.start, 1917, 0)
         self.assertAlmostEqual(node[0].slice.stop, 1969, 0)
@@ -2366,10 +2415,11 @@ class TestRejectedTakeoff(unittest.TestCase):
         grounded = load(os.path.join(test_data_path,
                                      'RejectedTakeoff_Grounded_4.nod'))
         accel_lon.array *= 1.5
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
-                            values_mapping={0: 'Not Running', 1: 'Running'})        
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
+                            values_mapping={0: 'Not Running', 1: 'Running'})
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None,
+                    A('Segment Type','START_AND_STOP'))
         self.assertEqual(len(node), 0)
 
     def test_derive_flight_without_rejected_takeoff_1(self):
@@ -2379,23 +2429,25 @@ class TestRejectedTakeoff(unittest.TestCase):
         grounded = load(os.path.join(test_data_path,
                                      'RejectedTakeoff_Grounded_1.nod'))
         accel_lon.array *= 1.5
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
-                            values_mapping={0: 'Not Running', 1: 'Running'})        
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
+                            values_mapping={0: 'Not Running', 1: 'Running'})
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None,
+                    A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 0)
 
     def test_derive_flight_without_rejected_takeoff_2(self):
         accel_lon = load(os.path.join(
             test_data_path,
             'RejectedTakeoff_AccelerationLongitudinalOffsetRemoved_3.nod'))
-        accel_lon.array *= 1.5     
+        accel_lon.array *= 1.5
         grounded = load(os.path.join(test_data_path,
                                      'RejectedTakeoff_Grounded_3.nod'))
-        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array), 
-                            values_mapping={0: 'Not Running', 1: 'Running'})           
+        eng_running = M('Eng (*) All Running', np_ma_ones_like(accel_lon.array),
+                            values_mapping={0: 'Not Running', 1: 'Running'})
         node = RejectedTakeoff()
-        node.derive(accel_lon, eng_running, grounded, None, None, None)
+        node.derive(accel_lon, eng_running, grounded, None, None,
+                    A('Segment Type', 'START_AND_STOP'))
         self.assertEqual(len(node), 0)
 
 
@@ -3028,7 +3080,7 @@ class TestOnDeck(unittest.TestCase):
         phase.derive(self.gnds, pitch, roll)
         self.assertEqual(phase.get_first(), None)
 
-
+        
 class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):
@@ -3136,3 +3188,31 @@ class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(alt_aal, None, None, ta, None, None, ra)
         self.assertEqual(len(node), 0)
+
+        
+class TestTakeoffRunwayHeading(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = TakeoffRunwayHeading
+
+    def test_derive_rto_turnaround(self):
+        for flight_pk, nodes, attrs in open_node_container(
+              os.path.join(test_data_path, 'runway_takeoff_heading.zip')):
+            hdg_con = nodes['Heading Continuous']
+            groundeds = nodes['Grounded']
+            toffs = nodes['Takeoff Roll']
+
+        hdg_array = hdg_con.array %360
+        hdg = P('Heading', hdg_array, frequency=hdg_con.frequency)
+        gnd_aligned = groundeds.get_aligned(hdg)
+        toff_aligned = toffs.get_aligned(hdg)
+
+        node = self.node_class()
+        node.derive(hdg, gnd_aligned, toff_aligned)
+
+        self.assertEqual(len(node),3)
+        self.assertEqual(node.get_slices(), [
+            slice(1627, 2102, None),
+            slice(2119, 2123, None),
+            slice(2525, 2632, None)
+        ])

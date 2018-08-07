@@ -195,6 +195,7 @@ from analysis_engine.derived_parameters import (
     MagneticVariation,
     MagneticVariationFromRunway,
     MinimumAirspeed,
+    MinimumCleanLookup,
     Nr,
     Pitch,
     PotentialEnergy,
@@ -1117,7 +1118,7 @@ class TestAltitudeAAL(unittest.TestCase):
         difs = np.diff(alt_aal.array)
         index, value = max_value(np.abs(difs))
         # Check to test that the step occurs during cruse and not the go-around
-        self.assertTrue(index in range(1290, 1850))
+        self.assertTrue(1290 <= index < 1850)
 
     def test_find_liftoff_start_on_herc(self):
         # Herc (L100) climbs in a straight line without noticable concave
@@ -1800,7 +1801,7 @@ class TestAltitudeTail(unittest.TestCase):
         airborne = buildsections('Airborne', [5, 17])
 
         talt.derive(Parameter('Altitude Radio', np.ma.zeros(10), 1,0.0),
-                    Parameter('Pitch', np.ma.array(range(10))*2, 1,0.0),
+                    Parameter('Pitch', np.ma.arange(10) * 2, 1, 0.0),
                     buildsections('Takeoff', [0, 3]),
                     buildsections('Go Around And Climbout', [5, 6]),
                     buildsections('Landing', [8, 10]),
@@ -2336,8 +2337,8 @@ class TestEng_N1Avg(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2365,8 +2366,8 @@ class TestEng_N1Max(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2402,8 +2403,8 @@ class TestEng_N1Min(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10,20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2461,8 +2462,8 @@ class TestEng_N2Avg(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2490,8 +2491,8 @@ class TestEng_N2Max(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2518,8 +2519,8 @@ class TestEng_N2Min(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2546,8 +2547,8 @@ class TestEng_N3Avg(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2575,8 +2576,8 @@ class TestEng_N3Max(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2603,8 +2604,8 @@ class TestEng_N3Min(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2628,8 +2629,8 @@ class TestEng_NpAvg(unittest.TestCase):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2653,8 +2654,8 @@ class TestEng_NpMax(unittest.TestCase):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2677,8 +2678,8 @@ class TestEng_NpMin(unittest.TestCase):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -4083,7 +4084,7 @@ class TestHeadingRate(unittest.TestCase):
 
     def test_rate_of_turn(self):
         rot = HeadingRate()
-        rot.derive(P('Heading Continuous', np.ma.array(range(10))))
+        rot.derive(P('Heading Continuous', np.ma.arange(10)))
         answer = np.ma.array(data=[1]*10, dtype=np.float)
         assert_array_equal(rot.array, answer) # Tests data only; NOT mask
 
@@ -5887,9 +5888,11 @@ class TestVOR2Frequency(unittest.TestCase):
 
 
 class TestVerticalSpeedInertial(unittest.TestCase):
-    @unittest.skip('Test Not Implemented')
     def test_can_operate(self):
-        self.assertTrue(False, msg='Test not implemented.')
+        opts = VerticalSpeedInertial.get_operational_combinations()
+        self.assertEqual(opts, [('Acceleration Vertical', 'Altitude STD Smoothed',
+                                 'Altitude Radio Offset Removed', 'Fast',
+                                 'Aircraft Type')])
 
     def test_derive(self):
         time = np.arange(100)
@@ -5916,15 +5919,55 @@ class TestVerticalSpeedInertial(unittest.TestCase):
         alt_std = P('Altitude STD Smoothed', ht_values + 30.0) # Pressure offset
         alt_rad = P('Altitude STD Smoothed', ht_values-2.0) #Oleo compression
         fast = buildsection('Fast', 10, len(acc_values)-10)
-
+        ac_type = A(name='Aircraft Type', value = 'aeroplane')
+       
         vsi = VerticalSpeedInertial()
-        vsi.derive(az, alt_std, alt_rad, fast)
-
+        vsi.derive(az, alt_std, alt_rad, fast, ac_type)
+        
         expected = vel_values
-
-        # Just check the graphs are similar in shape - there will always be
-        # errors because of the integration technique used.
         np.testing.assert_almost_equal(vsi.array, expected, decimal=-2)
+        
+    def test_check_go_around(self):
+        # We build two cycles with a "touch and go" in between to check that the
+        # algorithm does not treat the first as the taxi out for the second, and the
+        # second the taxi in for the first.
+        time = np.arange(100)
+        zero = np.array([0]*50)
+        acc_values = np.concatenate([zero, 
+                                     np.cos(time*np.pi*0.02), 
+                                     zero,
+                                     np.cos(time*np.pi*0.02), 
+                                     zero                                     ])
+        vel_values = np.concatenate([zero, 
+                                     np.sin(time*np.pi*0.02), 
+                                     zero,
+                                     np.sin(time*np.pi*0.02), 
+                                     zero                                     ])
+        ht_values = np.concatenate([zero, 
+                                    1.0-np.cos(time*np.pi*0.02), 
+                                    zero,
+                                    1.0-np.cos(time*np.pi*0.02), 
+                                    zero                                    ])
+        
+        # For a 0-400ft leap over 100 seconds, the scaling is 200ft amplitude and 2*pi/100 for each differentiation.
+        amplitude = 200.0
+        diff = 2.0 * np.pi / 100.0
+        ht_values *= amplitude
+        vel_values *= amplitude * diff * 60.0 # fpm
+        acc_values *= amplitude * diff**2.0 / GRAVITY_IMPERIAL # g
+        
+        az = P('Acceleration Vertical', acc_values)
+        alt_std = P('Altitude STD Smoothed', ht_values + 30.0) # Pressure offset
+        alt_rad = P('Altitude STD Smoothed', ht_values-2.0) #Oleo compression
+        fast = buildsection('Fast', 10, len(acc_values)-10)
+        ac_type = A(name='Aircraft Type', value = 'aeroplane')
+       
+        vsi = VerticalSpeedInertial()
+        vsi.derive(az, alt_std, alt_rad, fast, ac_type)
+        
+        # The mean absolute signal should be 269. In the fault case we are checking, it drops
+        # to 4, hence 100 is a clear divide between success and failure.
+        self.assertGreater(np.ma.average(np.ma.abs(vsi.array)), 100.0)
 
 
 class TestRudder(unittest.TestCase):
@@ -7623,6 +7666,76 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
         node.derive(self.airspeed, mms_fmf, None, None, None, None, None, None, None, self.airborne)
         expected = np.ma.array(mms_fmf.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
+        ma_test.assert_masked_array_equal(node.array, expected)
+
+
+class TestMinimumCleanLookup(unittest.TestCase, NodeTest):
+
+    class VS0(VelocitySpeed):
+        '''
+        Table for aircraft with flap and weight.
+        '''
+        weight_unit = ut.TONNE
+        tables = {
+            'vref': {
+                'weight': ( 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190),
+                    '20': (122, 128, 135, 141, 146, 151, 157, 162, 168, 173, 179),
+                    '25': (117, 123, 129, 135, 141, 146, 151, 156, 161, 166, 170),
+                    '30': (113, 119, 125, 131, 137, 142, 148, 156, 164, 171, 179),
+            },
+            'vmo': 360,
+            'mmo': 0.860,
+        }        
+        
+        
+    def setUp(self):
+        self.node_class = MinimumCleanLookup
+        self.alt = P('Altitude STD Smoothed', 
+                np.ma.repeat((15000, 20000, 26000, 27000), 10))
+        self.airborne = buildsection('Airborne', 5, 35)
+        self.air_spd = P('Airspeed', np.ma.repeat((170, 180, 190, 230), 10))
+        self.operational_combinations = [
+        ('Airspeed', 'Gross Weight Smoothed', 'Airborne', 'Model', 
+         'Series', 'Family', 'Engine Type', 'Engine Series', 
+         'Altitude STD Smoothed', 'Cruise',)]
+
+    @patch('analysis_engine.derived_parameters.at')
+    @patch('analysis_engine.library.at')        
+    def test_767(self, at0, at1):
+        at0.get_vspeed_map.return_value = self.VS0
+        at1.get_fms_map.return_value = {}
+        gw = P('Gross Weight Smoothed', np.ma.repeat((130000, 150000, 180000, 190000), 10))
+        model = A('Model', 'B767-3JHF(ER)')
+        series = A('Series', 'B767-300')
+        family = A('Family', 'B767')
+        eng_type = A('Engine Type', 'CF6-80C2B7F')
+        eng_series = A('Engine Series', 'CF6-80C2')
+        
+        node = self.node_class()
+        node.derive(self.air_spd, gw, self.airborne, model, series, family, 
+                    eng_type, eng_series, self.alt)
+        expected = np.ma.repeat((217, 228, 271, 279), 10)
+        expected.mask = np.array([1]*5 + [0]*30 + [1]*5)
+        ma_test.assert_masked_array_equal(node.array, expected)
+        
+    @patch('analysis_engine.derived_parameters.at')
+    @patch('analysis_engine.library.at')        
+    def test_767_cruise(self, at0, at1):
+        at0.get_vspeed_map.return_value = self.VS0
+        at1.get_fms_map.return_value = {}
+        gw = P('Gross Weight Smoothed', np.ma.repeat((130000, 150000, 180000, 190000), 10))
+        crz = buildsection('Cruise', 10,35)
+        model = A('Model', 'B767-3JHF(ER)')
+        series = A('Series', 'B767-300')
+        family = A('Family', 'B767')
+        eng_type = A('Engine Type', 'CF6-80C2B7F')
+        eng_series = A('Engine Series', 'CF6-80C2')
+        
+        node = self.node_class()
+        node.derive(self.air_spd, gw, self.airborne, model, series, family, 
+                    eng_type, eng_series, self.alt, crz)
+        expected = np.ma.repeat((217, 248, 271, 279), 10)
+        expected.mask = np.array([1]*5 + [0]*30 + [1]*5)
         ma_test.assert_masked_array_equal(node.array, expected)
 
 

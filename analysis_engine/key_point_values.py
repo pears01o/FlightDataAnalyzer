@@ -281,7 +281,7 @@ class AccelerationLateralAtTouchdown(KeyPointValueNode):
                touchdowns=KTI('Touchdown')):
 
         for touchdown in touchdowns:
-            self.create_kpv(*bump(acc_lat, touchdown))
+            self.create_kpv(*bump(acc_lat, touchdown.index))
 
 
 class AccelerationLateralDuringTakeoffMax(KeyPointValueNode):
@@ -758,7 +758,7 @@ class AccelerationNormalAtLiftoff(KeyPointValueNode):
                liftoffs=KTI('Liftoff')):
 
         for liftoff in liftoffs:
-            self.create_kpv(*bump(acc_norm, liftoff))
+            self.create_kpv(*bump(acc_norm, liftoff.index))
 
 
 class AccelerationNormalAtTouchdown(KeyPointValueNode):
@@ -776,12 +776,15 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
     def derive(self,
                acc_norm=P('Acceleration Normal Offset Removed'),
                touchdowns=KTI('Touchdown'),
-               touch_and_go=KTI('Touch And Go')):
+               touch_and_go=KTI('Touch And Go'),
+               bounces=S('Bounced Landing')):
         tdwns = touchdowns
         if touch_and_go:
             tdwns += touch_and_go
         for touchdown in tdwns:
-                self.create_kpv(*bump(acc_norm, touchdown))
+            self.create_kpv(*bump(acc_norm, touchdown.index))
+        for bounce in bounces:
+            self.create_kpv(*bump(acc_norm, bounce.slice.stop))
 
 
 class AccelerationNormalAboveWeightLimitAtTouchdown(KeyPointValueNode):
@@ -1508,7 +1511,7 @@ class Airspeed10000To5000FtMax(KeyPointValueNode):
 
 class Airspeed10000To8000FtMax(KeyPointValueNode):
     '''
-    Maximum airspeed during descent between 10000ft STD (smoothed) and 5000ft STD (smoothed).
+    Maximum airspeed during descent between 10000ft STD (smoothed) and 8000ft STD (smoothed).
     '''
 
     units = ut.KT
@@ -3398,8 +3401,8 @@ class AirspeedWithFlapMax(KeyPointValueNode, FlapOrConfigurationMaxOrMin):
                flap_inc_trans=M('Flap Including Transition'),
                flap_exc_trans=M('Flap Excluding Transition'),
                scope=S('Fast'),
-               flap_angle=P('Flap Angle'),
-               manufacturer=A('Manufacturer')
+               ##flap_angle=P('Flap Angle'),
+               ##manufacturer=A('Manufacturer')
                ):
         
         # Masking single values that cause invalid events to trigger when 
@@ -3417,39 +3420,44 @@ class AirspeedWithFlapMax(KeyPointValueNode, FlapOrConfigurationMaxOrMin):
         for flap in (flap_avail, flap_inc_trans, flap_exc_trans):
             if not flap:
                 continue
-            
-            # Changing the current 'Flap Including Transition' parameter to monitor transitions 
-            # to a reading of 0.1 degrees for Boeing - there is a requirement for an inspection
-            # if airspeed is high for each flap setting, including the transition period, until 
-            # the flap reaches the next position
-            
-            if manufacturer.value == 'Boeing' and flap.name == 'Flap Including Transition' and \
-               flap_angle and len(flap.array) == len(flap_angle.array):
+            # Fast scope traps flap changes very late on the approach and
+            # raising flaps before 80 kt on the landing run.
+            data = self.flap_or_conf_max_or_min(flap, airspeed, max_value, scope)
+            for index, value, detent in data:
+                self.create_kpv(index, value, parameter=flap.name, flap=detent)
                 
-                initial_flap = deepcopy(flap.array)
-                flap_array = flap.array
-                transition = False
-                for i in range(0, len(flap_array)-1):
-                    if initial_flap[i] is not np.ma.masked and initial_flap[i+1] is not np.ma.masked and flap_angle.array[i+1] is not np.ma.masked:
-                        if initial_flap.raw[i] > initial_flap.raw[i+1] and flap_angle.array[i+1] > initial_flap.raw[i+1] + 0.1:
-                            transition = True
-                            flap_array.raw[i+1] = flap_array.raw[i]
-                            continue
-                        if transition:
-                            if initial_flap.raw[i] == initial_flap.raw[i+1] and flap_angle.array[i+1] > initial_flap.raw[i+1] + 0.1:
-                                flap_array.raw[i+1] = flap_array.raw[i]
-                            else:
-                                transition = False
-                data = self.flap_or_conf_max_or_min(flap, airspeed, max_value, scope)
-                for index, value, detent in data:
-                    self.create_kpv(index, value, parameter=flap.name, flap=detent)
+            ### Changing the current 'Flap Including Transition' parameter to monitor transitions 
+            ### to a reading of 0.1 degrees for Boeing - there is a requirement for an inspection
+            ### if airspeed is high for each flap setting, including the transition period, until 
+            ### the flap reaches the next position
             
-            else:
-                # Fast scope traps flap changes very late on the approach and
-                # raising flaps before 80 kt on the landing run.
-                data = self.flap_or_conf_max_or_min(flap, airspeed, max_value, scope)
-                for index, value, detent in data:
-                    self.create_kpv(index, value, parameter=flap.name, flap=detent)
+            ##if manufacturer.value == 'Boeing' and flap.name == 'Flap Including Transition' and \
+               ##flap_angle and len(flap.array) == len(flap_angle.array):
+                
+                ##initial_flap = deepcopy(flap.array)
+                ##flap_array = flap.array
+                ##transition = False
+                ##for i in range(0, len(flap_array)-1):
+                    ##if initial_flap[i] is not np.ma.masked and initial_flap[i+1] is not np.ma.masked and flap_angle.array[i+1] is not np.ma.masked:
+                        ##if initial_flap.raw[i] > initial_flap.raw[i+1] and flap_angle.array[i+1] > initial_flap.raw[i+1] + 0.1:
+                            ##transition = True
+                            ##flap_array.raw[i+1] = flap_array.raw[i]
+                            ##continue
+                        ##if transition:
+                            ##if initial_flap.raw[i] == initial_flap.raw[i+1] and flap_angle.array[i+1] > initial_flap.raw[i+1] + 0.1:
+                                ##flap_array.raw[i+1] = flap_array.raw[i]
+                            ##else:
+                                ##transition = False
+                ##data = self.flap_or_conf_max_or_min(flap, airspeed, max_value, scope)
+                ##for index, value, detent in data:
+                    ##self.create_kpv(index, value, parameter=flap.name, flap=detent)
+            
+            ##else:
+                ### Fast scope traps flap changes very late on the approach and
+                ### raising flaps before 80 kt on the landing run.
+                ##data = self.flap_or_conf_max_or_min(flap, airspeed, max_value, scope)
+                ##for index, value, detent in data:
+                    ##self.create_kpv(index, value, parameter=flap.name, flap=detent)
 
 
 class AirspeedWithFlapMin(KeyPointValueNode, FlapOrConfigurationMaxOrMin):
@@ -4125,6 +4133,22 @@ class AirspeedAtThrustReversersSelection(KeyPointValueNode):
         # TODO: Replace with positive state rather than "Not Stowed"
         to_scan = clump_multistate(tr.array, 'Stowed', slices, condition=False)
         self.create_kpv_from_slices(air_spd.array, to_scan, max_value)
+
+
+class AirspeedWithThrustReversersDeployedAnyPowerMin(KeyPointValueNode):
+    '''
+    Minimum true airspeed measured with Thrust Reversers deployed at any power 
+    setting.
+    '''
+
+    units = ut.KT
+
+    def derive(self,
+               air_spd=P('Airspeed True'),
+               tr=M('Thrust Reversers'),):
+
+        tr_deployed = runs_of_ones(tr.array == 'Deployed')
+        self.create_kpv_from_slices(air_spd.array, tr_deployed, min_value)
 
 
 ########################################
@@ -10106,10 +10130,16 @@ class EngGasTempDuringMaximumContinuousPowerForXMinMax(KeyPointValueNode):
     power settings are not in force. 
     '''
 
-    NAME_FORMAT = 'Eng Gas Temp During Maximum Continuous Power For %(minutes)d Min Max'
-    NAME_VALUES = {'minutes': [3, 5]}
+    NAME_FORMAT = 'Eng Gas Temp During Maximum Continuous Power For %(duration)d %(unit)s Max'
+    NAME_VALUES = {'duration': [10, 20, 3, 5],
+                   'unit': ['Sec', 'Min']}
     align_frequency = 1
     units = ut.CELSIUS
+
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Eng (*) Gas Temp Max', 'Takeoff 5 Min Rating', 'Airborne'),
+                      available)
 
     def derive(self,
                eng_egt_max=P('Eng (*) Gas Temp Max'),
@@ -10119,20 +10149,71 @@ class EngGasTempDuringMaximumContinuousPowerForXMinMax(KeyPointValueNode):
 
         if not airborne:
             return
-        high_power_ratings = to_ratings.get_slices() + ga_ratings.get_slices()
+        if to_ratings and ga_ratings:
+            high_power_ratings = to_ratings.get_slices() + ga_ratings.get_slices()
+        else:
+            high_power_ratings = to_ratings.get_slices()      
+        
         max_cont_rating = slices_not(
             high_power_ratings,
             begin_at=min(air.slice.start for air in airborne),
             end_at=max(air.slice.stop for air in airborne),
         )
-        for minutes in self.NAME_VALUES['minutes']:
+        for minutes in [3, 5]:
             seconds = minutes * 60
             self.create_kpvs_within_slices(
-                second_window(eng_egt_max.array.astype(int), eng_egt_max.hz, seconds),
+                second_window(eng_egt_max.array.astype(int), eng_egt_max.hz,
+                              seconds),
                 max_cont_rating,
                 max_value,
-                minutes=minutes,
+                duration=minutes,
+                unit='Min'
             )
+        for seconds in [10, 20]:
+            self.create_kpvs_within_slices(
+                second_window(eng_egt_max.array.astype(int), eng_egt_max.hz,
+                              seconds),
+                max_cont_rating,
+                max_value,
+                duration=seconds,
+                unit='Sec'
+            )
+
+
+class EngGasTempMaxDuringTakeoffMaxMaintained(KeyPointValueNode):
+    '''
+    The maximum value of "Eng (*) Torque Max" during the Takeoff 5 or Go 
+    Around 5 Min Rating phase maintained for the specified duration.
+    '''
+
+    NAME_FORMAT = 'Eng Gas Temp Max During Takeoff %(durations)s Max Maintained'
+    NAME_VALUES = {'durations': ['5 Sec', '10 Sec', '20 Sec', '5 Min']}
+    align_frequency = 1
+    units = ut.CELSIUS
+
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Eng (*) Gas Temp Max', 'Takeoff 5 Min Rating'), available)
+
+    def derive(self,
+               eng_egt_max=P('Eng (*) Gas Temp Max'),
+               takeoffs=S('Takeoff 5 Min Rating'),
+               go_arounds=S('Go Around 5 Min Rating')):
+
+        seconds = np.array([5, 10, 20, 300])
+        hz = eng_egt_max.frequency
+        if takeoffs and go_arounds:
+            t_slices= takeoffs.get_slices() + go_arounds.get_slices()
+        else:
+            t_slices= takeoffs.get_slices()
+
+        for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
+            for takeoff in t_slices:
+                arrays = eng_egt_max.array[takeoff]
+                if len(arrays) > 0:
+                    index, value = max_maintained_value(arrays, samples, hz, takeoff)
+                    if index is not None and value is not None:
+                        self.create_kpv(index, value, durations=duration)
 
 
 class EngGasTempDuringEngStartMax(KeyPointValueNode):
@@ -10233,7 +10314,7 @@ class EngGasTempDuringEngStartForXSecMax(KeyPointValueNode):
     '''
 
     NAME_FORMAT = 'Eng Gas Temp During Eng Start For %(seconds)d Sec Max'
-    NAME_VALUES = {'seconds': [5, 10, 40]}
+    NAME_VALUES = {'seconds': [5, 10, 20, 40]}
     align_frequency = 1
     units = ut.CELSIUS
 
@@ -12137,6 +12218,25 @@ class EngTorque7FtToTouchdownMax(KeyPointValueNode):
             alt_aal.slices_to_kti(7, touchdowns),
             max_value,
         )
+
+
+class EngTorqueWithin1SecOfTouchdownMax(KeyPointValueNode):
+    '''
+    Maximum recorded engine torque on either engine within 1 second of Touchdown.
+    
+    As per ATR's 'Remaining power at touchdown' event specification.
+    '''
+    
+    units = ut.PERCENT
+    
+    def derive(self, 
+               tdwns=KTI('Touchdown'),
+               torque=P('Eng (*) Torque Max'),):
+        
+        freq = self.hz if self.hz >= 1 else 1
+        
+        for tdwn in tdwns:
+            self.create_kpv_between(torque.array, tdwn.index-freq, tdwn.index+freq, max_value)
 
 
 ##############################################################################
@@ -17314,7 +17414,8 @@ class AirspeedBelowMinimumAirspeedMin(KeyPointValueNode):
     @classmethod
     def can_operate(cls, available):
         core = all_of(['Airspeed', 'Airborne', 'Flap'], available)
-        min_spd = any_of(['Minimum Airspeed', 'Flap Manoeuvre Speed'],
+        min_spd = any_of(['Minimum Airspeed', 'Flap Manoeuvre Speed', 
+                          'Minimum Clean Lookup',],
                          available)
         return core and min_spd
 
@@ -17323,9 +17424,10 @@ class AirspeedBelowMinimumAirspeedMin(KeyPointValueNode):
                min_spd=P('Minimum Airspeed'),
                flap = M('Flap'),
                f_m_spd = P('Flap Manoeuvre Speed'),
-               airborne = S('Airborne')):
-        mspd = min_spd or f_m_spd
-        if mspd.name == 'Minimum Airspeed':
+               airborne = S('Airborne'),
+               min_clean = P('Minimum Clean Lookup'),):
+        mspd = min_clean or min_spd or f_m_spd        
+        if mspd.name in ('Minimum Airspeed', 'Minimum Clean Lookup'):
             to_test = air_spd.array - mspd.array
             spd_slices = runs_of_ones(to_test < 0)
         else:
@@ -17341,6 +17443,42 @@ class AirspeedBelowMinimumAirspeedMin(KeyPointValueNode):
         self.create_kpv_from_slices(to_test, slices, min_value)
 
 
+class DifferenceBetweenAirspeedAndMinimumCleanMax(KeyPointValueNode):
+    '''
+    Maximum value of difference between Minimum Clean and Airspeed.
+    
+    Occurences within 60 seconds of each other are ignored.
+    
+    The KPV will only trigger if the flaps were up for at least 5 seconds, to 
+    account for SOP on 757/767, where pilots are allowed to retract flaps below
+    minimum clean during climbout.
+    '''
+    def derive(self,
+               air_spd=P('Airspeed'),
+               flap = M('Flap'),
+               airborne = S('Airborne'),
+               min_clean = P('Minimum Clean Lookup'),):
+        
+        # create an array with diff between min_clean and air_spd
+        diff = min_clean.array - air_spd.array
+        
+        # get slices where diff is > 0 and flaps are up
+        spd_slices = runs_of_ones(diff > 0)
+        flap_slices = runs_of_ones(flap.array == '0')
+        
+        # remove first 5 seconds of Flaps 0 from each slice
+        number_of_samples = self.hz * 5
+        flap_slices = [slice(s.start + number_of_samples, s.stop) for s in
+                       flap_slices if s.start + number_of_samples < s.stop]
+        
+        # define sections where flaps were up for at least 5s and airspeed was
+        # below minimum clean, remove small gaps (<60s) and create a KPV for 
+        # each occurence
+        sections = slices_and(spd_slices, flap_slices)
+        sections = slices_remove_small_gaps(sections, 60, self.hz)
+        self.create_kpvs_within_slices(diff, sections, max_value)
+
+    
 ##############################################################################
 # Tail Clearance
 
@@ -19230,6 +19368,25 @@ class ThrustAsymmetryWithThrustReversersDeployedDuration(KeyPointValueNode):
 
 
 ##############################################################################
+# Thrust Rating 
+
+class ThrustRatingCLB1Duration(KeyPointValueNode):
+    '''
+    Duration for which CLB1 thrust rating was active.
+    Applicable to E170-190 family.
+    '''
+
+    units = ut.SECOND
+    name = 'Thrust Rating CLB1 Duration'
+
+    def derive(self,
+               thrust_rating=M('Thrust Rating Mode'),
+               airs=S('Airborne')):
+        self.create_kpvs_where(thrust_rating.array == 'CLB1',
+                               thrust_rating.hz, phase=airs)
+
+
+##############################################################################
 
 
 class TouchdownToElevatorDownDuration(KeyPointValueNode):
@@ -20326,16 +20483,16 @@ class EngNpMaxDuringTakeoff(KeyPointValueNode):
     def can_operate(cls, available):
         return all_of(('Takeoff 5 Min Rating', 'Eng (*) Np Max'), available)
     
-    def derive(self, takeoffs=S('Takeoff 5 Min Rating'),
+    def derive(self,
                eng_np_max=P('Eng (*) Np Max'),
+               takeoffs=S('Takeoff 5 Min Rating'),
                go_arounds=S('Go Around 5 Min Rating')):
-        
+        hz = eng_np_max.frequency
         for duration in self.NAME_VALUES['seconds']:
             for takeoff in takeoffs.get_slices():
                 arrays = eng_np_max.array[takeoff]
-                samples = int(duration * eng_np_max.frequency)
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, takeoff)
+                    index, value = max_maintained_value(arrays, duration, hz, takeoff)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, seconds=duration)
 
@@ -20343,9 +20500,8 @@ class EngNpMaxDuringTakeoff(KeyPointValueNode):
             for duration in self.NAME_VALUES['seconds']:
                 for go_around in go_arounds.get_slices():
                     arrays = eng_np_max.array[go_around]
-                    samples = int(duration * eng_np_max.frequency)
                     if len(arrays) > 0:
-                        index, value = max_maintained_value(arrays, samples, go_around)
+                        index, value = max_maintained_value(arrays, duration, hz, go_around)
                         if index is not None and value is not None:
                             self.create_kpv(index, value, seconds=duration)
 
@@ -20364,16 +20520,17 @@ class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
     def can_operate(cls, available):
         return all_of(('Eng (*) Torque Max', 'Takeoff 5 Min Rating'), available)
     
-    def derive(self, eng_torq_max=P('Eng (*) Torque Max'),
+    def derive(self,
+               eng_torq_max=P('Eng (*) Torque Max'),
                takeoffs=S('Takeoff 5 Min Rating'),
                go_arounds=S('Go Around 5 Min Rating')):
-        
+        hz = eng_torq_max.frequency
         seconds = np.array([10, 20, 300])
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for takeoff in takeoffs.get_slices():
                 arrays = eng_torq_max.array[takeoff]
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, takeoff)
+                    index, value = max_maintained_value(arrays, samples, hz, takeoff)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)
         if go_arounds:
@@ -20381,7 +20538,7 @@ class EngTorqueMaxDuringTakeoff(KeyPointValueNode):
                 for go_around in go_arounds.get_slices():
                     arrays = eng_torq_max.array[go_around]
                     if len(arrays) > 0:
-                        index, value = max_maintained_value(arrays, samples, go_around)
+                        index, value = max_maintained_value(arrays, samples, hz, go_around)
                         if index is not None and value is not None:
                             self.create_kpv(index, value, durations=duration)
 
@@ -20403,13 +20560,13 @@ class EngTorqueMaxDuringMaximumContinuousPower(KeyPointValueNode):
     def derive(self,
                eng_torq_max=P('Eng (*) Torque Max'),
                ratings=S('Maximum Continuous Power')):
-        
+        hz = eng_torq_max.frequency
         seconds = np.array([10, 20, 300, 600])
         for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
             for mcp in ratings.get_slices():
                 arrays = eng_torq_max.array[mcp]
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, mcp)
+                    index, value = max_maintained_value(arrays, samples, hz, mcp)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)
 
@@ -20437,7 +20594,7 @@ class EngN2DuringTakeoffForXSecMax(KeyPointValueNode):
             for takeoff in takeoffs.get_slices():
                 arrays = eng_n2_max.array[takeoff]
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, takeoff)
+                    index, value = max_maintained_value(arrays, samples, eng_n2_max.hz, takeoff)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)
         if go_arounds:
@@ -20445,7 +20602,7 @@ class EngN2DuringTakeoffForXSecMax(KeyPointValueNode):
                 for go_around in go_arounds.get_slices():
                     arrays = eng_n2_max.array[go_around]
                     if len(arrays) > 0:
-                        index, value = max_maintained_value(arrays, samples, go_around)
+                        index, value = max_maintained_value(arrays, samples, eng_n2_max.hz, go_around)
                         if index is not None and value is not None:
                             self.create_kpv(index, value, durations=duration)
                             
@@ -20473,6 +20630,6 @@ class EngN2DuringMaximumContinuousPowerForXSecMax(KeyPointValueNode):
             for mcp in ratings.get_slices():
                 arrays = eng_n2_max.array[mcp]
                 if len(arrays) > 0:
-                    index, value = max_maintained_value(arrays, samples, mcp)
+                    index, value = max_maintained_value(arrays, samples, eng_n2_max.hz, mcp)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)

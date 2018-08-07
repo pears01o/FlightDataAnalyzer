@@ -1264,7 +1264,7 @@ class FlapIncludingTransition(MultistateDerivedParameterNode):
                model=A('Model'), series=A('Series'), family=A('Family')):
         self.values_mapping = at.get_flap_map(model.value, series.value, family.value)
         if flap_angle:
-            self.array = including_transition(flap_angle.array, self.values_mapping)
+            self.array = including_transition(flap_angle.array, self.values_mapping, hz=self.hz)
         else:
             # if we do not have flap angle use flap, use states as values
             # will vary between frames

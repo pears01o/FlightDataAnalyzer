@@ -2198,7 +2198,7 @@ class TCASResolutionAdvisory(FlightPhaseNode):
         all_slices = []
         airs = np.ma.clump_unmasked(np.ma.masked_less(alt_aal.array, 360.0))
         for air in airs:
-            if np.ma.average(tcas_cc.array.data[air]) < 0.1:
+            if np.ma.average(tcas_cc.array.data[air]) > 0.1:
                 # Cannot be working properly.
                 continue
             ras_local = tcas_cc.array[air].data > 3

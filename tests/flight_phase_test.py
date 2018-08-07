@@ -3098,9 +3098,9 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
             7: 'Not Used'}
         
     def test_derive_cc_only(self):
-        tcas = M('TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6,1,0,0]),
+        tcas = M('TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6,1,0,0] + [0]*500),
                  values_mapping=self.values_mapping_cc)
-        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*500 + range(1000, -100, -200))
         node = self.node_class()
         node.derive(tcas, alt_aal)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
@@ -3108,9 +3108,9 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
 
     def test_derive_cc_only_not_cofc(self):
         tcas = M('TCAS Combined Control', 
-                 array=np.ma.array([0,0,0,4,5,4,5,6,1,1,0,0]),
+                 array=np.ma.array([0,0,0,4,5,4,5,6,1,1,0,0] + [0]*500),
                  values_mapping=self.values_mapping_cc)
-        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*500 + range(1000, -100, -200))
         node = self.node_class()
         node.derive(tcas, alt_aal)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
@@ -3118,9 +3118,9 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
          
     def test_derive_cc_only_not_cofc(self):
         tcas = M('TCAS Combined Control', 
-                 array=np.ma.array([0,0,0,4,5,4,5,6,1,1,0,0]),
+                 array=np.ma.array([0,0,0,4,5,4,5,6,1,1,0,0] + [0]*500),
                  values_mapping=self.values_mapping_cc)
-        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*500 + range(1000, -100, -200))
         node = self.node_class()
         node.derive(tcas, alt_aal)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')

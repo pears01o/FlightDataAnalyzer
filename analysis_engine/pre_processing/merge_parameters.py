@@ -137,7 +137,7 @@ class Longitude(DerivedParameterNode):
         if len(sources) > 1:
             for source in sources:
                 source.array = repair_mask(
-                    straighten_longitude(source.array + 180)
+                    straighten_longitude(source.array) + 180.0
                 )
 
         if len(sources) == 1:

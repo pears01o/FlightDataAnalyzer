@@ -204,7 +204,7 @@ class TestClimbStart(unittest.TestCase):
         #vert_spd = Parameter('Vertical Speed', np.ma.array([1200]*8))
         #climb = Climbing()
         #climb.derive(vert_spd, [Section('Fast',slice(0,8,None),0,8)])
-        alt_aal = Parameter('Altitude AAL', np.ma.array(range(0,1600,220)))
+        alt_aal = Parameter('Altitude AAL', np.ma.arange(0, 1600, 220))
         liftoffs = KTI('Liftoff', items=[KeyTimeInstance(0, 'Liftoff')])
         tocs = KTI('Top Of Climb',
                    items=[KeyTimeInstance(len(alt_aal.array) - 1, 'Top Of Climb')])
@@ -2064,7 +2064,7 @@ class TestDistanceFromTakeoffAirport(unittest.TestCase):
         apt = A(name='FDR Takeoff Airport', value={'latitude': 0.0, 'longitude': 0.0})
         airs = buildsection('Airborne', 0, 9000)
         # 300 NM at 30 sec per NM
-        test = np.ma.array(range(0, 9030))
+        test = np.ma.arange(9030)
         lat = P('Latitude', [0.0]*(len(test)))
         lon = P('Longitude', (test-30)/(30.0*60))
         dfta = DistanceFromTakeoffAirport()
@@ -2114,7 +2114,7 @@ class TestDistanceFromLandingAirport(unittest.TestCase):
         apt = A(name='FDR Landing Airport', value={'latitude': 0.0, 'longitude': 0.0})
         airs = buildsection('Airborne', 0, 9000)
         # 300 NM at 30 sec per NM
-        test = np.ma.array(range(9030,-1,-1))
+        test = np.ma.arange(9030, -1, -1)
         lat = P('Latitude', [0.0]*(len(test))) # On equator
         lon = P('Longitude', (test-30)/(30.0*60))
         dfla = DistanceFromLandingAirport()
@@ -2169,10 +2169,10 @@ class TestDistanceFromThreshold(unittest.TestCase):
             'end': {'latitude': 0.0, 'longitude': -0.03},
         })
         airs = buildsection('Airborne', 0, 99)
-        test = np.ma.array(range(128,-1,-1))
+        test = np.ma.arange(128, -1, -1)
         # 3 NM to threshold in first 96 samples
-        lat = P('Latitude', [0.0]*(len(test))) # On equator
-        lon = P('Longitude', (test-32)/(32.0*60))
+        lat = P('Latitude', np.ma.zeros(len(test), dtype=np.float)) # On equator
+        lon = P('Longitude', (test - 32) / (32.0 * 60))
         #lon.array = np.ma.concatenate([lon.array])
         dft = DistanceFromThreshold()
         dft.derive(lon, lat, airs, rwy)
@@ -2187,10 +2187,10 @@ class TestDistanceFromThreshold(unittest.TestCase):
             'end': {'latitude': 0, 'longitude': -0.03},
         })
         airs = buildsection('Airborne', 0, 99)
-        test = np.ma.array(range(128,-1,-1))
+        test = np.ma.arange(128, -1, -1)
         # 1.5 NM to zero in first 96 samples
-        lat = P('Latitude', [0.0]*len(test))# On equator
-        lon = P('Longitude', (test-32)/(64.0*60))
+        lat = P('Latitude', np.ma.zeros(len(test), dtype=np.float)) # On equator
+        lon = P('Longitude', (test - 32) / (64.0 * 60))
         dft = DistanceFromThreshold()
         dft.derive(lon, lat, airs, rwy)
 

@@ -1801,7 +1801,7 @@ class TestAltitudeTail(unittest.TestCase):
         airborne = buildsections('Airborne', [5, 17])
 
         talt.derive(Parameter('Altitude Radio', np.ma.zeros(10), 1,0.0),
-                    Parameter('Pitch', np.ma.array(range(10))*2, 1,0.0),
+                    Parameter('Pitch', np.ma.arange(10) * 2, 1, 0.0),
                     buildsections('Takeoff', [0, 3]),
                     buildsections('Go Around And Climbout', [5, 6]),
                     buildsections('Landing', [8, 10]),
@@ -2337,8 +2337,8 @@ class TestEng_N1Avg(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2366,8 +2366,8 @@ class TestEng_N1Max(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2403,8 +2403,8 @@ class TestEng_N1Min(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10,20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2462,8 +2462,8 @@ class TestEng_N2Avg(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2491,8 +2491,8 @@ class TestEng_N2Max(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2519,8 +2519,8 @@ class TestEng_N2Min(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2547,8 +2547,8 @@ class TestEng_N3Avg(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2576,8 +2576,8 @@ class TestEng_N3Max(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2604,8 +2604,8 @@ class TestEng_N3Min(unittest.TestCase, NodeTest):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2629,8 +2629,8 @@ class TestEng_NpAvg(unittest.TestCase):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2654,8 +2654,8 @@ class TestEng_NpMax(unittest.TestCase):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -2678,8 +2678,8 @@ class TestEng_NpMin(unittest.TestCase):
     def test_derive_two_engines(self):
         # this tests that average is performed on incomplete dependencies and
         # more than one dependency provided.
-        a = np.ma.array(range(0, 10))
-        b = np.ma.array(range(10,20))
+        a = np.ma.arange(0, 10)
+        b = np.ma.arange(10, 20)
         a[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked
@@ -4084,7 +4084,7 @@ class TestHeadingRate(unittest.TestCase):
 
     def test_rate_of_turn(self):
         rot = HeadingRate()
-        rot.derive(P('Heading Continuous', np.ma.array(range(10))))
+        rot.derive(P('Heading Continuous', np.ma.arange(10)))
         answer = np.ma.array(data=[1]*10, dtype=np.float)
         assert_array_equal(rot.array, answer) # Tests data only; NOT mask
 

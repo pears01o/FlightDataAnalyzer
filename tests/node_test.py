@@ -1928,7 +1928,7 @@ class TestDerivedParameterNode(unittest.TestCase):
     def test_parameter_at(self):
         # using a plain range as the parameter array, the results are equal to
         # the index used to get the value (cool)
-        spd = Parameter('Airspeed', np.ma.array(range(20)), 2, 0.75)
+        spd = Parameter('Airspeed', np.ma.arange(20), 2, 0.75)
         self.assertEqual(spd.at(0.75), 0) # min val possible to return
         self.assertEqual(spd.at(1.75), 1*2) # one second in (*2Hz)
         self.assertEqual(spd.at(2.5), 1.75*2) # interpolates

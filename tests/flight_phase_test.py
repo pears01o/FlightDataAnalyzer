@@ -173,7 +173,7 @@ class TestAirborne(unittest.TestCase):
         self.assertEqual(list(air), expected)
 
     def test_airborne_aircraft_not_fast(self):
-        altitude_data = np.ma.array(range(0,10))
+        altitude_data = np.ma.arange(0, 10)
         alt_aal = Parameter('Altitude AAL For Flight Phases', altitude_data)
         fast = SectionNode('Fast')
         air = Airborne()

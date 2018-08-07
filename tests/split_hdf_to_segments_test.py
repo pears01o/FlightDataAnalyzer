@@ -584,7 +584,7 @@ class mocked_hdf(object):
                 elif key == 'Day':
                     data = np.ma.array([31] * self.duration)
                 else:
-                    data = np.ma.array(range(0, self.duration))
+                    data = np.ma.arange(0, self.duration)
             else:
                 if key == 'Year':
                     if self.path == 'future timestamps':
@@ -598,7 +598,7 @@ class mocked_hdf(object):
                 elif key == 'Day':
                     data = np.ma.array([25] * self.duration)
                 else:
-                    data = np.ma.array(range(0, self.duration))
+                    data = np.ma.arange(0, self.duration)
         return P(key, array=data)
 
 

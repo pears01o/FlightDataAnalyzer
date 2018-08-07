@@ -360,8 +360,8 @@ class TestAlignSlice(unittest.TestCase):
 
 class TestAlign(unittest.TestCase):
     def test_align_returns_same_array_if_aligned(self):
-        slave = P('slave', np.ma.array(range(10)))
-        master = P('master', np.ma.array(range(30)))
+        slave = P('slave', np.ma.arange(10))
+        master = P('master', np.ma.arange(30))
         aligned = align(slave, master)
         self.assertEqual(id(slave.array), id(aligned))
 
@@ -387,12 +387,12 @@ class TestAlign(unittest.TestCase):
         first = DumParam()
         first.frequency = 4
         first.offset = 0.1
-        first.array = np.ma.array(range(8))
+        first.array = np.ma.arange(8)
 
         second = DumParam()
         second.frequency = 4
         second.offset = 0.2
-        second.array = np.ma.array(range(8))
+        second.array = np.ma.arange(8)
 
         result = align(second, first) #  sounds more natural so order reversed 20/11/11
         np.testing.assert_array_equal(result.data,
@@ -414,12 +414,12 @@ class TestAlign(unittest.TestCase):
         first = DumParam()
         first.frequency = 1
         first.offset = 0.1
-        first.array = np.ma.array(range(3))
+        first.array = np.ma.arange(3)
 
         second = DumParam()
         second.frequency = 2
         second.offset = 0.2
-        second.array = np.ma.array(range(5))
+        second.array = np.ma.arange(5)
 
         self.assertRaises(ValueError, align, second, first)
 
@@ -3405,8 +3405,8 @@ class TestIndexAtDistance(unittest.TestCase):
         index_ref = 0
         latitude_ref = 60.0
         longitude_ref = 0.0
-        latitude = np.ma.array(range(600, 700)) / 10.0
-        longitude = np.ma.array(range(100)) / 10.0
+        latitude = np.ma.arange(600, 700) / 10.0
+        longitude = np.ma.arange(100) / 10.0
         result = index_at_distance(
             distance, index_ref, latitude_ref, longitude_ref, latitude,
             longitude, 1.0)
@@ -3417,8 +3417,8 @@ class TestIndexAtDistance(unittest.TestCase):
         index_ref = 100
         latitude_ref = 70.0
         longitude_ref = 10.0
-        latitude = np.ma.array(range(600, 700)) / 10.0
-        longitude = np.ma.array(range(100)) / 10.0
+        latitude = np.ma.arange(600, 700) / 10.0
+        longitude = np.ma.arange(100) / 10.0
         result = index_at_distance(
             distance, index_ref, latitude_ref, longitude_ref, latitude,
             longitude, 1.0)
@@ -3462,7 +3462,7 @@ class TestIndexAtValueOrLevelOff(unittest.TestCase):
 
 class TestIntegValue(unittest.TestCase):
     def test_integ_value(self):
-        array = np.ma.array(range(10), dtype=float)
+        array = np.ma.arange(10, dtype=float)
         i, v = integ_value(array)
         self.assertEqual(i, 9) #
         self.assertEqual(v, 40.5)
@@ -3843,7 +3843,7 @@ class TestMaskInsideSlices(unittest.TestCase):
 
 class TestMaxContinuousUnmasked(unittest.TestCase):
     def test_max_continuous_unmasked(self):
-        data = np.ma.array(range(20),
+        data = np.ma.array(np.arange(20),
                            mask=[1,0,1,1,1,0,0,0,0,1,
                                  0,0,0,0,0,0,0,1,1,1])
         _max = max_continuous_unmasked(data)
@@ -3855,14 +3855,14 @@ class TestMaxContinuousUnmasked(unittest.TestCase):
 
     def test_max_continuous_unmasked_no_mask(self):
         # no mask
-        data = np.ma.array(range(20), mask=False)
+        data = np.ma.array(np.arange(20), mask=False)
         _max = max_continuous_unmasked(data)
         self.assertEqual(_max.stop-_max.start, 20)
         self.assertEqual(_max.start, 0)
         self.assertEqual(_max.stop, 20)
 
         # all masked
-        data = np.ma.array(range(5), mask=[1,1,1,1,1])
+        data = np.ma.array(np.arange(5), mask=[1,1,1,1,1])
         _max = max_continuous_unmasked(data)
         self.assertEqual(_max, None)
 
@@ -3872,10 +3872,9 @@ class TestMaxContinuousUnmasked(unittest.TestCase):
         self.assertEqual(_max, None)
 
     def test_max_continuous_unmasked_with_slice(self):
-        data = np.ma.array(range(30),
-                           mask=[0,1,0,0,0,1,1,1,1,0,
-                                 1,1,1,1,1,1,1,0,0,0,
-                                 1,1,1,1,1,0,0,1,1,1,])
+        data = np.ma.array(np.arange(30), mask=[0,1,0,0,0,1,1,1,1,0,
+                                                1,1,1,1,1,1,1,0,0,0,
+                                                1,1,1,1,1,0,0,1,1,1,])
         _max = max_continuous_unmasked(data, slice(20,30))
         # test duration
         self.assertEqual(_max.stop-_max.start, 2)
@@ -4936,7 +4935,7 @@ class TestPeakCurvature(unittest.TestCase):
     def test_none_slice_provided(self):
         # Designed to capture TypeError:
         # TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'
-        array = np.ma.array(range(10), mask=[0,0,0,0,0,0,0,1,1,1])
+        array = np.ma.array(np.arange(10), mask=[0,0,0,0,0,0,0,1,1,1])
         # also checks lower case curve_sense is turned Title case
         res = peak_curvature(array, _slice=slice(None), curve_sense='bipolar')
         # Range(10) has no curvature shape to it
@@ -4997,7 +4996,7 @@ class TestRateOfChangeArray(unittest.TestCase):
         assert_array_almost_equal(sloped, answer)
 
     def test_case_changing_widths(self):
-        test_array = np.ma.array(range(20), dtype=float)
+        test_array = np.ma.arange(20, dtype=float)
         answer = np.ones_like(test_array)
         sloped = rate_of_change_array(test_array, 1.0, width=2)
         assert_array_almost_equal(sloped.data, answer)
@@ -5065,7 +5064,7 @@ class TestRateOfChange(unittest.TestCase):
 
     def test_rate_of_change_reduced_frequency_extended(self):
         sloped = rate_of_change(P('Test',
-                                  np.ma.array(range(20), dtype=float), 0.5), 4)
+                                  np.ma.arange(20, dtype=float), 0.5), 4)
         answer = np.ma.array(data=[0.5]*20, mask=False)
         ma_test.assert_mask_equivalent(sloped, answer)
 
@@ -5172,7 +5171,7 @@ class TestRepairMask(unittest.TestCase):
         assert_array_equal(res, expected)
 
     def test_fully_masked_array(self):
-        array = np.ma.array(range(10), mask=[1]*10)
+        array = np.ma.array(np.arange(10), mask=[1]*10)
         # fully masked raises ValueError
         self.assertRaises(ValueError, repair_mask, array)
         # fully masked returns a masked zero array
@@ -5209,7 +5208,7 @@ class TestResample(unittest.TestCase):
 
 class TestRoundToNearest(unittest.TestCase):
     def test_round_to_nearest(self):
-        array = np.ma.array(range(50))
+        array = np.ma.arange(50)
         res = round_to_nearest(array, 5)
 
         self.assertEqual(list(res[:15]),
@@ -7384,8 +7383,8 @@ class TestValueAtIndex(unittest.TestCase):
 
 class TestVstackParams(unittest.TestCase):
     def test_vstack_params(self):
-        a = P('a', array=np.ma.array(range(0, 10)))
-        b = np.ma.array(range(10,20))
+        a = P('a', array=np.ma.arange(10))
+        b = np.ma.arange(10, 20)
         a.array[0] = np.ma.masked
         b[0] = np.ma.masked
         b[-1] = np.ma.masked

@@ -1891,7 +1891,7 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
         ])
         
     def test_derive_bounced_landing(self):
-        acc_norm = P('Acceleration Normal', array=np.ma.array(range(10)) / 10.0 + 1.0)
+        acc_norm = P('Acceleration Normal', array=np.ma.arange(10) / 10.0 + 1.0)
         touchdowns = KTI('Touchdown', items=[KeyTimeInstance(3, 'Touchdown')])
         bounces = buildsection('Bounced Landing', 4, 6)
         node = AccelerationNormalAtTouchdown()
@@ -3538,7 +3538,7 @@ class TestAirspeedAtAPGoAroundEngaged(unittest.TestCase):
     def test_derive(self):
         aspd = P('Airspeed', np.ma.array([34.0]*10))
         airs = buildsection('Airborne', 3, 9)
-        mode = M(name='AP Pitch Mode (1)', array=np.ma.array(range(10),dtype=int),
+        mode = M(name='AP Pitch Mode (1)', array=np.ma.arange(10, dtype=int),
                  values_mapping=self.vm)
         node = self.node_class()
         node.derive(aspd, airs, mode)
@@ -3547,7 +3547,7 @@ class TestAirspeedAtAPGoAroundEngaged(unittest.TestCase):
         self.assertEqual(node[0].value, 34)
 
     def test__airborne_phase_and_first_sample(self):
-        aspd = P('Airspeed', np.ma.array(range(10)))
+        aspd = P('Airspeed', np.ma.arange(10))
         airs = buildsection('Airborne', 5, 9)
         mode = M(name='AP Pitch Mode (1)', array=np.ma.array([5,6,6,5,5,5,6,6,6,6,],dtype=int),
                  values_mapping=self.vm)
@@ -3577,7 +3577,7 @@ class TestAirspeedWhileAPHeadingEngagedMin(unittest.TestCase):
     def test_derive(self):
         aspd = P('Airspeed', np.ma.array([34.0]*10))
         airs = buildsection('Airborne', 1, 9)
-        mode = M(name='AP Roll-Yaw Mode (1)', array=np.ma.array(range(10),dtype=int),
+        mode = M(name='AP Roll-Yaw Mode (1)', array=np.ma.arange(10, dtype=int),
                  values_mapping=self.vm)
         node = self.node_class()
         node.derive(aspd, airs, mode)
@@ -3588,7 +3588,7 @@ class TestAirspeedWhileAPHeadingEngagedMin(unittest.TestCase):
     def test_check_min(self):
         aspd = P('Airspeed', np.ma.array([34.0]*5+[33]+[34]*4))
         airs = buildsection('Airborne', 1, 9)
-        mode = M(name='AP Roll-Yaw Mode (1)', array=np.ma.array([1]*10,dtype=int),
+        mode = M(name='AP Roll-Yaw Mode (1)', array=np.ma.ones(10, dtype=int),
                  values_mapping=self.vm)
         node = self.node_class()
         node.derive(aspd, airs, mode)
@@ -3624,7 +3624,7 @@ class TestAirspeedWhileAPVerticalSpeedEngagedMin(unittest.TestCase):
     def test_derive(self):
         aspd = P('Airspeed', np.ma.array([34.0]*10))
         airs = buildsection('Airborne', 1, 9)
-        mode = M(name='AP Collective Mode (1)', array=np.ma.array(range(10),dtype=int),
+        mode = M(name='AP Collective Mode (1)', array=np.ma.arange(10, dtype=int),
                  values_mapping=self.vm)
         node = self.node_class()
         node.derive(aspd, airs, mode)
@@ -13055,7 +13055,7 @@ class TestEngNp82To90PercentDurationMax(unittest.TestCase):
             self.assertFalse(self.node_class().can_operate(combination, ac_series))
 
     def test_derive(self):
-        eng_1 = P(name='Eng (1) Np', array=np.ma.array(range(80,92)))
+        eng_1 = P(name='Eng (1) Np', array=np.ma.arange(80, 92))
         node = self.node_class()
         node.derive(eng_1, eng_1) # Intentional duplication of data
 
@@ -14325,7 +14325,7 @@ class TestEngTakeoffFlexTemp(unittest.TestCase):
     def test_derive(self):
         toff =  KTI('SAGE Takeoff',
                     items=[KeyTimeInstance(5, 'SAGE Takeoff')])
-        eng_flex = P('Flex Temp', array=np.ma.array(range(10), dtype=float))
+        eng_flex = P('Flex Temp', array=np.ma.arange(10, dtype=float))
         node = self.node_class()
         node.derive(toff, eng_flex, None, None)
         self.assertEqual(node[0].value, 5.0)    
@@ -14333,8 +14333,8 @@ class TestEngTakeoffFlexTemp(unittest.TestCase):
     def test_derive_two_sources(self):
         toff =  KTI('SAGE Takeoff',
                     items=[KeyTimeInstance(5, 'SAGE Takeoff')])
-        eng_flex_1 = P('Eng (1) Flex Temp', array=np.ma.array(range(10), dtype=float))
-        eng_flex_2 = P('Eng (2) Flex Temp', array=np.ma.array(range(10), dtype=float) + 1.0)
+        eng_flex_1 = P('Eng (1) Flex Temp', array=np.ma.arange(10, dtype=float))
+        eng_flex_2 = P('Eng (2) Flex Temp', array=np.ma.arange(10, dtype=float) + 1.0)
         node = self.node_class()
         node.derive(toff, None, eng_flex_1, eng_flex_2)
         self.assertEqual(node[0].value, 5.5)    
@@ -15102,7 +15102,7 @@ class TestElevatorDuringLandingMin(unittest.TestCase,
 class TestHeadingVariationAbove80KtsAirspeedDuringTakeoff(unittest.TestCase, NodeTest):
     nosewheel=P('Gear (N) On Ground',array=np.ma.array([1]*9+[0]*2))
     hdg = P('Heading True Continuous', np.ma.array([45]*11))
-    ias = P('Airspeed', np.ma.array(range(60, 170, 10)))
+    ias = P('Airspeed', np.ma.arange(60, 170, 10))
     q = P('Pitch Rate', np.ma.array([0]*8+[1, 2, 3]))
     toff = buildsection('Takeoff', 1, 10)
     '''
@@ -15144,8 +15144,8 @@ class TestHeadingVariationAbove80KtsAirspeedDuringTakeoff(unittest.TestCase, Nod
         self.assertAlmostEqual(node[0].value, 7.5, places=5)
 
     def test_with_transient_deviation_at_80_kts(self):
-        self.hdg = P('Heading True Continuous', np.ma.array(range(35,46)))
-        self.ias = P('Airspeed', np.ma.array(range(55, 165, 10)))
+        self.hdg = P('Heading True Continuous', np.ma.arange(35,46))
+        self.ias = P('Airspeed', np.ma.arange(55, 165, 10))
         node = self.node_class()
         node.derive(None, self.hdg, None, self.ias, self.q, self.toff)
         self.assertAlmostEqual(node[0].value, 7.0, places=5)
@@ -19503,7 +19503,7 @@ class TestRollLiftoffTo20FtMax(unittest.TestCase):
 
     def test_basic(self):
         roll = P('Roll', np.ma.array([10.0]*5+[4.0]*10+[-9.0]*10))
-        aal = P('Altitude AAL For Flight Phases', np.ma.array(range(25)))
+        aal = P('Altitude AAL For Flight Phases', np.ma.arange(25))
         airs = buildsection('Airborne', 5, 30)
         kpv = self.node_class()
         kpv.derive(roll, aal, airs)
@@ -21416,7 +21416,7 @@ class TestSATRateOfChangeMax(unittest.TestCase):
         self.assertEqual(opts, [('SAT', 'Airborne')])
 
     def test_basic(self):
-        sat = P('SAT', np.ma.array(range(20)))
+        sat = P('SAT', np.ma.arange(20))
         air = buildsection('Airborne', 0, 20)
         node = self.node_class()
         node.derive(sat, air)

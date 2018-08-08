@@ -237,6 +237,7 @@ from analysis_engine.key_point_values import (
     AltitudeWithGearDownMax,
     AltitudeInCruiseAverage,
     ATEngagedAPDisengagedOutsideClimbDuration,
+    ATDisengagedAPEngagedDuration,
     AutobrakeRejectedTakeoffNotSetDuringTakeoff,
     BrakePressureInTakeoffRollMax,
     BrakeTempAfterTouchdownDelta,
@@ -6427,6 +6428,26 @@ class TestATEngagedAPDisengagedOutsideClimbDuration(unittest.TestCase, NodeTest)
         ])
         self.assertEqual(node, expected)
 
+
+class TestATDisengagedAPEngagedDuration(unittest.TestCase, NodeTest):
+    def setUp(self):
+        self.node_class = ATDisengagedAPEngagedDuration
+        self.operational_combinations = [('AT Engaged', 'AP Engaged', 'Airborne',)]
+        self.can_operate_kwargs = {'ac_family': A('Family', value='B737 NG')}
+
+    def test_derive(self):
+        ap_engaged = M('AP Engaged', array=np.ma.array([1]*40), values_mapping={0: '-', 1: 'Engaged'})
+        at_engaged = M('AT Engaged', array=np.ma.array([1]*5+ [0]*30 + [1]*5), values_mapping={0: '-', 1: 'Engaged'})
+        airs = buildsection('Airborne', 1, 39)
+
+        node = self.node_class()
+        node.derive(at_engaged, ap_engaged, airs)
+
+        name = 'AT Disengaged AP Engaged Duration'
+        expected = KPV(name=name, items=[
+            KeyPointValue(name=name, index=5, value=30),
+        ])
+        self.assertEqual(node, expected)
 
 
 ##############################################################################

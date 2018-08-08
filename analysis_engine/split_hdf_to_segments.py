@@ -322,7 +322,7 @@ def _split_on_eng_params(slice_start_secs, slice_stop_secs, split_params_min,
                                          _slice=split_params_slice)
 
     if split_index is None:
-        return split_index, split_value
+        return round(split_index / split_params_frequency), split_value
 
     eng_min_slices = slices_remove_small_slices(
         slices_remove_small_gaps(
@@ -333,12 +333,11 @@ def _split_on_eng_params(slice_start_secs, slice_stop_secs, split_params_min,
     )
 
     if not eng_min_slices:
-        return split_index, split_value
+        return round(split_index / split_params_frequency), split_value
 
     split_index = eng_min_slices[0].start + \
         ((eng_min_slices[0].stop - eng_min_slices[0].start) / 2) + slice_start
-    split_index = round(split_index / split_params_frequency)
-    return split_index, split_value
+    return round(split_index / split_params_frequency), split_value
 
 
 def _split_on_dfc(slice_start_secs, slice_stop_secs, dfc_frequency,

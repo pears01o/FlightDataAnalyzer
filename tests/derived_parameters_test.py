@@ -2786,7 +2786,7 @@ class TestFuelQty(unittest.TestCase):
         # combinations as this can get very large (2**(n-1)-1) where n is the
         # number of parameters n-1 as both left and right are required if
         # either is avalibale (-1 as none is not a option)
-        self.assertEqual(len(FuelQty.get_operational_combinations()), 2**6-1)
+        self.assertEqual(len(FuelQty.get_operational_combinations()), 2**7-1)
         opts = FuelQty.get_operational_combinations()
         self.assertTrue(('Fuel Qty (L)', 'Fuel Qty (C)', 'Fuel Qty (R)',
                          'Fuel Qty (Trim)', 'Fuel Qty (Aux)',

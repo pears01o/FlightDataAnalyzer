@@ -3668,13 +3668,25 @@ class FuelQty(DerivedParameterNode):
                fuel_qty_trim=P('Fuel Qty (Trim)'),
                fuel_qty_aux=P('Fuel Qty (Aux)'),
                fuel_qty_tail=P('Fuel Qty (Tail)'),
-               fuel_qty_stab=P('Fuel Qty (Stab)')):
+               fuel_qty_stab=P('Fuel Qty (Stab)'),
+               airbornes=S('Airborne')):
         params = []
         deps = (fuel_qty_l, fuel_qty_c, fuel_qty_r,  fuel_qty_trim,
                       fuel_qty_aux, fuel_qty_tail, fuel_qty_stab)
         for param in deps:
-            if not param or np.ma.count(param.array)/float(len(param.array))<MIN_VALID_FUEL:
+            if not param:
                 continue
+
+            if airbornes:
+                valid_samples = 0
+                invalid_samples = 0
+                for airborne in airbornes:
+                    array = param.array[airborne.slice]
+                    valid_samples += np.ma.count(array)
+                    invalid_samples += len(array)
+                if valid_samples / float(invalid_samples) < MIN_VALID_FUEL:
+                    continue
+
             # Repair array masks to ensure that the summed values are not too small
             # because they do not include masked values.
             try:

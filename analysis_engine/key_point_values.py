@@ -6443,7 +6443,7 @@ class AltitudeAtLastAPDisengagedDuringApproach(KeyPointValueNode):
 
 
 ##############################################################################
-# Autopilot
+# Autoflight
 
 
 class APDisengagedDuringCruiseDuration(KeyPointValueNode):
@@ -6457,6 +6457,34 @@ class APDisengagedDuringCruiseDuration(KeyPointValueNode):
 
     def derive(self, ap=M('AP Engaged'), cruise=S('Cruise')):
         self.create_kpvs_where(ap.array != 'Engaged', ap.hz, phase=cruise)
+
+
+class ATDisengagedAPEngagedDuration(KeyPointValueNode):
+    '''
+    Duration for which the AT was disengaged but AP engaged when airborne.
+    '''
+
+    name = 'AT Disengaged AP Engaged Duration'
+
+    @classmethod
+    def can_operate(cls, available, ac_family=A('Family')):
+        if ac_family and ac_family.value in ('B737 NG', 'B747', 'B757', 'B767'):
+            return all_deps(cls, available)
+        else:
+            return False
+
+    def derive(self,
+               at_engaged=M('AT Engaged'),
+               ap_engaged=M('AP Engaged'),
+               airborne=S('Airborne'),):
+
+        condition = vstack_params_where_state(
+            (at_engaged, '-'),
+            (ap_engaged, 'Engaged'),
+        ).all(axis=0)
+
+        phases = slices_and(runs_of_ones(condition), airborne.get_slices())
+        self.create_kpvs_from_slice_durations(phases, self.frequency)    
 
 
 ##############################################################################

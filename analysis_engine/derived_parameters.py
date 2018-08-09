@@ -3659,7 +3659,10 @@ class FuelQty(DerivedParameterNode):
         if any_of(fuel_l_and_r, available):
             return all_of(fuel_l_and_r, available)
         else:
-            return any_of(cls.get_dependency_names(), available)
+            return any_of(
+                [d for d in cls.get_dependency_names() if d != 'Airborne'],
+                available
+            )
 
     def derive(self,
                fuel_qty_l=P('Fuel Qty (L)'),

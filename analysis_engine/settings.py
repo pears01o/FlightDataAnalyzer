@@ -133,6 +133,7 @@ WRAPPING_PARAMS = (
     'Longitude',  # When flying past the Bering Sea (-180 to +180)
     'Longitude (1)',
     'Longitude (2)',
+    'Longitude (3)',
     'Longitude (FO)',
     'Longitude (Capt)',
     'Longitude Recorded',

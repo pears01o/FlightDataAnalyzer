@@ -431,6 +431,7 @@ def split_segments(hdf, aircraft_info):
 
     segments = []
     speed, thresholds = _get_speed_parameter(hdf, aircraft_info)
+    min_split_duration = thresholds['min_split_duration']
 
     # Look for heading first
     try:
@@ -540,9 +541,7 @@ def split_segments(hdf, aircraft_info):
             # Since we are working with masked slices, masked padded superframe
             # data will be included within the first slow_slice.
             continue
-        #if slow_slice.stop == len(speed_array):
-            ## After the loop we will add the remaining data to a segment.
-            #break
+        last_slow_slice = slow_slice.stop == len(speed_array)
 
         if last_fast_index is not None:
             fast_duration = (slow_slice.start -
@@ -557,11 +556,11 @@ def split_segments(hdf, aircraft_info):
         slice_stop_secs = slow_slice.stop / speed.frequency
 
         slow_duration = slice_stop_secs - slice_start_secs
-        if slow_duration < thresholds['min_split_duration']:
+        if slow_duration < min_split_duration:
             logger.info("Disregarding period of speed below '%s' "
                         "since '%s' is shorter than MINIMUM_SPLIT_DURATION "
                         "('%s').", thresholds['speed_threshold'], slow_duration,
-                        thresholds['min_split_duration'])
+                        min_split_duration)
             continue
 
         last_fast_index = slow_slice.stop
@@ -602,6 +601,8 @@ def split_segments(hdf, aircraft_info):
                         "slow_slice '%s' at index '%d'.",
                         eng_split_value, settings.MINIMUM_SPLIT_PARAM_VALUE,
                         slow_slice, eng_split_index)
+            if last_slow_slice and slice_stop_secs-eng_split_index < min_split_duration:
+                eng_split_index = slice_stop_secs
             segments.append(_segment_type_and_slice(speed_array, speed.frequency,
                                                     heading.array, heading.frequency,
                                                     start, eng_split_index, eng_arrays,
@@ -623,6 +624,8 @@ def split_segments(hdf, aircraft_info):
         rot_split_index = _split_on_rot(slice_start_secs, slice_stop_secs,
                                         heading.frequency, rate_of_turn)
         if rot_split_index:
+            if last_slow_slice and slice_stop_secs-rot_split_index < min_split_duration:
+                rot_split_index = slice_stop_secs
             segments.append(_segment_type_and_slice(speed_array, speed.frequency,
                                                     heading.array, heading.frequency,
                                                     start, rot_split_index, eng_arrays,
@@ -642,10 +645,11 @@ def split_segments(hdf, aircraft_info):
                        "'%s'.", slow_slice)
 
     # Add remaining data to a segment.
-    segments.append(_segment_type_and_slice(speed_array, speed.frequency,
-                                            heading.array, heading.frequency,
-                                            start, speed_secs, eng_arrays,
-                                            aircraft_info, thresholds, hdf))
+    if start < speed_secs:
+        segments.append(_segment_type_and_slice(speed_array, speed.frequency,
+                                                heading.array, heading.frequency,
+                                                start, speed_secs, eng_arrays,
+                                                aircraft_info, thresholds, hdf))
 
     '''
     import matplotlib.pyplot as plt

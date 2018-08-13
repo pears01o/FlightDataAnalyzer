@@ -18387,7 +18387,13 @@ class TCASRAReactionDelay(KeyPointValueNode):
 
             if np.ma.count(acc.array[to_scan]) == 0:
                 continue
-            react_index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=to_scan)            
+            # Work out the scatter of acceleration data prior to any pilot input
+            before_scan = slice(to_scan.start - 20 * acc.frequency, to_scan.start)
+            std_limit = 3.0 * np.ma.std(acc.array[before_scan])
+            
+            react_index = index_at_value(np.ma.abs(acc.array - 1.0), 
+                                         max(TCAS_THRESHOLD, std_limit), 
+                                         _slice=to_scan)            
             if not react_index:
                 # The pilot reaction was unclear.
                 continue
@@ -18586,7 +18592,11 @@ class TCASRAErroneousAcceleration(KeyPointValueNode):
             else:
                 peak_index = np.ma.argmin(acc.array[to_scan] * direction) + to_scan.start
             peak = acc.array[peak_index] - 1.0
-            if abs(peak) > TCAS_THRESHOLD:
+            # Work out the scatter of acceleration data prior to any pilot input
+            before_scan = slice(to_scan.start - 20 * acc.frequency, to_scan.start)
+            std_limit = 3.0 * np.ma.std(acc.array[before_scan])
+            
+            if abs(peak) > max(std_limit, TCAS_THRESHOLD):
                 self.create_kpv(peak_index, peak)
 
 
@@ -18628,7 +18638,9 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
                 # If no change present, skip to the next RA
                 continue
             exceed_index = int(change_index) + 1
-            i, p = cycle_finder(acc.array[exceed_index:tcas_ra.slice.stop], TCAS_THRESHOLD)
+            to_scan = slice(exceed_index, tcas_ra.slice.stop)
+            i, p = cycle_finder(acc.array[to_scan], 
+                                max(np.ma.std(acc.array[to_scan]), TCAS_THRESHOLD))
             try:
                 self.create_kpv(exceed_index + i[1], p[1] - 1.0)
             except:

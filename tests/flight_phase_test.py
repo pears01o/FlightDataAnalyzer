@@ -3085,7 +3085,11 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = TCASResolutionAdvisory
-        self.operational_combinations = [('TCAS Combined Control', 'Altitude AAL'),]
+        self.operational_combinations = [('TCAS Combined Control', 'Altitude AAL'),
+                                         ('TCAS Combined Control', 'Altitude AAL', 'TCAS Status'),
+                                         ('TCAS Combined Control', 'Altitude AAL', 'TCAS Valid'),
+                                         ('TCAS Combined Control', 'Altitude AAL', 'TCAS Status', 'TCAS Valid'),
+                                         ]
         ''' Values from ARINC 735 '''
         self.values_mapping_cc = {
             0: 'No Advisory',
@@ -3098,33 +3102,33 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
             7: 'Not Used'}
         
     def test_derive_cc_only(self):
-        tcas = M('TCAS Combined Control', array=np.ma.array([0,1,2,3,4,5,4,5,6,1,0,0]),
+        tcas = M('TCAS Combined Control', array=np.ma.array([0,0,0,3,4,5,4,5,5,5,4,0]+500*[0]),
                  values_mapping=self.values_mapping_cc)
-        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*501 + range(1000, -100, -200))
         node = self.node_class()
-        node.derive(tcas, alt_aal)
+        node.derive(tcas, alt_aal, None, None)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
-        self.assertEqual(node.get_first().slice, slice(4, 9)) 
+        self.assertEqual(node.get_first().slice, slice(4, 11)) 
 
     def test_derive_cc_only_not_cofc(self):
         tcas = M('TCAS Combined Control', 
-                 array=np.ma.array([0,0,0,4,5,4,5,6,1,1,0,0]),
+                 array=np.ma.array([0,0,0,4,5,4,5,4,5,5,1,1]+500*[0]),
                  values_mapping=self.values_mapping_cc)
-        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*501 + range(1000, -100, -200))
         node = self.node_class()
-        node.derive(tcas, alt_aal)
+        node.derive(tcas, alt_aal, None, None)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
-        self.assertEqual(node.get_first().slice, slice(3, 8)) 
+        self.assertEqual(node.get_first().slice, slice(3, 9)) 
          
     def test_derive_cc_only_not_cofc(self):
         tcas = M('TCAS Combined Control', 
-                 array=np.ma.array([0,0,0,4,5,4,5,6,1,1,0,0]),
+                 array=np.ma.array([0,0,0,4,5,4,5,5,5,1,1] + [0]*500),
                  values_mapping=self.values_mapping_cc)
-        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*500 + range(1000, -100, -200))
         node = self.node_class()
-        node.derive(tcas, alt_aal)
+        node.derive(tcas, alt_aal, None, None)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
-        self.assertEqual(node.get_first().slice, slice(3, 8)) 
+        self.assertEqual(node.get_first().slice, slice(3, 9)) 
 
     def test_masked(self):
         # This replicates the format seen from real data.
@@ -3134,18 +3138,107 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
                     values_mapping=self.values_mapping_cc)        
         alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
         node = self.node_class()
-        node.derive(tcas_cc, alt_aal)
+        node.derive(tcas_cc, alt_aal, None, None)
         self.assertEqual(node, [])
-    
+
+    def test_masked(self):
+        # This replicates the format seen from real data.
+        tcas_cc = M('TCAS Combined Control', 
+                    array=np.ma.array(data=[0]*50 + [5]*50 + [0]*410,
+                                      mask=[0,1]*255),
+                    values_mapping=self.values_mapping_cc)        
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*500 + range(1000, -100, -200))
+        node = self.node_class()
+        node.derive(tcas_cc, alt_aal, None, None)
+        self.assertEqual(node, [])
+        
+        # This is another format seen from real data.
+        tcas_cc = M('TCAS Combined Control', 
+                    array=np.ma.array(data=[0]*50 + [5]*20 + [0]*1810,
+                                      mask=[0]*50 + [1]*20 + [0]*1810),
+                    values_mapping=self.values_mapping_cc)        
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*1900 + range(1000, -100, -200))
+        node = self.node_class()
+        node.derive(tcas_cc, alt_aal, None, None)
+        self.assertEqual(node, [])        
+        
     def test_not_low(self):
         tcas_cc = M('TCAS Combined Control', 
-                    array=np.ma.array(data=[4,4,4,4,0,0,0,0,5,5,5,5]),
+                    array=np.ma.array(data=[4]*4 + [0]*1004 + [5]*4),
                     values_mapping=self.values_mapping_cc)        
-        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000] + range(1000, -100, -200))
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*1000 + range(1000, -100, -200))
         node = self.node_class()
-        node.derive(tcas_cc, alt_aal)
+        node.derive(tcas_cc, alt_aal, None, None)
         self.assertEqual(node, [])        
 
+    def test_not_constant(self):
+        tcas_cc = M('TCAS Combined Control', 
+                    array=np.ma.array(data=[4]*1012),
+                    values_mapping=self.values_mapping_cc)        
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*1000 + range(1000, -100, -200))
+        node = self.node_class()
+        node.derive(tcas_cc, alt_aal, None, None)
+        self.assertEqual(node, [])        
+
+    def test_not_if_status_wrong(self):
+        # Embraer map status zero to Normal Operation
+        tcas = M('TCAS Combined Control', array=np.ma.array([0]*500 + [5]*10 + [0]*490),
+                 values_mapping=self.values_mapping_cc)
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*989 + range(1000, -100, -200))
+        status = M('TCAS Status', array=np.ma.array([0]*1000), values_mapping={0: 'Normal Operation',
+                                                                               1: 'TCAS Computer Unit',
+                                                                               2: 'TCAS System Status',
+                                                                               3: 'Both Failed'})
+        node = self.node_class()
+        node.derive(tcas, alt_aal, status, None)
+        self.assertEqual(node.get_first().slice.start, 500)
+        
+        status = M('TCAS Status', array=np.ma.array([2]*1000), values_mapping={0: 'Normal Operation',
+                                                                               1: 'TCAS Computer Unit',
+                                                                               2: 'TCAS System Status',
+                                                                               3: 'Both Failed'})
+        node = self.node_class()
+        node.derive(tcas, alt_aal, status, None)
+        self.assertEqual(node, [])
+        
+        # Airbus map Status one to TCAS Active
+        tcas = M('TCAS Combined Control', array=np.ma.array([0]*500 + [5]*10 + [0]*490),
+                 values_mapping=self.values_mapping_cc)
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*989 + range(1000, -100, -200))
+        status = M('TCAS Status',
+                   array=np.ma.array([0]*490 + [1]*15 + [0]*495),
+                   values_mapping={0:'-', 1:'TCAS Active'})
+        node = self.node_class()
+        node.derive(tcas, alt_aal, status, None)
+        # As the invalid status period overlaps the TCAS RA, we ignore it...
+        self.assertEqual(node.get_first(), None)
+
+    def test_not_if_valid_wrong(self):
+        tcas = M('TCAS Combined Control', array=np.ma.array([0]*500 + [5]*10 + [0]*490),
+                 values_mapping=self.values_mapping_cc)
+        alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*989 + range(1000, -100, -200))
+        valid = M('TCAS Valid', array=np.ma.array([1]*1000), values_mapping={0:'-', 1:'Valid'})
+        node = self.node_class()
+        node.derive(tcas, alt_aal, None, valid)
+        self.assertEqual(node.get_first().slice.start, 500)
+
+        valid = M('TCAS Valid', array=np.ma.array([0]*1000), values_mapping={0:'-', 1:'Valid'})
+        node = self.node_class()
+        node.derive(tcas, alt_aal, None, valid)
+        self.assertEqual(node, [])
+
+        valid = M('TCAS Valid', array=np.ma.array([0]*1000), values_mapping={0:'Not Valid', 1:'Valid'})
+        node = self.node_class()
+        node.derive(tcas, alt_aal, None, valid)
+        self.assertEqual(node, [])
+
+        valid = M('TCAS Valid',
+                  array=np.ma.array([1]*490 + [0]*15 + [1]*495),
+                  values_mapping={0:'-', 1:'Valid'})
+        node = self.node_class()
+        node.derive(tcas, alt_aal, None, valid)
+        self.assertEqual(node.get_first(), None)
+        
 class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):

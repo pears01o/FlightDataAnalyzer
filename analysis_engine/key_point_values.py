@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import numpy as np
 import operator
+import os
 import re
 import six
 
@@ -18799,7 +18800,7 @@ class TCASTAHeading(KeyPointValueNode):
             index = ta_warn.index
             self.create_kpv(index, hdg.array[index])
 
-"""
+
 ####################################################################################
 ## Development plotting routines for TA and RA KPVs.
 ####################################################################################
@@ -18872,8 +18873,9 @@ class TCASTADevelopmentPlot(KeyPointValueNode):
             with open('C:\\Temp\\TCAS_plot_names.txt', 'a') as the_file:
                 the_file.write(str(int(abs(np.ma.sum(vs.array[scope])))) + '\n')
                 
-            # plt.show()        
-            plt.savefig('C:\\Temp\\figures\\TCAS_plot_TA_' + str(int(abs(np.ma.sum(vs.array[scope])))) + '.png')
+            # plt.show()
+            filename = 'TA_plot-%s' % os.path.basename(self._h.file_path) if getattr(self, '_h', None) else 'Plot'
+            plt.savefig('C:\\Temp\\TCAS_plots\\' + filename + '.png')
             plt.clf()
             plt.close()
 
@@ -18992,19 +18994,18 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
             ax2.plot(x_scale, arm_8.array[scope], '-r')
 
         for cvs_kpv in trcvs:
-            argmax = np.ma.argmax(vs.array[tcas_ras.get_slices()[0]])
-            vs0 = vs.array[argmax]
+            begin = tcas_ras.get_slices()[0].start
+            ix = to_sec(begin, tcas_ras)
+            vs0 = vs.array[begin]
             vs1 = vs0 + cvs_kpv.value
-            ix = to_sec(argmax + tcas_ras.get_slices()[0].start,
-                        tcas_ras)
             ax2.plot([ix, ix], [vs0, vs1], '-ob', markersize=4)
-        ax2.set_ylabel('vert spd')
+        ax2.set_ylabel('Vert spd')
         
         ax3 = fig.add_subplot(311, sharex=ax1)
         plt.setp(ax3.get_xticklabels(), visible=False)
         ax3.plot(x_scale, acc.array[scope])
         ax3.set_ylim(0.5, 1.5)
-        ax3.set_ylabel('norm g')
+        ax3.set_ylabel('Vertical g')
         if trrd: #'TCAS RA Reaction Delay'
             ax3.arrow(to_sec(trrd[0].index, tcas_ras), 0.65, trrd[0].value, 0, color='red')
         if tradd: #'TCAS RA To AP Disengaged Duration'
@@ -19022,14 +19023,13 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
             ax3.plot(to_sec(trsa[0].index, tcas_ras), trsa[0].value + 1.0, 'oc')
         
         ident = int(abs(np.ma.sum(vs.array[scope])))
-        with open('C:\\Temp\\TCAS_plot_names.txt', 'a') as the_file:
-            the_file.write(str(ident) + '\n')
             
         # plt.show()        
-        plt.savefig('C:\\Temp\\figures\\TCAS_plot_RA_' + str(ident) + '.png')
+        filename = 'RA_plot-%s' % os.path.basename(self._h.file_path) if getattr(self, '_h', None) else 'Plot'
+        plt.savefig('C:\\Temp\\TCAS_plots\\' + filename + '.png')
         plt.clf()
         plt.close()
-"""
+
 
 ##############################################################################
 # Warnings: Takeoff Configuration

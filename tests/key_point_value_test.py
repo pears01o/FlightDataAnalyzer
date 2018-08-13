@@ -22591,12 +22591,12 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
         # For this simple test, acceleration sample rate = 1.0 
         acc = P('Acceleration Vertical',
                 array=np.ma.array([1.0]*20 + [1.1, 1.2, 1.3, 1.4, 1.5, 1.6] + [1.7]*4))
-        ra = buildsection('TCAS Resolution Advisory', 10, 30)
+        ra = buildsection('TCAS Resolution Advisory', 15, 30)
         node = self.node_class()
         node.derive(acc, ra, None)
         self.assertEqual(node[0].name, 'TCAS RA Reaction Delay')
-        self.assertEqual(node[0].index, 10)
-        self.assertAlmostEqual(node[0].value, 9.6, places=1)
+        self.assertEqual(node[0].index, 15)
+        self.assertAlmostEqual(node[0].value, 4.5, places=1)
 
     def test_ta_overlap(self):
         acc = P('Acceleration Vertical',
@@ -22606,7 +22606,7 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ra, ta)
         self.assertEqual(node[0].index, 10)
-        self.assertAlmostEqual(node[0].value, -4.7, places=1)        
+        self.assertAlmostEqual(node[0].value, -4.25, places=1)        
 
     def test_not_second_ta_overlap(self):
         acc = P('Acceleration Vertical',
@@ -22616,7 +22616,7 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ra, ta)
         self.assertEqual(node[0].index, 10)
-        self.assertAlmostEqual(node[0].value, -4.7, places=1)        
+        self.assertAlmostEqual(node[0].value, -4.25, places=1)        
 
 class TestTCASRADirection(unittest.TestCase, NodeTest):
     
@@ -22822,14 +22822,14 @@ class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
         
     def test_ta_overlap(self):
         acc = P('Acceleration Vertical',
-                array=np.ma.array([1.0]*5 + [1.2]*2 + [1.35] + [1.0]*12))
-        ra = buildsection('TCAS Resolution Advisory', 10, 20)
-        ta = buildsection('TCAS Traffic Advisory', 3, 10)
+                array=np.ma.array([1.0]*15 + [1.2]*2 + [1.35] + [1.0]*12))
+        ra = buildsection('TCAS Resolution Advisory', 20, 30)
+        ta = buildsection('TCAS Traffic Advisory', 3, 18)
         tcas_dir = KPV(name='TCAS RA Direction', items=[
-            KeyPointValue(name='TCAS RA Direction', index=10, value=-1)])
+            KeyPointValue(name='TCAS RA Direction', index=20, value=-1)])
         node = self.node_class()
         node.derive(acc, ta, ra, None, tcas_dir)
-        self.assertEqual(node[0].index, 7)
+        self.assertEqual(node[0].index, 17)
         self.assertAlmostEqual(node[0].value, 0.35)     
         
 class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
@@ -22860,7 +22860,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
-        self.assertAlmostEqual(node[0].value, 6.5)
+        self.assertAlmostEqual(node[0].value, 6.75)
 
     def test_rate_advisory_data_down(self):
         acc = P('Acceleration Vertical', array=np.ma.array([1.0]*15+[0.8]*5))
@@ -22874,7 +22874,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
-        self.assertAlmostEqual(node[0].value, 6.5)
+        self.assertAlmostEqual(node[0].value, 6.75)
 
     def test_combined_control_data_up(self):
         acc = P('Acceleration Vertical', array=np.ma.array([1.0]*15+[1.2]*5))
@@ -22885,7 +22885,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         node.derive(acc, ta, cc, None, None, None)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
-        self.assertAlmostEqual(node[0].value, 6.5)
+        self.assertAlmostEqual(node[0].value, 6.75)
 
     def test_combined_control_data_down(self):
         acc = P('Acceleration Vertical', array=np.ma.array([1.0]*15+[0.8]*5))
@@ -22896,7 +22896,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         node.derive(acc, ta, cc, None, None, None)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
-        self.assertAlmostEqual(node[0].value, 6.5)
+        self.assertAlmostEqual(node[0].value, 6.75)
 
     def test_combined_control_data_clear(self):
         acc = P('Acceleration Vertical', array=np.ma.array([1.0]*15+[0.8]*5))

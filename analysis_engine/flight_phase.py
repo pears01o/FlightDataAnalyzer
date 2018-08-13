@@ -2167,9 +2167,9 @@ class TCASOperational(FlightPhaseNode):
             operating = slices_and(operating, tcas_ok)
 
         if tcas_cc:
-            if np.count_nonzero(tcas_cc.array)/len(tcas_cc.array) > 0.1:
+            if np.count_nonzero(tcas_cc.array)/float(len(tcas_cc.array)) > 0.1:
                 # Cannot be working properly.
-                operating = []
+                return
             else:
                 for op in operating:
                     ras_local = np.ma.logical_and(tcas_cc.array[op].data > 3, tcas_cc.array[op].data < 7)
@@ -2222,9 +2222,9 @@ class TCASTrafficAdvisory(FlightPhaseNode):
         tcas_ta = next((item for item in tas if item is not None), None)
 
         all_slices = []
-        for tcas_op in tcas_ops.get_slices():
-            tas_local = tcas_ta.array[tcas_op].data == 1
-            ta_slices = shift_slices(runs_of_ones(tas_local), tcas_op.start)
+        for tcas_op in tcas_ops:
+            tas_local = tcas_ta.array[tcas_op.slice].data == 1
+            ta_slices = shift_slices(runs_of_ones(tas_local), tcas_op.slice.start)
             ta_slices = slices_remove_small_slices(ta_slices,
                                                    time_limit=5.0, 
                                                    hz=tcas_ta.frequency)
@@ -2258,7 +2258,8 @@ class TCASResolutionAdvisory(FlightPhaseNode):
         for tcas_op in tcas_ops:
             # We can be sloppy about error conditions because these have been taken 
             # care of in the TCAS Operational definition.
-            ra_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_cc.array.data, 4))
+            ra_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_cc.array.data[tcas_op.slice], 4))
+            ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
 
             # Where data is corrupted, single samples are a common source of error
             # time_limit rejects single samples, but 5+ sample events are retained.

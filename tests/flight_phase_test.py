@@ -3218,7 +3218,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         node.derive(alt_aal, tcas_cc, None, valid, None)
         self.assertEqual(node.get_first(), None)
         
-    def test_masked(self):
+    def test_masked_1(self):
         # This replicates the format seen from real data.
         tcas_cc = M('TCAS Combined Control', 
                     array=np.ma.array(data=[0,1,2,3,4,5,4,5,6,5],
@@ -3229,7 +3229,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         node.derive(tcas_cc, alt_aal, None, None)
         self.assertEqual(node, [])
 
-    def test_masked(self):
+    def test_masked_2(self):
         # This replicates the format seen from real data.
         tcas_cc = M('TCAS Combined Control', 
                     array=np.ma.array(data=[0]*50 + [5]*50 + [0]*410,
@@ -3250,6 +3250,14 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         node.derive(tcas_cc, alt_aal, None, None)
         self.assertEqual(node, [])        
 
+    def test_corrupt(self):
+        tcas_cc = M('TCAS Combined Control',
+                    array=np.ma.array(list(np.random.randint(2, size=20)*6) + [0]*5 + [4]*6 + [0]*5))
+        alt_aal = P('Altitude AAL', array=[5000]*20)
+        node = self.node_class()
+        node.derive(tcas_cc, alt_aal, None, None)
+        self.assertEqual(node, [])
+        
         
 class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
 
@@ -3317,36 +3325,36 @@ class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
                                          ('TCAS Operational', 'TCAS TA (1)', 'TCAS Resolution Advisory')]
        
     def test_normal_operation(self):
-        tcas_op = buildsection('TCAS Operating', 5, 25)
+        tcas_ops = buildsection('TCAS Operational', 5, 25)
         ta = M('TCAS TA', array=np.ma.array([0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0]),
                values_mapping={0: '-', 1: 'TA'})
         node = self.node_class()
-        node.derive(tcas_op, ta, None, None, None, None, None)
+        node.derive(tcas_ops, ta, None, None, None, None, None)
         self.assertEqual(node.get_first().slice, slice(7, 13))
         node = self.node_class()
-        node.derive(tcas_op, None, ta, None, None, None, None)
+        node.derive(tcas_ops, None, ta, None, None, None, None)
         self.assertEqual(node.get_first().slice, slice(7, 13))
         node = self.node_class()
-        node.derive(tcas_op, None, None, ta, None, None, None)
+        node.derive(tcas_ops, None, None, ta, None, None, None)
         self.assertEqual(node.get_first().slice, slice(7, 13))
         node = self.node_class()
-        node.derive(tcas_op, None, None, None, ta, None, None)
+        node.derive(tcas_ops, None, None, None, ta, None, None)
         self.assertEqual(node.get_first().slice, slice(7, 13))
         node = self.node_class()
-        node.derive(tcas_op, None, None, None, None, ta, None)
+        node.derive(tcas_ops, None, None, None, None, ta, None)
         self.assertEqual(node.get_first().slice, slice(7, 13))
                  
     def test_not_close_to_ra(self):
-        tcas_op = buildsection('TCAS Operating', 3, 21)
+        tcas_ops = buildsection('TCAS Operational', 3, 21)
         ta = M('TCAS TA', array=np.ma.array([0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0]),
                values_mapping={0: '-', 1: 'TA'})
         ra = buildsection('TCAS Resolution Advisory', 20, 21)
         node = self.node_class()
-        node.derive(tcas_op, None, None, ta, None, None, ra)
+        node.derive(tcas_ops, None, None, ta, None, None, ra)
         self.assertEqual(len(node), 1)
         ra = buildsection('TCAS Resolution Advisory', 13, 21)
         node = self.node_class()
-        node.derive(tcas_op, None, None, ta, None, None, ra)
+        node.derive(tcas_ops, None, None, ta, None, None, ra)
         self.assertEqual(len(node), 0)        
 
         

@@ -18332,6 +18332,7 @@ class TCASRAWarningDuration(KeyPointValueNode):
         self.create_kpvs_from_slice_durations(tcas_ras, self.frequency,
                                               mark='start')
 
+
 class TCASRADirection(KeyPointValueNode):
     '''
     This is simply +1 for up and -1 for down
@@ -18389,7 +18390,7 @@ class TCASRAReactionDelay(KeyPointValueNode):
             if np.ma.count(acc.array[to_scan]) == 0:
                 continue
             # Work out the scatter of acceleration data prior to any pilot input
-            before_scan = slice(to_scan.start - 20 * acc.frequency, to_scan.start)
+            before_scan = slice(max(0, to_scan.start - 20 * acc.frequency), to_scan.start)
             std_limit = 3.0 * np.ma.std(acc.array[before_scan])
             
             react_index = index_at_value(np.ma.abs(acc.array - 1.0), 
@@ -18598,7 +18599,7 @@ class TCASRAErroneousAcceleration(KeyPointValueNode):
                 peak_index = np.ma.argmin(acc.array[to_scan] * direction) + to_scan.start
             peak = acc.array[peak_index] - 1.0
             # Work out the scatter of acceleration data prior to any pilot input
-            before_scan = slice(to_scan.start - 20 * acc.frequency, to_scan.start)
+            before_scan = slice(max(0, to_scan.start - 20 * acc.frequency), to_scan.start)
             std_limit = 3.0 * np.ma.std(acc.array[before_scan])
             
             if abs(peak) > max(std_limit, TCAS_THRESHOLD):

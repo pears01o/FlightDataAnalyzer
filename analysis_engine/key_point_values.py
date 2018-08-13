@@ -18437,7 +18437,7 @@ class TCASRAAcceleration(KeyPointValueNode):
                 if is_index_within_slice(tcas_dir.index, to_scan):
                     direction = tcas_dir.value
                     if direction == 0:
-                        continue
+                        index = np.ma.argmax(np.ma.abs(acc.array[to_scan])) + to_scan.start
                     elif direction == +1:
                         index = np.ma.argmax(acc.array[to_scan]) + to_scan.start
                     elif direction == -1:

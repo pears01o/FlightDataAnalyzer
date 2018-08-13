@@ -18459,13 +18459,17 @@ class TCASRAChangeOfVerticalSpeed(KeyPointValueNode):
                tcas_ras=S('TCAS Resolution Advisory')):
 
         for tcas_ra in tcas_ras:
-            argmax = np.ma.argmax(vs.array[tcas_ra.slice]) + tcas_ra.slice.start
-            argmin = np.ma.argmin(vs.array[tcas_ra.slice]) + tcas_ra.slice.start
-            diff = vs.array[argmax] - vs.array[argmin]
-            if argmax < argmin:
-                # The vertical speed dropped during the RA
-                diff = -diff
-            self.create_kpv(tcas_ra.slice.start, diff)
+            begin = tcas_ra.slice.start
+            argmax = np.ma.argmax(vs.array[tcas_ra.slice]) + begin
+            argmin = np.ma.argmin(vs.array[tcas_ra.slice]) + begin
+            up = vs.array[argmax] - vs.array[begin]
+            down = vs.array[argmin] - vs.array[begin]
+            if up > abs(down):
+                # The vertical speed increased more than decreased during the RA
+                self.create_kpv(argmax, up)
+            else:
+                # The vertical speed decreased more than increased during the RA
+                self.create_kpv(argmin, down)
             
     
 class TCASRAAPDisengaged(KeyPointValueNode):

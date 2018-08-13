@@ -8256,6 +8256,9 @@ class VLSLookup(DerivedParameterNode):
                     model=A('Model'), series=A('Series'), family=A('Family'),
                     engine_type=A('Engine Type'), engine_series=A('Engine Series')):
 
+        if family and not family.value in ('A319', 'A320', 'A321', 'A330', 'A340'):
+            return False
+        
         core = all_of((
             'Airspeed',
             'Approach And Landing',

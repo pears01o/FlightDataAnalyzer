@@ -18593,7 +18593,7 @@ class TCASRAErroneousAcceleration(KeyPointValueNode):
                         continue
 
             if direction == 0:
-                peak_index = np.ma.argmax(np.ma.abs(acc.array[to_scan])) + to_scan.start
+                peak_index = np.ma.argmax(np.ma.abs(acc.array[to_scan] - 1.0)) + to_scan.start
             else:
                 peak_index = np.ma.argmin(acc.array[to_scan] * direction) + to_scan.start
             peak = acc.array[peak_index] - 1.0

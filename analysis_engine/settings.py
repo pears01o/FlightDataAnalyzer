@@ -392,7 +392,7 @@ MU_POOR = 0.05 # dimensionless.
 
 # Pilot action threshold for TCAS responses
 TCAS_SCAN_TIME = 10.0 # seconds
-TCAS_THRESHOLD = 0.1 # g
+TCAS_THRESHOLD = 0.15 # g
 
 # Transition altitude - above use Altitude STD, below use Altitude AAL.
 # Note: This affects the generic KTIs and dependent nodes only. Some KPVs are 

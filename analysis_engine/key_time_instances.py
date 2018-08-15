@@ -24,6 +24,7 @@ from analysis_engine.library import (
     np_ma_masked_zeros_like,
     peak_curvature,
     rate_of_change,
+    rate_of_change_array,
     repair_mask,
     runs_of_ones,
     slices_and,
@@ -1565,11 +1566,7 @@ class Touchdown(KeyTimeInstanceNode):
                     index_wheel_touch = ix_ax+1+period.start
 
                 # Look for the onset of braking
-
-                index_brake = peak_curvature(drag,
-                                             curve_sense='Convex',
-                                             gap=1*hz,
-                                             ttp=3*hz)
+                index_brake = np.ma.argmin(rate_of_change_array(drag, hz))
                 if index_brake:
                     index_brake += period.start
 
@@ -1589,18 +1586,17 @@ class Touchdown(KeyTimeInstanceNode):
                 for i in range(1, len(bump)-1):
                     bump[i-1]=lift[i]*lift[i+1]
                 peak_az = np.max(bump)
-                if peak_az > 0.01:
+                if peak_az > 0.1:
                     index_az = np.argmax(bump)+period.start
-
-                # The first real contact is indicated by an increase in g of
-                # more than 0.075, but this must be positive (hence the
-                # masking above the local mean).
-                for i in range(0, len(lift)-1):
-                    if lift[i] and lift[i+1]:
-                        delta=lift[i+1]-lift[i]
-                        if delta > 0.1:
-                            index_daz = i+1+period.start
-                            break
+                else:
+                    # In the absence of a clear touchdown, contact can be 
+                    # indicated by an increase in g of more than 0.075
+                    for i in range(0, len(lift)-1):
+                        if lift[i] and lift[i+1]:
+                            delta=lift[i+1]-lift[i]
+                            if delta > 0.075:
+                                index_daz = i+1+period.start
+                                break
 
             # Pick the first of the two normal accelerometer measures to
             # avoid triggering a touchdown from a single faulty sensor:
@@ -1619,10 +1615,22 @@ class Touchdown(KeyTimeInstanceNode):
 
             # ...to find the best estimate...
             # If we have lots of measures, bias towards the earlier ones.
-            index_tdn = np.median(index_list[:4])
-            # ensure detected touchdown point is not after Gear on Ground indicates on ground
-            if index_gog:
-                index_tdn = min(index_tdn, index_gog)
+            #index_tdn = np.median(index_list[:4])
+
+            if len(index_list) == 0:
+                # No clue where the aircraft landed. Give up.
+                return
+            elif len(index_list) == 1:
+                # Only one identifier - pick this
+                index_tdn = index_list[0]
+            else:
+                # Normal selection is just the second one!
+                index_tdn = index_list[1]
+                # ensure detected touchdown point is not after Gear on Ground indicates on ground
+                if index_gog:
+                    index_tdn = min(index_tdn, index_gog)
+
+            # self.create_kti(index_tdn)
             self.create_kti(index_tdn)
 
             '''
@@ -1638,7 +1646,7 @@ class Touchdown(KeyTimeInstanceNode):
             if alt:
                 plt.plot(timebase, alt.array[plot_period], 'o-r')
             if acc_long:
-                plt.plot(timebase, acc_long.array[plot_period]*20, 'o-m')
+                plt.plot(timebase, acc_long.array[plot_period]*100, 'o-m')
             if acc_norm:
                 plt.plot(timebase, acc_norm.array[plot_period]*10, 'o-g')
             if gog:
@@ -1646,7 +1654,7 @@ class Touchdown(KeyTimeInstanceNode):
             if index_gog:
                 plt.plot(index_gog-index_ref, 2.0,'ok', markersize=8)
             if index_brake:
-                plt.plot(index_brake-index_ref, 3.0,'oy', markersize=8)
+                plt.plot(index_brake-index_ref, 2.5,'oy', markersize=8)
             if index_wheel_touch:
                 plt.plot(index_wheel_touch-index_ref, 3.0,'om', markersize=8)
             if index_decel:
@@ -1665,15 +1673,16 @@ class Touchdown(KeyTimeInstanceNode):
             plt.grid()
             filename = 'One-ax-Touchdown-%s' % os.path.basename(self._h.file_path) if getattr(self, '_h', None) else 'Plot'
             print(name)
-            WORKING_DIR = tempfile.gettempdir()
+            WORKING_DIR = 'C:\\Temp'
             output_dir = os.path.join(WORKING_DIR, 'Touchdown_graphs')
             if not os.path.exists(output_dir):
                 os.mkdir(output_dir)
-            #plt.savefig(os.path.join(output_dir, filename + '.png'))
-            plt.show()
+            plt.savefig(os.path.join(output_dir, filename + '.png'))
+            #plt.show()
             plt.clf()
             plt.close()
             '''
+
 
 class OffshoreTouchdown(KeyTimeInstanceNode):
     '''

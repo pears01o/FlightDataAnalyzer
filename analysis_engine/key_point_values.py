@@ -102,7 +102,6 @@ from analysis_engine.library import (ambiguous_runway,
                                      slices_below,
                                      slices_between,
                                      slices_duration,
-                                     slices_extend,
                                      slices_from_ktis,
                                      slices_from_to,
                                      slices_not,
@@ -18268,8 +18267,7 @@ class TCASTAWarningDuration(KeyPointValueNode):
             if is_index_within_slices(tcas_ta.slice.start, ras) or \
                is_index_within_slices(tcas_ta.slice.stop, ras):
                 continue
-            self.create_kpvs_from_slice_durations([tcas_ta.slice], self.frequency,
-                                                  mark='start')
+            self.create_kpvs_from_slice_durations([tcas_ta.slice], self.frequency)
 
 class TCASTAAcceleration(KeyPointValueNode):
     '''
@@ -18288,8 +18286,7 @@ class TCASTAAcceleration(KeyPointValueNode):
 
         for tcas_ta in tcas_tas:
             for tcas_warn in tcas_warns:
-                # Untidy manipulation of tcas_ta slice due to change in sample rate.
-                if is_index_within_slice(tcas_warn.index, slices_extend([tcas_ta.slice], 1)[0]):
+                if tcas_ta.start_edge <= tcas_warn.index <= tcas_ta.stop_edge:
                     index = np.ma.argmax(np.ma.abs(acc.array[tcas_ta.slice] - 1.0)) + tcas_ta.slice.start
                     if index:
                         self.create_kpv(index, acc.array[index] - 1.0)

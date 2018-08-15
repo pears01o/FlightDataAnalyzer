@@ -3261,7 +3261,7 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = TCASResolutionAdvisory
-        self.operational_combinations = [('TCAS Operational', 'TCAS Combined Control')]
+        self.operational_combinations = [('TCAS Combined Control', 'TCAS Operational')]
         
         ''' Values from ARINC 735 '''
         self.values_mapping_cc = {
@@ -3279,7 +3279,7 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
                     values_mapping=self.values_mapping_cc)
         tcas_op = buildsection('TCAS Operating', 3, 480)
         node = self.node_class()
-        node.derive(tcas_op, tcas_cc)
+        node.derive(tcas_cc, tcas_op)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_first().slice, slice(4, 11)) 
 
@@ -3289,7 +3289,7 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
                     values_mapping=self.values_mapping_cc)
         tcas_op = buildsection('TCAS Operating', 3, 480)
         node = self.node_class()
-        node.derive(tcas_op, tcas_cc)
+        node.derive(tcas_cc, tcas_op)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_first().slice, slice(3, 9)) 
          
@@ -3299,12 +3299,9 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
                     values_mapping=self.values_mapping_cc)
         tcas_op = buildsection('TCAS Operating', 3, 480)
         node = self.node_class()
-        node.derive(tcas_op, tcas_cc)
+        node.derive(tcas_cc, tcas_op)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_first().slice, slice(3, 9)) 
-
-      
-
 
         
 class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):

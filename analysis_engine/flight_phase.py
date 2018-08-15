@@ -2271,8 +2271,8 @@ class TCASResolutionAdvisory(FlightPhaseNode):
 
     name = 'TCAS Resolution Advisory'
 
-    def derive(self, tcas_ops=S('TCAS Operational'),               
-               tcas_cc=M('TCAS Combined Control')):
+    def derive(self, tcas_cc=M('TCAS Combined Control'),
+               tcas_ops=S('TCAS Operational')):
 
         for tcas_op in tcas_ops:
             # We can be sloppy about error conditions because these have been taken 

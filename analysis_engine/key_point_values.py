@@ -102,6 +102,7 @@ from analysis_engine.library import (ambiguous_runway,
                                      slices_below,
                                      slices_between,
                                      slices_duration,
+                                     slices_extend,
                                      slices_from_ktis,
                                      slices_from_to,
                                      slices_not,
@@ -18261,7 +18262,7 @@ class TCASTAWarningDuration(KeyPointValueNode):
     def derive(self, tcas_tas=S('TCAS Traffic Advisory'),
                tcas_ras=S('TCAS Resolution Advisory')):
         
-        # Extend the 
+        # Extend the RA to check for overlaps
         ras = [slice(s.slice.start - 2, s.slice.stop + 2) for s in tcas_ras]
         for tcas_ta in tcas_tas:
             if is_index_within_slices(tcas_ta.slice.start, ras) or \
@@ -18280,10 +18281,6 @@ class TCASTAAcceleration(KeyPointValueNode):
 
     name = 'TCAS TA Acceleration'
     units = ut.G
-
-    @classmethod
-    def can_operate(cls, available):
-        return all_of(('Acceleration Vertical', 'TCAS Traffic Advisory'), available)
     
     def derive(self, acc=P('Acceleration Vertical'),
                tcas_tas=S('TCAS Traffic Advisory'),
@@ -18291,7 +18288,8 @@ class TCASTAAcceleration(KeyPointValueNode):
 
         for tcas_ta in tcas_tas:
             for tcas_warn in tcas_warns:
-                if is_index_within_slice(tcas_warn.index, tcas_ta.slice):
+                # Untidy manipulation of tcas_ta slice due to change in sample rate.
+                if is_index_within_slice(tcas_warn.index, slices_extend([tcas_ta.slice], 1)[0]):
                     index = np.ma.argmax(np.ma.abs(acc.array[tcas_ta.slice] - 1.0)) + tcas_ta.slice.start
                     if index:
                         self.create_kpv(index, acc.array[index] - 1.0)
@@ -18594,7 +18592,9 @@ class TCASRAErroneousAcceleration(KeyPointValueNode):
                         continue
 
             if direction == 0:
-                peak_index = np.ma.argmax(np.ma.abs(acc.array[to_scan] - 1.0)) + to_scan.start
+                continue
+                ## To monitor accelerations that are larger than threshold...
+                ## peak_index = np.ma.argmax(np.ma.abs(acc.array[to_scan] - 1.0)) + to_scan.start
             else:
                 peak_index = np.ma.argmin(acc.array[to_scan] * direction) + to_scan.start
             peak = acc.array[peak_index] - 1.0
@@ -18713,30 +18713,30 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
             self.create_kpv(change_index, (peak_curve - change_index) / acc.frequency)
 
 
-class TCASFailureDuration(KeyPointValueNode):
+class TCASFailureRatio(KeyPointValueNode):
     '''
     Duration for which the TCAS system was reporting failure.
     '''
 
-    name = 'TCAS Failure Duration'
-    units = ut.SECOND
+    name = 'TCAS Failure Ratio'
+    units = ut.PERCENT
 
-    def derive(self, tcas_failure=M('TCAS Failure'),
-               tcas_cc=M('TCAS Combined Control'),
+    def derive(self, tcas_ops=S('TCAS Operational'),
                airs=S('Airborne')):
         
+        total_air = 0
+        total_operating = 0
         for air in airs:
-            changes = np.ma.nonzero(np.ma.ediff1d(tcas_cc.array[air.slice]))
-            if len(changes[0]) > 10:
-                # Treat the signal an entirely Failed
-                self.create_kpv(air.slice.start, slice_duration(air.slice, self.frequency))
-            
-            elif tcas_failure:
-                a = tcas_failure.array.data[air.slice]
-                b = a[:-1] + a[1:]
-                failures = shift_slices(np.ma.clump_masked(np.ma.masked_greater(b, 0)),
-                                        air.slice.start)
-                self.create_kpvs_from_slice_durations(failures, tcas_failure.frequency)
+            total_air += slice_duration(air.slice, airs.frequency)
+        for op in tcas_ops:
+            total_operating += slice_duration(op.slice, tcas_ops.frequency)
+        
+        if total_air:
+            ratio = (total_air - total_operating) * 100.0 / total_air
+        else:
+            ratio = 0.0
+        
+        self.create_kpv(0, ratio)
 
 
 class TCASRAAltitudeSTD(KeyPointValueNode):

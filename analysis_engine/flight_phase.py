@@ -45,6 +45,7 @@ from analysis_engine.library import (
     slices_not,
     slices_or,
     slices_overlap,
+    slices_overlap_merge,
     slices_remove_small_gaps,
     slices_remove_small_slices,
 )
@@ -2129,6 +2130,10 @@ class TCASOperational(FlightPhaseNode):
     There are different validity flags with different aircraft, and we need to make sure
     that TCAS does not operate on the ground. This phase merges the alternative sources
     to avoid repetition elsewhere.
+    
+    TCAS determines the approximate altitude of each aircraft above the ground. 
+    If this difference is less than 360 feet, TCAS considers the reporting aircraft 
+    to be on the ground. [FAA Introduction to TCAS II V7.1].
     """
     
     name = 'TCAS Operational'
@@ -2145,60 +2150,74 @@ class TCASOperational(FlightPhaseNode):
                tcas_fail=P('TCAS Failure')):
 
         operating = np.ma.clump_unmasked(np.ma.masked_less(alt_aal.array, 360.0))
+        invalid_slices = []
+
+        if not operating:
+            # No point in looking further if the aircraft didn't fly.
+            return
         
+        if tcas_cc:
+            if np.count_nonzero(tcas_cc.array)/float(len(tcas_cc.array)) > 0.1:
+                # TCAS not working properly.
+                return
+            else:
+                # Build a list of the valid sections of Combined Control data...
+                good_slices = []
+                # and we'll need a list of RA segments to check later...
+                possible_ras = []
+                for op in operating:
+                    ras_local = np.ma.logical_and(tcas_cc.array[op].data > 3, tcas_cc.array[op].data < 7)
+                    ra_slices = shift_slices(runs_of_ones(ras_local), op.start)
+                    possible_ras.extend(ra_slices)
+                    # We discard the (common) RAs near the airfield
+                    if ras_local[0]:
+                        invalid_slices.append(ra_slices[0]) # RA at takeoff not valid
+                    if ras_local[-1]:
+                        invalid_slices.append(ra_slices[-1]) # RA at landing not valid
+
+                    # 2, 3 & 7 are invalid conditions
+                    ras_local = np.ma.logical_or(tcas_cc.array[op].data == 7, 
+                                                  np.ma.logical_or(tcas_cc.array[op].data == 2, 
+                                                                   tcas_cc.array[op].data == 3))
+                    invalid_slices.extend(shift_slices(runs_of_ones(ras_local), op.start))                
+
+                    # Overlay the original mask
+                    mask_local = np.ma.getmaskarray(tcas_cc.array[op]) == True
+                    invalid_slices.extend(shift_slices(runs_of_ones(mask_local), op.start))
+
+                    good_slices.extend(slices_and_not([op], invalid_slices))
+                operating = good_slices
+                    
         if tcas_status:
             if tcas_status.values_mapping[1] == 'TCAS Active':
                 good = 1
             elif tcas_status.values_mapping[0] == 'Normal Operation':
                 good = 0
             try:
-                tcas_ok = np.ma.clump_unmasked(np.ma.masked_not_equal(tcas_status.array, good))
-                operating = slices_and(operating, tcas_ok)
+                tcas_bad = np.ma.clump_masked(np.ma.masked_not_equal(tcas_status.array, good))
+                tcas_good = slices_not(slices_overlap_merge(tcas_bad, possible_ras), begin_at=0, end_at=len(tcas_status.array))
+                operating = slices_and(operating, tcas_good)
             except:
                 pass
             
         if tcas_valid:
-            tcas_ok = np.ma.clump_unmasked(np.ma.masked_not_equal(tcas_valid.array, 1))
-            operating = slices_and(operating, tcas_ok)
+            tcas_bad = np.ma.clump_masked(np.ma.masked_not_equal(tcas_valid.array, 1))
+            tcas_good = slices_not(slices_overlap_merge(tcas_bad, possible_ras), begin_at=0, end_at=len(tcas_valid.array))
+            operating = slices_and(operating, tcas_good)
 
         if tcas_fail:
             # With Altitude AAL defaulting to 2Hz and TCAS Fail at once per 4-sec frame, the interval is 8 samples.
-            tcas_ok = slices_remove_small_slices(np.ma.clump_unmasked(np.ma.masked_not_equal(tcas_fail.array, 0)), count=8)
-            operating = slices_and(operating, tcas_ok)
+            tcas_bad = slices_remove_small_gaps(np.ma.clump_masked(np.ma.masked_not_equal(tcas_fail.array, 0)), count=8)
+            tcas_good = slices_not(slices_overlap_merge(tcas_bad, possible_ras), begin_at=0, end_at=len(tcas_fail.array))
+            operating = slices_and(operating, tcas_good)
 
-        if tcas_cc:
-            if np.count_nonzero(tcas_cc.array)/float(len(tcas_cc.array)) > 0.1:
-                # Cannot be working properly.
-                return
-            else:
-                for op in operating:
-                    ras_local = np.ma.logical_and(tcas_cc.array[op].data > 3, tcas_cc.array[op].data < 7)
-                    ra_slices = shift_slices(runs_of_ones(ras_local), op.start)
-                    if ras_local[0]:
-                        ra_slices.pop(0) # RA at takeoff not valid
-                    if ras_local[-1]:
-                        ra_slices.pop(-1) # RA at landing not valid
-                
-                    # Overlay the original mask
-                    mask_local = np.ma.getmaskarray(tcas_cc.array[op]) == True
-                    mask_slices = shift_slices(runs_of_ones(mask_local), op.start)
-                    ops_valid = slices_and_not(slices_and([op], ra_slices), mask_slices)            
-                    self.create_phases(ops_valid)
-        else:
-            self.create_phases(operating)
+        self.create_phases(operating)
 
 
 
 class TCASTrafficAdvisory(FlightPhaseNode):
     """
     TCAS Traffic Advisory phase
-    
-    We exclude those with associated RA phases, and aircraft on the ground.
-
-    [TCAS will] determine the approximate altitude of each aircraft above the ground. 
-    If this difference is less than 360 feet, TCAS considers the reporting aircraft 
-    to be on the ground.
-    FAA Introduction to TCAS II V7.1
     """
 
     name = 'TCAS Traffic Advisory'

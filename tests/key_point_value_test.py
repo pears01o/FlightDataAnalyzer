@@ -724,7 +724,7 @@ from analysis_engine.key_point_values import (
     TAWSWindshearCautionBelow1500FtDuration,
     TAWSWindshearSirenBelow1500FtDuration,
     TAWSWindshearWarningBelow1500FtDuration,
-    TCASFailureDuration,
+    TCASFailureRatio,
     TCASRAAPDisengaged,
     TCASRAToAPDisengagedDuration,
     TCASRAAcceleration,
@@ -22817,8 +22817,7 @@ class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
             KeyPointValue(name='TCAS RA Direction', index=13, value=0)])
         node = self.node_class()
         node.derive(acc, None, ra, None, tcas_dir)
-        self.assertEqual(node[0].index, 15)
-        self.assertEqual(node[0].value, -0.4)
+        self.assertEqual(node, [])
         
     def test_ta_overlap(self):
         acc = P('Acceleration Vertical',
@@ -23078,57 +23077,30 @@ class TestTCASTAHeading (unittest.TestCase, NodeTest):
         self.assertEqual(node[0].value, 30)
 
         
-class TestTCASFailureDuration(unittest.TestCase, NodeTest):
+class TestTCASFailureRatio(unittest.TestCase, NodeTest):
     def setUp(self):
-        self.node_class = TCASFailureDuration
+        self.node_class = TCASFailureRatio
         self.values_mapping = {0: '-', 1: 'Failed'}
-        self.operational_combinations = [('TCAS Failure', 'TCAS Combined Control', 'Airborne')]
+        self.operational_combinations = [('TCAS Operational', 'Airborne')]
         
-    def test_flag(self):
-        tcas_fail = M('TCAS Failure', array=np.ma.array([0]*3+[1]*4+[0]*3),
-                      values_mapping=self.values_mapping)
-        cc = M('TCAS Combined Control', array=np.ma.array([0] * 40),
-               values_mapping=self.values_mapping)
-        airs = buildsection('Airborne', 5, 35)
+    def test_normal(self):
+        tcas = buildsection('TCAS Operational', 6, 14)
+        airs = buildsection('Airborne', 5, 14)
         node = self.node_class()
-        node.derive(tcas_fail, cc, airs)
-        self.assertEqual(node[0].name, 'TCAS Failure Duration')
-        self.assertEqual(node[0].index, 5)
-        self.assertAlmostEqual(node[0].value, 2)
-        
-    def test_ncd(self):
-        tcas_fail = M('TCAS Failure', array=np.ma.array([0]*3+[1]*4+[0]*3),
-                      values_mapping=self.values_mapping)
-        cc = M('TCAS Combined Control', array=np.ma.array([0, 0, 6, 6] * 10),
-               values_mapping=self.values_mapping)
-        airs = buildsection('Airborne', 5, 35)
-        node = self.node_class()
-        node.derive(tcas_fail, cc, airs)
-        self.assertEqual(node[0].name, 'TCAS Failure Duration')
-        self.assertEqual(node[0].index, 5)
-        self.assertAlmostEqual(node[0].value, 31)
-        
-    def test_fine(self):
-        cc = M('TCAS Combined Control', array=np.ma.array([0] * 40),
-               values_mapping=self.values_mapping)
-        airs = buildsection('Airborne', 5, 35)
-        node = self.node_class()
-        node.derive(None, cc, airs)
-        self.assertEqual(node, [])
-        
-    def test_alternate(self):
-        # Seen on one sample of data from an A330 aircraft
-        tcas_fail = M('TCAS Failure', array=np.ma.array([0, 1]*10),
-                      values_mapping=self.values_mapping)
-        cc = M('TCAS Combined Control', array=np.ma.array([0]*20),
-               values_mapping=self.values_mapping)
-        airs = buildsection('Airborne', 7, 17)
-        node = self.node_class()
-        node.derive(tcas_fail, cc, airs)
-        self.assertEqual(node[0].name, 'TCAS Failure Duration')
-        self.assertEqual(node[0].index, 7)
+        node.derive(tcas, airs)
+        self.assertEqual(node[0].name, 'TCAS Failure Ratio')
+        self.assertEqual(node[0].index, 0)
         self.assertAlmostEqual(node[0].value, 10)
-        
+       
+    def test_divide_zero(self):
+        tcas = buildsection('TCAS Operational', 1, 0)
+        airs = buildsection('Airborne', 1, 0)
+        node = self.node_class()
+        node.derive(tcas, airs)
+        self.assertEqual(node[0].name, 'TCAS Failure Ratio')
+        self.assertEqual(node[0].index, 0)
+        self.assertAlmostEqual(node[0].value, 0)
+       
 
 ##############################################################################
 # Warnings: Takeoff Configuration

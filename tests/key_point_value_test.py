@@ -232,7 +232,6 @@ from analysis_engine.key_point_values import (
     AltitudeWithGearDownMax,
     AltitudeInCruiseAverage,
     ATEngagedAPDisengagedOutsideClimbDuration,
-    ATDisengagedAPEngagedDuration,
     AutobrakeRejectedTakeoffNotSetDuringTakeoff,
     BrakePressureInTakeoffRollMax,
     BrakeTempAfterTouchdownDelta,
@@ -725,7 +724,7 @@ from analysis_engine.key_point_values import (
     TAWSWindshearCautionBelow1500FtDuration,
     TAWSWindshearSirenBelow1500FtDuration,
     TAWSWindshearWarningBelow1500FtDuration,
-    TCASFailureDuration,
+    TCASFailureRatio,
     TCASRAAPDisengaged,
     TCASRAToAPDisengagedDuration,
     TCASRAAcceleration,
@@ -6470,26 +6469,6 @@ class TestATEngagedAPDisengagedOutsideClimbDuration(unittest.TestCase, NodeTest)
         ])
         self.assertEqual(node, expected)
 
-
-class TestATDisengagedAPEngagedDuration(unittest.TestCase, NodeTest):
-    def setUp(self):
-        self.node_class = ATDisengagedAPEngagedDuration
-        self.operational_combinations = [('AT Engaged', 'AP Engaged', 'Airborne',)]
-        self.can_operate_kwargs = {'ac_family': A('Family', value='B737 NG')}
-
-    def test_derive(self):
-        ap_engaged = M('AP Engaged', array=np.ma.array([1]*40), values_mapping={0: '-', 1: 'Engaged'})
-        at_engaged = M('AT Engaged', array=np.ma.array([1]*5+ [0]*30 + [1]*5), values_mapping={0: '-', 1: 'Engaged'})
-        airs = buildsection('Airborne', 1, 39)
-
-        node = self.node_class()
-        node.derive(at_engaged, ap_engaged, airs)
-
-        name = 'AT Disengaged AP Engaged Duration'
-        expected = KPV(name=name, items=[
-            KeyPointValue(name=name, index=5, value=30),
-        ])
-        self.assertEqual(node, expected)
 
 
 ##############################################################################
@@ -22610,12 +22589,12 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
         # For this simple test, acceleration sample rate = 1.0 
         acc = P('Acceleration Vertical',
                 array=np.ma.array([1.0]*20 + [1.1, 1.2, 1.3, 1.4, 1.5, 1.6] + [1.7]*4))
-        ra = buildsection('TCAS Resolution Advisory', 10, 30)
+        ra = buildsection('TCAS Resolution Advisory', 15, 30)
         node = self.node_class()
         node.derive(acc, ra, None)
         self.assertEqual(node[0].name, 'TCAS RA Reaction Delay')
-        self.assertEqual(node[0].index, 10)
-        self.assertAlmostEqual(node[0].value, 9)
+        self.assertEqual(node[0].index, 15)
+        self.assertAlmostEqual(node[0].value, 4.5, places=1)
 
     def test_ta_overlap(self):
         acc = P('Acceleration Vertical',
@@ -22625,7 +22604,7 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ra, ta)
         self.assertEqual(node[0].index, 10)
-        self.assertAlmostEqual(node[0].value, -4.5)
+        self.assertAlmostEqual(node[0].value, -4.25, places=1)        
 
     def test_not_second_ta_overlap(self):
         acc = P('Acceleration Vertical',
@@ -22635,7 +22614,7 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ra, ta)
         self.assertEqual(node[0].index, 10)
-        self.assertAlmostEqual(node[0].value, -4.5)
+        self.assertAlmostEqual(node[0].value, -4.25, places=1)        
 
 class TestTCASRADirection(unittest.TestCase, NodeTest):
     
@@ -22675,7 +22654,7 @@ class TestTCASRADirection(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(ta, cc)
         self.assertEqual(node[0].value, 0)
-
+        
     
 class TestTCASRAAcceleration(unittest.TestCase, NodeTest):
 
@@ -22750,7 +22729,7 @@ class TestTCASRAToAPDisengagedDuration(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ap_offs, tcas_ra)
         self.assertEqual(node, 
-                         [KeyPointValue(3, 2.0, 'TCAS RA To AP Disengaged Duration')])
+                         [KeyPointValue(3.0, 2.0, 'TCAS RA To AP Disengaged Duration')])
 
     def test_preemptive_disengagement_by_time(self):
         kti_name = 'AP Disengaged Selection'
@@ -22836,20 +22815,18 @@ class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
             KeyPointValue(name='TCAS RA Direction', index=13, value=0)])
         node = self.node_class()
         node.derive(acc, None, ra, None, tcas_dir)
-        self.assertEqual(node[0].name, 'TCAS RA Erroneous Acceleration')
-        self.assertEqual(node[0].index, 17)
-        self.assertAlmostEqual(node[0].value, 0.2)
+        self.assertEqual(node, [])
         
     def test_ta_overlap(self):
         acc = P('Acceleration Vertical',
-                array=np.ma.array([1.0]*5 + [1.2]*2 + [1.35] + [1.0]*12))
-        ra = buildsection('TCAS Resolution Advisory', 10, 20)
-        ta = buildsection('TCAS Traffic Advisory', 3, 10)
+                array=np.ma.array([1.0]*15 + [1.2]*2 + [1.35] + [1.0]*12))
+        ra = buildsection('TCAS Resolution Advisory', 20, 30)
+        ta = buildsection('TCAS Traffic Advisory', 3, 18)
         tcas_dir = KPV(name='TCAS RA Direction', items=[
-            KeyPointValue(name='TCAS RA Direction', index=10, value=-1)])
+            KeyPointValue(name='TCAS RA Direction', index=20, value=-1)])
         node = self.node_class()
         node.derive(acc, ta, ra, None, tcas_dir)
-        self.assertEqual(node[0].index, 7)
+        self.assertEqual(node[0].index, 17)
         self.assertAlmostEqual(node[0].value, 0.35)     
         
 class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
@@ -22880,7 +22857,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
-        self.assertAlmostEqual(node[0].value, 6.5)
+        self.assertAlmostEqual(node[0].value, 6.75)
 
     def test_rate_advisory_data_down(self):
         acc = P('Acceleration Vertical', array=np.ma.array([1.0]*15+[0.8]*5))
@@ -22894,7 +22871,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
-        self.assertAlmostEqual(node[0].value, 6.5)
+        self.assertAlmostEqual(node[0].value, 6.75)
 
     def test_combined_control_data_up(self):
         acc = P('Acceleration Vertical', array=np.ma.array([1.0]*15+[1.2]*5))
@@ -22905,7 +22882,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         node.derive(acc, ta, cc, None, None, None)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
-        self.assertAlmostEqual(node[0].value, 6.5)
+        self.assertAlmostEqual(node[0].value, 6.75)
 
     def test_combined_control_data_down(self):
         acc = P('Acceleration Vertical', array=np.ma.array([1.0]*15+[0.8]*5))
@@ -22916,7 +22893,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         node.derive(acc, ta, cc, None, None, None)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
-        self.assertAlmostEqual(node[0].value, 6.5)
+        self.assertAlmostEqual(node[0].value, 6.75)
 
     def test_combined_control_data_clear(self):
         acc = P('Acceleration Vertical', array=np.ma.array([1.0]*15+[0.8]*5))
@@ -22998,15 +22975,15 @@ class TestTCASRAChangeOfVerticalSpeed(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(vs, tcas_ra)
         self.assertEqual(node.name, 'TCAS RA Change Of Vertical Speed')
-        self.assertEqual(node[0].index, 3)
-        self.assertEqual(node[0].value, -500.0)
+        self.assertEqual(node[0].index, 6)
+        self.assertEqual(node[0].value, -300.0)
 
     def test_derive_upward(self):
-        vs=P('Vertical Speed', array=np.ma.array([0]*5+[-200,300]))
+        vs=P('Vertical Speed', array=np.ma.array([-100]*5+[-200,300]))
         tcas_ra = buildsection('TCAS Resolution Advisory', 3, 8)
         node = self.node_class()
         node.derive(vs, tcas_ra)
-        self.assertEqual(node[0].value, 500.0)
+        self.assertEqual(node[0].value, 400.0)
         
         
 class TestTCASRAAltitudeSTD (unittest.TestCase, NodeTest):
@@ -23098,57 +23075,30 @@ class TestTCASTAHeading (unittest.TestCase, NodeTest):
         self.assertEqual(node[0].value, 30)
 
         
-class TestTCASFailureDuration(unittest.TestCase, NodeTest):
+class TestTCASFailureRatio(unittest.TestCase, NodeTest):
     def setUp(self):
-        self.node_class = TCASFailureDuration
+        self.node_class = TCASFailureRatio
         self.values_mapping = {0: '-', 1: 'Failed'}
-        self.operational_combinations = [('TCAS Failure', 'TCAS Combined Control', 'Airborne')]
+        self.operational_combinations = [('TCAS Operational', 'Airborne')]
         
-    def test_flag(self):
-        tcas_fail = M('TCAS Failure', array=np.ma.array([0]*3+[1]*4+[0]*3),
-                      values_mapping=self.values_mapping)
-        cc = M('TCAS Combined Control', array=np.ma.array([0] * 40),
-               values_mapping=self.values_mapping)
-        airs = buildsection('Airborne', 5, 35)
+    def test_normal(self):
+        tcas = buildsection('TCAS Operational', 6, 14)
+        airs = buildsection('Airborne', 5, 14)
         node = self.node_class()
-        node.derive(tcas_fail, cc, airs)
-        self.assertEqual(node[0].name, 'TCAS Failure Duration')
-        self.assertEqual(node[0].index, 5)
-        self.assertAlmostEqual(node[0].value, 2)
-        
-    def test_ncd(self):
-        tcas_fail = M('TCAS Failure', array=np.ma.array([0]*3+[1]*4+[0]*3),
-                      values_mapping=self.values_mapping)
-        cc = M('TCAS Combined Control', array=np.ma.array([0, 0, 6, 6] * 10),
-               values_mapping=self.values_mapping)
-        airs = buildsection('Airborne', 5, 35)
-        node = self.node_class()
-        node.derive(tcas_fail, cc, airs)
-        self.assertEqual(node[0].name, 'TCAS Failure Duration')
-        self.assertEqual(node[0].index, 5)
-        self.assertAlmostEqual(node[0].value, 31)
-        
-    def test_fine(self):
-        cc = M('TCAS Combined Control', array=np.ma.array([0] * 40),
-               values_mapping=self.values_mapping)
-        airs = buildsection('Airborne', 5, 35)
-        node = self.node_class()
-        node.derive(None, cc, airs)
-        self.assertEqual(node, [])
-        
-    def test_alternate(self):
-        # Seen on one sample of data from an A330 aircraft
-        tcas_fail = M('TCAS Failure', array=np.ma.array([0, 1]*10),
-                      values_mapping=self.values_mapping)
-        cc = M('TCAS Combined Control', array=np.ma.array([0]*20),
-               values_mapping=self.values_mapping)
-        airs = buildsection('Airborne', 7, 17)
-        node = self.node_class()
-        node.derive(tcas_fail, cc, airs)
-        self.assertEqual(node[0].name, 'TCAS Failure Duration')
-        self.assertEqual(node[0].index, 7)
+        node.derive(tcas, airs)
+        self.assertEqual(node[0].name, 'TCAS Failure Ratio')
+        self.assertEqual(node[0].index, 0)
         self.assertAlmostEqual(node[0].value, 10)
-        
+       
+    def test_divide_zero(self):
+        tcas = buildsection('TCAS Operational', 1, 0)
+        airs = buildsection('Airborne', 1, 0)
+        node = self.node_class()
+        node.derive(tcas, airs)
+        self.assertEqual(node[0].name, 'TCAS Failure Ratio')
+        self.assertEqual(node[0].index, 0)
+        self.assertAlmostEqual(node[0].value, 0)
+       
 
 ##############################################################################
 # Warnings: Takeoff Configuration

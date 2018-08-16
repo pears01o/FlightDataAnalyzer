@@ -2244,7 +2244,7 @@ class TCASTrafficAdvisory(FlightPhaseNode):
             tas_local = tcas_ta.array[tcas_op.slice].data == 1
             ta_slices = shift_slices(runs_of_ones(tas_local), tcas_op.slice.start)
             ta_slices = slices_remove_small_slices(ta_slices,
-                                                   time_limit=5.0, 
+                                                   time_limit=4.0, 
                                                    hz=tcas_ta.frequency)
             all_slices.extend(ta_slices)
 
@@ -2280,9 +2280,9 @@ class TCASResolutionAdvisory(FlightPhaseNode):
             ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
 
             # Where data is corrupted, single samples are a common source of error
-            # time_limit rejects single samples, but 5+ sample events are retained.
+            # time_limit rejects single samples, but 4+ sample events are retained.
             ra_slices = slices_remove_small_slices(ra_slices,
-                                                   time_limit=5.0, 
+                                                   time_limit=4.0, 
                                                    hz=tcas_cc.frequency)
             self.create_phases(ra_slices)
                         

@@ -13583,7 +13583,7 @@ class FlapSynchroAsymmetryMax(KeyPointValueNode):
     def derive(self, synchro=P('Flap Synchro Asymmetry'),
                      valve=P('Flap Bypass Valve Position'),):
 
-        synchro_slices = slices_above(synchro.array, 7)
+        synchro_slices = slices_above(synchro.array, 0)
         valve_slices = runs_of_ones(valve.array)
         asymmetry_slices = slices_or(synchro_slices[1], valve_slices)
         

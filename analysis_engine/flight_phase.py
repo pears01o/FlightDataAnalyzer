@@ -2157,36 +2157,35 @@ class TCASOperational(FlightPhaseNode):
             return
         
         if tcas_cc:
-            if np.count_nonzero(tcas_cc.array)/float(len(tcas_cc.array)) > 0.1:
-                # TCAS not working properly.
-                return
-            else:
-                # Build a list of the valid sections of Combined Control data...
-                good_slices = []
-                # and we'll need a list of RA segments to check later...
-                possible_ras = []
-                for op in operating:
-                    ras_local = np.ma.logical_and(tcas_cc.array[op].data > 3, tcas_cc.array[op].data < 7)
-                    ra_slices = shift_slices(runs_of_ones(ras_local), op.start)
-                    possible_ras.extend(ra_slices)
-                    # We discard the (common) RAs near the airfield
-                    if ras_local[0]:
-                        invalid_slices.append(ra_slices[0]) # RA at takeoff not valid
-                    if ras_local[-1]:
-                        invalid_slices.append(ra_slices[-1]) # RA at landing not valid
+            # Build a list of the valid sections of Combined Control data...
+            good_slices = []
+            # and we'll need a list of RA segments to check later...
+            possible_ras = []
+            for op in operating:
+                if np.count_nonzero(tcas_cc.array[op])/float(len(tcas_cc.array[op])) > 0.1:
+                    # TCAS not working properly.
+                    continue
+                ras_local = np.ma.logical_and(tcas_cc.array[op].data > 3, tcas_cc.array[op].data < 7)
+                ra_slices = shift_slices(runs_of_ones(ras_local), op.start)
+                possible_ras.extend(ra_slices)
+                # We discard the (common) RAs near the airfield
+                if ras_local[0]:
+                    invalid_slices.append(ra_slices[0]) # RA at takeoff not valid
+                if ras_local[-1]:
+                    invalid_slices.append(ra_slices[-1]) # RA at landing not valid
 
-                    # 2, 3 & 7 are invalid conditions
-                    ras_local = np.ma.logical_or(tcas_cc.array[op].data == 7, 
-                                                  np.ma.logical_or(tcas_cc.array[op].data == 2, 
-                                                                   tcas_cc.array[op].data == 3))
-                    invalid_slices.extend(shift_slices(runs_of_ones(ras_local), op.start))                
+                # 2, 3 & 7 are invalid conditions
+                ras_local = np.ma.logical_or(tcas_cc.array[op].data == 7, 
+                                              np.ma.logical_or(tcas_cc.array[op].data == 2, 
+                                                               tcas_cc.array[op].data == 3))
+                invalid_slices.extend(shift_slices(runs_of_ones(ras_local), op.start))                
 
-                    # Overlay the original mask
-                    mask_local = np.ma.getmaskarray(tcas_cc.array[op]) == True
-                    invalid_slices.extend(shift_slices(runs_of_ones(mask_local), op.start))
+                # Overlay the original mask
+                mask_local = np.ma.getmaskarray(tcas_cc.array[op]) == True
+                invalid_slices.extend(shift_slices(runs_of_ones(mask_local), op.start))
 
-                    good_slices.extend(slices_and_not([op], invalid_slices))
-                operating = good_slices
+                good_slices.extend(slices_and_not([op], invalid_slices))
+            operating = good_slices
                     
         if tcas_status:
             if tcas_status.values_mapping[1] == 'TCAS Active':

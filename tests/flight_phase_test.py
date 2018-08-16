@@ -3129,6 +3129,16 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         self.assertEqual(node.get_first().slice, slice(2, 1009))
         self.assertEqual(node.get_first().name, 'TCAS Operational')
         
+    def test_one_sector(self):        
+        tcas_cc = M('TCAS Combined Control', array=np.ma.array(data=[0,0,7,7]*253 + [0]*1010),
+                    values_mapping=self.values_mapping_cc)
+        up_down = range(0, 1000, 200) + [1000]*1000 + range(1000, -100, -200)
+        alt_aal=P('Altitude AAL', array=up_down+up_down)
+        node = self.node_class()
+        node.derive(alt_aal, tcas_cc, None, None, None)
+        self.assertEqual(node.get_first().slice, slice(1013, 2020))
+        self.assertEqual(node.get_first().name, 'TCAS Operational')
+
     def test_not_low(self):
         alt_aal=P('Altitude AAL', array=range(0, 1000, 100) + [1000]*10 + range(900, -100, -100))
         node = self.node_class()

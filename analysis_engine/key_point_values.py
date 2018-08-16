@@ -18617,7 +18617,7 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
     def derive(self, acc=P('Acceleration Vertical'),
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
-               ## rate_1=P('TCAS Altitude Rate Advisory'),
+               ## rate_1=P('TCAS Altitude Rate Advisory'), # Wrongly scaled so produces changes with the wrong sign. See EI-DRA
                rate_2=P('TCAS Advisory Rate To Maintain'),
                rate_3=P('TCAS Altitude Rate To Maintain'),
                rate_4=P('TCAS Advisory Rate')):
@@ -18982,8 +18982,8 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
                                           ##'-r')            
         if arm_2:
             ax2.plot(x_scale, arm_2.array[scope], '-r')
-        elif arm_3:
-            ax2.plot(x_scale, arm_3.array[scope], '-r')
+        ##elif arm_3:
+            ##ax2.plot(x_scale, arm_3.array[scope], '-r')
         elif arm_4:
             ax2.plot(x_scale, arm_4.array[scope], '-r')
         elif arm_5:

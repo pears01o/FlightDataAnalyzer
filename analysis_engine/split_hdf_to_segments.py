@@ -64,7 +64,7 @@ def validate_aircraft(aircraft_info, hdf):
 def _segment_type_and_slice(speed_array, speed_frequency,
                             heading_array, heading_frequency,
                             start, stop, eng_arrays,
-                            aircraft_info, thresholds, hdf):
+                            aircraft_info, thresholds, hdf, vspeed=None):
     """
     Uses the Heading to determine whether the aircraft moved about at all and
     the airspeed to determine if it was a full or partial flight.
@@ -124,6 +124,12 @@ def _segment_type_and_slice(speed_array, speed_frequency,
     else:
         slow_start = slow_stop = fast_for_long = None
 
+    vspd_threshold_exceedance = None
+    if vspeed:
+        vspd_threshold_exceedance = \
+            (np.ma.sum(vspeed.array > thresholds['vertical_speed_max']) / vspeed.frequency) > thresholds['min_duration'] or \
+            (np.ma.sum(vspeed.array < thresholds['vertical_speed_min']) / vspeed.frequency) > thresholds['min_duration']
+
     # Find out if the aircraft moved
     if aircraft_info and aircraft_info['Aircraft Type'] == 'helicopter':
         # if any gear params use them
@@ -175,6 +181,9 @@ def _segment_type_and_slice(speed_array, speed_frequency,
     elif slow_stop and threshold_exceedance:
         logger.debug("speed started above threshold and stopped below.")
         segment_type = 'STOP_ONLY'
+    elif not fast_for_long and vspd_threshold_exceedance:
+        logger.debug("No airspeed but has vertical speed.")
+        segment_type = 'INVALID'
     elif not fast_for_long:
         logger.debug("speed was below threshold.")
         segment_type = 'GROUND_ONLY'  # e.g. RTO, re-positioning A/C
@@ -430,7 +439,7 @@ def split_segments(hdf, aircraft_info):
     '''
 
     segments = []
-    speed, thresholds = _get_speed_parameter(hdf, aircraft_info)
+    speed, vspeed, thresholds = _get_speed_parameter(hdf, aircraft_info)
     min_split_duration = thresholds['min_split_duration']
 
     # Look for heading first
@@ -455,7 +464,7 @@ def split_segments(hdf, aircraft_info):
         return [_segment_type_and_slice(
             speed.array, speed.frequency, heading.array,
             heading.frequency, 0, hdf.duration, eng_arrays,
-            aircraft_info, thresholds, hdf)]
+            aircraft_info, thresholds, hdf, vspeed)]
 
     speed_secs = len(speed_array) / speed.frequency
 
@@ -468,24 +477,24 @@ def split_segments(hdf, aircraft_info):
         if split_flags:
             for split_idx in split_flags[0]:
                 split_idx = split_idx / seg_split.frequency
-                segments.append(_segment_type_and_slice(speed_array, speed.frequency,
-                                                        heading.array, heading.frequency,
-                                                        start, split_idx, eng_arrays,
-                                                        aircraft_info, thresholds, hdf))
+                segments.append(_segment_type_and_slice(
+                    speed_array, speed.frequency, heading.array,
+                    heading.frequency, start, split_idx, eng_arrays,
+                    aircraft_info, thresholds, hdf, vspeed))
                 start = split_idx
                 logger.info("Split Flag found at at index '%d'.", split_idx)
             # Add remaining data to a segment.
-            segments.append(_segment_type_and_slice(speed_array, speed.frequency,
-                                                    heading.array, heading.frequency,
-                                                    start, speed_secs, eng_arrays,
-                                                    aircraft_info, thresholds, hdf))
+            segments.append(_segment_type_and_slice(
+                speed_array, speed.frequency, heading.array, heading.frequency,
+                start, speed_secs, eng_arrays, aircraft_info, thresholds, hdf,
+                vspeed))
         else:
             # if no split flags use whole file.
             logger.info("'Segment Split' found but no Splits found, using whole file.")
-            segments.append(_segment_type_and_slice(speed_array, speed.frequency,
-                                                    heading.array, heading.frequency,
-                                                    start, speed_secs, eng_arrays,
-                                                    aircraft_info, thresholds, hdf))
+            segments.append(_segment_type_and_slice(
+                speed_array, speed.frequency, heading.array, heading.frequency,
+                start, speed_secs, eng_arrays, aircraft_info, thresholds, hdf,
+                vspeed))
         return segments
 
     slow_array = np.ma.masked_less_equal(speed_array,
@@ -502,7 +511,7 @@ def split_segments(hdf, aircraft_info):
         return [_segment_type_and_slice(
             speed_array, speed.frequency, heading.array,
             heading.frequency, 0, speed_secs, eng_arrays,
-            aircraft_info, thresholds, hdf)]
+            aircraft_info, thresholds, hdf, vspeed)]
 
     # suppress transient changes in speed around 80 kts
     slow_slices = slices_remove_small_slices(np.ma.clump_masked(slow_array), 10, speed.frequency)
@@ -581,10 +590,10 @@ def split_segments(hdf, aircraft_info):
                 slice_start_secs, slice_stop_secs, dfc.frequency,
                 dfc_half_period, dfc_diff, eng_split_index=eng_split_index)
             if dfc_split_index:
-                segments.append(_segment_type_and_slice(speed_array, speed.frequency,
-                                                        heading.array, heading.frequency,
-                                                        start, dfc_split_index, eng_arrays,
-                                                        aircraft_info, thresholds, hdf))
+                segments.append(_segment_type_and_slice(
+                    speed_array, speed.frequency, heading.array,
+                    heading.frequency, start, dfc_split_index, eng_arrays,
+                    aircraft_info, thresholds, hdf, vspeed))
                 start = dfc_split_index
                 logger.info("'Frame Counter' jumped within slow_slice '%s' "
                             "at index '%d'.", slow_slice, dfc_split_index)
@@ -603,10 +612,10 @@ def split_segments(hdf, aircraft_info):
                         slow_slice, eng_split_index)
             if last_slow_slice and slice_stop_secs-eng_split_index < min_split_duration:
                 eng_split_index = slice_stop_secs
-            segments.append(_segment_type_and_slice(speed_array, speed.frequency,
-                                                    heading.array, heading.frequency,
-                                                    start, eng_split_index, eng_arrays,
-                                                    aircraft_info, thresholds, hdf))
+            segments.append(_segment_type_and_slice(
+                speed_array, speed.frequency, heading.array, heading.frequency,
+                start, eng_split_index, eng_arrays, aircraft_info, thresholds,
+                hdf, vspeed))
             start = eng_split_index
             continue
         else:
@@ -626,10 +635,10 @@ def split_segments(hdf, aircraft_info):
         if rot_split_index:
             if last_slow_slice and slice_stop_secs-rot_split_index < min_split_duration:
                 rot_split_index = slice_stop_secs
-            segments.append(_segment_type_and_slice(speed_array, speed.frequency,
-                                                    heading.array, heading.frequency,
-                                                    start, rot_split_index, eng_arrays,
-                                                    aircraft_info, thresholds, hdf))
+            segments.append(_segment_type_and_slice(
+                speed_array, speed.frequency, heading.array, heading.frequency,
+                start, rot_split_index, eng_arrays, aircraft_info, thresholds,
+                hdf, vspeed))
             start = rot_split_index
             logger.info("Splitting at index '%s' where rate of turn was below "
                         "'%s'.", rot_split_index,
@@ -646,10 +655,10 @@ def split_segments(hdf, aircraft_info):
 
     # Add remaining data to a segment.
     if start < speed_secs:
-        segments.append(_segment_type_and_slice(speed_array, speed.frequency,
-                                                heading.array, heading.frequency,
-                                                start, speed_secs, eng_arrays,
-                                                aircraft_info, thresholds, hdf))
+        segments.append(_segment_type_and_slice(
+            speed_array, speed.frequency, heading.array, heading.frequency,
+            start, speed_secs, eng_arrays, aircraft_info, thresholds, hdf,
+            vspeed))
 
     '''
     import matplotlib.pyplot as plt
@@ -684,15 +693,16 @@ def _get_speed_parameter(hdf, aircraft_info):
         # Set to 30 sec as this gives two splits and two keeps in the test data set
         # TODO: add to settings
         thresholds['hash_min_samples'] = settings.AIRSPEED_HASH_MIN_SAMPLES
-
     else:
         parameter = hdf['Airspeed']
         thresholds['speed_threshold'] = settings.AIRSPEED_THRESHOLD
         thresholds['min_split_duration'] = settings.MINIMUM_SPLIT_DURATION
         thresholds['hash_min_samples'] = settings.AIRSPEED_HASH_MIN_SAMPLES
         thresholds['min_duration'] = settings.AIRSPEED_THRESHOLD_TIME
-
-    return parameter, thresholds
+    vspeed = hdf.get('Vertical Speed')
+    thresholds['vertical_speed_max'] = settings.VERTICAL_SPEED_FOR_CLIMB_PHASE
+    thresholds['vertical_speed_min'] = settings.VERTICAL_SPEED_FOR_DESCENT_PHASE
+    return parameter, vspeed, thresholds
 
 
 def _mask_invalid_years(array, latest_year):
@@ -929,7 +939,7 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
     """
     # build information about a slice
     with hdf_file(hdf_segment_path) as hdf:
-        speed, thresholds = _get_speed_parameter(hdf, aircraft_info)
+        speed, _, thresholds = _get_speed_parameter(hdf, aircraft_info)
         duration = hdf.duration
         try:
             start_datetime, precise_timestamp = _calculate_start_datetime(

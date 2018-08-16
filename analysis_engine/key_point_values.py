@@ -18802,7 +18802,7 @@ class TCASTAHeading(KeyPointValueNode):
             index = ta_warn.index
             self.create_kpv(index, hdg.array[index])
 
-
+"""
 ####################################################################################
 ## Development plotting routines for TA and RA KPVs.
 ####################################################################################
@@ -19031,7 +19031,7 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
         plt.savefig('C:\\Temp\\TCAS_plots\\' + filename + '.png')
         plt.clf()
         plt.close()
-
+"""
 
 ##############################################################################
 # Warnings: Takeoff Configuration

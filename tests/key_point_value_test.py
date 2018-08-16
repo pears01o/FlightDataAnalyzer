@@ -16154,8 +16154,6 @@ class TestFlapSynchroAsymmetryMax(unittest.TestCase):
         asym.get_derived((synchro, valve))
         self.assertEqual(asym[0].index, 8)
         self.assertEqual(asym[0].value, 9)
-        self.assertEqual(asym[1].index, 4)
-        self.assertEqual(asym[1].value, 5)
 
 
 class TestGearDownToLandingFlapConfigurationDuration(unittest.TestCase):

@@ -18502,7 +18502,7 @@ class TCASRAAPDisengaged(KeyPointValueNode):
                 self.create_kpv(tcas_ra.slice.start, 0.0)
 
 
-class TCASRAToAPDisengagedDuration(KeyPointValueNode):
+class TCASRAToAPDisengagedDelay(KeyPointValueNode):
     '''
     Time between the onset of the RA and disconnection of the autopilot.
 

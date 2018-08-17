@@ -4673,6 +4673,7 @@ class TouchdownToSpoilersDeployedDuration(KeyPointValueNode):
         '''
         deploys = find_edges_on_state_change('Deployed/Cmd Up', brake.array, phase=lands)
         for land in lands:
+            deployed = False
             for deploy in deploys:
                 if not is_index_within_slice(deploy, land.slice):
                     continue
@@ -4680,6 +4681,9 @@ class TouchdownToSpoilersDeployedDuration(KeyPointValueNode):
                     if not is_index_within_slice(tdwn.index, land.slice):
                         continue
                     self.create_kpv(deploy, (deploy - tdwn.index) / brake.hz)
+                    deployed = True
+            if not deployed:
+                self.create_kpv(land.slice.start, 0)
 
 
 class TrackDeviationFromRunway1000To500Ft(KeyPointValueNode):

@@ -454,7 +454,7 @@ from analysis_engine.key_point_values import (
     GroundspeedInStraightLineDuringTaxiOutMax,
     GroundspeedInTurnDuringTaxiInMax,
     GroundspeedInTurnDuringTaxiOutMax,
-    GroundspeedWithGearOnGroundMax,
+    GroundspeedDuringGroundedMax,
     GroundspeedSpeedbrakeDuringTakeoffMax,
     GroundspeedSpeedbrakeHandleDuringTakeoffMax,
     GroundspeedStabilizerOutOfTrimDuringTakeoffMax,
@@ -16456,25 +16456,23 @@ class TestFuelJettisonDuration(unittest.TestCase, CreateKPVsWhereTest):
 # Groundspeed
 
 
-class TestGroundspeedWithGearOnGroundMax(unittest.TestCase, NodeTest):
+class TestGroundspeedDuringGroundedMax(unittest.TestCase, NodeTest):
 
     def setUp(self):
-        self.node_class = GroundspeedWithGearOnGroundMax
-        self.operational_combinations = [('Groundspeed Signed', 'Gear On Ground')]
+        self.node_class = GroundspeedDuringGroundedMax
+        self.operational_combinations = [('Groundspeed Signed', 'Grounded')]
         self.function = max_value
 
     def test_derive_basic(self):
         spd=P('Groundspeed Signed', array = np.ma.arange(100, 0, -10))
-        gog=M('Gear On Ground',
-             array=np.ma.array([0]*5 + [1]*5),
-             values_mapping = {0: 'Air', 1: 'Ground'})
+        gnd=buildsection('Grounded', 5, 10)
 
         node = self.node_class()
-        node.derive(spd, gog)
+        node.derive(spd, gnd)
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0], KeyPointValue(
             index=5, value=50.0,
-            name='Groundspeed With Gear On Ground Max'))
+            name='Groundspeed During Grounded Max'))
 
 
 class TestGroundspeedWhileTaxiingStraightMax(unittest.TestCase, NodeTest):

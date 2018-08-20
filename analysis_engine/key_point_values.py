@@ -13781,23 +13781,19 @@ class FuelJettisonDuration(KeyPointValueNode):
 # Groundspeed
 
 
-class GroundspeedWithGearOnGroundMax(KeyPointValueNode):
+class GroundspeedDuringGroundedMax(KeyPointValueNode):
     '''
-    The highest groundspeed with gear on ground.
+    The highest groundspeed during grounded phases.
     For fixed wing, at liftoff or touchdown. 
     For helicopters with wheeled undercarriage, the point of highest taxi speed.
     '''
 
     units = ut.KT
 
-    def derive(self,
-               gnd_spd=P('Groundspeed Signed'),
-               gear=M('Gear On Ground')):
+    def derive(self, gnd_spd=P('Groundspeed Signed'), gnd=S('Grounded')):
 
-        self.create_kpvs_within_slices(
-            gnd_spd.array,
-            runs_of_ones(gear.array == 'Ground'),
-            max_value)
+        self.create_kpvs_within_slices(gnd_spd.array, gnd.get_slices(),
+                                       max_value)
 
 
 class GroundspeedWhileTaxiingStraightMax(KeyPointValueNode):

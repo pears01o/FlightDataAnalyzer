@@ -423,6 +423,7 @@ from analysis_engine.key_point_values import (
     FlapWithGearUpMax,
     FlapWithSpeedbrakeDeployedMax,
     FlapSynchroAsymmetryMax,
+    FlapBypassValveDuration,
     FlareDistance20FtToTouchdown,
     FlareDuration20FtToTouchdown,
     FlightControlPreflightCheck,
@@ -16127,12 +16128,24 @@ class TestFlapAt500Ft(unittest.TestCase, NodeTest):
 
 class TestFlapSynchroAsymmetryMax(unittest.TestCase):
     def test_derive(self):
-        synchro = P('Flap Synchro Asymmetry',   [0,0,1,4,5,6,6,6,9,8,3,0,0,0])
-        valve = P('Flap Bypass Valve Position', [0,0,1,1,1,0,0,0,0,0,0,0,0,0])
+        synchro = P('Flap Synchro Asymmetry', [0,0,1,4,5,6,6,6,9,8,3,0,0,0])
         asym = FlapSynchroAsymmetryMax()
-        asym.get_derived((synchro, valve))
+        asym.derive(synchro)
         self.assertEqual(asym[0].index, 8)
         self.assertEqual(asym[0].value, 9)
+
+
+class TestFlapBypassValveDuration(unittest.TestCase):
+    def test_derive(self):
+        valve = M('Flap Bypass Valve Position', 
+                  array=np.ma.array([0,0,1,1,1,0,0,1,1,1,1,1,0,0]),
+                  values_mapping={0: '-', 1: 'Bypass'})
+        node=FlapBypassValveDuration()
+        node.derive(valve)
+        self.assertEqual(node[0].index, 2)
+        self.assertEqual(node[0].value, 3)
+        self.assertEqual(node[1].index, 7)
+        self.assertEqual(node[1].value, 5)
 
 
 class TestGearDownToLandingFlapConfigurationDuration(unittest.TestCase):

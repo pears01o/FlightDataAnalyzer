@@ -18514,7 +18514,7 @@ class TCASRAToAPDisengagedDelay(KeyPointValueNode):
     this duration is another indication of pilot reaction time.
     '''
 
-    name = 'TCAS RA To AP Disengaged Duration'
+    name = 'TCAS RA To AP Disengaged Delay'
     units = ut.SECOND
 
     @classmethod

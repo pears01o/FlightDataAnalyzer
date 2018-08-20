@@ -726,7 +726,7 @@ from analysis_engine.key_point_values import (
     TAWSWindshearWarningBelow1500FtDuration,
     TCASFailureRatio,
     TCASRAAPDisengaged,
-    TCASRAToAPDisengagedDuration,
+    TCASRAToAPDisengagedDelay,
     TCASRAAcceleration,
     TCASRAAltitudeAAL,
     TCASRAAltitudeSTD,
@@ -22714,10 +22714,10 @@ class TestTCASRAAPDisengaged(unittest.TestCase, NodeTest):
                          [KeyPointValue(11.0, 1.0, 'TCAS RA AP Disengaged')])
 
         
-class TestTCASRAToAPDisengagedDuration(unittest.TestCase, NodeTest):
+class TestTCASRAToAPDisengagedDelay(unittest.TestCase, NodeTest):
 
     def setUp(self):
-        self.node_class = TCASRAToAPDisengagedDuration
+        self.node_class = TCASRAToAPDisengagedDelay
         self.operational_combinations = [('AP Disengaged Selection', 'TCAS Resolution Advisory', 'Acceleration Vertical', 'TCAS Traffic Advisory'),
                                          ('AP Disengaged Selection', 'TCAS Resolution Advisory', 'Acceleration Vertical')]
 
@@ -22729,7 +22729,7 @@ class TestTCASRAToAPDisengagedDuration(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ap_offs, tcas_ra)
         self.assertEqual(node, 
-                         [KeyPointValue(3.0, 2.0, 'TCAS RA To AP Disengaged Duration')])
+                         [KeyPointValue(3.0, 2.0, 'TCAS RA To AP Disengaged Delay')])
 
     def test_preemptive_disengagement_by_time(self):
         kti_name = 'AP Disengaged Selection'
@@ -22739,7 +22739,7 @@ class TestTCASRAToAPDisengagedDuration(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ap_offs, tcas_ra)
         self.assertEqual(node, 
-                         [KeyPointValue(15.0, -5.0, 'TCAS RA To AP Disengaged Duration')])
+                         [KeyPointValue(15.0, -5.0, 'TCAS RA To AP Disengaged Delay')])
 
     def test_preemptive_disengagement_by_ta(self):
         kti_name = 'AP Disengaged Selection'
@@ -22750,7 +22750,7 @@ class TestTCASRAToAPDisengagedDuration(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ap_offs, tcas_ra, tcas_ta)
         self.assertEqual(node, 
-                         [KeyPointValue(30.0, -15.0, 'TCAS RA To AP Disengaged Duration')])
+                         [KeyPointValue(30.0, -15.0, 'TCAS RA To AP Disengaged Delay')])
 
     def test_no_disengagement(self):
         kti_name = 'AP Disengaged Selection'

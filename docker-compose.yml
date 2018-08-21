@@ -5,3 +5,4 @@ services:
     command: bash -c 'cd /usr/src/testdir && nosetests'
     volumes:
       - ./:/usr/src/testdir
+      - ./nosetests.xml:/usr/src/testdir/nosetests.xml:rw

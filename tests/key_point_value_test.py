@@ -15997,8 +15997,6 @@ class TestFlapSynchroAsymmetryMax(unittest.TestCase):
         asym.derive(synchro)
         self.assertEqual(asym[0].index, 8)
         self.assertEqual(asym[0].value, 9)
-        self.assertEqual(asym[1].index, 4)
-        self.assertEqual(asym[1].value, 5)
 
 
 #class TestFlapBypassValveDuration(unittest.TestCase):

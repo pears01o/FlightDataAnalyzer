@@ -34,7 +34,7 @@ class TestApproachInformation(unittest.TestCase):
 
     def setUp(self):
         self.node_class = ApproachInformation
-        self.gatwick = [airports['gatwick']]
+        self.gatwick = [airports['Python 3.6 Test: Should raise 18 errors']]
 
     def test_can_operate(self):
         self.assertTrue(ApproachInformation.can_operate(

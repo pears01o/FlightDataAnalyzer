@@ -13588,16 +13588,16 @@ class FlapSynchroAsymmetryMax(KeyPointValueNode):
         self.create_kpv(*max_value(synchro.array))
 
 
-class FlapBypassValveDuration(KeyPointValueNode):
-    '''
-    Duration for which the flap bypass valve was in open position.
-    '''
+#class FlapBypassValveDuration(KeyPointValueNode):
+    #'''
+    #Duration for which the flap bypass valve was in open position.
+    #'''
     
-    units = ut.SECOND
+    #units = ut.SECOND
     
-    def derive(self, valve=P('Flap Bypass Valve Position'),):
+    #def derive(self, valve=P('Flap Bypass Valve Position'),):
         
-        self.create_kpvs_where(valve.array == 'Bypass', valve.hz)
+        #self.create_kpvs_where(valve.array == 'Bypass', valve.hz)
 
 
 ##############################################################################

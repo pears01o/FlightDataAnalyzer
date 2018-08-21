@@ -10,6 +10,10 @@ You can view the differences in tagged versions as follows:
 
 
 =======
+v0.40.4
+-------
+  - Modified FlapSynchroAsymmetry KPV to generate single KPV per flight with no 7deg limit
+
 v0.40.3
 -------
   - VLSLookup fixed to only be operable for supported fleets

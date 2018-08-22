@@ -9,7 +9,7 @@
           echo "######NoseTest #######"·
           docker-compose up
           '''
-          junit 'nosetests.xml'
+          junit 'results.xml'
       }
     } catch (e) {
       notifyFailed()

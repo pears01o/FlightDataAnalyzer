@@ -23325,10 +23325,14 @@ class TestThrustAsymmetryDuringFlightMax(unittest.TestCase, CreateKPVsWithinSlic
         self.operational_combinations = [('Thrust Asymmetry', 'Airborne')]
         self.function = max_value
 
-    @unittest.skip('Test Not Implemented')
     def test_derive(self):
-        self.assertTrue(False, msg='Test not implemented.')
-
+        ta = P(name='Thrust Asymmetry', array=np.ma.array([0]*400 + [29]*350 + [0]*5 + [30]*301 + [0]*50 + [31]*299 + [0]*95), dtype=float)
+        air = buildsection('Airborne', 100, 1450)
+        node = self.node_class()
+        node.derive(ta, air)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 30)
+       
 
 class TestThrustAsymmetryDuringGoAroundMax(unittest.TestCase, CreateKPVsWithinSlicesTest):
 

@@ -25,6 +25,8 @@ from analysis_engine.library import (align,
                                      repair_mask,
                                      rate_of_change,
                                      runs_of_ones,
+                                     slices_and_not,
+                                     slices_multiply,
                                      slices_of_runs,
                                      slices_remove_small_gaps,
                                      slices_remove_small_slices,
@@ -515,6 +517,14 @@ def split_segments(hdf, aircraft_info):
 
     # suppress transient changes in speed around 80 kts
     slow_slices = slices_remove_small_slices(np.ma.clump_masked(slow_array), 10, speed.frequency)
+    
+    # Skip dropouts in HDF5 files (first identified on H175 helicopter)
+    if hdf['FDRS Frame Counter']:
+        frame_count = hdf['FDRS Frame Counter']
+        drops = np.ma.clump_masked(np.ma.where(frame_count.array == 0.0, np.ma.masked, 1.0)) # 1.0 is any value that's not masked
+        dropouts = slices_multiply(slices_remove_small_gaps(drops, hz=frame_count.frequency), 
+                                   speed.frequency / frame_count.frequency)
+        slow_slices = slices_and_not(slow_slices, dropouts)
 
     rate_of_turn = _rate_of_turn(heading)
 

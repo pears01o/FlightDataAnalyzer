@@ -425,9 +425,14 @@ class Configuration(MultistateDerivedParameterNode):
 
         return True
     
-    def derive(self, slat=M('Slat Including Transition'), flap=M('Flap Including Transition'), 
+    def derive(self, flap=M('Flap Including Transition'), slat=M('Slat Including Transition'), 
                flaperon=M('Flaperon'), model=A('Model'), series=A('Series'), 
-               family=A('Family'),):
+               family=A('Family'),
+               
+               #debug
+               flap_angle=M('Flap Angle'),
+               slat_angle=M('Slat Angle'),
+               ):
         
         angles = at.get_conf_angles(model.value, series.value, family.value)
         
@@ -446,7 +451,7 @@ class Configuration(MultistateDerivedParameterNode):
         nearest_neighbour_mask_repair(self.array, copy=False,
                                       repair_gap_size=(30 * self.hz),
                                       direction='backward')
-        
+            
         
 class Daylight(MultistateDerivedParameterNode):
     '''
@@ -2314,15 +2319,10 @@ class SlatIncludingTransition(MultistateDerivedParameterNode):
 
     def derive(self, slat=P('Slat Angle'),
                model=A('Model'), series=A('Series'), family=A('Family')):
-
-        self.values_mapping, self.array, self.frequency, self.offset = calculate_slat(
-            'including',
-            slat,
-            model,
-            series,
-            family,
-        )
-
+    
+        self.values_mapping = at.get_slat_map(model.value, series.value, family.value)
+        self.array=including_transition(slat.array, self.values_mapping, hz=self.hz)
+        
 
 class SlatFullyExtended(MultistateDerivedParameterNode):
     '''

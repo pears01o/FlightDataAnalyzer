@@ -692,51 +692,51 @@ class TestConfiguration(unittest.TestCase, NodeTest):
 
     @patch('analysis_engine.multistate_parameters.at')
     def test_can_operate(self, at):
-        at.get_conf_angles.side_effect = ({}, {}, KeyError)
+        at.get_conf_angles.side_effect = ({}, {}, KeyError, {}, KeyError, {}, {})
         self.assertTrue(self.node_class.can_operate(
-            ('Flap', 'Slat', 'Model', 'Series', 'Family'),
+            ('Flap Including Transition', 'Slat Including Transition', 'Model', 'Series', 'Family'),
             manufacturer=A('Manufacturer', 'Airbus'),
             model=A('Model', 'A320-201'),
             series=A('Series', 'A320-200'),
             family=A('Family', 'A320'),
         ))
         self.assertTrue(self.node_class.can_operate(
-            ('Flap', 'Slat', 'Flaperon', 'Model', 'Series', 'Family'),
+            ('Flap Including Transition', 'Slat Including Transition', 'Model', 'Series', 'Family'),
             manufacturer=A('Manufacturer', 'Airbus'),
             model=A('Model', 'A330-301'),
             series=A('Series', 'A330-300'),
             family=A('Family', 'A330'),
         ))
         self.assertFalse(self.node_class.can_operate(
-            ('Flap', 'Slat', 'Flaperon', 'Model', 'Series', 'Family'),
+            ('Flap Including Transition', 'Slat Including Transition', 'Model', 'Series', 'Family'),
             manufacturer=A('Manufacturer', 'Airbus'),
             model=A('Model', None),
             series=A('Series', None),
             family=A('Family', None),
         ))
         self.assertFalse(self.node_class.can_operate(
-            ('Flap', 'Slat', 'Flaperon', 'Model', 'Series', 'Family'),
+            ('Flap Including Transition', 'Slat Including Transition', 'Model', 'Series', 'Family'),
             manufacturer=A('Manufacturer', 'Airbus'),
             model=A('Model', 'A310-101'),
             series=A('Series', 'A310-100'),
             family=A('Family', 'A310'),
         ))
         self.assertFalse(self.node_class.can_operate(
-            ('Flap', 'Slat', 'Flaperon', 'Model', 'Series', 'Family'),
+            ('Flap Including Transition', 'Slat Including Transition', 'Model', 'Series', 'Family'),
             manufacturer=A('Manufacturer', 'Boeing'),
             model=A('Model', None),
             series=A('Series', None),
             family=A('Family', None),
         ))
         self.assertTrue(self.node_class.can_operate(
-            ('Flap', 'Slat', 'Flaperon', 'Model', 'Series', 'Family', 'Flap Lever', 'Flap Relief Engaged'),
+            ('Flap Including Transition', 'Slat Including Transition', 'Model', 'Series', 'Family'),
             manufacturer=A('Manufacturer', 'Airbus'),
             model=A('Model', None),
             series=A('Series', None),
             family=A('Family', 'A330'),
         ))         
-        self.assertTrue(self.node_class.can_operate(
-            ('Flap', 'Slat', 'Flaperon', 'Model', 'Series', 'Family', 'Flap Lever', 'Flap Relief Engaged'),
+        self.assertFalse(self.node_class.can_operate(
+            ('Flap Including Transition', 'Slat Including Transition', 'Model', 'Series', 'Family'),
             manufacturer=A('Manufacturer', 'Airbus'),
             model=A('Model', None),
             series=A('Series', 'A340-500'),
@@ -746,136 +746,135 @@ class TestConfiguration(unittest.TestCase, NodeTest):
     @patch('analysis_engine.multistate_parameters.at')
     def test_derive(self, at):
         at.get_conf_angles.return_value = {
-            '0':    (0, 0, 0),
-            '1':    (16, 0, 0),
-            '1+F':  (16, 8, 5),
-            '1*':   (20, 8, 10),
-            '2':    (20, 14, 10),
-            '2*':   (23, 14, 10),
-            '3':    (23, 22, 10),
-            'Full': (23, 32, 10),
+            '0':    (0, 0),
+            '1':    (16, 0),
+            '1+F':  (16, 8),
+            '1*':   (20, 8),
+            '2':    (20, 14),
+            '2*':   (23, 14),
+            '3':    (23, 22),
+            'Full': (23, 32),
         }
         _am = A('Model', 'A330-301')
         _as = A('Series', 'A330-300')
         _af = A('Family', 'A330')
         attributes = (_am, _as, _af)
         # Note: The last state is invalid...
-        s = [0] * 2 + [16] * 4 + [20] * 4 + [23] * 6 + [16]
-        f = [0] * 4 + [8] * 4 + [14] * 4 + [22] * 2 + [32] * 2 + [14]
-        a = [0] * 4 + [5] * 2 + [10] * 10 + [10]
+        s = [0] * 4 + [16] * 4 + [16] * 4 + [20] * 1 + [20] * 4 + [23] * 1 + [23] * 4 + [23] * 4
+        f = [0] * 4 + [0]  * 4 + [8]  * 4 + [8]  * 1 + [14] * 4 + [14] * 1 + [22] * 4 + [32] * 4
         z = lambda i: {x: str(x) for x in np.ma.unique(i)}
         slat = M('Slat', np.ma.array(s), values_mapping=z(s))
         flap = M('Flap', np.ma.array(f), values_mapping=z(f))
-        ails = M('Flaperon', np.ma.array(a), values_mapping=z(a))
         node = self.node_class()
-        node.derive(slat, flap, ails, None, None, *attributes)
+        node.derive(flap, slat, *attributes)
         attributes = (a.value for a in attributes)
         at.get_conf_angles.assert_called_once_with(*attributes)
         self.assertEqual(node.values_mapping, AVAILABLE_CONF_STATES)
         self.assertEqual(node.units, None)
         self.assertIsInstance(node.array, MappedArray)
         values = unique_values(node.array.astype(int))
-        self.assertEqual(values, {0: 2, 10: 2, 13: 2, 16: 2, 20: 2, 26: 2, 30: 2, 90: 3})
+        self.assertEqual(values, {0: 4, 10: 4, 13: 4, 16: 1, 20: 4, 26: 1, 30: 4, 90: 4})
 
-    @patch('analysis_engine.multistate_parameters.at')
-    def test_a330_relief(self, at):
-        at.get_conf_angles.return_value = {
-            '0':    (0, 0, 0),
-            '1':    (16, 0, 0),
-            '1+F':  (16, 8, 5),
-            '1*':   (20, 8, 10),
-            '2':    (20, 14, 10),
-            '2*':   (23, 14, 10),
-            '3':    (23, 22, 10),
-            'Full': (23, 32, 10),
-        }
-        _am = A('Model', 'A330-301')
-        _as = A('Series', 'A330-300')
-        _af = A('Family', 'A330')
-        attributes = (_am, _as, _af)        
-        l = [0]*4 + [1]*4 + [2]*8 + [3]*8 + [4]*4
-        r = [0]*10 + [1]*3 + [0]*5 + [1]*3 + [0]*7
-        c = [0]*4 + [10]*4 + [20]*2 + [16]*3 + [20]*3 + [30]*2 + [26]*3 + [30]*3 + [90]*4
+# we no longer use relief to trigger star configs
+    #@patch('analysis_engine.multistate_parameters.at')
+    #def test_a330_relief(self, at):
+        #at.get_conf_angles.return_value = {
+            #'0':    (0, 0, 0),
+            #'1':    (16, 0, 0),
+            #'1+F':  (16, 8, 5),
+            #'1*':   (20, 8, 10),
+            #'2':    (20, 14, 10),
+            #'2*':   (23, 14, 10),
+            #'3':    (23, 22, 10),
+            #'Full': (23, 32, 10),
+        #}
+        #_am = A('Model', 'A330-301')
+        #_as = A('Series', 'A330-300')
+        #_af = A('Family', 'A330')
+        #attributes = (_am, _as, _af)        
+        #l = [0]*4 + [1]*4 + [2]*8 + [3]*8 + [4]*4
+        #r = [0]*10 + [1]*3 + [0]*5 + [1]*3 + [0]*7
+        #c = [0]*4 + [10]*4 + [20]*2 + [16]*3 + [20]*3 + [30]*2 + [26]*3 + [30]*3 + [90]*4
         
-        s = [0]*4 + [16]*4 + [20]*8 + [23]*12
-        f = [0]*8 + [14]*8 + [22]*8 + [32]*4
-        a = [0]*8 + [10]*20
+        #s = [0]*4 + [16]*4 + [20]*8 + [23]*12
+        #f = [0]*8 + [14]*8 + [22]*8 + [32]*4
+        #a = [0]*8 + [10]*20
 
-        z = lambda i: {x: str(x) for x in np.ma.unique(i)}
-        slat = M('Slat', np.ma.array(s), values_mapping=z(s))
-        flap = M('Flap', np.ma.array(f), values_mapping=z(f))
-        ails = M('Flaperon', np.ma.array(a), values_mapping=z(a))        
-        lever = M('Flap Lever', np.ma.array(l), values_mapping={0: 'Lever 0', 1: 'Lever 1', 2: 'Lever 2', 3: 'Lever 3', 4: 'Lever Full'})
-        relief = M('Flap Relief', np.ma.array(r), values_mapping={0: '-', 1: 'Engaged'})
-        configuration = M('Configuration', np.ma.array(c), values_mapping={
-            0: '0',
-            10: '1',
-            12: '1(T/O)', # Detailed in A330 Flight Crew Operating Manual REV 004
-            13: '1+F',
-            16: '1*',
-            20: '2',
-            26: '2*',
-            30: '3',
-            33: '3+S',
-            40: '4',
-            50: '5',
-            90: 'Full',
-        })
+        #z = lambda i: {x: str(x) for x in np.ma.unique(i)}
+        #slat = M('Slat', np.ma.array(s), values_mapping=z(s))
+        #flap = M('Flap', np.ma.array(f), values_mapping=z(f))
+        #ails = M('Flaperon', np.ma.array(a), values_mapping=z(a))        
+        #lever = M('Flap Lever', np.ma.array(l), values_mapping={0: 'Lever 0', 1: 'Lever 1', 2: 'Lever 2', 3: 'Lever 3', 4: 'Lever Full'})
+        #relief = M('Flap Relief', np.ma.array(r), values_mapping={0: '-', 1: 'Engaged'})
+        #configuration = M('Configuration', np.ma.array(c), values_mapping={
+            #0: '0',
+            #10: '1',
+            #12: '1(T/O)', # Detailed in A330 Flight Crew Operating Manual REV 004
+            #13: '1+F',
+            #16: '1*',
+            #20: '2',
+            #26: '2*',
+            #30: '3',
+            #33: '3+S',
+            #40: '4',
+            #50: '5',
+            #90: 'Full',
+        #})
         
-        node = self.node_class()
-        node.derive(slat, flap, ails, relief, lever, *attributes)
+        #node = self.node_class()
+        #node.derive(slat, flap, *attributes)
         
-        np.testing.assert_array_equal(node.array, configuration.array)
+        #np.testing.assert_array_equal(node.array, configuration.array)
         
-    @patch('analysis_engine.multistate_parameters.at')
-    def test_a340_relief(self, at):
+    #@patch('analysis_engine.multistate_parameters.at')
+    #def test_a340_relief(self, at):
         
-        at.get_conf_angles.return_value = {
-            '0':    (0, 0, 0),       # FAA TCDS A43NM Rev 07
-            '1':    (21, 0, 0),      # FAA TCDS A43NM Rev 07 & FDS Customer #47 A330/A340 Flight Controls
-            '1+F':  (21, 17, 10),    # FAA TCDS A43NM Rev 07 (ECAM Indication = 1+F)
-            '1*':   (24, 17, 10),    # FAA TCDS A43NM Rev 07 (ECAM Indication = 2)
-            '2':    (24, 22, 10),    # FAA TCDS A43NM Rev 07 & FDS Customer #47 A330/A340 Flight Controls
-            '3':    (24, 29, 10),    # FAA TCDS A43NM Rev 07 & FDS Customer #47 A330/A340 Flight Controls
-            'Full': (24, 34, 10),    # FAA TCDS A43NM Rev 07 & FDS Customer #47 A330/A340 Flight Controls
-        }
-        _am = A('Model', None)
-        _as = A('Series', 'A340-500')
-        _af = A('Family', None)
-        attributes = (_am, _as, _af)        
-        l = [0]*4 + [1]*4 + [2]*8 + [3]*8 + [4]*4
-        r = [0]*10 + [1]*3 + [0]*5 + [1]*3 + [0]*7
-        c = [0]*4 + [10]*4 + [20]*2 + [16]*3 + [20]*3 + [30]*8 + [90]*4
+        #at.get_conf_angles.return_value = {
+            #'0':    (0, 0, 0),       # FAA TCDS A43NM Rev 07
+            #'1':    (21, 0, 0),      # FAA TCDS A43NM Rev 07 & FDS Customer #47 A330/A340 Flight Controls
+            #'1+F':  (21, 17, 10),    # FAA TCDS A43NM Rev 07 (ECAM Indication = 1+F)
+            #'1*':   (24, 17, 10),    # FAA TCDS A43NM Rev 07 (ECAM Indication = 2)
+            #'2':    (24, 22, 10),    # FAA TCDS A43NM Rev 07 & FDS Customer #47 A330/A340 Flight Controls
+            #'3':    (24, 29, 10),    # FAA TCDS A43NM Rev 07 & FDS Customer #47 A330/A340 Flight Controls
+            #'Full': (24, 34, 10),    # FAA TCDS A43NM Rev 07 & FDS Customer #47 A330/A340 Flight Controls
+        #}
+        #_am = A('Model', None)
+        #_as = A('Series', 'A340-500')
+        #_af = A('Family', None)
+        #attributes = (_am, _as, _af)        
+        #l = [0]*4 + [1]*4 + [2]*8 + [3]*8 + [4]*4
+        #r = [0]*10 + [1]*3 + [0]*5 + [1]*3 + [0]*7
+        #c = [0]*4 + [10]*4 + [20]*2 + [16]*3 + [20]*3 + [30]*8 + [90]*4
         
-        s = [0]*4 + [21]*4 + [24]*20
-        f = [0]*8 + [22]*8 + [29]*8 + [34]*4
-        a = [0]*8 + [10]*20
+        #s = [0]*4 + [21]*4 + [24]*20
+        #f = [0]*8 + [22]*8 + [29]*8 + [34]*4
+        #a = [0]*8 + [10]*20
 
-        z = lambda i: {x: str(x) for x in np.ma.unique(i)}
-        slat = M('Slat', np.ma.array(s), values_mapping=z(s))
-        flap = M('Flap', np.ma.array(f), values_mapping=z(f))
-        ails = M('Flaperon', np.ma.array(a), values_mapping=z(a))        
-        lever = M('Flap Lever', np.ma.array(l), values_mapping={0: 'Lever 0', 1: 'Lever 1', 2: 'Lever 2', 3: 'Lever 3', 4: 'Lever Full'})
-        relief = M('Flap Relief', np.ma.array(r), values_mapping={0: '-', 1: 'Engaged'})
-        configuration = M('Configuration', np.ma.array(c), values_mapping={
-            0: '0',
-            10: '1',
-            12: '1(T/O)', # Detailed in A330 Flight Crew Operating Manual REV 004
-            13: '1+F',
-            16: '1*',
-            20: '2',
-            26: '2*',
-            30: '3',
-            33: '3+S',
-            40: '4',
-            50: '5',
-            90: 'Full',
-        })
+        #z = lambda i: {x: str(x) for x in np.ma.unique(i)}
+        #slat = M('Slat', np.ma.array(s), values_mapping=z(s))
+        #flap = M('Flap', np.ma.array(f), values_mapping=z(f))
+        #ails = M('Flaperon', np.ma.array(a), values_mapping=z(a))        
+        #lever = M('Flap Lever', np.ma.array(l), values_mapping={0: 'Lever 0', 1: 'Lever 1', 2: 'Lever 2', 3: 'Lever 3', 4: 'Lever Full'})
+        #relief = M('Flap Relief', np.ma.array(r), values_mapping={0: '-', 1: 'Engaged'})
+        #configuration = M('Configuration', np.ma.array(c), values_mapping={
+            #0: '0',
+            #10: '1',
+            #12: '1(T/O)', # Detailed in A330 Flight Crew Operating Manual REV 004
+            #13: '1+F',
+            #16: '1*',
+            #20: '2',
+            #26: '2*',
+            #30: '3',
+            #33: '3+S',
+            #40: '4',
+            #50: '5',
+            #90: 'Full',
+        #})
         
-        node = self.node_class()
-        node.derive(slat, flap, ails, relief, lever, *attributes)
+        #node = self.node_class()
+        #node.derive(slat, flap, *attributes)
         
-        np.testing.assert_array_equal(node.array, configuration.array)        
+        #np.testing.assert_array_equal(node.array, configuration.array)        
 
 class TestDaylight(unittest.TestCase):
     def test_can_operate(self):

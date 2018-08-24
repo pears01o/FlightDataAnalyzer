@@ -396,9 +396,20 @@ class ASEChannelsEngaged(MultistateDerivedParameterNode):
 
 class Configuration(MultistateDerivedParameterNode):
     '''
+    Parameter for aircraft that use configuration. Reflects the actual state
+    of the aircraft. See "Flap Lever" or "Flap Lever (Synthetic)" which show
+    the physical lever detents selectable by the crew.
+    
     Multi-state with the following mapping::
-
         %s
+    
+    Some values are based on footnotes in various pieces of documentation:
+    - 2(a) corresponds to CONF 1*
+    - 3(b) corresponds to CONF 2*
+    
+    Note: Does not use the Flap Lever position. This parameter reflects the
+    actual configuration state of the aircraft rather than the intended state
+    represented by the selected lever position.
     ''' % pformat(at.constants.AVAILABLE_CONF_STATES)
     values_mapping = at.constants.AVAILABLE_CONF_STATES
     align_frequency = 2
@@ -426,13 +437,7 @@ class Configuration(MultistateDerivedParameterNode):
         return True
     
     def derive(self, flap=M('Flap Including Transition'), slat=M('Slat Including Transition'), 
-               flaperon=M('Flaperon'), model=A('Model'), series=A('Series'), 
-               family=A('Family'),
-               
-               #debug
-               flap_angle=M('Flap Angle'),
-               slat_angle=M('Slat Angle'),
-               ):
+               model=A('Model'), series=A('Series'), family=A('Family'),):
         
         angles = at.get_conf_angles(model.value, series.value, family.value)
         
@@ -440,12 +445,11 @@ class Configuration(MultistateDerivedParameterNode):
         self.array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
                                  values_mapping=self.values_mapping)
         
-        for (state, (s, f, a)) in six.iteritems(angles):
+        for (state, (s, f)) in six.iteritems(angles):
             condition = (flap.array == f)
             if s is not None:
                 condition &= (slat.array == s)
-            #if a is not None:
-               # condition &= (flaperon.array == a)
+                
             self.array[condition] = state        
         
         nearest_neighbour_mask_repair(self.array, copy=False,

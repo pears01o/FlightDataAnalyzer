@@ -10814,29 +10814,27 @@ class EngN1For5Sec500To50FtMin(KeyPointValueNode):
                duration=A('HDF Duration')):
 
         hdf_duration = duration.value * self.frequency if duration else None
-        alt_slices = trim_slices(alt_aal.slices_from_to(500, 50), 5, self.frequency, hdf_duration)
-        
-        if eng_n1_min_param:
-            for alt_slice in alt_slices:
-                array = eng_n1_min_param.array[alt_slice]
-                samples = 5 * eng_n1_min_param.frequency
-                if len(array) <= samples:
-                    continue
-                
-                # For each 5 seconds window, get the sum of differences between 
-                # each value and the maximum value of the array
-                sliding_window = np.lib.stride_tricks.as_strided(
-                    array.max() - array, shape=(len(array) - samples, samples),
-                    strides=array.strides * 2)
-                max_difference = np.sum(sliding_window, axis=-1).tolist()
-                
-                # The index of the maximum value of the max_difference array will also be
-                # the index of the sliding window containing the most minimum values for this array
-                start_slice_index = index_at_value(np.array(max_difference), max(max_difference))
-                index, value = max_value(max(array) - sliding_window[start_slice_index])
-                
-                if index is not None:
-                    self.create_kpv(start_slice_index + index + alt_slice.start, value)
+
+        for alt_slice in alt_aal.slices_from_to(500, 50):
+            array = eng_n1_min_param.array[alt_slice]
+            samples = 5 * eng_n1_min_param.frequency
+            if len(array) <= samples:
+                continue
+
+            # For each 5 seconds window, get the sum of differences between 
+            # each value and the maximum value of the array
+            sliding_window = np.lib.stride_tricks.as_strided(
+                array.max() - array, shape=(len(array) - samples, samples),
+                strides=array.strides * 2)
+            max_difference = np.sum(sliding_window, axis=-1)
+
+            # The index of the maximum value of the max_difference array will also be
+            # the index of the sliding window containing the most minimum values for this array
+            start_slice_index = index_at_value(max_difference, max_difference.max())
+            index, value = max_value(array.max() - sliding_window[start_slice_index])
+
+            if index is not None:
+                self.create_kpv(start_slice_index + index + alt_slice.start, value)
 
 
 class EngN1For5Sec1000To500FtMin(KeyPointValueNode):

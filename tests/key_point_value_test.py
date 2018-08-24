@@ -12479,7 +12479,7 @@ class TestEngN1For5Sec500To50FtMin(unittest.TestCase, NodeTest):
         
     def test_derive(self):
         low_n1 = np.concatenate((np.arange(50, 20, -1), np.arange(20, 50)))
-        eng_n1_min_param = P('Eng (*) N1 Min', array=(np.concatenate((np.array([50]*200), np.concatenate((low_n1, np.array([50]*340)))))))
+        eng_n1_min_param = P('Eng (*) N1 Min', array=np.concatenate((np.ones(200) * 50, low_n1, np.ones(340) * 50)))
         
         node = self.node_class()
         node.derive(eng_n1_min_param, self.alt_aal, self.duration)
@@ -12490,32 +12490,32 @@ class TestEngN1For5Sec500To50FtMin(unittest.TestCase, NodeTest):
         
     def test_derive_exactly_5_seconds(self):
         low_n1 = np.concatenate((np.arange(50, 47, -1), np.arange(48, 50)))
-        eng_n1_min_param = P('Eng (*) N1 Min', array=(np.concatenate((np.array([50]*205), np.concatenate((low_n1, np.array([50]*390)))))))
+        eng_n1_min_param = P('Eng (*) N1 Min', array=np.concatenate((np.ones(205) * 50, low_n1, np.ones(390) * 50)))
         
         node = self.node_class()
         node.derive(eng_n1_min_param, self.alt_aal, self.duration)
         
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 205)
-        self.assertEqual(node[0].value, 50)        
+        self.assertEqual(node[0].value, 50)
         
     def test_derive_less_than_5_seconds_begging_of_slice(self):
         low_n1 = np.concatenate((np.arange(50, 46, -1), np.arange(47, 50)))
-        eng_n1_min_param = P('Eng (*) N1 Min', array=(np.concatenate((np.array([50]*98), np.concatenate((low_n1, np.array([50]*500)))))))
+        eng_n1_min_param = P('Eng (*) N1 Min', array=np.concatenate((np.ones(98) * 50, low_n1, np.ones(500) * 50)))
         
         node = self.node_class()
-        node.derive(eng_n1_min_param, self.alt_aal, self.duration)        
+        node.derive(eng_n1_min_param, self.alt_aal, self.duration)
         
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 106.5)
-        self.assertEqual(node[0].value, 50)         
+        self.assertEqual(node[0].index, 105.0)
+        self.assertEqual(node[0].value, 50)
         
     def test_derive_less_than_5_seconds(self):
         low_n1 = np.concatenate((np.arange(50, 49, -1), np.arange(49, 50)))
-        eng_n1_min_param = P('Eng (*) N1 Min', array=(np.concatenate((np.array([50]*295), np.concatenate((low_n1, np.array([50]*300)))))))
+        eng_n1_min_param = P('Eng (*) N1 Min', array=np.concatenate((np.ones(295) * 50, low_n1, np.ones(300) * 50)))
         
         node = self.node_class()
-        node.derive(eng_n1_min_param, self.alt_aal, self.duration)        
+        node.derive(eng_n1_min_param, self.alt_aal, self.duration)
         
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 292)
@@ -12523,39 +12523,34 @@ class TestEngN1For5Sec500To50FtMin(unittest.TestCase, NodeTest):
         
     def test_derive_less_than_5_seconds_end_of_slice(self):
         low_n1 = np.concatenate((np.arange(50, 46, -1), np.arange(47, 50)))
-        eng_n1_min_param = P('Eng (*) N1 Min', array=(np.concatenate((np.array([50]*546), np.concatenate((low_n1, np.array([50]*49)))))))
+        eng_n1_min_param = P('Eng (*) N1 Min', array=np.concatenate((np.ones(546) * 50, low_n1, np.ones(49) * 50)))
         
         node = self.node_class()
         node.derive(eng_n1_min_param, self.alt_aal, self.duration)
         
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 106.5)
+        self.assertEqual(node[0].index, 544)
         self.assertEqual(node[0].value, 50)
         
     def test_derive_less_than_5_seconds_close_to_end_of_slice(self):
         low_n1 = np.concatenate((np.arange(50, 46, -1), np.arange(47, 50)))
-        eng_n1_min_param = P('Eng (*) N1 Min', array=(np.concatenate((np.array([50]*540), np.concatenate((low_n1, np.array([50]*55)))))))
+        eng_n1_min_param = P('Eng (*) N1 Min', array=np.concatenate((np.ones(540) * 50, low_n1, np.ones(55) * 50)))
         
         node = self.node_class()
         node.derive(eng_n1_min_param, self.alt_aal, self.duration)
         
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 539)
-        self.assertEqual(node[0].value, 50)        
+        self.assertEqual(node[0].index, 541)
+        self.assertEqual(node[0].value, 49)
         
     def test_derive_masked_data(self):
         low_n1 = np.concatenate((np.arange(50, 20, -1), np.arange(20, 50)))
-        eng_n1_min_param = P('Eng (*) N1 Min', array=(np.concatenate((np.array([50]*200), np.concatenate((low_n1, np.array([50]*340)))))))
+        eng_n1_min_param = P('Eng (*) N1 Min', array=np.concatenate((np.ones(200) * 50, low_n1, np.ones(340) * 50)))
         eng_n1_min_param.array[100:600] = np.ma.masked
         
         node = self.node_class()
         node.derive(eng_n1_min_param, self.alt_aal, self.duration)
         
-        self.assertEqual(len(node), 0)
-        
-    def test_derive_N1_min_not_available(self):
-        node = self.node_class()
-        node.derive(None, self.alt_aal, self.duration)
         self.assertEqual(len(node), 0)
 
 

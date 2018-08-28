@@ -13289,9 +13289,9 @@ class FlapAtFirstMovementAfterEngineStart(KeyPointValueNode):
         gndspd = mask_outside_slices(gnd_spd.array,
                                      [slice(eng_start.get_first().index,
                                             liftoff.get_first().index), ])
-        # Slice any of forward movement above GROUNDSPEED_FOR_MOBILE.
+        # Slice any of forward movement above 8kts (ref AE-1899).
         # This will filter out pushback and tows. It may not filtered all tows.
-        movement = runs_of_ones(gndspd > GROUNDSPEED_FOR_MOBILE)
+        movement = runs_of_ones(gndspd > 8)
         # If there is more than one slice, this may indicate a period in which
         # the aircraft has stopped, possibly because of a tow or taxi.
         #

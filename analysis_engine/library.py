@@ -6614,11 +6614,6 @@ def including_transition(array, steps, hz=1, mode='include'):
         mid_steps.append((step_1 + step_2) / 2.0)
     mid_steps.append(steps[-1] + 10.0)
 
-    #ediff1d is slightly quicker than roc_array
-    #import timeit
-    #timeit.timeit('np.ma.abs(np.ma.ediff1d(array, to_begin=0.0))', 'import numpy as np; array = np.sin(np.ma.arange(0,100000))', number=1000)
-    #timeit.timeit('np.ma.abs(rate_of_change_array(array, hz=1, width=2))', 'import numpy as np; from analysis_engine.library import rate_of_change_array; array = np.sin(np.ma.arange(0,100000))', number=1000)
-    
     change = np.ma.ediff1d(array, to_begin=0.0)
     
     # first raise the array to the next step if it exceeds the previous step
@@ -6632,39 +6627,12 @@ def including_transition(array, steps, hz=1, mode='include'):
             # Find where the data did not change in this band...
             partial = np.ma.where(np.ma.abs(change[band.start:band.stop]) < 0.01, flap, np.ma.masked) # threshold of 0.01 to account for slight changes/flutter
             
-            #if band.stop == band.start + 1:
-                #output[band.start] = flap
-                #continue
-            
-            #if band.stop-band.start != len(partial):
-                #partial = partial[1:]
-               
-                
             if len(partial) == 1:
                 if change[band.start] > 0:
                     output[band.start] = flap
                 else:
                     output[band.stop] = flap
                 continue
-                            
-            '''
-            Mask short periods (<3s) where the rate of change was within 
-            limits (<0.01), as this is most likely caused by the low resolution
-            of signal, causing the array to 'snap' to the nearest value for 
-            'low' flap angles (0,1,2,5), e.g.:
-            ___
-               |__
-                  |____
-                       |________
-                       
-            This indicates that the flaps are still in transition, and in
-            case they are not we're checking if it passed through the flap
-            setting of interest below.
-            '''
-            
-            #for s in runs_of_ones(partial == flap):
-                #if s.stop-s.start < 3*hz:
-                    #partial[s.start:s.stop] = np.ma.masked
 
             if np.ma.count(partial):
                 # Unchanged data can be included in our output flap array directly

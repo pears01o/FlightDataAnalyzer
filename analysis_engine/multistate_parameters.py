@@ -445,7 +445,7 @@ class Configuration(MultistateDerivedParameterNode):
         self.array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
                                  values_mapping=self.values_mapping)
         
-        for (state, (s, f)) in six.iteritems(angles):
+        for (state, (s, f, a)) in six.iteritems(angles):
             condition = (flap.array == f)
             if s is not None:
                 condition &= (slat.array == s)

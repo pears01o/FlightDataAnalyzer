@@ -13283,7 +13283,7 @@ class FlapAtFirstMovementAfterEngineStart(KeyPointValueNode):
     '''
     units = ut.DEGREE
 
-    def derive(self, flap=P('Flap'), gnd_spd=P('Groundspeed Signed'),
+    def derive(self, flap=P('Flap Including Transition'), gnd_spd=P('Groundspeed Signed'),
                eng_start=KTI('First Eng Start Before Liftoff'),
                liftoff=KTI('Liftoff')):
         gndspd = mask_outside_slices(gnd_spd.array,

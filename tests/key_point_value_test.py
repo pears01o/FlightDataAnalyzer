@@ -15688,7 +15688,7 @@ class TestFlapAtFirstMovementAfterEngineStart(unittest.TestCase):
     def test_can_operate(self):
         opts = self.node_class.get_operational_combinations()
         self.assertEqual(len(opts), 1)
-        self.assertIn('Flap', opts[0])
+        self.assertIn('Flap Including Transition', opts[0])
         self.assertIn('Groundspeed Signed', opts[0])
         self.assertIn('First Eng Start Before Liftoff', opts[0])
         self.assertIn('Liftoff', opts[0])

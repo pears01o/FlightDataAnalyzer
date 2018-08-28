@@ -992,30 +992,6 @@ class TestDualInput(unittest.TestCase, NodeTest):
         expected_array[5:10] = '-'
         np.testing.assert_array_equal(node.array, expected_array)
 
-    def test_derive_A320(self):
-        pilot_array = MappedArray([1] * 20 + [0] * 10 + [2] * 20,
-                                  values_mapping=self.pilot_map)
-        capt_array = np.ma.concatenate((15 + np.arange(20), np.zeros(30)))
-        fo_array = np.ma.concatenate((np.zeros(30), 15 + np.arange(20)))
-
-        # Dual input
-        fo_array[5:10] = 15
-        capt_array[30:35] = 1.2
-        pilot = M('Pilot Flying', pilot_array, values_mapping=self.pilot_map)
-        capt = P('Sidestick Angle (Capt)', capt_array)
-        fo = P('Sidestick Angle (FO)', fo_array)
-        family = A('Family', 'A320')
-        node = self.node_class()
-        node.derive(pilot, capt, fo, family)
-
-        expected_array = MappedArray(
-            np.ma.zeros(capt_array.size),
-            values_mapping=self.node_class.values_mapping)
-
-        expected_array[5:10] = 'Dual'
-        expected_array[30:35] = 'Dual'
-        np.testing.assert_array_equal(node.array, expected_array)
-
 class TestEng_1_Fire(unittest.TestCase, NodeTest):
 
     def setUp(self):

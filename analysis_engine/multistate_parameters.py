@@ -577,11 +577,7 @@ class DualInput(MultistateDerivedParameterNode):
         array[pilot.array == 'Captain'] = stick_fo.array[pilot.array == 'Captain']
         array[pilot.array == 'First Officer'] = stick_capt.array[pilot.array == 'First Officer']
 
-        if family  and family.value in ('A318', 'A319', 'A320', 'A321'):
-            angle_threshold = 0.5
-        else:
-            angle_threshold = 2.0
-        array = np.ma.array(array > angle_threshold, mask=array.mask, dtype=int)
+        array = np.ma.array(array > 2.0, mask=array.mask, dtype=int)
 
         '''
         Here we're removing small slices first and then removing gaps, not
@@ -598,7 +594,7 @@ class DualInput(MultistateDerivedParameterNode):
         it to be 'safe' for up to 10Hz.
         '''
         slices = runs_of_ones(array)
-        slices = slices_remove_small_slices(slices, 3, self.hz)
+        slices = slices_remove_small_slices(slices, 2.9, self.hz)
         slices = slices_remove_small_gaps(slices, 15, self.hz)
 
         dual = np_ma_zeros_like(array, dtype=np.short)

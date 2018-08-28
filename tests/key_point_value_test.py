@@ -15717,7 +15717,7 @@ class TestFlapAtFirstMovementAfterEngineStart(unittest.TestCase):
                     liftoff=liftoff)
 
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 14)
+        self.assertEqual(node[0].index, 15)
         self.assertEqual(node[0].value, 15)
 
     def test_derive_tow(self):
@@ -15743,7 +15743,7 @@ class TestFlapAtFirstMovementAfterEngineStart(unittest.TestCase):
                     liftoff=liftoff)
 
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 14)
+        self.assertEqual(node[0].index, 15)
         self.assertEqual(node[0].value, 15)
 
 

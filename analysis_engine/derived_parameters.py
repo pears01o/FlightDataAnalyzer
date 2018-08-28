@@ -5691,8 +5691,8 @@ class CoordinatesStraighten(object):
         :returns: coord1 smoothed.
         :rtype: np.ma.masked_array
         """
-        coord1_s = repair_mask(coord1.array)
-        coord2_s = repair_mask(coord2.array)
+        coord1_s = repair_mask(coord1.array, coord1.frequency, repair_duration=600)
+        coord2_s = repair_mask(coord2.array, coord2.frequency, repair_duration=600)
 
         # Join the masks, so that we only consider positional data when both are valid:
         coord1_s.mask = np.ma.logical_or(np.ma.getmaskarray(coord1.array),

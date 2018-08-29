@@ -21679,12 +21679,14 @@ class TestTailwindDuringTakeoffMax(unittest.TestCase):
 class TestFuelQtyLowWarningDuration(unittest.TestCase):
     def test_can_operate(self):
         opts = FuelQtyLowWarningDuration.get_operational_combinations()
-        self.assertEqual(opts, [('Fuel Qty (*) Low',)])
+        self.assertEqual(opts, [('Fuel Qty (*) Low', 'Airborne')])
 
     def test_derive(self):
         low = FuelQtyLowWarningDuration()
-        low.derive(M(array=np.ma.array([0,0,1,1,0]),
-                     values_mapping={1: 'Warning'}))
+        warn = M(array=np.ma.array([0,0,1,1,1]),
+                 values_mapping={1: 'Warning'})
+        air = buildsection('Airborne', 1, 3)
+        low.derive(warn, air)
         self.assertEqual(low[0].index, 2)
         self.assertEqual(low[0].value, 2)
 

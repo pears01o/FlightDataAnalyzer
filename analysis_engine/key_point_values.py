@@ -13872,9 +13872,10 @@ class FuelQtyLowWarningDuration(KeyPointValueNode):
 
     units = ut.SECOND
 
-    def derive(self, warning=M('Fuel Qty (*) Low')):
+    def derive(self, warning=M('Fuel Qty (*) Low'), airborne=S('Airborne')):
 
-        self.create_kpvs_where(warning.array == 'Warning', warning.hz)
+        self.create_kpvs_where(warning.array == 'Warning', warning.hz,
+                               phase=airborne)
 
 
 class FuelJettisonDuration(KeyPointValueNode):

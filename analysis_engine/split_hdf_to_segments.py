@@ -520,7 +520,7 @@ def split_segments(hdf, aircraft_info):
 
     split_params_min, split_params_frequency \
         = _get_normalised_split_params(hdf, heading)
-    if split_params_min is not None:
+    if split_params_min is not None and not split_params_min.mask.all():
         split_params_min = repair_mask(split_params_min,
                                        frequency=split_params_frequency,
                                        repair_duration=None)

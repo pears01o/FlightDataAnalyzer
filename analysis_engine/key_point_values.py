@@ -16692,6 +16692,17 @@ class RollAtLowAltitude(KeyPointValueNode):
                 self.create_kpv(index, value)
 
 
+class RollInTurnAbove15DegreesMax(KeyPointValueNode):
+    '''
+    Maximum Roll in turn over 15 degrees roll angle.
+    '''
+
+    units = ut.DEGREE
+
+    def derive(self, roll=P('Roll')):
+        self.create_kpvs_within_slices(roll.array, runs_of_ones(np.ma.abs(roll.array)>15), max_abs_value)
+
+
 class RollLeftBelow6000FtAltitudeDensityBelow60Kts(KeyPointValueNode):
     '''
     Roll left angle below 6000ft Altitude Density and below 60kts IAS.

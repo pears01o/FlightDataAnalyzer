@@ -649,6 +649,7 @@ from analysis_engine.key_point_values import (
     RollCyclesExceeding5DegDuringInitialClimb,
     RollCyclesExceeding15DegDuringInitialClimb,
     RollCyclesNotDuringFinalApproach,
+    RollInTurnAbove15DegreesMax,
     RollLeftAbove8000FtAltitudeDensityAbove60Kts,
     RollLeftAbove6000FtAltitudeDensityBelow60Kts,
     RollLeftBelow8000FtAltitudeDensityAbove60Kts,
@@ -19676,6 +19677,25 @@ class TestRollCyclesNotDuringFinalApproach(unittest.TestCase, NodeTest):
     @unittest.skip('Test Not Implemented')
     def test_derive(self):
         self.assertTrue(False, msg='Test not implemented.')
+
+
+class TestRollInTurnAbove15DegreesMax(unittest.TestCase, NodeTest):
+    def setUp(self):
+        self.node_class = RollInTurnAbove15DegreesMax
+    
+    def test_derive(self):
+        x = np.linspace(0, -45, 200)
+        roll = P('Roll', -x*np.sin(x), frequency=0.25)
+
+        node = self.node_class()
+        node.derive(roll)
+
+        self.assertEqual(len(node), 10)
+        self.assertEqual(node[0].index, 77)
+        self.assertAlmostEqual(node[0].value, 17.258, places=3)
+        self.assertEqual(node[7].index, 174)
+        self.assertAlmostEqual(node[7].value, -39.231, places=3)
+
 
 class TestRollAtLowAltitude(unittest.TestCase, NodeTest):
 

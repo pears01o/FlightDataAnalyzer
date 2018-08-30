@@ -6907,29 +6907,29 @@ class TestAltitudeOvershootAtSuspectedLevelBust(unittest.TestCase, NodeTest):
     def test_derive_up_and_down_with_overshoot(self):
         alt_std = P(
             name='Altitude STD Smoothed',
-            array=np.ma.array(list(range(0, 10000, 50)) + list(range(10000, 9000, -50))
+            array=np.ma.array(list(range(0, 9800, 50)) + list(range(9800, 9000, -50))
                 + [9000] * 200 + list(range(9000, 0, -50))),
             frequency=0.25,
         )
         node = AltitudeOvershootAtSuspectedLevelBust()
         node.get_derived([alt_std, alt_std])
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 200)
-        self.assertEqual(node[0].value, 1000)
+        self.assertEqual(node[0].index, 196)
+        self.assertEqual(node[0].value, 800)
 
     def test_derive_up_and_down_with_undershoot(self):
         alt_std = P(
             name='Altitude STD Smoothed',
-            array=np.ma.array(list(range(0, 10000, 50)) + [10000] * 200
-                + list(range(10000, 9000, -50)) + list(range(9000, 20000, 50))
+            array=np.ma.array(list(range(0, 9800, 50)) + [9800] * 200
+                + list(range(9800, 9000, -50)) + list(range(9000, 20000, 50))
                 + list(range(20000, 0, -50))),
             frequency=0.25,
         )
         node = AltitudeOvershootAtSuspectedLevelBust()
         node.get_derived([alt_std, alt_std])
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 420)
-        self.assertEqual(node[0].value, -1000)
+        self.assertEqual(node[0].index, 412)
+        self.assertEqual(node[0].value, -800)
 
     def test_derive_with_real_go_around_data_ignores_undershoot(self):
         '''
@@ -6985,6 +6985,17 @@ class TestAltitudeOvershootAtSuspectedLevelBust(unittest.TestCase, NodeTest):
         alt_std = load(os.path.join(test_data_path, 'AltitudeOvershootAtSuspectedLevelBust_alt_std_04.nod'))
         alt_aal = load(os.path.join(test_data_path, 'AltitudeOvershootAtSuspectedLevelBust_alt_aal_04.nod'))
         node.derive(alt_std, alt_aal)
+        self.assertEqual(len(node), 0)
+
+    def test_derive_over_900ft(self):
+        alt_std = P(
+            name='Altitude STD Smoothed',
+            array=np.ma.array(list(range(0, 10000, 50)) + list(range(10000, 9000, -50))
+                + [9000] * 200 + list(range(9000, 0, -50))),
+            frequency=0.25,
+        )
+        node = AltitudeOvershootAtSuspectedLevelBust()
+        node.get_derived([alt_std, alt_std])
         self.assertEqual(len(node), 0)
 
 

@@ -5076,7 +5076,12 @@ class AltitudeOvershootAtSuspectedLevelBust(KeyPointValueNode):
                     continue
 
                 lvl_off_val = min(lvl_off_vals, key=lambda x: abs(x))
-
+                
+                if abs(lvl_off_val) > 900:
+                    # Level bust greater than 900ft is unlikely, it's probably an ATC instruction.
+                    self.info('Overshoot not detected: Value above 900ft')
+                    continue
+                
                 if val < 3000 and lvl_off_val < val:
                     # Undershoots under 3000 ft are excluded due to inconsistent Go Around behaviour.
                     self.info('Overshoot not detected: Undershoot below 3000ft')

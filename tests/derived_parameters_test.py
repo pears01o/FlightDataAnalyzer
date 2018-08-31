@@ -5699,7 +5699,7 @@ class TestSlopeAngleToLanding(unittest.TestCase):
         assert_array_almost_equal(node.array, [26.6, 45.0, 63.43, 76.0, 82.9, 86.4], decimal=1)
 
 
-class TestFlightPathAngle(unittest.TestCase):
+class TestApproachFlightPathAngle(unittest.TestCase):
     def setUp(self):
         self.node_class = ApproachFlightPathAngle
 

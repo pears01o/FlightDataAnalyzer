@@ -107,6 +107,7 @@ def _segment_type_and_slice(speed_array, speed_frequency,
     heading_stop = stop * heading_frequency
     heading_array = heading_array[heading_start:heading_stop]
 
+
     # remove small gaps between valid data, e.g. brief data spikes
     unmasked_slices = slices_remove_small_gaps(
         np.ma.clump_unmasked(speed_array), 2, speed_frequency)
@@ -125,10 +126,14 @@ def _segment_type_and_slice(speed_array, speed_frequency,
         slow_start = slow_stop = fast_for_long = None
 
     vspd_threshold_exceedance = None
+
     if vspeed:
+        vert_spd_start = start * vspeed.frequency
+        vert_spd_stop = stop * vspeed.frequency
+        vert_spd_array = vspeed.array[vert_spd_start:vert_spd_stop]
         vspd_threshold_exceedance = \
-            (np.ma.sum(vspeed.array > thresholds['vertical_speed_max']) / vspeed.frequency) > thresholds['min_duration'] or \
-            (np.ma.sum(vspeed.array < thresholds['vertical_speed_min']) / vspeed.frequency) > thresholds['min_duration']
+            (np.ma.sum(vert_spd_array > thresholds['vertical_speed_max']) / vspeed.frequency) > thresholds['min_duration'] or \
+            (np.ma.sum(vert_spd_array < thresholds['vertical_speed_min']) / vspeed.frequency) > thresholds['min_duration']
 
     # Find out if the aircraft moved
     if aircraft_info and aircraft_info['Aircraft Type'] == 'helicopter':
@@ -684,7 +689,7 @@ def _get_speed_parameter(hdf, aircraft_info):
             # Alternative if dual sources available
             parameter = blend_parameters((hdf['Nr (1)'], hdf['Nr (2)']))
             parameter = P(name='Nr', array=parameter, data_type=parameter.dtype)
-            
+
         thresholds['speed_threshold'] = settings.ROTORSPEED_THRESHOLD
         thresholds['min_duration'] = settings.ROTORSPEED_THRESHOLD_TIME
         # Very short dips in rotor speed before recording stops.

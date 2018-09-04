@@ -397,8 +397,7 @@ class TestSplitSegments(unittest.TestCase):
                           ('START_AND_STOP', slice(9952.0, 21799.0, None), 0),
                           ('START_AND_STOP', slice(21799.0, 24665.0, None), 3),
                           ('START_AND_STOP', slice(24665.0, 27898.0, None), 1),
-                          ('START_AND_STOP', slice(27898.0, 31358.0, None), 2),
-                          ('NO_MOVEMENT', slice(31358.0, 31424.0, None), 2),])
+                          ('START_AND_STOP', slice(27898.0, 31424.0, None), 2)])
 
     def test_split_segments_data_2(self):
         '''Splits on both DFC Jump and Engine parameters.'''

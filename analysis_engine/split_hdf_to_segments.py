@@ -595,6 +595,8 @@ def split_segments(hdf, aircraft_info):
                 slice_start_secs, slice_stop_secs, dfc.frequency,
                 dfc_half_period, dfc_diff, eng_split_index=eng_split_index)
             if dfc_split_index:
+                if last_slow_slice and slice_stop_secs-dfc_split_index < min_split_duration:
+                    dfc_split_index = slice_stop_secs
                 segments.append(_segment_type_and_slice(
                     speed_array, speed.frequency, heading.array,
                     heading.frequency, start, dfc_split_index, eng_arrays,

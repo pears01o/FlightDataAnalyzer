@@ -6464,6 +6464,167 @@ class APDisengagedDuringCruiseDuration(KeyPointValueNode):
         self.create_kpvs_where(ap.array != 'Engaged', ap.hz, phase=cruise)
 
 
+class AutolandCriteriaNotMetDuration(KeyPointValueNode):
+    '''
+    Criteria for a sucessful autoland:
+    - AP engaged at touchdown (at least two of three APs must be engaged)
+    - No warnings (Master Warning or caution)
+    - A decent flare:  difference between 'Pitch 7 ft to touchdown Max' and
+     'Min' < 2 degrees
+    - Touchdown at a 'normal' glideslope airports.
+    - Distance From Touchdown To Runway Start (threshold) is >=150 and <=750
+    - ILS Localiser deviation at touchdown <0.2 dots
+    - RoD (inertial) at touchdown is <=360 ft/min.
+    - Roll at touchdown <7 degrees
+    - Pitch at touchdown <9 degrees.
+    
+    The Duration from the point at which a criteria is not met to when the AP
+    is disengaged. If multiple criteria are not met then the largest duration
+    is use for the KPV.
+    '''
+
+    units = ut.SECOND
+
+    def _invalid_ap_engagement(self, ap_chan, window):
+        '''
+        Checks the number of auto pilots engaged within the last 1000 ft of the
+        approach. There must be at least two AP's engaged.
+        Returns: First index when single AP is engaged else None.
+        '''
+        first_idx = []
+        for state in ('-', 'Single'):
+            slices = clump_multistate(ap_chan.array, state, _slices=[window, ])
+            if slices:
+                first_idx.append(slices[0].start)
+        return min(first_idx) if first_idx else None
+
+    def _check_warnings(self, warning, caution, window):
+        '''
+        Return the first index of any warnings
+        '''
+        first_idx = []
+        for param, state in ((warning, 'Warning'), (caution, 'Caution')):
+            if param:
+                slices = clump_multistate(param.array, state,
+                                          _slices=[window, ])
+                if slices:
+                    first_idx.append(slices[0].start)
+        return min(first_idx) if first_idx else None
+
+    def _check_for_flare(self, ptd_max, ptd_min, node_idx):
+        '''
+        If the difference between Max and Min Pitch At Touchdown is at least 2
+        then the flare is good and return None. Otherwise the KPV index is
+        returned.
+        '''
+        flare_good = (ptd_max[node_idx].value - ptd_min[node_idx].value) <= 2
+        return None if flare_good else ptd_max[node_idx].index
+
+    @classmethod
+    def can_operate(cls, available):
+        warnings = any_of(('Master Warning', 'Master Caution'), available)
+        return warnings and all_of(
+            ('Altitude AAL',
+             'AP Channels Engaged',
+             'Pitch 7 Ft To Touchdown Max',
+             'Pitch 7 Ft To Touchdown Min',
+             'Distance From Runway Start To Touchdown',
+             'Roll',
+             'Pitch At Touchdown',
+             'Rate Of Descent At Touchdown',
+             'ILS Localizer',
+             'Gear On Ground',
+             'Approach Information',
+             'Touchdown', ),
+            available)
+
+    def derive(
+            self,
+            alt_aal=P('Altitude AAL'),
+            ap_chan=M('AP Channels Engaged'),
+            caution=M('Master Caution'),
+            warning=M('Master Warning'),
+            ptd_max=KPV('Pitch 7 Ft To Touchdown Max'),
+            ptd_min=KPV('Pitch 7 Ft To Touchdown Min'),
+            tdwn_dist=KPV('Distance From Runway Start To Touchdown'),
+            roll=P('Roll'),
+            pitch=KPV('Pitch At Touchdown'),
+            rod=KPV('Rate Of Descent At Touchdown'),
+            ils_localizer=P('ILS Localizer'),
+            gog=P('Gear On Ground'),
+            approaches=App('Approach Information'),
+            tdwns=KTI('Touchdown')):
+        if not tdwns:
+            return
+
+        for node_idx, tdwn in enumerate(tdwns):
+            if ap_chan.array[tdwn.index] == '-':
+                # Not an autoland, if all APs are disengaged.
+                continue
+            index_list = []
+
+            start = index_at_value(alt_aal.array, 1000.0,
+                                   slice(tdwn.index, 0, -1))
+            disengages = find_edges_on_state_change(
+                '-', ap_chan.array, phase=[slice(tdwn.index, None), ])
+            stop = disengages[0] if disengages else None
+
+            # Add index with AP is disengaged. A succesful autoland should
+            # return KPV with a duration of 0.0 at this index
+            index_list.append(stop)
+
+            # Window of interest
+            window = slice(start, stop)
+
+            # Check AP
+            index_list.append(self._invalid_ap_engagement(ap_chan, window))
+
+            # Check for any warnings within the last 1000 ft
+            index_list.append(self._check_warnings(warning, caution, window))
+
+            # A Decent Flare
+            index_list.append(self._check_for_flare(ptd_max, ptd_min,
+                                                    node_idx))
+
+            # ILS Localiser deviation at Touchdown < 0.2 dots
+            gog_slices = find_edges_on_state_change(
+                'Ground', gog.array, phase=[slice(start, None), ]
+            )
+            gog_index = gog_slices[0] if gog_slices else tdwn.index
+            if abs(value_at_index(ils_localizer.array, gog_index)) > 0.2:
+                index_list.append(gog_index)
+
+            # Roll < 7 degrees
+            roll_slices = slices_and((slice(start, stop), ),
+                                     slices_above(np.ma.abs(roll.array),
+                                                  7.0)[1])
+            if roll_slices:
+                index_list.append(roll_slices[0].start)
+
+            # Touchdown at a normal glideslope airports (No offset ILS)
+            no_offset_ils = approaches[node_idx].offset_ils is False
+
+            # Distance From Runway Start to Touchdown is >= 150 and <= 750
+            tdwn_dist_good = 150 <= tdwn_dist[node_idx].value <= 750
+
+            # Rate of Decent at Touchdown is <= 360 ft/min.
+            rod_good = abs(rod[node_idx].value) <= 360
+
+            # Pitch at Touchdown < 9 degrees.
+            pitch_good = pitch[node_idx].value <= 9
+
+            if not all((no_offset_ils, tdwn_dist_good, rod_good, pitch_good)):
+                index_list.append(tdwn.index)
+
+            # Remove any NoneTypes in the list
+            index_list = [x for x in index_list if x is not None]
+            if index_list:
+                self.create_kpvs_from_slice_durations(
+                    [slice(min(index_list), stop), ],
+                    alt_aal.frequency
+                )
+
+
 ##############################################################################
 
 

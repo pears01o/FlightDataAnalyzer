@@ -2151,6 +2151,7 @@ class TCASOperational(FlightPhaseNode):
 
         operating = np.ma.clump_unmasked(np.ma.masked_less(alt_aal.array, 360.0))
         invalid_slices = []
+        possible_ras = []
 
         if not operating:
             # No point in looking further if the aircraft didn't fly.
@@ -2160,7 +2161,6 @@ class TCASOperational(FlightPhaseNode):
             # Build a list of the valid sections of Combined Control data...
             good_slices = []
             # and we'll need a list of RA segments to check later...
-            possible_ras = []
             for op in operating:
                 if np.count_nonzero(tcas_cc.array[op])/float(len(tcas_cc.array[op])) > 0.1:
                     # TCAS not working properly.
@@ -2186,7 +2186,7 @@ class TCASOperational(FlightPhaseNode):
 
                 good_slices.extend(slices_and_not([op], invalid_slices))
             operating = good_slices
-                    
+
         if tcas_status:
             if tcas_status.values_mapping[1] == 'TCAS Active':
                 good = 1
@@ -2198,7 +2198,7 @@ class TCASOperational(FlightPhaseNode):
                 operating = slices_and(operating, tcas_good)
             except:
                 pass
-            
+
         if tcas_valid:
             tcas_bad = np.ma.clump_masked(np.ma.masked_not_equal(tcas_valid.array, 1))
             tcas_good = slices_not(slices_overlap_merge(tcas_bad, possible_ras), begin_at=0, end_at=len(tcas_valid.array))
@@ -2211,7 +2211,6 @@ class TCASOperational(FlightPhaseNode):
             operating = slices_and(operating, tcas_good)
 
         self.create_phases(operating)
-
 
 
 class TCASTrafficAdvisory(FlightPhaseNode):

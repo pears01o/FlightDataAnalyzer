@@ -235,6 +235,7 @@ from analysis_engine.key_point_values import (
     BrakePressureInTakeoffRollMax,
     BrakeTempAfterTouchdownDelta,
     BrakeTempDuringTaxiInMax,
+    BrakeTempBeforeTakeoffMax,
     HeightAtDistancesFromThreshold,
     HeightAtOffsetILSTurn,
     HeightAtRunwayChange,
@@ -6690,6 +6691,28 @@ class TestBrakeTempDuringTaxiInMax(unittest.TestCase,
     @unittest.skip('Test Not Implemented')
     def test_derive(self):
         self.assertTrue(False, msg='Test not implemented.')
+
+
+class TestBrakeTempBeforeTakeoffMax(unittest.TestCase, NodeTest):
+    def setUp(self):
+        self.node_class = BrakeTempBeforeTakeoffMax
+        self.operational_combinations = [('Brake (*) Temp Max', 'Taxi Out',
+                                          'Liftoff')]
+
+    def test_derive(self):
+        array = np.ma.concatenate((np.ma.arange(280, 316, 1), np.ma.arange(317, 260, -2)))
+
+        brake_temp = P('Brake (*) Temp Max', array)
+        liftoff = KTI(name='Liftoff', items=[
+            KeyTimeInstance(name='liftoff', index=30),
+        ])
+        takiout = buildsection('Taxi Out', 2, 35)
+
+        node = self.node_class()
+        node.derive(brake_temp, takiout, liftoff)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 29)
+        self.assertEqual(node[0].value, 309)
 
 
 class TestBrakeTempAfterTouchdownDelta(unittest.TestCase):

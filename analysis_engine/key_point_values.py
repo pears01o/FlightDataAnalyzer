@@ -4879,6 +4879,22 @@ class BrakeTempAfterTouchdownDelta(KeyPointValueNode):
         self.create_kpv(max_temp_idx, max_temp - min_temp)
 
 
+class BrakeTempBeforeTakeoffMax(KeyPointValueNode):
+    '''
+    Maximum Brake Temperture during taxi out to liftoff.
+    '''
+
+    units = ut.CELSIUS
+
+    def derive(self, brakes=P('Brake (*) Temp Max'), taxiout=S('Taxi Out'),
+               liftoff=KTI('Liftoff')):
+        self.create_kpvs_within_slices(
+            brakes.array,
+            [slice(taxiout.get_first().slice.start, liftoff.get_first().index),],
+            max_value
+        )
+
+
 class BrakePressureInTakeoffRollMax(KeyPointValueNode):
     '''
     Maximum brake pressure during takeoff roll.

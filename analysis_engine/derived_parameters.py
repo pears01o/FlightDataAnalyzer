@@ -2082,16 +2082,35 @@ class Brake_TempAvg(DerivedParameterNode):
         return any_of(cls.get_dependency_names(), available)
 
     def derive(self,
-               brake1=P('Brake (1) Temp'),
-               brake2=P('Brake (2) Temp'),
-               brake3=P('Brake (3) Temp'),
-               brake4=P('Brake (4) Temp'),
-               brake5=P('Brake (5) Temp'),
-               brake6=P('Brake (6) Temp'),
-               brake7=P('Brake (7) Temp'),
-               brake8=P('Brake (8) Temp')):
+               brake1=P('Brake (L) (1) Temp'),
+               brake2=P('Brake (L) (2) Temp'),
+               brake3=P('Brake (L) (3) Temp'),
+               brake4=P('Brake (L) (4) Temp'),
+               brake5=P('Brake (R) (1) Temp'),
+               brake6=P('Brake (R) (2) Temp'),
+               brake7=P('Brake (R) (3) Temp'),
+               brake8=P('Brake (R) (4) Temp'),
+               brake9=P('Brake (N) (1) Temp'),
+               brake10=P('Brake (N) (2) Temp'),
+               brake11=P('Brake (C) (1) Temp'),
+               brake12=P('Brake (C) (2) Temp'),
+               brake13=P('Brake (C) (3) Temp'),
+               brake14=P('Brake (C) (4) Temp'),
+               brake15=P('Brake (C) (5) Temp'),
+               brake16=P('Brake (C) (6) Temp'),
+               brake17=P('Brake (C) (7) Temp'),
+               brake18=P('Brake (C) (8) Temp'),
+               brake19=P('Brake (C) (9) Temp'),
+               brake20=P('Brake (C) (10) Temp'),
+               brake21=P('Brake (C) (11) Temp'),
+               brake22=P('Brake (C) (12) Temp')):
 
-        brake_params = (brake1, brake2, brake3, brake4, brake5, brake6, brake7, brake8)
+        brake_params = (brake1, brake2, brake3, brake4,
+                        brake5, brake6, brake7, brake8,
+                        brake9, brake10, brake11, brake12,
+                        brake13, brake14, brake15, brake16,
+                        brake17, brake18, brake19, brake20,
+                        brake21, brake22)
         brakes = vstack_params(*brake_params)
         self.array = np.ma.average(brakes, axis=0)
         self.offset = offset_select('mean', brake_params)
@@ -2114,16 +2133,35 @@ class Brake_TempMax(DerivedParameterNode):
         return any_of(cls.get_dependency_names(), available)
 
     def derive(self,
-               brake1=P('Brake (1) Temp'),
-               brake2=P('Brake (2) Temp'),
-               brake3=P('Brake (3) Temp'),
-               brake4=P('Brake (4) Temp'),
-               brake5=P('Brake (5) Temp'),
-               brake6=P('Brake (6) Temp'),
-               brake7=P('Brake (7) Temp'),
-               brake8=P('Brake (8) Temp')):
+               brake1=P('Brake (L) (1) Temp'),
+               brake2=P('Brake (L) (2) Temp'),
+               brake3=P('Brake (L) (3) Temp'),
+               brake4=P('Brake (L) (4) Temp'),
+               brake5=P('Brake (R) (1) Temp'),
+               brake6=P('Brake (R) (2) Temp'),
+               brake7=P('Brake (R) (3) Temp'),
+               brake8=P('Brake (R) (4) Temp'),
+               brake9=P('Brake (N) (1) Temp'),
+               brake10=P('Brake (N) (2) Temp'),
+               brake11=P('Brake (C) (1) Temp'),
+               brake12=P('Brake (C) (2) Temp'),
+               brake13=P('Brake (C) (3) Temp'),
+               brake14=P('Brake (C) (4) Temp'),
+               brake15=P('Brake (C) (5) Temp'),
+               brake16=P('Brake (C) (6) Temp'),
+               brake17=P('Brake (C) (7) Temp'),
+               brake18=P('Brake (C) (8) Temp'),
+               brake19=P('Brake (C) (9) Temp'),
+               brake20=P('Brake (C) (10) Temp'),
+               brake21=P('Brake (C) (11) Temp'),
+               brake22=P('Brake (C) (12) Temp')):
 
-        brake_params = (brake1, brake2, brake3, brake4, brake5, brake6, brake7, brake8)
+        brake_params = (brake1, brake2, brake3, brake4,
+                        brake5, brake6, brake7, brake8,
+                        brake9, brake10, brake11, brake12,
+                        brake13, brake14, brake15, brake16,
+                        brake17, brake18, brake19, brake20,
+                        brake21, brake22)
         brakes = vstack_params(*brake_params)
         self.array = np.ma.max(brakes, axis=0)
         self.offset = offset_select('mean', brake_params)
@@ -2146,16 +2184,35 @@ class Brake_TempMin(DerivedParameterNode):
         return any_of(cls.get_dependency_names(), available)
 
     def derive(self,
-               brake1=P('Brake (1) Temp'),
-               brake2=P('Brake (2) Temp'),
-               brake3=P('Brake (3) Temp'),
-               brake4=P('Brake (4) Temp'),
-               brake5=P('Brake (5) Temp'),
-               brake6=P('Brake (6) Temp'),
-               brake7=P('Brake (7) Temp'),
-               brake8=P('Brake (8) Temp')):
+               brake1=P('Brake (L) (1) Temp'),
+               brake2=P('Brake (L) (2) Temp'),
+               brake3=P('Brake (L) (3) Temp'),
+               brake4=P('Brake (L) (4) Temp'),
+               brake5=P('Brake (R) (1) Temp'),
+               brake6=P('Brake (R) (2) Temp'),
+               brake7=P('Brake (R) (3) Temp'),
+               brake8=P('Brake (R) (4) Temp'),
+               brake9=P('Brake (N) (1) Temp'),
+               brake10=P('Brake (N) (2) Temp'),
+               brake11=P('Brake (C) (1) Temp'),
+               brake12=P('Brake (C) (2) Temp'),
+               brake13=P('Brake (C) (3) Temp'),
+               brake14=P('Brake (C) (4) Temp'),
+               brake15=P('Brake (C) (5) Temp'),
+               brake16=P('Brake (C) (6) Temp'),
+               brake17=P('Brake (C) (7) Temp'),
+               brake18=P('Brake (C) (8) Temp'),
+               brake19=P('Brake (C) (9) Temp'),
+               brake20=P('Brake (C) (10) Temp'),
+               brake21=P('Brake (C) (11) Temp'),
+               brake22=P('Brake (C) (12) Temp')):
 
-        brake_params = (brake1, brake2, brake3, brake4, brake5, brake6, brake7, brake8)
+        brake_params = (brake1, brake2, brake3, brake4,
+                        brake5, brake6, brake7, brake8,
+                        brake9, brake10, brake11, brake12,
+                        brake13, brake14, brake15, brake16,
+                        brake17, brake18, brake19, brake20,
+                        brake21, brake22)
         brakes = vstack_params(*brake_params)
         self.array = np.ma.min(brakes, axis=0)
         self.offset = offset_select('mean', brake_params)

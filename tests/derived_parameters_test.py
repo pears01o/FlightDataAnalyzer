@@ -1849,21 +1849,21 @@ class TestBrake_TempAvg(unittest.TestCase):
 
     def test_can_operate(self):
         poss_combs = self.node_class.get_operational_combinations()
-        self.assertEqual(len(poss_combs), 2**8-1)
+        self.assertEqual(len(poss_combs), 2**22-1) # 4194303 combinations
 
     def test_derive(self):
         brake_1_array =   [0, 30, 50, 80,  100, 100, 70, 70, 70, 50, 50, 10,  0,  0, 0]
-        brake_3_array =   [0,  0, 30, 60,   85, 100, 70, 70, 70, 50, 50, 30, 10, 10, 0]
+        brake_5_array =   [0,  0, 30, 60,   85, 100, 70, 70, 70, 50, 50, 30, 10, 10, 0]
         expected_array =  [0, 15, 40, 70, 92.5, 100, 70, 70, 70, 50, 50, 20,  5,  5, 0]
 
-        brake_1 = P(name='Brake (1) Temp', array=brake_1_array, frequency=1,
-                 offset=0.1)
+        brake_1 = P(name='Brake (L) (1) Temp', array=brake_1_array, frequency=1,
+                    offset=0.1)
 
-        brake_3 = P(name='Brake (3) Temp', array=brake_3_array, frequency=1,
-                         offset=0.5)
+        brake_5 = P(name='Brake (R) (1) Temp', array=brake_5_array, frequency=1,
+                    offset=0.5)
 
         node = self.node_class()
-        node.derive(brake_1, None, brake_3, None, None, None, None, None)
+        node.derive(brake_1, None, None, None, brake_5, *[None]*17)
 
         assert_array_equal(node.array, expected_array)
         self.assertEqual(node.offset, 0.3)
@@ -1876,21 +1876,21 @@ class TestBrake_TempMax(unittest.TestCase):
 
     def test_can_operate(self):
         poss_combs = self.node_class.get_operational_combinations()
-        self.assertEqual(len(poss_combs), 2**8-1)
+        self.assertEqual(len(poss_combs), 2**22-1) # 4194303 combinations
 
     def test_derive(self):
         brake_1_array =  [0, 30, 50, 80, 100, 100, 70, 70, 70, 50, 50, 10,  0,  0, 0]
-        brake_3_array =  [0,  0, 30, 60,  85, 100, 70, 70, 70, 50, 50, 30, 10, 10, 0]
+        brake_5_array =  [0,  0, 30, 60,  85, 100, 70, 70, 70, 50, 50, 30, 10, 10, 0]
         expected_array = [0, 30, 50, 80, 100, 100, 70, 70, 70, 50, 50, 30, 10, 10, 0]
 
-        brake_1 = P(name='Brake (1) Temp', array=brake_1_array, frequency=1,
+        brake_1 = P(name='Brake (L) (1) Temp', array=brake_1_array, frequency=1,
                  offset=0.1)
 
-        brake_3 = P(name='Brake (3) Temp', array=brake_3_array, frequency=1,
+        brake_5 = P(name='Brake (R) (1) Temp', array=brake_5_array, frequency=1,
                          offset=0.5)
 
         node = self.node_class()
-        node.derive(brake_1, None, brake_3, None, None, None, None, None)
+        node.derive(brake_1, None, None, None, brake_5, *[None]*17)
 
         assert_array_equal(node.array, expected_array)
         self.assertEqual(node.offset, 0.3)
@@ -1903,21 +1903,21 @@ class TestBrake_TempMin(unittest.TestCase):
 
     def test_can_operate(self):
         poss_combs = self.node_class.get_operational_combinations()
-        self.assertEqual(len(poss_combs), 2**8-1)
+        self.assertEqual(len(poss_combs), 2**22-1) # 4194303 combinations
 
     def test_derive(self):
         brake_1_array =  [0, 30, 50, 80, 100, 100, 70, 70, 70, 50, 50, 10,  0,  0, 0]
-        brake_3_array =  [0,  0, 30, 60,  85, 100, 70, 70, 70, 50, 50, 30, 10, 10, 0]
+        brake_5_array =  [0,  0, 30, 60,  85, 100, 70, 70, 70, 50, 50, 30, 10, 10, 0]
         expected_array = [0,  0, 30, 60,  85, 100, 70, 70, 70, 50, 50, 10,  0,  0, 0]
 
-        brake_1 = P(name='Brake (1) Temp', array=brake_1_array, frequency=1,
+        brake_1 = P(name='Brake (L) (1) Temp', array=brake_1_array, frequency=1,
                  offset=0.1)
 
-        brake_3 = P(name='Brake (3) Temp', array=brake_3_array, frequency=1,
+        brake_5 = P(name='Brake (R) (3) Temp', array=brake_5_array, frequency=1,
                          offset=0.5)
 
         node = self.node_class()
-        node.derive(brake_1, None, brake_3, None, None, None, None, None)
+        node.derive(brake_1, None, None, None, brake_5, *[None]*17)
 
         assert_array_equal(node.array, expected_array)
         self.assertEqual(node.offset, 0.3)

@@ -186,7 +186,6 @@ from analysis_engine.key_point_values import (
     AirspeedWithGearDownMax,
     AirspeedWithSpeedbrakeDeployedMax,
     AirspeedWithThrustReversersDeployedMin,
-    AirspeedWithThrustReversersDeployedAnyPowerMin,
     AirspeedAboveFL200Max,
     AirspeedAboveFL200Min,
     AlphaFloorDuration,
@@ -463,6 +462,7 @@ from analysis_engine.key_point_values import (
     GroundspeedWhileHoverTaxiingMax,
     GroundspeedWhileTaxiingStraightMax,
     GroundspeedWhileTaxiingTurnMax,
+    GroundspeedWithThrustReversersDeployedAnyPowerMin,
     GroundspeedWithThrustReversersDeployedMin,
     GroundspeedWithZeroAirspeedFor5SecMax,
     GroundspeedBelow100FtMax,
@@ -5690,18 +5690,18 @@ class TestAirspeedAtThrustReversersSelection(unittest.TestCase, NodeTest):
         self.assertTrue(False, msg='Test not implemented.')
 
 
-class TestAirspeedWithThrustReversersDeployedAnyPowerMin(unittest.TestCase, NodeTest):
+class TestGroundspeedWithThrustReversersDeployedAnyPowerMin(unittest.TestCase, NodeTest):
 
     def test_derive_basic(self):
-        air_spd=P('Airspeed True', array = np.ma.arange(100,0,-10))
-        tr=M('Thrust Reversers', array=np.ma.array([0]*3+[1]+[2]*4+[1,0]),
-             values_mapping = {0: 'Stowed', 1: 'In Transit', 2: 'Deployed'})
-        
-        node = AirspeedWithThrustReversersDeployedAnyPowerMin()
-        node.derive(air_spd, tr)
+        gnd_spd = P('Groundspeed True', array=np.ma.arange(100, 0, -10))
+        tr = M('Thrust Reversers', array=np.ma.array([0] * 3 + [1] + [2] * 4 + [1,0]),
+               values_mapping={0: 'Stowed', 1: 'In Transit', 2: 'Deployed'})
+
+        node = GroundspeedWithThrustReversersDeployedAnyPowerMin()
+        node.derive(gnd_spd, tr)
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0], KeyPointValue(
-            index=7, value=30.0, name='Airspeed With Thrust Reversers Deployed Any Power Min'))
+            index=7, value=30.0, name='Groundspeed With Thrust Reversers Deployed Any Power Min'))
 
 
 ########################################

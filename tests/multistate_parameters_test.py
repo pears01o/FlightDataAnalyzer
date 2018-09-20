@@ -3145,6 +3145,8 @@ class TestStableApproach(unittest.TestCase):
             ('Approach Information', 'Descent', 'Gear Down', 'Flap', 'Track Deviation From Runway', 'Vertical Speed', 'ILS Glideslope', 'ILS Localizer', 'Eng (*) EPR Avg For 10 Sec', 'Altitude AAL', 'Vapp'),
             # including Family attribute
             ('Approach Information', 'Descent', 'Gear Down', 'Flap', 'Track Deviation From Runway', 'Vertical Speed', 'ILS Glideslope', 'ILS Localizer', 'Eng (*) EPR Avg For 10 Sec', 'Altitude AAL', 'Vapp', 'Family'),
+            # exc. Track Deviation 
+            ('Approach Information', 'Descent', 'Gear Down', 'Flap', 'Airspeed Relative For 3 Sec', 'Vertical Speed', 'ILS Glideslope', 'ILS Localizer', 'Eng (*) N1 Avg For 10 Sec', 'Altitude AAL', 'Vapp'),
         ]
         for combo in combinations:
             self.assertIn(combo, opts)

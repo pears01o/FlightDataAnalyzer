@@ -13334,7 +13334,7 @@ class FlapLeverAtGearDownSelection(KeyPointValueNode):
     For Embraer, Recorded Lever positions are mapped to powers of two
     Lever 0: 1, Lever 1: 2, Lever 2: 4, Lever 3: 8, Lever 4: 16, Lever 5: 32, Lever 6 (full): 64
     '''
-    units = ut.DEGREE
+    units = None
 
     @classmethod
     def can_operate(cls,
@@ -13355,7 +13355,7 @@ class FlapLeverAtGearUpSelectionDuringGoAround(KeyPointValueNode):
     '''
     Flap lever at gear up selection during go around.
     '''
-    units = ut.DEGREE
+    units = None
 
     @classmethod
     def can_operate(cls,

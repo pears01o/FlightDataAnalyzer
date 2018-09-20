@@ -3305,8 +3305,7 @@ class StableApproach(MultistateDerivedParameterNode,
     def can_operate(cls, available):
         # Many parameters are optional dependencies
         deps = ['Approach Information', 'Descent', 'Gear Down', 'Flap',
-                'Track Deviation From Runway', 'Vertical Speed',
-                'Altitude AAL',]
+                'Vertical Speed', 'Altitude AAL',]
         return all_of(deps, available) and (
             'Eng (*) N1 Avg For 10 Sec' in available or
             'Eng (*) EPR Avg For 10 Sec' in available)

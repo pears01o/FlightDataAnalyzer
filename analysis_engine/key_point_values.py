@@ -13213,8 +13213,6 @@ class FlapLeverAtGearDownSelection(KeyPointValueNode):
         embraer = family and family.value in ('ERJ-170/175', 'ERJ-190/195')
         return embraer and ('Flap Lever' in available)
 
-    units = ut.DEGREE
-
     def derive(self,
                flap_lever=M('Flap Lever'),
                gear_dn_sel=KTI('Gear Down Selection')):
@@ -13233,8 +13231,6 @@ class FlapLeverAtGearUpSelectionDuringGoAround(KeyPointValueNode):
                     family=A('Family')):
         embraer = family and family.value in ('ERJ-170/175', 'ERJ-190/195')
         return embraer and ('Flap Lever' in available)
-
-    units = ut.DEGREE
 
     def derive(self,
                flap_lever=M('Flap Lever'),

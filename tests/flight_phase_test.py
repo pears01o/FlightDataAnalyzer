@@ -3271,7 +3271,10 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = TCASResolutionAdvisory
-        self.operational_combinations = [('TCAS Combined Control', 'TCAS Operational')]
+        self.operational_combinations = [('TCAS Combined Control', 
+                                          'TCAS Down Advisory', 
+                                          'TCAS Up Advisory', 
+                                          'TCAS Operational')]
         
         ''' Values from ARINC 735 '''
         self.values_mapping_cc = {
@@ -3284,36 +3287,40 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
             6: 'Preventive',
             7: 'Not Used'}
         
-    def test_derive_cc_only(self):
-        tcas_cc = M('TCAS Combined Control', array=np.ma.array([0,0,0,3,4,5,4,5,5,5,4,0]+500*[0]),
-                    values_mapping=self.values_mapping_cc)
-        tcas_op = buildsection('TCAS Operating', 3, 480)
-        node = self.node_class()
-        node.derive(tcas_cc, tcas_op)
-        self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
-        self.assertEqual(node.get_first().slice, slice(4, 11)) 
-
-    def test_derive_cc_only_not_cofc(self):
-        tcas_cc = M('TCAS Combined Control', 
-                    array=np.ma.array([0,0,0,4,5,4,5,4,5,5,1,1]+500*[0]),
-                    values_mapping=self.values_mapping_cc)
-        tcas_op = buildsection('TCAS Operating', 3, 480)
-        node = self.node_class()
-        node.derive(tcas_cc, tcas_op)
-        self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
-        self.assertEqual(node.get_first().slice, slice(3, 9)) 
-         
-    def test_derive_cc_only_not_cofc(self):
-        tcas_cc = M('TCAS Combined Control', 
-                    array=np.ma.array([0,0,0,4,5,4,5,5,5,1,1] + [0]*500),
-                    values_mapping=self.values_mapping_cc)
-        tcas_op = buildsection('TCAS Operating', 3, 480)
-        node = self.node_class()
-        node.derive(tcas_cc, tcas_op)
-        self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
-        self.assertEqual(node.get_first().slice, slice(3, 9)) 
-
+        self.values_mapping_da = {
+            0: "No Down Advisory",
+            1: "Descent",
+            2: "Don't Climb",
+            3: "Don't Climb > 500",
+            4: "Don't Climb > 1000",
+            5: "Don't Climb > 2000",
+            }
         
+        self.values_mapping_ua = {
+            0: "No Up Advisory",
+            1: "Climb",
+            2: "Don't Descend",
+            3: "Don't Descend > 500",
+            4: "Don't Descend > 1000",
+            5: "Don't Descend > 2000",
+            }
+            
+    def test_derive_cc_only(self):
+        tcas_cc = M('TCAS Combined Control', array=np.ma.array([0,0,0,0,4,5,4,5,5,5,4,3,2,1]+498*[0]),
+                    values_mapping=self.values_mapping_cc)
+        tcas_da = M('TCAS Down Advisory', array=np.ma.array(100*[0]+[0,0,0,0,1,2,2,3,4,5,5,0]+400*[0]),
+                    values_mapping=self.values_mapping_cc)
+        tcas_ua = M('TCAS Up Advisory', array=np.ma.array(200*[0]+[0,0,0,0,1,2,2,3,4,5,5,0]+300*[0]),
+                    values_mapping=self.values_mapping_cc)
+        tcas_op = buildsection('TCAS Operating', 3, 480)
+        node = self.node_class()
+        node.derive(tcas_cc, tcas_da, tcas_ua, tcas_op)
+        self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
+        self.assertEqual(node.get_ordered_by_index()[0].slice, slice(4, 11))
+        self.assertEqual(node.get_ordered_by_index()[1].slice, slice(104, 111))
+        self.assertEqual(node.get_ordered_by_index()[2].slice, slice(204, 211))
+        
+
 class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
 
     def setUp(self):

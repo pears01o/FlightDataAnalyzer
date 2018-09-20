@@ -2269,14 +2269,19 @@ class TCASResolutionAdvisory(FlightPhaseNode):
 
     name = 'TCAS Resolution Advisory'
 
-    def derive(self, tcas_cc=M('TCAS Combined Control'),
+    def derive(self, tcas_cc=M('TCAS Combined Control'), 
+               tcas_da=M('TCAS Down Advisory'),
+               tcas_ua=M('TCAS Up Advisory'), 
                tcas_ops=S('TCAS Operational')):
 
         for tcas_op in tcas_ops:
             # We can be sloppy about error conditions because these have been taken 
             # care of in the TCAS Operational definition.
             ra_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_cc.array.data[tcas_op.slice], 4))
-            ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
+            dn_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_da.array.data[tcas_op.slice], 1))
+            up_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_ua.array.data[tcas_op.slice], 1))
+            
+            ra_slices = shift_slices(slices_or(ra_slices, dn_slices, up_slices), tcas_op.slice.start)
 
             # Where data is corrupted, single samples are a common source of error
             # time_limit rejects single samples, but 4+ sample events are retained.

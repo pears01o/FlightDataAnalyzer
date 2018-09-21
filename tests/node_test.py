@@ -2017,7 +2017,7 @@ class TestDerivedParameterNode(unittest.TestCase):
         # where you dip below above and below the 50ft threshold, it can
         # create two slices from 50ft to touchdown. These should be logical
         # OR together.
-        array = np.ma.concatenate((np.ma.arange(0, 50, 5), [55, 45, 54], [59]*5))
+        array = np.ma.concatenate((np.arange(0, 50, 5), [55, 45, 54], np.ones(5) * 59))
         array = np.ma.concatenate((array, array[::-1]))
         alt_aal = P('Altitude AAL', array)
         tdwns = [KeyTimeInstance(index=34, name='Touchdown')]

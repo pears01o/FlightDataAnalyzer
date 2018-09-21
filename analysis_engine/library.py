@@ -4951,9 +4951,9 @@ def moving_average(array, window=9, weightings=None):
                            raise_duration_exceedance=False,
                            extrapolate=True)
     stretch = int(window/2)
-    stretched_data = np.ma.concatenate([[repaired[0]]*stretch,
+    stretched_data = np.ma.concatenate([[repaired[0]] * stretch,
                                         repaired,
-                                        [repaired[-1]]*stretch])
+                                        [repaired[-1]] * stretch])
 
     averaged = np.convolve(stretched_data.data, weightings, 'valid')
     result = np.ma.array(data=averaged,

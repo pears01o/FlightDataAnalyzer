@@ -877,24 +877,24 @@ class TestAltitudeAAL(unittest.TestCase):
         # Slope of np.ma.arange(0,5000, 50) reduced to ensure at least one
         # sample point fell in the range 0-100ft for the alt_rad logic to
         # work. DJ.
-        std_wave = np.ma.concatenate([np.ma.zeros(50),
-                                      np.ma.arange(0,5000, 50),
-                                      np.ma.zeros(50)+5000,
-                                      np.ma.arange(5000,5500, 200),
-                                      np.ma.zeros(50)+5500,
-                                      np.ma.arange(5500, 0, -500),
-                                      np.ma.zeros(50)])
+        std_wave = np.ma.concatenate([np.zeros(50),
+                                      np.arange(0, 5000, 50),
+                                      np.zeros(50) + 5000,
+                                      np.arange(5000,5500, 200),
+                                      np.zeros(50) + 5500,
+                                      np.arange(5500, 0, -500),
+                                      np.zeros(50)])
         rad_wave = np.copy(std_wave) - 8
         rad_data = np.ma.masked_greater(rad_wave, 2600)
         phase_fast = buildsection('Fast', 35, len(std_wave))
         std_wave += 1000
         rad_data[42:48] = np.ma.masked
         alt_aal = AltitudeAAL()
-        alt_aal.derive(P('Altitude Radio', np.ma.copy(rad_data)),
-                       P('Altitude STD Smoothed', np.ma.copy(std_wave)),
-                       phase_fast,
-                       P('Pitch', np_ma_ones_like(rad_data))
-                       )
+        alt_aal.derive(
+            P('Altitude Radio', np.ma.copy(rad_data)),
+            P('Altitude STD Smoothed', np.ma.copy(std_wave)),
+            phase_fast,
+            P('Pitch', np_ma_ones_like(rad_data)))
         '''
         import matplotlib.pyplot as plt
         plt.plot(std_wave, '-b')
@@ -1355,8 +1355,8 @@ class TestAltitudeVisualizationWithGroundOffset(unittest.TestCase, NodeTest):
         data = [np.ma.arange(0, 1000, step=30)]
         data.append(data[0][::-1] + 50)
         self.alt_aal_1 = P(name='Altitude AAL', array=np.ma.concatenate(data))
-        self.alt_aal_2 = P(name='Altitude AAL', array=np.ma.concatenate([np.ma.zeros(5), np.ma.arange(0, 15000, 1000), np.ones(4) * 10000, np.ma.arange(10000, -1000, -1000), np.zeros(5)]))
-        self.alt_std = P(name='Altitude STD Smoothed', array=np.ma.concatenate([np.ma.ones(5) * 1000, np.ma.arange(1000, 16000, 1000), np.ma.ones(4) * 15000, np.ma.arange(15000, 4000, -1000), np.ones(5) * 4000]))
+        self.alt_aal_2 = P(name='Altitude AAL', array=np.ma.concatenate([np.zeros(5), np.arange(0, 15000, 1000), np.ones(4) * 10000, np.arange(10000, -1000, -1000), np.zeros(5)]))
+        self.alt_std = P(name='Altitude STD Smoothed', array=np.ma.concatenate([np.ones(5) * 1000, np.arange(1000, 16000, 1000), np.ones(4) * 15000, np.arange(15000, 4000, -1000), np.ones(5) * 4000]))
         self.l_apt = A(name='FDR Landing Airport', value={'id': 10, 'elevation': 100})
         self.t_apt = A(name='FDR Takeoff Airport', value={'id': 20, 'elevation': 50})
 
@@ -4711,8 +4711,8 @@ class TestEng_FuelFlowMax(unittest.TestCase):
         ff1 = P(name='Eng (1) Fuel Flow', array=ff1_arr, frequency=1)
         ff2 = P(name='Eng (2) Fuel Flow', array=ff2_arr, frequency=1)
 
-        expected_arr = np.ma.concatenate([np.ma.arange(99, 49, -1),
-                                          np.ma.arange(50, 100)])
+        expected_arr = np.ma.concatenate([np.arange(99, 49, -1),
+                                          np.arange(50, 100)])
 
         node = Eng_FuelFlowMax()
         node.derive(ff1, ff2, None, None)
@@ -4732,8 +4732,8 @@ class TestEng_FuelFlowMin(unittest.TestCase):
         ff1 = P(name='Eng (1) Fuel Flow', array=ff1_arr, frequency=1)
         ff2 = P(name='Eng (2) Fuel Flow', array=ff2_arr, frequency=1)
 
-        expected_arr = np.ma.concatenate([np.ma.arange(50),
-                                          np.ma.arange(49, -1, -1)])
+        expected_arr = np.ma.concatenate([np.arange(50),
+                                          np.arange(49, -1, -1)])
 
         node = Eng_FuelFlowMin()
         node.derive(ff1, ff2, None, None)
@@ -5117,9 +5117,9 @@ class TestEngTPRLimitDifference(unittest.TestCase):
 
     def test_derive_basic(self):
         eng_tpr_max_array = np.ma.concatenate([
-            np.ma.arange(0, 150, 10), np.ma.arange(150, 0, -10)])
+            np.arange(0, 150, 10), np.arange(150, 0, -10)])
         eng_tpr_limit_array = np.ma.concatenate([
-            np.ma.arange(10, 110, 10), [110] * 10, np.ma.arange(110, 10, -10)])
+            np.arange(10, 110, 10), [110] * 10, np.arange(110, 10, -10)])
         eng_tpr_max = P('Eng (*) TPR Max', array=eng_tpr_max_array)
         eng_tpr_limit = P('Eng (*) TPR Limit Max', array=eng_tpr_limit_array)
         node = EngTPRLimitDifference()
@@ -7427,10 +7427,10 @@ class TestVMOLookup(unittest.TestCase, NodeTest):
         attributes = (a.value for a in attributes)
         at.get_vspeed_map.assert_called_once_with(*attributes)
         expected = np.ma.concatenate((
-            np.ma.repeat(350, 16),
-            np.ma.arange(345, 295, -5),
-            np.ma.repeat(300, 15),
-            np.ma.repeat(000, 9),
+            np.repeat(350, 16),
+            np.arange(345, 295, -5),
+            np.repeat(300, 15),
+            np.repeat(000, 9),
         ))
         # numpy 1.10 results in following
         # expected[0] = np.ma.masked
@@ -7448,9 +7448,9 @@ class TestVMOLookup(unittest.TestCase, NodeTest):
         attributes = (a.value for a in attributes)
         at.get_vspeed_map.assert_called_once_with(*attributes)
         expected = np.ma.concatenate((
-            np.ma.repeat(350, 20),
-            np.ma.repeat(300, 21),
-            np.ma.repeat(000, 9),
+            np.repeat(350, 20),
+            np.repeat(300, 21),
+            np.repeat(000, 9),
         ))
         # numpy 1.10 results in following
         # np.ma.repeat(350, 21),
@@ -7558,10 +7558,10 @@ class TestMMOLookup(unittest.TestCase, NodeTest):
         attributes = (a.value for a in attributes)
         at.get_vspeed_map.assert_called_once_with(*attributes)
         expected = np.ma.concatenate((
-            np.ma.repeat(0.850, 16),
-            np.ma.arange(0.845, 0.795, -0.005),
-            np.ma.repeat(0.800, 15),
-            np.ma.repeat(0.000, 9),
+            np.repeat(0.850, 16),
+            np.arange(0.845, 0.795, -0.005),
+            np.repeat(0.800, 15),
+            np.repeat(0.000, 9),
         ))
         # numpy 1.10 results in following
         # expected[0] = np.ma.masked
@@ -7579,9 +7579,9 @@ class TestMMOLookup(unittest.TestCase, NodeTest):
         attributes = (a.value for a in attributes)
         at.get_vspeed_map.assert_called_once_with(*attributes)
         expected = np.ma.concatenate((
-            np.ma.repeat(0.850, 20),
-            np.ma.repeat(0.800, 21),
-            np.ma.repeat(0.000, 9),
+            np.repeat(0.850, 20),
+            np.repeat(0.800, 21),
+            np.repeat(0.000, 9),
         ))
         # numpy 1.10 results in following
         # np.ma.repeat(350, 21),
@@ -8582,11 +8582,11 @@ class TestAirspeedMinusAirspeedSelectedFor3Sec(unittest.TestCase):
 class TestKineticEnergy(unittest.TestCase):
     def test_derive(self):
 
-        airspeed_array = np.ma.concatenate(([0]*20,
-                                            np.ma.arange(20,170,1.25),
-                                            [170]*1000,
+        airspeed_array = np.ma.concatenate((np.zeros(20),
+                                            np.arange(20,170,1.25),
+                                            np.ones(1000) * 170,
                                             np.arange(170,20,-0.25),
-                                            [0]*260))
+                                            np.zeros(260)))
         airspeed = P(name='Airspeed True', array=airspeed_array, frequency=1,
                        offset=0)
 
@@ -8621,11 +8621,11 @@ class TestPotentialEnergy(unittest.TestCase):
         gross_weight_smoothed_array = np.ma.arange(23000, 21000, -1)
         gross_weight_smoothed = P(name='Gross Weight Smoothed', array=gross_weight_smoothed_array)
 
-        altitude_aal_array = np.ma.concatenate(([0]*50,
-                                                np.ma.arange(0,10000,100),
-                                                [10000]*1700,
-                                                np.ma.arange(10000,0,-100),
-                                                [0]*50))
+        altitude_aal_array = np.ma.concatenate((np.zeros(50),
+                                                np.arange(0, 10000, 100),
+                                                np.ones(1700) * 10000,
+                                                np.arange(10000, 0, -100),
+                                                np.zeros(50)))
         altitude_aal = param = P(name='Altitude AAL', array=altitude_aal_array)
 
         self.assertEqual(len(gross_weight_smoothed_array), len(altitude_aal_array))
@@ -8649,6 +8649,11 @@ class TestPotentialEnergy(unittest.TestCase):
 class TestAircraftEnergy(unittest.TestCase):
     def test_derive(self):
 
+        #kinetic_energy_array = np.ma.concatenate((np.zeros(90),
+                                                  #np.arange(0, 1000, 100),
+                                                  #np.ones(800) * 1000,
+                                                  #np.arange(1000, 0, -100),
+                                                  #np.zeros(90)))
         kinetic_energy_array = np.ma.concatenate(( [0]*90,
                                                   np.ma.arange( 0, 1000, 100),
                                                   [1000]*800,
@@ -8658,11 +8663,16 @@ class TestAircraftEnergy(unittest.TestCase):
         kinetic_energy = P('Kinetic Energy',
                            array=kinetic_energy_array)
 
-        potential_energy_array = np.ma.concatenate(( [0]*50,
-                                                  np.ma.arange( 0, 10000, 50),
-                                                  [10000]*500,
-                                                  np.ma.arange(10000,0,-50),
-                                                  [0]*50 ))
+        potential_energy_array = np.ma.concatenate(([0]*50,
+                                                    np.ma.arange( 0, 10000, 50),
+                                                    [10000]*500,
+                                                    np.ma.arange(10000,0,-50),
+                                                    [0]*50 ))
+        #potential_energy_array = np.ma.concatenate((np.zeros(50),
+                                                    #np.arange(0, 10000, 50),
+                                                    #np.zeros(500) * 10000,
+                                                    #np.arange(10000, 0, -50),
+                                                    #np.zeros(50)))
 
         potential_energy = P('Potential Energy',
                              array=potential_energy_array)

@@ -3117,7 +3117,7 @@ class TestHeadingDiff(unittest.TestCase):
         self.assertEqual(heading_diff(340, 320), -20)
 
     def test_heading_diff_array(self):
-        headings = np.ma.concatenate((np.arange(345,360),np.arange(0,25)))
+        headings = np.ma.concatenate((np.arange(345, 360),np.arange(0, 25)))
         np.testing.assert_array_equal(heading_diff(headings, 250), np.ma.arange(-95, -135, -1))
         np.testing.assert_array_equal(heading_diff(headings, 50), np.ma.arange(65, 25, -1))
         np.testing.assert_array_equal(heading_diff(headings, 180),
@@ -5706,7 +5706,7 @@ class TestSlicesAnd(unittest.TestCase):
 
 class TestSlicesAbove(unittest.TestCase):
     def test_slices_above(self):
-        array = np.ma.concatenate([np.ma.arange(10), np.ma.arange(10)])
+        array = np.ma.concatenate([np.arange(10), np.arange(10)])
         array.mask = [False] * 18 + [True] * 2
         repaired_array, slices = slices_above(array, 5)
         self.assertEqual(slices, [slice(5, 10, None), slice(15, 18, None)])
@@ -5734,7 +5734,7 @@ class TestSlicesBefore(unittest.TestCase):
 
 class TestSlicesBelow(unittest.TestCase):
     def test_slices_below(self):
-        array = np.ma.concatenate([np.ma.arange(10), np.ma.arange(10)])
+        array = np.ma.concatenate([np.arange(10), np.arange(10)])
         array.mask = [True] * 2 + [False] * 18
         repaired_array, slices = slices_below(array, 5)
         self.assertEqual(slices, [slice(2, 6, None), slice(10, 16, None)])
@@ -6690,7 +6690,7 @@ class TestStepValues(unittest.TestCase):
                              4.06, 4.3, 4.57, 4.82, 5.1, 5.41, 5.85, 7.12,
                              9.92, 13.24, 15.03, 15.36, 15.36, 15.36, 15.37,
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
-        array = np.ma.concatenate((array,array[::-1]))
+        array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_start')
         self.assertEqual(list(stepped),
                          [0]*11+[1]*3+[5]*19+[15]*26+[5]*7+[1]*19+[0]*11)
@@ -6707,7 +6707,7 @@ class TestStepValues(unittest.TestCase):
                              4.06, 4.3, 4.57, 4.82, 5.1, 5.41, 5.85, 7.12,
                              9.92, 13.24, 15.03, 15.36, 15.36, 15.36, 15.37,
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
-        array = np.ma.concatenate((array,array[::-1]))
+        array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_start',
                               skip=True, rate_threshold=0.1)
         self.assertEqual(list(stepped), [0]*10+[15]*47+[0]*39)
@@ -6719,7 +6719,7 @@ class TestStepValues(unittest.TestCase):
                              4.06, 4.3, 4.57, 4.82, 5.1, 5.41, 5.85, 7.12,
                              9.92, 13.24, 15.03, 15.36, 15.36, 15.36, 15.37,
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
-        array = np.ma.concatenate((array,array[::-1]))
+        array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='midpoint')
         self.assertEqual(list(stepped),
                          [0]*11+[1]*12+[5]*13+[15]*24+[5]*13+[1]*12+[0]*11)
@@ -6731,7 +6731,7 @@ class TestStepValues(unittest.TestCase):
                              4.06, 4.3, 4.57, 4.82, 5.1, 5.41, 5.85, 7.12,
                              9.92, 13.24, 15.03, 15.36, 15.36, 15.36, 15.37,
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
-        array = np.ma.concatenate((array,array[::-1]))
+        array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='excluding_transition')
         self.assertEqual(list(stepped), [0]*11+[1]*19+[5]*7+[15]*22+[5]*7+[1]*19+[0]*11)
 
@@ -6743,7 +6743,7 @@ class TestStepValues(unittest.TestCase):
                              4.06, 4.3, 4.57, 4.82, 5.1, 5.41, 5.85, 7.12,
                              9.92, 13.24, 15.03, 15.36, 15.36, 15.36, 15.37,
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
-        array = np.ma.concatenate((array,array[::-1]))
+        array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='including_transition')
         self.assertEqual(list(stepped),[0]*11+[1]*3+[5]*19+[15]*30+[5]*19+[1]*3+[0]*11)
 
@@ -6761,7 +6761,7 @@ class TestStepValues(unittest.TestCase):
                              4.06, 4.3, 4.57, 4.82, 5.1, 5.41, 5.85, 7.12,
                              9.92, 13.24, 15.03, 15.36, 15.36, 15.36, 15.37,
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
-        array = np.ma.concatenate((array,array[::-1]))
+        array = np.ma.concatenate((array, array[::-1]))
         # incorrect step_at arguent
         self.assertRaises(ValueError, step_values, array, (0, 1, 5, 15),
                           step_at='move_end')
@@ -6773,7 +6773,7 @@ class TestStepValues(unittest.TestCase):
         array = np.ma.array(
             [0, 0, 0, 0, 4.92184, 4.92184, 4.92184, 4.92184,
              4.92184, 4.92184, 4.92184, 4.92184, 4.92184, 4.92184])
-        array = np.ma.concatenate((array,array[::-1]))
+        array = np.ma.concatenate((array, array[::-1]))
         array[:4] = np.ma.masked
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_stop')
         expected = np.ma.array([5.0]*24+[0.0]*4)
@@ -6805,8 +6805,8 @@ class TestStepValues(unittest.TestCase):
 
     def test_flap_transitions_in_masked_data_2(self):
         # Ensure flap angle is corrected when masked data hides transition
-        flap_angle = np.ma.concatenate([np.ma.arange(0, 30, 0.1),
-                                        np.ma.arange(30, 0, -0.1)])
+        flap_angle = np.ma.concatenate([np.arange(0, 30, 0.1),
+                                        np.arange(30, 0, -0.1)])
         #flap_angle = np.ma.array([0.004763]*30 + [0.0]*100 + [0.99]*200 + list(np.arange(0.99, 0.001, -0.1)) + [0.0]*100)
         flap_angle[20:40] = np.ma.masked
         flap_angle[60:80] = np.ma.masked
@@ -7797,11 +7797,11 @@ class TestSecondWindow(unittest.TestCase):
                                mask=[False] * 14 + [True] * 6))
 
     def test_three_second_window_peak(self):
-        data = np.ma.concatenate([np.ma.arange(0, 5, 0.5),
-                                  np.ma.arange(5, 0, -0.5)])
+        data = np.ma.concatenate([np.arange(0, 5, 0.5),
+                                  np.arange(5, 0, -0.5)])
         expected = np.ma.masked_array([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 3.5, 3.5, 3.5,
                                        3.5, 3.5, 3.5] + [0] * 6,
-                                      mask=14 * [False] + 6 * [True])
+                                      mask=np.concatenate((np.zeros(14), np.ones(6))))
         # Test multiple frequencies abiding to 2/frequency.
         ma_test.assert_masked_array_almost_equal(
             second_window(data, 2, 3),
@@ -7822,18 +7822,18 @@ class TestSecondWindow(unittest.TestCase):
 
     def test_three_second_window_basic_trough(self):
         ma_test.assert_masked_array_almost_equal(
-            second_window(np.ma.concatenate([np.ma.arange(10, 0, -0.5),
-                                             np.ma.arange(0, 10, 0.5)]), 2, 3),
+            second_window(np.ma.concatenate([np.arange(10, 0, -0.5),
+                                             np.arange(0, 10, 0.5)]), 2, 3),
             np.ma.masked_array([10, 9.5, 9, 8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5,
                                 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1.5, 1.5, 1.5,
                                 1.5, 1.5, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5] +
-                               [0] * 6, mask=34 * [False] + 6 * [True]))
+                               [0] * 6, mask=np.concatenate((np.zeros(34), np.ones(6)))))
 
     def test_three_second_window_trough(self):
         ma_test.assert_masked_array_almost_equal(
-            second_window(np.ma.concatenate([np.ma.arange(5, 0, -0.5),
-                                             np.ma.arange(0, 10, 1)]), 2, 3),
-            np.ma.array([5, 4.5, 4, 3.5, 3, 2.5, 2, 2, 2, 2, 2, 2, 2, 3] + [0] * 6, mask=14 * [False] + 6 * [True]))
+            second_window(np.ma.concatenate([np.arange(5, 0, -0.5),
+                                             np.arange(0, 10, 1)]), 2, 3),
+            np.ma.array([5, 4.5, 4, 3.5, 3, 2.5, 2, 2, 2, 2, 2, 2, 2, 3] + [0] * 6, mask=np.concatenate((np.zeros(14), np.ones(6)))))
 
     def test_three_second_window_masked(self):
         masked_data = np.ma.arange(10, 0, -0.5)
@@ -7846,22 +7846,22 @@ class TestSecondWindow(unittest.TestCase):
 
     def test_five_second_window_basic_trough(self):
         ma_test.assert_masked_array_almost_equal(
-            second_window(np.ma.concatenate([np.ma.arange(10, 0, -0.5),
-                                             np.ma.arange(0, 10, 0.5)]), 2, 5),
+            second_window(np.ma.concatenate([np.arange(10, 0, -0.5),
+                                             np.arange(0, 10, 0.5)]), 2, 5),
             np.ma.masked_array([10.0, 9.5, 9.0, 8.5, 8.0, 7.5, 7.0, 6.5, 6.0,
                                 5.5, 5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.5, 2.5,
                                 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 3.0,
                                 3.5, 4.0, 4.5] + [0] * 10,
-                               mask=30 * [False] + 10 * [True]))
+                               mask=np.concatenate((np.zeros(30), np.ones(10)))))
 
     def test_five_second_window_trough(self):
         ma_test.assert_masked_array_almost_equal(
-            second_window(np.ma.concatenate([np.ma.arange(10, 0, -0.5),
-                                             np.ma.arange(0, 20, 1)]), 2, 5),
+            second_window(np.ma.concatenate([np.arange(10, 0, -0.5),
+                                             np.arange(0, 20, 1)]), 2, 5),
             np.ma.array([10.0, 9.5, 9.0, 8.5, 8.0, 7.5, 7.0, 6.5, 6.0, 5.5, 5.0,
                          4.5, 4.0, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5,
                          3.5, 3.5, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0] + [0] * 10,
-                        mask=30 * [False] + 10 * [True]))
+                        mask=np.concatenate((np.zeros(30), np.ones(10)))))
 
     @unittest.skip('Not Implemented')
     def test_three_second_window(self):

@@ -2809,22 +2809,22 @@ class TestEngHotelMode(unittest.TestCase):
         eng2_n1 = Parameter('Eng (2) N1',
                             array=np.ma.concatenate((
                                 range_array,
-                                [50] * 40,
+                                np.ones(40) * 50,
                                 range_array[::-1],)))
         eng1_n1 = Parameter('Eng (1) N1', array=np.ma.concatenate(
-            ([0] * 10,
+            (np.zeros(10),
              range_array,
-             [50] * 20,
+             np.ones(20) * 50,
              range_array[::-1],
-             [0] * 10,)))
+             np.zeros(10))))
         eng2_np = Parameter('Eng (1) N1',
                             array=np.ma.concatenate((
-                                [0] * 20,
-                                [100] * 20,
-                                [0] * 20,)))
+                                np.zeros(20),
+                                np.ones(20) * 100,
+                                np.zeros(20))))
         groundeds = buildsections('Grounded', (0, 22), (38, None))
         prop_brake_values_mapping = {1: 'On', 0: '-'}
-        prop_brake = M('Propeller Brake', array=np.ma.array([1] * 16 + [0] * 24 + [1] * 20), values_mapping=prop_brake_values_mapping)
+        prop_brake = M('Propeller Brake', array=np.ma.concatenate((np.ones(16), np.zeros(24), np.ones(20))), values_mapping=prop_brake_values_mapping)
 
         node = self.node_class()
         node.derive(eng2_np, eng1_n1, eng2_n1, groundeds, prop_brake)

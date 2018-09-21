@@ -2559,10 +2559,10 @@ class TestPilotFlying(unittest.TestCase, NodeTest):
         ]
 
     def test_derive(self):
-        stick_capt_array = np.ma.concatenate((np.ma.zeros(100),
-                                              np.ma.zeros(100) + 20))
-        stick_fo_array = np.ma.concatenate((np.ma.zeros(100) + 20,
-                                            np.ma.zeros(100)))
+        stick_capt_array = np.ma.concatenate((np.zeros(100),
+                                              np.zeros(100) + 20))
+        stick_fo_array = np.ma.concatenate((np.zeros(100) + 20,
+                                            np.zeros(100)))
         stick_capt = P('Sidestick Angle (Capt)', array=stick_capt_array)
         stick_fo = P('Sidestick Angle (FO)', array=stick_fo_array)
         node = self.node_class()
@@ -3030,24 +3030,24 @@ class TestSpeedbrakeSelected(unittest.TestCase):
             ['Stowed', 'Stowed', 'Armed/Cmd Dn', 'Deployed/Cmd Up', 'Deployed/Cmd Up', 'Stowed'])
 
     def test_derive_from_handle(self):
-        handle_array = np.ma.concatenate([np.ma.arange(0, 2, 0.1),
-                                          np.ma.arange(2, 0, -0.1)])
+        handle_array = np.ma.concatenate([np.arange(0, 2, 0.1),
+                                          np.arange(2, 0, -0.1)])
         spd_sel = SpeedbrakeSelected()
         array = spd_sel.derive_from_handle(handle_array)
         self.assertEqual(list(array), # MappedArray .tolist() does not output states.
                          ['Stowed']*10+['Deployed/Cmd Up']*20+['Stowed']*10)
 
-        handle_array = np.ma.concatenate([np.ma.arange(0, 2, 0.1),
-                                          np.ma.ones(10) * 13,
-                                          np.ma.arange(0.99, 0, -0.1)])
+        handle_array = np.ma.concatenate([np.arange(0, 2, 0.1),
+                                          np.ones(10) * 13,
+                                          np.arange(0.99, 0, -0.1)])
         spd_sel = SpeedbrakeSelected()
         array = spd_sel.derive_from_handle(handle_array, deployed=5, armed=1)
         self.assertEqual(list(array), # MappedArray .tolist() does not output states.
                          ['Stowed']*10+['Armed/Cmd Dn']*10+['Deployed/Cmd Up']*10+['Stowed']*10)
 
-        handle_array = np.ma.concatenate([np.ma.arange(0, 2, 0.1),
-                                          np.ma.ones(10) * 13,
-                                          np.ma.arange(0.99, 0, -0.1)])
+        handle_array = np.ma.concatenate([np.arange(0, 2, 0.1),
+                                          np.ones(10) * 13,
+                                          np.arange(0.99, 0, -0.1)])
         spd_sel = SpeedbrakeSelected()
         array = spd_sel.derive_from_handle(handle_array, deployed=5)
         self.assertEqual(list(array), # MappedArray .tolist() does not output states.
@@ -3071,10 +3071,10 @@ class TestSpeedbrakeSelected(unittest.TestCase):
                                                     spoiler_gnd_armed.array)
         self.assertTrue(all(x == 'Armed/Cmd Dn' for x in
                             array[spoiler_gnd_armed.array == 'Armed']))
-        self.assertEqual(np.ma.concatenate([np.ma.arange(8802, 8824),
-                                            np.ma.arange(11463, 11523),
-                                            np.ma.arange(11545, 11575),
-                                            np.ma.arange(11840, 12013)]).tolist(),
+        self.assertEqual(np.ma.concatenate([np.arange(8802, 8824),
+                                            np.arange(11463, 11523),
+                                            np.arange(11545, 11575),
+                                            np.arange(11840, 12013)]).tolist(),
                          np.ma.where(array == 'Deployed/Cmd Up')[0].tolist())
 
     def test_b737_speedbrake(self):

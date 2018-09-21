@@ -271,7 +271,7 @@ class TestClimbAccelerationStart(unittest.TestCase):
                                                     eng_type=prop))
 
     def test_derive_basic(self):
-        array = np.ma.concatenate(([110]*15, [180]*20))
+        array = np.ma.concatenate((np.ones(15) * 110, np.ones(20) * 180))
         spd_sel = Parameter('Airspeed Selected', array=array)
         init_climbs = buildsection('Initial Climb', 5, 29)
         node = self.node_class()
@@ -297,7 +297,7 @@ class TestClimbAccelerationStart(unittest.TestCase):
         self.assertEqual(len(node), 0)
 
     def test_derive_spd_masked(self):
-        array = np.ma.concatenate(([155]*15, [180]*20))
+        array = np.ma.concatenate((np.ones(15) * 155, np.ones(20) * 180))
         array[5:30] = np.ma.masked
         spd_sel = Parameter('Airspeed Selected', array=array)
         init_climbs = buildsection('Initial Climb', 5, 29)

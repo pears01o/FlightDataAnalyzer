@@ -40,7 +40,7 @@ class TestAltitudeADH(unittest.TestCase):
     def test_adh_basic(self):
         z = np.ma.arange(200)
         height = P('Altitude Radio', np.ma.concatenate([z, z[:150:-1], z[50::-1], z[:50], z[150:], z[::-1]]))
-        hdot = P('Vertical Speed', np.ma.array([60]*200+[-60]*100+[60]*100+[-60]*200))
+        hdot = P('Vertical Speed', np.concatenate((np.ones(200) * 60, np.ones(100) * -60, np.ones(100) * 60, np.ones(200) * -60)))
         adh = AltitudeADH()
         adh.derive(height, hdot)
         # We confirm that the radio height was 100ft higher than the height above the deck.
@@ -50,7 +50,7 @@ class TestAltitudeADH(unittest.TestCase):
     def test_adh_no_rig(self):
         z = np.ma.arange(200)
         height = P('Altitude Radio', np.ma.concatenate([z,z[::-1]]))
-        hdot = P('Vertical Speed', np.ma.array([60]*200+[-60]*200))
+        hdot = P('Vertical Speed', np.ma.concatenate((np.ones(200) * 60, np.ones(200) * -60)))
         adh = AltitudeADH()
         adh.derive(height, hdot)
         # We confirm that the radio height was 100ft higher than the height above the deck.
@@ -60,8 +60,8 @@ class TestAltitudeADH(unittest.TestCase):
         z = np.ma.arange(200)
         height = P('Altitude Radio', np.ma.concatenate([
             z, z[:150:-1], z[50::-1], z[:50], z[150:], z[:150:-1], z[100::-1], z[:100], z[150:], z[::-1]]))
-        hdot = P('Vertical Speed', np.ma.array(
-            [60]*200 + [-60]*100 + [60]*100 + [-60]*150 + [60]*150 + [-60]*200))
+        hdot = P('Vertical Speed', np.ma.concatenate((
+            np.ones(200) * 60, np.ones(100) * -60, np.ones(100) * 60, np.ones(150) * -60, np.ones(150) * 60, np.ones(200) * -60)))
         adh = AltitudeADH()
         adh.derive(height, hdot)
         self.assertEqual(height.array[210]-adh.array[210], 100.0)
@@ -71,7 +71,7 @@ class TestAltitudeADH(unittest.TestCase):
         z = np.ma.arange(200)
         height = P('Altitude Radio', np.ma.concatenate([z, z[:150:-1], z[50::-1], z[:50], z[150:], z[::-1]]),
                    frequency=4.0)
-        hdot = P('Vertical Speed', np.ma.array([60]*200+[-60]*100+[60]*100+[-60]*200),
+        hdot = P('Vertical Speed', np.ma.concatenate((np.ones(200) * 60, np.ones(100) * -60, np.ones(100) * 60, np.ones(200) * -60)),
                  frequency=4.0)
         adh = AltitudeADH()
         adh.derive(height, hdot)

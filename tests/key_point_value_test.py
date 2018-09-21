@@ -4213,7 +4213,7 @@ class TestAirspeedSelectedAtLiftoff(unittest.TestCase, NodeTest):
             KeyTimeInstance(name='Climb Start', index=1000),
         ])
         node = self.node_class()
-        airspeed_selected = P('Airspeed Selected', np.ma.concatenate(([138]*400, [110]*250, [140]*1350)))
+        airspeed_selected = P('Airspeed Selected', np.ma.concatenate((np.ones(400) * 138, np.ones(250) * 110, np.ones(1350) * 140)))
         node.derive(airspeed_selected, liftoffs, climbs)
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 500)
@@ -5083,7 +5083,7 @@ class TestAirspeedRelativeWithConfigurationDuringDescentMin(unittest.TestCase, N
         array = np.ma.array((0, 1, 1, 2, 2, 4, 6, 4, 4, 2, 1, 0, 0, 0, 0, 0))
         array = np.ma.concatenate((array, array[::-1]))
         conf = M(name='Configuration', array=array, values_mapping=self.mapping)
-        array = np.ma.concatenate((range(16), range(16, -1, -1)))
+        array = np.ma.concatenate((np.arange(16), np.arange(16, -1, -1)))
         air_spd = P(name='Airspeed', array=array)
         descent = buildsection('Descent To Flare', 16, 30)
         name = self.node_class.get_name()
@@ -6722,7 +6722,7 @@ class TestBrakeTempAfterTouchdownDelta(unittest.TestCase):
                          self.operational_combinations)
 
     def test_derive_basic(self):
-        array = np.ma.concatenate((np.ma.arange(200, 130, -1), np.ma.arange(130, 300, 10), np.ma.arange(300, 280, -1)))
+        array = np.ma.concatenate((np.arange(200, 130, -1), np.arange(130, 300, 10), np.arange(300, 280, -1)))
 
         brake_temp = P('Brake (*) Temp Avg', array)
         touchdown = KTI(name='Touchdown', items=[
@@ -7242,7 +7242,7 @@ class TestAltitudeAtFirstFlapChangeAfterLiftoff(unittest.TestCase, NodeTest):
             KeyPointValue(name='Flap At Liftoff', index=2, value=5.0),
         ])
         alt_aal_array = np.ma.array([0, 0, 0, 50, 100, 200, 300, 400])
-        alt_aal_array = np.ma.concatenate((alt_aal_array,alt_aal_array[::-1]))
+        alt_aal_array = np.ma.concatenate((alt_aal_array, alt_aal_array[::-1]))
         alt_aal = P('Altitude AAL', alt_aal_array)
         airborne = buildsection('Airborne', 2, 14)
 
@@ -7348,9 +7348,9 @@ class TestAltitudeAALCleanConfigurationMin(unittest.TestCase, NodeTest):
         flap = M('Flap', array, values_mapping=mapping)
 
         array = np.ma.concatenate((
-            np.ma.arange(0, 1000, 100),
-            [1000] * 5,
-            np.ma.arange(1000, 0, -100),
+            np.arange(0, 1000, 100),
+            np.ones(5) * 1000,
+            np.arange(1000, 0, -100),
         ))
         alt_rad = P('Altitude AAL', array=array)
 
@@ -7378,7 +7378,7 @@ class TestAltitudeAtLastFlapChangeBeforeTouchdown(unittest.TestCase, NodeTest):
         array = np.ma.array([10] * 8 + [15] * 7)
         mapping = {0: '0', 10: '10', 15: '15'}
         flap_lever = M(name='Flap Lever', array=array, values_mapping=mapping)
-        array = np.ma.concatenate((np.ma.arange(1000, 0, -100), [0] * 5))
+        array = np.ma.concatenate((np.arange(1000, 0, -100), np.zeros(5)))
         alt_aal = P(name='Altitude AAL', array=array)
         touchdowns = KTI('Touchdown', items=[KeyTimeInstance(10)])
         name = self.node_class.get_name()
@@ -7392,7 +7392,7 @@ class TestAltitudeAtLastFlapChangeBeforeTouchdown(unittest.TestCase, NodeTest):
         array = np.ma.array([15] * 8 + [10] * 7)
         mapping = {0: '0', 10: '10', 15: '15'}
         flap_lever = M(name='Flap Lever', array=array, values_mapping=mapping)
-        array = np.ma.concatenate((np.ma.arange(1000, 0, -100), [0] * 5))
+        array = np.ma.concatenate((np.arange(1000, 0, -100), np.zeros(5)))
         alt_aal = P(name='Altitude AAL', array=array)
         touchdowns = KTI('Touchdown', items=[KeyTimeInstance(10)])
         name = self.node_class.get_name()
@@ -7406,7 +7406,7 @@ class TestAltitudeAtLastFlapChangeBeforeTouchdown(unittest.TestCase, NodeTest):
         array = np.ma.array([10] * 6 + [15] * 3 + [10] * 6)
         mapping = {0: '0', 10: '10', 15: '15'}
         flap_lever = M(name='Flap Lever', array=array, values_mapping=mapping)
-        array = np.ma.concatenate((np.ma.arange(1000, 0, -100), [0] * 5))
+        array = np.ma.concatenate((np.arange(1000, 0, -100), np.zeros(5)))
         alt_aal = P(name='Altitude AAL', array=array)
         far = M('Flap Automatic Retraction',
                 array=np.ma.array([0]*10+[1]*5),
@@ -7423,7 +7423,7 @@ class TestAltitudeAtLastFlapChangeBeforeTouchdown(unittest.TestCase, NodeTest):
         array = np.ma.array([10] * 6 + [15] * 3 + [10] * 6)
         mapping = {0: '0', 10: '10', 15: '15'}
         flap_lever = M(name='Flap Lever', array=array, values_mapping=mapping)
-        array = np.ma.concatenate((np.ma.arange(1000, 0, -100), [0] * 5))
+        array = np.ma.concatenate((np.ma.arange(1000, 0, -100), np.zeros(5)))
         alt_aal = P(name='Altitude AAL', array=array)
         far = M('Flap Automatic Retraction',
                 array=np.ma.array([0]*9+[1]*6),
@@ -7518,14 +7518,14 @@ class TestAltitudeAtFirstFlapRetractionDuringGoAround(unittest.TestCase, NodeTes
         self.alt_aal = P(
             name='Altitude AAL',
             array=np.ma.concatenate([
-                np.ma.array([0] * 10),
-                np.ma.arange(40) * 1000,
-                np.ma.array([40000] * 10),
-                np.ma.arange(40, 0, -1) * 1000,
-                np.ma.arange(1, 3) * 1000,
-                np.ma.array([3000] * 10),
-                np.ma.arange(3, -1, -1) * 1000,
-                np.ma.array([0] * 10),
+                np.array([0] * 10),
+                np.arange(40) * 1000,
+                np.array([40000] * 10),
+                np.arange(40, 0, -1) * 1000,
+                np.arange(1, 3) * 1000,
+                np.array([3000] * 10),
+                np.arange(3, -1, -1) * 1000,
+                np.array([0] * 10),
             ]),
         )
         self.go_arounds = buildsection('Go Around And Climbout', 97, 112)
@@ -7558,8 +7558,8 @@ class TestAltitudeAtFirstFlapRetraction(unittest.TestCase, NodeTest):
         self.alt_aal = P(
             name='Altitude AAL',
             array=np.ma.concatenate([
-                np.ma.array([0] * 10),
-                np.ma.arange(40) * 1000,
+                np.array([0] * 10),
+                np.arange(40) * 1000,
             ]),
         )
 
@@ -7591,8 +7591,8 @@ class TestAltitudeAtLastFlapRetraction(unittest.TestCase, NodeTest):
         self.alt_aal = P(
             name='Altitude AAL',
             array=np.ma.concatenate([
-                np.ma.array([0] * 10),
-                np.ma.arange(40) * 1000,
+                np.array([0] * 10),
+                np.arange(40) * 1000,
             ]),
         )
 
@@ -7626,8 +7626,8 @@ class TestAltitudeAtClimbThrustDerateDeselectedDuringClimbBelow33000Ft(unittest.
 
     def test_derive_basic(self):
         alt_aal_array = np.ma.concatenate(
-            [np.ma.arange(0, 40000, 4000), [40000] * 10,
-             np.ma.arange(40000, 0, -4000)])
+            [np.arange(0, 40000, 4000), np.ones(10) * 40000,
+             np.arange(40000, 0, -4000)])
         alt_aal = P('Altitude AAL', array=alt_aal_array)
         climb_thrust_derate = KTI('Climb Thrust Derate Deselected', items=[
             KeyTimeInstance(5, 'Climb Thrust Derate Deselected'),
@@ -7900,7 +7900,7 @@ class TestAltitudeAtFirstAPEngagedAfterLiftoff(unittest.TestCase, NodeTest):
 
         ap = M('AP Engaged', np.ma.array([0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), values_mapping={1:'Engaged'})
         alt_aal_array = np.ma.array([0, 0, 0, 50, 100, 200, 300, 400])
-        alt_aal_array = np.ma.concatenate((alt_aal_array,alt_aal_array[::-1]))
+        alt_aal_array = np.ma.concatenate((alt_aal_array, alt_aal_array[::-1]))
         alt_aal = P('Altitude AAL', alt_aal_array)
         airs = buildsection('Airborne', 2, 14)
 
@@ -9544,8 +9544,8 @@ class TestMachDuringCruiseAvg(unittest.TestCase, NodeTest):
         self.operational_combinations = [('Mach', 'Cruise')]
 
     def test_derive_basic(self):
-        mach_array = np.ma.concatenate([np.ma.arange(0, 1, 0.1),
-                                        np.ma.arange(1, 0, -0.1)])
+        mach_array = np.ma.concatenate([np.arange(0, 1, 0.1),
+                                        np.arange(1, 0, -0.1)])
         mach = P('Mach', array=mach_array)
         cruise = buildsection('Cruise', 5, 10)
         node = self.node_class()
@@ -9939,9 +9939,9 @@ class TestAltitudeAtLastAPDisengagedDuringApproach(unittest.TestCase):
         self.assertEqual(ops, [('Altitude AAL', 'AP Disengaged Selection', 'Approach Information')])
 
     def test_derive_basic(self):
-        alt_array = np.ma.concatenate([np.ma.arange(10, 0, -1),
-                                       np.ma.arange(10),
-                                       np.ma.arange(10, 0, -1)])
+        alt_array = np.ma.concatenate([np.arange(10, 0, -1),
+                                       np.arange(10),
+                                       np.arange(10, 0, -1)])
         alt_aal = P('Altitude AAL', array=alt_array)
         ap_dis = KTI('AP Disengaged Selection',
                      items=[KeyTimeInstance(name='AP Disengaged', index=3),
@@ -11599,7 +11599,7 @@ class TestEngEPRExceedEPRRedlineDuration(unittest.TestCase):
 
     def setUp(self):
         self.node_class = EngEPRExceedEPRRedlineDuration
-        array = np.ma.array([0]*5 + list(range(10)) + [10]*10)
+        array = np.ma.concatenate((np.zeros(5), np.arange(10), np.ones(10) * 10))
         self.array = np.ma.concatenate((array, array[::-1]))
 
     def test_derive(self):
@@ -12116,7 +12116,7 @@ class TestEngGasTempExceededEngGasTempRedlineDuration(unittest.TestCase):
 
     def setUp(self):
         self.node_class = EngGasTempExceededEngGasTempRedlineDuration
-        array = np.ma.array([0]*5 + list(range(10)) + [10]*10)
+        array = np.ma.concatenate((np.zeros(5), np.arange(10), np.ones(10) * 10))
         self.array = np.ma.concatenate((array, array[::-1]))
 
     def test_derive(self):
@@ -12705,7 +12705,7 @@ class TestEngN1ExceededN1RedlineDuration(unittest.TestCase):
 
     def setUp(self):
         self.node_class = EngN1ExceededN1RedlineDuration
-        array = np.ma.array([0]*5 + list(range(10)) + [10]*10)
+        array = np.ma.concatenate((np.zeros(5), np.arange(10), np.ones(10) * 10))
         self.array = np.ma.concatenate((array, array[::-1]))
 
     def test_derive(self):
@@ -12835,7 +12835,7 @@ class TestEngN2ExceededN2RedlineDuration(unittest.TestCase):
 
     def setUp(self):
         self.node_class = EngN2ExceededN2RedlineDuration
-        array = np.ma.array([0]*5 + list(range(10)) + [10]*10)
+        array = np.ma.concatenate((np.zeros(5), np.arange(10), np.ones(10) * 10))
         self.array = np.ma.concatenate((array, array[::-1]))
 
     def test_derive(self):
@@ -12945,7 +12945,7 @@ class TestEngN3ExceededN3RedlineDuration(unittest.TestCase):
 
     def setUp(self):
         self.node_class = EngN3ExceededN3RedlineDuration
-        array = np.ma.array([0]*5 + list(range(10)) + [10]*10)
+        array = np.ma.concatenate((np.zeros(5), np.arange(10), np.ones(10) * 10))
         self.array = np.ma.concatenate((array, array[::-1]))
 
     def test_derive(self):
@@ -18777,11 +18777,11 @@ class TestRateOfClimbBelow10000FtMax(unittest.TestCase):
         self.assertEqual(opts, [('Vertical Speed', 'Altitude STD Smoothed', 'Airborne')])
 
     def test_derive(self):
-        array = np.ma.concatenate((np.ma.arange(0, 5000, 250), np.ma.arange(5000, 10000, 1000), [10500, 9500, 9900], [11000]*5))
+        array = np.ma.concatenate((np.arange(0, 5000, 250), np.arange(5000, 10000, 1000), [10500, 9500, 9900], np.ones(5) * 11000))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude STD Smoothed', array)
-        roc_array = np.ma.concatenate(([250]*19, [437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275, 0, 0, 0]))
-        roc_array = np.ma.concatenate((roc_array, 1-roc_array[::-1]))
+        roc_array = np.ma.concatenate((np.ones(19) * 250, [437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275, 0, 0, 0]))
+        roc_array = np.ma.concatenate((roc_array, 1 - roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array)
         airs = buildsection('Airborne', 1, 200)
         node = RateOfClimbBelow10000FtMax()
@@ -18793,10 +18793,10 @@ class TestRateOfClimbBelow10000FtMax(unittest.TestCase):
         self.assertEqual(node, expected)
 
     def test_airborne_restriction(self):
-        array = np.ma.concatenate((np.ma.arange(0, 5000, 250), np.ma.arange(5000, 10000, 1000), [10500, 9500, 9900], [11000]*5))
+        array = np.ma.concatenate((np.arange(0, 5000, 250), np.arange(5000, 10000, 1000), [10500, 9500, 9900], np.ones(5) * 11000))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude STD Smoothed', array)
-        roc_array = np.ma.concatenate(([250]*19, [437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(19) * 250, [437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, 1-roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array)
         airs = buildsection('Airborne', 1, 2)
@@ -18833,9 +18833,9 @@ class TestRateOfClimbAtHeightBeforeLevelOff(unittest.TestCase):
                            'Altitude Before Level Flight When Climbing')])
 
     def test_derive(self):
-        roc_array = np.ma.concatenate(([250]*19, [437, 625, 812, 1000, 1125,
-                                                  625, 475, 500, 125, 375,
-                                                  275, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(19) * 250, [437, 625, 812, 1000, 1125,
+                                                           625, 475, 500, 125, 375,
+                                                           275, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, 1-roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array)
         heights = AltitudeBeforeLevelFlightWhenClimbing(
@@ -18892,11 +18892,11 @@ class TestRateOfDescentAbove3000FtMax(unittest.TestCase):
         self.assertEqual(opts, [('Vertical Speed', 'Altitude AAL For Flight Phases', 'Descent')])
 
     def test_derive(self):
-        array = np.ma.concatenate((np.ma.arange(0, 3500, 350), [3500]*10))
+        array = np.ma.concatenate((np.arange(0, 3500, 350), np.ones(10) * 3500))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array)
-        roc_array = np.ma.concatenate(([437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375], [0]*10))
-        roc_array = np.ma.concatenate((1-roc_array, roc_array[::-1]))
+        roc_array = np.ma.concatenate(([437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375], np.zeros(10)))
+        roc_array = np.ma.concatenate((1 - roc_array, roc_array[::-1]))
         vert_spd = P('Vertical Speed', -roc_array)
         airs = buildsection('Descent', 30, 39)
         node = RateOfDescentAbove3000FtMax()
@@ -18915,11 +18915,11 @@ class TestRateOfDescentBelow10000FtMax(unittest.TestCase):
         self.assertEqual(opts, [('Vertical Speed', 'Altitude STD Smoothed', 'Descent')])
 
     def test_derive(self):
-        array = np.ma.concatenate((np.ma.arange(0, 5000, 250), np.ma.arange(5000, 10000, 1000), [10500, 9500, 9900], [11000]*5))
+        array = np.ma.concatenate((np.arange(0, 5000, 250), np.arange(5000, 10000, 1000), [10500, 9500, 9900], np.ones(5) * 11000))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude STD Smoothed', array)
-        roc_array = np.ma.concatenate(([250]*19, [437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275, 0, 0, 0]))
-        roc_array = np.ma.concatenate((roc_array, 1-roc_array[::-1]))
+        roc_array = np.ma.concatenate((np.ones(19) * 250, [437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275, 0, 0, 0]))
+        roc_array = np.ma.concatenate((roc_array, 1 - roc_array[::-1]))
         vert_spd = P('Vertical Speed', -roc_array)
         airs = buildsection('Descent', 1, 200)
         node = RateOfDescentBelow10000FtMax()
@@ -18931,11 +18931,11 @@ class TestRateOfDescentBelow10000FtMax(unittest.TestCase):
         self.assertEqual(node, expected)
 
     def test_airborne_restriction(self):
-        array = np.ma.concatenate((np.ma.arange(0, 5000, 250), np.ma.arange(5000, 10000, 1000), [10500, 9500, 9900], [11000]*5))
+        array = np.ma.concatenate((np.arange(0, 5000, 250), np.arange(5000, 10000, 1000), [10500, 9500, 9900], np.ones(5) * 11000))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude STD Smoothed', array)
-        roc_array = np.ma.concatenate(([250]*19, [437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275, 0, 0, 0]))
-        roc_array = np.ma.concatenate((roc_array, 1-roc_array[::-1]))
+        roc_array = np.ma.concatenate((np.ones(19) * 250, [437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275, 0, 0, 0]))
+        roc_array = np.ma.concatenate((roc_array, 1 - roc_array[::-1]))
         vert_spd = P('Vertical Speed', -roc_array)
         airs = buildsection('Descent', 1, 2)
         node = RateOfDescentBelow10000FtMax()
@@ -18976,10 +18976,10 @@ class TestRateOfDescent3000To2000FtMax(unittest.TestCase):
         self.assertEqual(opts, [('Vertical Speed', 'Altitude AAL For Flight Phases')])
 
     def test_derive(self):
-        array = np.ma.concatenate((np.ma.arange(0, 1500, 100), np.ma.arange(1500, 3000, 200), [3050, 2910, 2990], [3150]*5))
+        array = np.ma.concatenate((np.arange(0, 1500, 100), np.arange(1500, 3000, 200), [3050, 2910, 2990], np.ones(5) * 3150))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array)
-        roc_array = np.ma.concatenate(([100]*14, [125, 150, 175, 200, 200, 200, 200, 187, 87, 72, 62, 25, 75, 40, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(14) * 100, [125, 150, 175, 200, 200, 200, 200, 187, 87, 72, 62, 25, 75, 40, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array)
 
@@ -19001,10 +19001,10 @@ class TestRateOfDescent2000To1000FtMax(unittest.TestCase):
         self.assertEqual(opts, [('Vertical Speed', 'Altitude AAL For Flight Phases')])
 
     def test_derive(self):
-        array = np.ma.concatenate((np.ma.arange(0, 500, 25), np.ma.arange(500, 2000, 100), [2050, 1850, 1990], [2150]*5))
+        array = np.ma.concatenate((np.arange(0, 500, 25), np.arange(500, 2000, 100), [2050, 1850, 1990], np.ones(5) * 2150))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array)
-        roc_array = np.ma.concatenate(([25]*19, [43, 62, 81, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 112, 37, 47, 62, 25, 75, 40, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(19) * 25, [43, 62, 81, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 112, 37, 47, 62, 25, 75, 40, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array)
 
@@ -19032,10 +19032,10 @@ class TestRateOfDescent1000To500FtMax(unittest.TestCase):
 
     @unittest.SkipTest
     def test_derive(self):
-        array = np.ma.concatenate((np.ma.arange(0, 500, 25), np.ma.arange(500, 1000, 100), [1050, 950, 990], [1090]*5))
+        array = np.ma.concatenate((np.arange(0, 500, 25), np.arange(500, 1000, 100), [1050, 950, 990], np.ones(5) * 1090))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array)
-        roc_array = np.ma.concatenate(([25]*19, [43, 62, 81, 100, 112, 62, 47, 47, 10, 35, 25, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(19) * 25, [43, 62, 81, 100, 112, 62, 47, 47, 10, 35, 25, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array)
 
@@ -19051,10 +19051,10 @@ class TestRateOfDescent1000To500FtMax(unittest.TestCase):
         self.assertEqual(node, expected)
 
     def test_derive_helicopter(self):
-        array = np.ma.concatenate((np.ma.arange(0, 500, 25), np.ma.arange(500, 1000, 100), [1050, 950, 990], [1090]*5))
+        array = np.ma.concatenate((np.arange(0, 500, 25), np.arange(500, 1000, 100), [1050, 950, 990], np.ones(5) * 1090))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array, frequency=0.25)
-        roc_array = np.ma.concatenate(([25] * 19, [43, 62, 81, 100, 112, 62, 47, 47, 10, 35, 25, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(19) * 25, [43, 62, 81, 100, 112, 62, 47, 47, 10, 35, 25, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array, frequency=0.25)
         name = 'Descent'
@@ -19071,10 +19071,10 @@ class TestRateOfDescent1000To500FtMax(unittest.TestCase):
         self.assertEqual(node, expected)
 
     def test_derive_helicopter_short(self):
-        array = np.ma.concatenate((np.ma.arange(0, 500, 25), np.ma.arange(500, 1000, 100), [1050, 950, 990], [1090]*5))
+        array = np.ma.concatenate((np.ma.arange(0, 500, 25), np.ma.arange(500, 1000, 100), [1050, 950, 990], np.ones(5) * 1090))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array)
-        roc_array = np.ma.concatenate(([25]*19, [43, 62, 81, 100, 112, 62, 47, 47, 10, 35, 25, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(19) * 25, [43, 62, 81, 100, 112, 62, 47, 47, 10, 35, 25, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array)
         name = 'Final Approach'
@@ -19102,10 +19102,10 @@ class TestRateOfDescent500To50FtMax(unittest.TestCase):
 
     @unittest.SkipTest
     def test_derive_aeroplane(self):
-        array = np.ma.concatenate((np.ma.arange(0, 50, 25), np.ma.arange(50, 500, 100), [550, 450, 540], [590]*5))
+        array = np.ma.concatenate((np.arange(0, 50, 25), np.arange(50, 500, 100), [550, 450, 540], np.ones(5) * 590))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array)
-        roc_array = np.ma.concatenate(([25]*2, [62, 81, 100, 100, 50, 47, 35, 10, 35, 12, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(2) * 25, [62, 81, 100, 100, 50, 47, 35, 10, 35, 12, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array)
 
@@ -19121,10 +19121,10 @@ class TestRateOfDescent500To50FtMax(unittest.TestCase):
         self.assertEqual(node, expected)
 
     def test_derive_helicopter(self):
-        array = np.ma.concatenate((np.ma.arange(0, 50, 25), np.ma.arange(50, 500, 100), [550, 450, 540], [590]*5))
+        array = np.ma.concatenate((np.arange(0, 50, 25), np.arange(50, 500, 100), [550, 450, 540], np.arange(5) * 590))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AGL', array, frequency=0.25)
-        roc_array = np.ma.concatenate(([25]*2, [62, 81, 100, 100, 50, 47, 35, 10, 35, 12, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(2) * 25, [62, 81, 100, 100, 50, 47, 35, 10, 35, 12, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed', roc_array, frequency=0.25)
         name = 'Descending'
@@ -19153,10 +19153,10 @@ class TestRateOfDescent50FtToTouchdownMax(unittest.TestCase):
         self.assertTrue(self.node_class.can_operate(('Vertical Speed Inertial', 'Touchdown', 'Altitude AGL',), ac_type=helicopter))
 
     def test_derive_aeroplane(self):
-        array = np.ma.concatenate((np.ma.arange(0, 50, 5), [55, 45, 54], [59]*5))
+        array = np.ma.concatenate((np.ma.arange(0, 50, 5), [55, 45, 54], np.ones(5) * 59))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array)
-        roc_array = np.ma.concatenate(([5]*8, [6, 2, 3, 3, 1, 3, 1, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(8) * 5, [6, 2, 3, 3, 1, 3, 1, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         roc_array[33] = -26
         vert_spd = P('Vertical Speed Inertial', roc_array)
@@ -19172,10 +19172,10 @@ class TestRateOfDescent50FtToTouchdownMax(unittest.TestCase):
         self.assertEqual(node, expected)
 
     def test_derive_helicopter(self):
-        array = np.ma.concatenate((np.ma.arange(0, 50, 5), [55, 45, 54], [59]*5))
+        array = np.ma.concatenate((np.ma.arange(0, 50, 5), [55, 45, 54], np.ones(5) * 59))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array)
-        roc_array = np.ma.concatenate(([5]*8, [6, 2, 3, 3, 1, 3, 1, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(8) * 5, [6, 2, 3, 3, 1, 3, 1, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         roc_array[33] = -26
         vert_spd = P('Vertical Speed Inertial', roc_array)
@@ -19204,10 +19204,10 @@ class TestRateOfDescent500To100FtMax(unittest.TestCase):
         self.assertTrue(self.node_class.can_operate(('Vertical Speed Inertial', 'Altitude AGL', 'Descent'), ac_type=helicopter))
 
     def test_derive(self):
-        array = np.ma.concatenate((np.ma.arange(0, 50, 25), np.ma.arange(50, 500, 100), [550, 450, 540], [590]*5))
+        array = np.ma.concatenate((np.arange(0, 50, 25), np.arange(50, 500, 100), [550, 450, 540], np.ones(5) * 590))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AGL', array, frequency=0.25)
-        roc_array = np.ma.concatenate(([25]*2, [62, 81, 100, 100, 50, 47, 35, 10, 35, 12, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(2) * 25, [62, 81, 100, 100, 50, 47, 35, 10, 35, 12, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed Inertial', roc_array, frequency=0.25)
         name = 'Descent'
@@ -19236,10 +19236,10 @@ class TestRateOfDescent100To20FtMax(unittest.TestCase):
         self.assertTrue(self.node_class.can_operate(('Vertical Speed Inertial', 'Altitude AGL', 'Descent'), ac_type=helicopter))
 
     def test_derive(self):
-        array = np.ma.concatenate((np.ma.arange(0, 50, 5), np.ma.arange(50, 500, 100)))
+        array = np.ma.concatenate((np.arange(0, 50, 5), np.arange(50, 500, 100)))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AGL', array, frequency=0.25)
-        roc_array = np.ma.concatenate(([25]*2, [62, 81, 100, 100, 50, 47, 35, 10, 35, 12, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(2) * 25, [62, 81, 100, 100, 50, 47, 35, 10, 35, 12, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed Inertial', roc_array, frequency=0.25)
         name = 'Descent'
@@ -19268,10 +19268,10 @@ class TestRateOfDescent20FtToTouchdownMax(unittest.TestCase):
         self.assertTrue(self.node_class.can_operate(('Vertical Speed Inertial', 'Touchdown', 'Altitude AGL',), ac_type=helicopter))
 
     def test_derive(self):
-        array = np.ma.concatenate((np.ma.arange(0, 50, 5), [55, 45, 54], [59]*5))
+        array = np.ma.concatenate((np.arange(0, 50, 5), [55, 45, 54], np.ones(5) * 59))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AAL For Flight Phases', array)
-        roc_array = np.ma.concatenate(([5]*8, [6, 2, 3, 3, 1, 3, 1, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(8) * 5, [6, 2, 3, 3, 1, 3, 1, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         roc_array[33] = -26
         vert_spd = P('Vertical Speed Inertial', roc_array)
@@ -19360,10 +19360,10 @@ class TestRateOfDescentBelow500FtMax(unittest.TestCase):
         self.assertEqual(opts, [('Vertical Speed Inertial', 'Altitude AGL For Flight Phases', 'Descending')])
 
     def test_derive(self,):
-        array = np.ma.concatenate((np.ma.arange(0, 2000, 100), np.ma.arange(5000, 10000, 1000)))
+        array = np.ma.concatenate((np.arange(0, 2000, 100), np.arange(5000, 10000, 1000)))
         array = np.ma.concatenate((array, array[::-1]))
         alt = P('Altitude AGL For Flight Phases', array, frequency=0.25)
-        roc_array = np.ma.concatenate(([437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275], [250]*14))
+        roc_array = np.ma.concatenate(([437, 625, 812, 1000, 1125, 625, 475, 500, 125, 375, 275], np.ones(14) * 250))
         roc_array = np.ma.concatenate((roc_array, -roc_array[::-1]))
         vert_spd = P('Vertical Speed Inertial', roc_array, frequency=0.25)
         name = 'Descending'
@@ -19444,9 +19444,9 @@ class TestRateOfDescentAtHeightBeforeLevelOff(unittest.TestCase):
                            'Altitude Before Level Flight When Descending')])
 
     def test_derive(self):
-        roc_array = np.ma.concatenate(([250]*19, [437, 625, 812, 1000, 1125,
-                                                  625, 475, 500, 125, 375,
-                                                  275, 0, 0, 0]))
+        roc_array = np.ma.concatenate((np.ones(19) * 250, [437, 625, 812, 1000, 1125,
+                                                           625, 475, 500, 125, 375,
+                                                           275, 0, 0, 0]))
         roc_array = np.ma.concatenate((roc_array, 1-roc_array[::-1]))
         vert_spd = P('Vertical Speed', -roc_array)
         heights = AltitudeBeforeLevelFlightWhenDescending(
@@ -21005,9 +21005,9 @@ class TestSpeedbrakeDeployedWithPowerOnDuration(unittest.TestCase, NodeTest):
             'Speedbrake Selected', values_mapping=values_mapping,
             array=np.ma.array(spd_brk_loop * 3))
         power = P('Eng (*) N1 Avg',
-                 array=np.ma.array([40] * 10 + [60] * 10 + [50] * 10))
+                 array=np.ma.concatenate((np.ones(10) * 40, np.ones(10) * 60, np.ones(10) * 50)))
         aal = P('Altitude AAL For Flight Phases',
-                 array=np.ma.concatenate((np.ma.arange(0, 75, 5), np.ma.arange(70, -5, -5))))
+                 array=np.ma.concatenate((np.arange(0, 75, 5), np.arange(70, -5, -5))))
         node = self.node_class()
         node.derive(spd_brk, power, aal)
         self.assertEqual(node, [
@@ -21532,7 +21532,7 @@ class TestTailwindDuringTakeoffMax(unittest.TestCase):
     def test_derive(self,):
         x = np.linspace(0, 10, 200)
         tailwind = P('Tailwind', x*np.sin(x)*3)
-        ias = P('Airspeed', np.ma.concatenate(([0]*125, np.ma.arange(10,160,2))))
+        ias = P('Airspeed', np.ma.concatenate((np.zeros(125), np.arange(10,160,2))))
         ias.array[:126] = np.ma.masked
         toff = buildsection('Takeoff', 50, 185)
         liftoff=KTI('Liftoff', items=[KeyTimeInstance(175, 'Liftoff')])
@@ -21547,7 +21547,7 @@ class TestTailwindDuringTakeoffMax(unittest.TestCase):
     def test_derive__masked_below_100(self,):
         x = np.linspace(0, 10, 200)
         tailwind = P('Tailwind', x*np.sin(x)*3)
-        spd_array = np.ma.concatenate(([0]*125, np.ma.arange(10,160,2)))
+        spd_array = np.ma.concatenate((np.zeros(125), np.arange(10,160,2)))
         spd_array = np.ma.masked_less_equal(spd_array, 100)
         ias = P('Airspeed', spd_array)
 

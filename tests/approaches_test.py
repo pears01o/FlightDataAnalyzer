@@ -64,9 +64,9 @@ class TestApproachInformation(unittest.TestCase):
                           P('Heading Continuous', np.ma.ones(100)*260),
                           None,
                           None,
-                          P('ILS Localizer', np.ma.concatenate((np.ma.arange(-2.5, 0, 0.05), np.ones(50)*-0.15))),
-                          P('ILS Glideslope',np.ma.zeros(100)),
-                          P('ILS Frequency', np.ma.ones(100)*110.90),
+                          P('ILS Localizer', np.ma.concatenate((np.arange(-2.5, 0, 0.05), np.ones(50) * -0.15))),
+                          P('ILS Glideslope', np.ma.zeros(100)),
+                          P('ILS Frequency', np.ma.ones(100) * 110.90),
                           A(name='AFR Landing Airport', value={'id': 2379}),
                           A(name='AFR Landing Runway', value=None) ,
                           KPV('Latitude At Touchdown', items=[KeyPointValue(index=19, value=51.145, name='Latitude At Touchdown')]),
@@ -78,7 +78,7 @@ class TestApproachInformation(unittest.TestCase):
                           None, 
                           S(items=[Section('Takeoff', slice(1,10), 1, 10)]))
         get_handler.get_nearest_airport.assert_called_with(latitude=51.145, longitude=-0.19)
-        self.assertEqual(approaches[0].loc_est, slice(41, 100, None))
+        self.assertEqual(approaches[0].loc_est, slice(41, 100))
 
     @patch('analysis_engine.approaches.api')
     def test_ils_localizer_frequency_masked(self, api):
@@ -92,12 +92,12 @@ class TestApproachInformation(unittest.TestCase):
                           None,
                           A('Aircraft Type', 'aeroplane'),
                           S(items=[Section('Approach', slice(0, 100), 0, 100)]),
-                          P('Heading Continuous', np.ma.array([260.0]*100)),
+                          P('Heading Continuous', np.ma.ones(100) * 260.0),
                           None,
                           None,
-                          P('ILS Localizer', np.ma.concatenate((np.ma.arange(-2.5, 0, 0.05), np.ones(50)*-0.15))),
-                          P('ILS Glideslope',np.ma.zeros(100)),
-                          P('ILS Frequency', np.ma.array(data=[110.90]*100, mask=[True]*100)),
+                          P('ILS Localizer', np.ma.concatenate((np.arange(-2.5, 0, 0.05), np.ones(50) * -0.15))),
+                          P('ILS Glideslope', np.ma.zeros(100)),
+                          P('ILS Frequency', np.ma.array(data=np.ones(100) * 110.90, mask=np.ones(100))),
                           A(name='AFR Landing Airport', value={'id': 2379}),
                           A(name='AFR Landing Runway', value=None) ,
                           KPV('Latitude At Touchdown', items=[KeyPointValue(index=19, value=51.145, name='Latitude At Touchdown')]),
@@ -118,12 +118,12 @@ class TestApproachInformation(unittest.TestCase):
                           None,
                           A('Aircraft Type', 'aeroplane'),
                           S(items=[Section('Approach', slice(0, 100), 0, 100)]),
-                          P('Heading Continuous', np.ma.array([260.0]*100)),
+                          P('Heading Continuous', np.ma.ones(100) * 260.0),
                           None,
                           None,
-                          P('ILS Localizer', np.ma.concatenate((np.ma.arange(-2.5, 0, 0.05), np.ma.ones(50)*-0.15))),
-                          P('ILS Glideslope',np.ma.zeros(100)),
-                          P('ILS Frequency', np.ma.ones(100)*110.95),
+                          P('ILS Localizer', np.ma.concatenate((np.arange(-2.5, 0, 0.05), np.ones(50) * -0.15))),
+                          P('ILS Glideslope', np.ma.zeros(100)),
+                          P('ILS Frequency', np.ma.ones(100) * 110.95),
                           A(name='AFR Landing Airport', value={'id': 2379}),
                           A(name='AFR Landing Runway', value=None) ,
                           KPV('Latitude At Touchdown', items=[KeyPointValue(index=19, value=51.145, name='Latitude At Touchdown')]),
@@ -140,7 +140,7 @@ class TestApproachInformation(unittest.TestCase):
         api.get_handler.return_value = get_handler
 
         approaches = ApproachInformation()
-        ils_array = np.ma.concatenate((np.ma.arange(-2.5, 0, 0.05), np.ma.ones(50)*-0.15))
+        ils_array = np.ma.concatenate((np.arange(-2.5, 0, 0.05), np.ones(50) * -0.15))
         ils_array.mask = np.ma.getmaskarray(ils_array)
         ils_array.mask[0:45] = True
         ils_array.mask[70:] = True
@@ -148,12 +148,12 @@ class TestApproachInformation(unittest.TestCase):
                           None,
                           A('Aircraft Type', 'aeroplane'),
                           S(items=[Section('Approach', slice(0, 100), 0, 100)]),
-                          P('Heading Continuous', np.ma.ones(100)*260),
+                          P('Heading Continuous', np.ma.ones(100) * 260),
                           None,
                           None,
                           P('ILS Localizer', ils_array),
                           P('ILS Glideslope', np.ma.zeros(100)),
-                          P('ILS Frequency', np.ma.ones(100)*110.90),
+                          P('ILS Frequency', np.ma.ones(100) * 110.90),
                           A(name='AFR Landing Airport', value={'id': 2379}),
                           A(name='AFR Landing Runway', value=None) ,
                           KPV('Latitude At Touchdown', items=[KeyPointValue(index=19, value=51.145, name='Latitude At Touchdown')]),
@@ -541,11 +541,11 @@ class TestApproachInformation(unittest.TestCase):
         api.get_handler.return_value = get_handler
 
         approaches = ApproachInformation()
-        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.ma.arange(50,0,-1), np.zeros(40)))),
+        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.arange(50, 0, -1), np.zeros(40)))),
                           None,
                           A('Aircraft Type', 'aeroplane'),
                           S(items=[Section('Approach', slice(30, 80), 30, 80)]),
-                          P('Heading Continuous', np.ma.concatenate((np.ma.ones(70)*260, np.arange(260,280)))),
+                          P('Heading Continuous', np.ma.concatenate((np.ones(70) * 260, np.arange(260, 280)))),
                           None,
                           None,
                           None,
@@ -569,11 +569,11 @@ class TestApproachInformation(unittest.TestCase):
         api.get_handler.return_value = get_handler
 
         approaches = ApproachInformation()
-        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.ma.arange(50,0,-1), np.zeros(40)))),
+        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.arange(50, 0, -1), np.zeros(40)))),
                           None,
                           A('Aircraft Type', 'aeroplane'),
                           S(items=[Section('Approach', slice(30, 80), 30, 80)]),
-                          P('Heading Continuous', np.ma.concatenate((np.ma.ones(70)*260, np.arange(260,240,-1)))),
+                          P('Heading Continuous', np.ma.concatenate((np.ones(70) * 260, np.arange(260, 240, -1)))),
                           None,
                           None,
                           None,
@@ -597,16 +597,16 @@ class TestCloseAirprots(unittest.TestCase):
 
         approaches = ApproachInformation()
 
-        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.ma.arange(50,0,-1), np.zeros(40)))),
+        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.arange(50, 0, -1), np.zeros(40)))),
                           None,
                           A('Aircraft Type', 'aeroplane'),
                           S(items=[Section('Approach', slice(30, 80), 30, 80)]),
-                          P('Heading Continuous', np.ma.array([45.703]*90)),
+                          P('Heading Continuous', np.ma.ones(90) * 45.703),
                           None,
                           None,
                           P('ILS Localizer', array=np.ma.ones(90)),
                           P('ILS Glideslope', array=np.ma.ones(90)),
-                          P('ILS Frequency', np.ma.array([109.9]*90)),
+                          P('ILS Frequency', np.ma.ones(90) * 109.9),
                           None,
                           None,
                           KPV('Latitude At Touchdown', items=[KeyPointValue(index=50, value=30.08465, name='Latitude At Touchdown')]),
@@ -628,11 +628,11 @@ class TestCloseAirprots(unittest.TestCase):
 
         approaches = ApproachInformation()
 
-        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.ma.arange(50,0,-1), np.zeros(40)))),
+        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.arange(50, 0, -1), np.zeros(40)))),
                           None,
                           A('Aircraft Type', 'aeroplane'),
                           S(items=[Section('Approach', slice(30, 80), 30, 80)]),
-                          P('Heading Continuous', np.ma.array([45.703]*90)),
+                          P('Heading Continuous', np.ma.ones(90) * 45.703),
                           None,
                           None,
                           P('ILS Localizer', array=np.ma.ones(90)),
@@ -659,11 +659,11 @@ class TestCloseAirprots(unittest.TestCase):
 
         approaches = ApproachInformation()
 
-        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.ma.arange(50,0,-1), np.zeros(40)))),
+        approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.arange(50, 0, -1), np.zeros(40)))),
                           None,
                           A('Aircraft Type', 'aeroplane'),
                           S(items=[Section('Approach', slice(30, 80), 30, 80)]),
-                          P('Heading Continuous', np.ma.array([45.703]*90)),
+                          P('Heading Continuous', np.ma.ones(90) * 45.703),
                           None,
                           None,
                           P('ILS Localizer', array=np.ma.ones(90)),
@@ -691,11 +691,11 @@ class TestCloseAirprots(unittest.TestCase):
         approaches = ApproachInformation()
 
         with self.assertRaises(AFRMissmatchError):
-            approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.ma.arange(50,0,-1), np.zeros(40)))),
+            approaches.derive(P('Altitude AAL For Flight Phases', np.ma.concatenate((np.arange(50,0,-1), np.zeros(40)))),
                               None,
                               A('Aircraft Type', 'aeroplane'),
                               S(items=[Section('Approach', slice(30, 80), 30, 80)]),
-                              P('Heading Continuous', np.ma.array([45.703]*90)),
+                              P('Heading Continuous', np.ma.ones(90) * 45.703),
                               None,
                               None,
                               P('ILS Localizer', array=np.ma.ones(90)),

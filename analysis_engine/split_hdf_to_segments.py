@@ -524,8 +524,8 @@ def split_segments(hdf, aircraft_info):
     slow_slices = slices_remove_small_slices(np.ma.clump_masked(slow_array), 10, speed.frequency)
     
     # Skip dropouts in HDF5 files (first identified on H175 helicopter)
-    if hdf['FDRS Frame Counter']:
-        frame_count = hdf['FDRS Frame Counter']
+    frame_count = hdf.get('FDRS Frame Counter')
+    if frame_count:
         drops = np.ma.clump_masked(np.ma.where(frame_count.array == 0.0, np.ma.masked, 1.0)) # 1.0 is any value that's not masked
         dropouts = slices_multiply(slices_remove_small_gaps(drops, hz=frame_count.frequency), 
                                    speed.frequency / frame_count.frequency)

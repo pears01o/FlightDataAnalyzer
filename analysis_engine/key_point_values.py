@@ -799,15 +799,13 @@ class AccelerationNormalAboveWeightLimitAtTouchdown(KeyPointValueNode):
     units = ut.G
 
     def derive(self,
-               tdwns=KTI('Touchdown'),
-               acc_norm = KPV('Acceleration Normal'),
+               acc_norm_tdwns = KPV('Acceleration Normal At Touchdown'),
                acc_limit = P('Acceleration Normal Limit For Landing Weight'),
-               touch_and_go=KTI('Touch And Go'),
                ):
 
-        for idx, tdwn in enumerate(tdwns+touch_and_go):
-            difference = acc_norm.array[tdwn.index] - acc_limit.array[tdwn.index]
-            self.create_kpv(tdwn.index, difference)
+        for acc_norm in acc_norm_tdwns:
+            difference = acc_norm.value - acc_limit.array[acc_norm.index]
+            self.create_kpv(acc_norm.index, difference)
 
 
 class LoadFactorThresholdAtTouchdown(KeyPointValueNode):

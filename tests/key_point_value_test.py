@@ -2292,54 +2292,46 @@ class TestAccelerationNormalAboveWeightLimitAtTouchdown(unittest.TestCase):
 
     def test_derive(self):
         node = self.node_class()
-        touchdowns = KTI('Touchdown', items=[KeyTimeInstance(name='Touchdown', index=7)])
         limit = P('Acceleration Normal Limit For Landing Weight',
                     np.ma.array([0, 0, 0, 0, 0,
                                  0, 0, 0, 0, 0,
                                  0, 0, 0, 0, 0, ]))
-        acc_norm = P('Acceleration Normal',
-                    np.ma.array([0, 0, 0, 0, 0,
-                                 0, 0, 0, 0, 0,
-                                 0, 0, 0, 0, 0, ]))
-        node.derive(tdwns=touchdowns,
-                    acc_norm=acc_norm,
+        
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=0, value=0),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
                     acc_limit=limit)
 
-        self.assertEqual(node[0].index, 7)
+        self.assertEqual(node[0].index, 0)
         self.assertEqual(node[0].value, 0)
 
     def test_derive_hard_landing(self):
         node = self.node_class()
-        touchdowns = KTI('Touchdown', items=[KeyTimeInstance(name='Touchdown', index=4)])
         limit = P('Acceleration Normal Limit For Landing Weight',
                     np.ma.array([1.75, 1.75, 1.75, 1.75, 1.75,
                                  2.00, 2.00, 2.00, 2.00, 2.00,
                                  2.00, 2.00, 2.10, 2.10, 2.10, ]))
-        acc_norm = P('Acceleration Normal',
-                    np.ma.array([1.95, 1.95, 1.95, 2.50, 1.95,
-                                 1.65, 1.65, 1.65, 1.55, 1.55,
-                                 1.45, 1.35, 1.35, 1.15, 1.05]))
-        node.derive(tdwns=touchdowns,
-                    acc_norm=acc_norm,
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=4, value=2.50),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
                     acc_limit=limit)
 
         self.assertEqual(node[0].index, 4)
-        self.assertAlmostEqual(node[0].value, 0.2)
+        self.assertAlmostEqual(node[0].value, 0.75)
         self.assertGreater(node[0].value, 0)
 
     def test_derive_no_hard_landing(self):
         node = self.node_class()
-        touchdowns = KTI('Touchdown', items=[KeyTimeInstance(name='Touchdown', index=13)])
         limit = P('Acceleration Normal Limit For Landing Weight',
                     np.ma.array([1.75, 1.75, 1.75, 1.75, 1.75,
                                  2.00, 2.00, 2.00, 2.00, 2.00,
                                  2.00, 2.00, 2.10, 2.10, 2.10, ]))
-        acc_norm = P('Acceleration Normal',
-                    np.ma.array([1.95, 1.95, 1.95, 1.95, 1.95,
-                                 1.95, 1.95, 1.95, 1.95, 1.95,
-                                 1.95, 1.95, 1.95, 1.95, 1.95]))
-        node.derive(tdwns=touchdowns,
-                    acc_norm=acc_norm,
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=13, value=1.95),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
                     acc_limit=limit)
 
         self.assertEqual(node[0].index, 13)
@@ -2349,53 +2341,44 @@ class TestAccelerationNormalAboveWeightLimitAtTouchdown(unittest.TestCase):
     def test_derive_hard_touch_and_go_plus_hard_touchdown(self):
         # Both hard landings
         node = self.node_class()
-        touchdowns = KTI('Touchdown', items=[KeyTimeInstance(name='Touchdown', index=13)])
-        touch_and_go = KTI('Touch And Go', items=[KeyTimeInstance(name='Touch And Go', index=3)])
         limit = P('Acceleration Normal Limit For Landing Weight',
                     np.ma.array([1.75, 1.75, 1.75, 1.75, 1.75,
                                  2.00, 2.00, 2.00, 2.00, 2.00,
                                  2.00, 2.00, 2.10, 2.10, 2.10, ]))
-        acc_norm = P('Acceleration Normal',
-                    np.ma.array([1.95, 1.95, 1.95, 1.99, 1.95,
-                                 1.95, 1.95, 1.95, 1.95, 1.95,
-                                 1.95, 1.95, 1.95, 2.50, 1.95]))
-        node.derive(tdwns=touchdowns,
-                    acc_norm=acc_norm,
-                    acc_limit=limit,
-                    touch_and_go=touch_and_go)
-
-        self.assertEqual(node[0].index, 13)
-        self.assertAlmostEqual(node[0].value, 0.4)
-        self.assertAlmostEqual(node[1].index, 3)
-        self.assertAlmostEqual(node[1].value, 0.24)
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=3, value=1.95),
+            KeyPointValue(index=13, value=2.50),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
+                    acc_limit=limit)
+        
+        self.assertEqual(node[0].index, 3)
+        self.assertAlmostEqual(node[0].value, 0.2)
+        self.assertEqual(node[1].index, 13)
+        self.assertAlmostEqual(node[1].value, 0.4)
         self.assertGreater(node[0].value, 0)
         self.assertGreater(node[1].value, 0)
 
     def test_derive_hard_touch_and_go_plus_touchdown(self):
         # One hard landing
         node = self.node_class()
-        touchdowns = KTI('Touchdown', items=[KeyTimeInstance(name='Touchdown', index=13)])
-        touch_and_go = KTI('Touch And Go', items=[KeyTimeInstance(name='Touch And Go', index=3)])
         limit = P('Acceleration Normal Limit For Landing Weight',
                     np.ma.array([1.75, 1.75, 1.75, 1.75, 1.75,
                                  2.00, 2.00, 2.00, 2.00, 2.00,
                                  2.00, 2.00, 2.10, 2.10, 2.10, ]))
-        acc_norm = P('Acceleration Normal',
-                    np.ma.array([1.95, 1.97, 1.98, 1.99, 1.98,
-                                 1.97, 1.95, 1.95, 1.95, 1.95,
-                                 1.94, 1.93, 1.92, 1.90, 1.88]))
-        node.derive(tdwns=touchdowns,
-                    acc_norm=acc_norm,
-                    acc_limit=limit,
-                    touch_and_go=touch_and_go,
-                    )
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=3, value=2.00),
+            KeyPointValue(index=13, value=1.90),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
+                    acc_limit=limit)
 
-        self.assertEqual(node[0].index, 13)
-        self.assertAlmostEqual(node[0].value, -0.2)
-        self.assertEqual(node[1].index, 3)
-        self.assertAlmostEqual(node[1].value, 0.24)
-        self.assertLess(node[0].value, 0)
-        self.assertGreater(node[1].value, 0)
+        self.assertEqual(node[0].index, 3)
+        self.assertAlmostEqual(node[0].value, 0.25)
+        self.assertEqual(node[1].index, 13)
+        self.assertAlmostEqual(node[1].value, -0.2)
+        self.assertGreater(node[0].value, 0)
+        self.assertLess(node[1].value, 0)
 
     def test_derive_touch_and_go_plus_touchdown(self):
         # No hard landings
@@ -2406,20 +2389,17 @@ class TestAccelerationNormalAboveWeightLimitAtTouchdown(unittest.TestCase):
                     np.ma.array([1.75, 1.75, 1.75, 1.75, 1.75,
                                  2.00, 2.00, 2.00, 2.00, 2.00,
                                  2.00, 2.00, 2.10, 2.10, 2.10, ]))
-        acc_norm = P('Acceleration Normal',
-                    np.ma.array([1.25, 1.27, 1.28, 1.29, 1.28,
-                                 1.27, 1.25, 1.25, 1.25, 1.25,
-                                 1.24, 1.23, 1.22, 1.20, 1.28]))
-        node.derive(tdwns=touchdowns,
-                    acc_norm=acc_norm,
-                    acc_limit=limit,
-                    touch_and_go=touch_and_go,
-                    )
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=3, value=1.29),
+            KeyPointValue(index=13, value=1.20),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
+                    acc_limit=limit)
 
-        self.assertEqual(node[0].index, 13)
-        self.assertAlmostEqual(node[0].value, -0.9)
-        self.assertEqual(node[1].index, 3)
-        self.assertAlmostEqual(node[1].value, -0.46)
+        self.assertEqual(node[0].index, 3)
+        self.assertAlmostEqual(node[0].value, -0.46)
+        self.assertEqual(node[1].index, 13)
+        self.assertAlmostEqual(node[1].value, -0.9)
         self.assertLess(node[0].value, 0)
         self.assertLess(node[1].value, 0)
 

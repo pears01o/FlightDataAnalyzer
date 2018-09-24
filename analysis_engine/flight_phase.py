@@ -2149,7 +2149,7 @@ class TCASOperational(FlightPhaseNode):
                tcas_valid=P('TCAS Valid'),
                tcas_fail=P('TCAS Failure')):
 
-        operating = np.ma.clump_unmasked(np.ma.masked_less(alt_aal.array, 360.0))
+        operating = runs_of_ones(alt_aal.array >= 360.0)
         invalid_slices = []
         possible_ras = []
 
@@ -2162,10 +2162,24 @@ class TCASOperational(FlightPhaseNode):
             good_slices = []
             # and we'll need a list of RA segments to check later...
             for op in operating:
-                if np.count_nonzero(tcas_cc.array[op])/float(len(tcas_cc.array[op])) > 0.1:
-                    # TCAS not working properly.
-                    continue
-                ras_local = np.ma.logical_and(tcas_cc.array[op].data > 3, tcas_cc.array[op].data < 7)
+                samples = np.ma.sum(tcas_cc.array[op].any_of(
+                    'Clear of Conflict',
+                    'Drop Track',
+                    'Altitude Lost',
+                    'Up Advisory Corrective',
+                    'Down Advisory Corrective',
+                    'Preventive',
+                    ignore_missing=True,
+                ))
+                if samples / float(len(tcas_cc.array[op])) > 0.1:
+                    continue  # TCAS not working properly.
+
+                ras_local = tcas_cc.array[op].any_of(
+                    'Up Advisory Corrective',
+                    'Down Advisory Corrective',
+                    'Preventive',
+                    ignore_missing=True,
+                )
                 ra_slices = shift_slices(runs_of_ones(ras_local), op.start)
                 possible_ras.extend(ra_slices)
                 # We discard the (common) RAs near the airfield
@@ -2174,39 +2188,42 @@ class TCASOperational(FlightPhaseNode):
                 if ras_local[-1]:
                     invalid_slices.append(ra_slices[-1]) # RA at landing not valid
 
-                # 2, 3 & 7 are invalid conditions
-                ras_local = np.ma.logical_or(tcas_cc.array[op].data == 7, 
-                                              np.ma.logical_or(tcas_cc.array[op].data == 2, 
-                                                               tcas_cc.array[op].data == 3))
-                invalid_slices.extend(shift_slices(runs_of_ones(ras_local), op.start))                
+                # invalid conditions
+                ras_local = tcas_cc.array[op].any_of(
+                    'Altitude Lost',
+                    'Drop Track',
+                    'Not Used',
+                    'Spare',
+                    ignore_missing=True,
+                )
+                invalid_slices.extend(shift_slices(runs_of_ones(ras_local), op.start))
 
                 # Overlay the original mask
-                mask_local = np.ma.getmaskarray(tcas_cc.array[op]) == True
+                mask_local = np.ma.getmaskarray(tcas_cc.array[op])
                 invalid_slices.extend(shift_slices(runs_of_ones(mask_local), op.start))
 
                 good_slices.extend(slices_and_not([op], invalid_slices))
             operating = good_slices
 
         if tcas_status:
-            if tcas_status.values_mapping[1] == 'TCAS Active':
-                good = 1
-            elif tcas_status.values_mapping[0] == 'Normal Operation':
-                good = 0
             try:
-                tcas_bad = np.ma.clump_masked(np.ma.masked_not_equal(tcas_status.array, good))
+                state_name = next(s for s in ('TCAS Active', 'Normal Operation')
+                                  if s in tcas_status.state)
+            except StopIteration:
+                pass
+            else:
+                tcas_bad = runs_of_ones(~(tcas_status.array == state_name))
                 tcas_good = slices_not(slices_overlap_merge(tcas_bad, possible_ras), begin_at=0, end_at=len(tcas_status.array))
                 operating = slices_and(operating, tcas_good)
-            except:
-                pass
 
         if tcas_valid:
-            tcas_bad = np.ma.clump_masked(np.ma.masked_not_equal(tcas_valid.array, 1))
+            tcas_bad = runs_of_ones(~(tcas_valid.array == 'Valid'))
             tcas_good = slices_not(slices_overlap_merge(tcas_bad, possible_ras), begin_at=0, end_at=len(tcas_valid.array))
             operating = slices_and(operating, tcas_good)
 
         if tcas_fail:
             # With Altitude AAL defaulting to 2Hz and TCAS Fail at once per 4-sec frame, the interval is 8 samples.
-            tcas_bad = slices_remove_small_gaps(np.ma.clump_masked(np.ma.masked_not_equal(tcas_fail.array, 0)), count=8)
+            tcas_bad = slices_remove_small_gaps(runs_of_ones(~(tcas_fail.array == 'Failed')), count=8)
             tcas_good = slices_not(slices_overlap_merge(tcas_bad, possible_ras), begin_at=0, end_at=len(tcas_fail.array))
             operating = slices_and(operating, tcas_good)
 
@@ -2222,25 +2239,24 @@ class TCASTrafficAdvisory(FlightPhaseNode):
 
     @classmethod
     def can_operate(cls, available):
-        return any_one_of(('TCAS TA', 'TCAS TA Detected', 'TCAS All Threat Traffic', 'TCAS Traffic Alert', 'TCAS TA (1)'), available) \
+        return any_one_of(('TCAS TA', 'TCAS All Threat Traffic', 'TCAS Traffic Alert', 'TCAS TA (1)'), available) \
             and 'TCAS Operational' in available
     
     def derive(self, tcas_ops=S('TCAS Operational'),
                tcas_ta1=M('TCAS TA'),
-               tcas_ta2=M('TCAS TA Detected'),
-               tcas_ta3=M('TCAS All Threat Traffic'),
-               tcas_ta4=M('TCAS Traffic Alert'),
-               tcas_ta5=M('TCAS TA (1)'),
+               tcas_ta2=M('TCAS All Threat Traffic'),
+               tcas_ta3=M('TCAS Traffic Alert'),
+               tcas_ta4=M('TCAS TA (1)'),
                tcas_ras=S('TCAS Resolution Advisory'),
                ):
 
         # Accept the TCAS TA parameter from the variously named options
-        tas = [tcas_ta1, tcas_ta2, tcas_ta3, tcas_ta4, tcas_ta5]
+        tas = [tcas_ta1, tcas_ta2, tcas_ta3, tcas_ta4]
         tcas_ta = next((item for item in tas if item is not None), None)
 
         all_slices = []
         for tcas_op in tcas_ops:
-            tas_local = tcas_ta.array[tcas_op.slice].data == 1
+            tas_local = tcas_ta.array[tcas_op.slice].any_of('TA', 'Alert', ignore_missing=True)
             ta_slices = shift_slices(runs_of_ones(tas_local), tcas_op.slice.start)
             ta_slices = slices_remove_small_slices(ta_slices,
                                                    time_limit=4.0, 
@@ -2273,15 +2289,18 @@ class TCASResolutionAdvisory(FlightPhaseNode):
                tcas_ops=S('TCAS Operational')):
 
         for tcas_op in tcas_ops:
-            # We can be sloppy about error conditions because these have been taken 
-            # care of in the TCAS Operational definition.
-            ra_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_cc.array.data[tcas_op.slice], 4))
+            ra_slices = runs_of_ones(tcas_cc.array[tcas_op.slice].any_of(
+                'Up Advisory Corrective',
+                'Down Advisory Corrective',
+                'Preventive',
+                ignore_missing=True,
+            ))
             ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
 
             # Where data is corrupted, single samples are a common source of error
             # time_limit rejects single samples, but 4+ sample events are retained.
             ra_slices = slices_remove_small_slices(ra_slices,
-                                                   time_limit=4.0, 
+                                                   time_limit=4.0,
                                                    hz=tcas_cc.frequency)
             self.create_phases(ra_slices)
                         

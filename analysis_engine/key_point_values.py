@@ -18280,6 +18280,7 @@ class TCASTAWarningDuration(KeyPointValueNode):
                 continue
             self.create_kpvs_from_slice_durations([tcas_ta.slice], self.frequency)
 
+
 class TCASTAAcceleration(KeyPointValueNode):
     '''
     Where TA Alerts are raised the pilot should not react, but, as we are 
@@ -18348,20 +18349,18 @@ class TCASRADirection(KeyPointValueNode):
     units = None
     
     def derive(self, tcas_ras=S('TCAS Resolution Advisory'),
-               tcas=M('TCAS Combined Control')):
+               tcas_cc=M('TCAS Combined Control')):
         
         for tcas_ra in tcas_ras:
-            index = tcas_ra.slice.start
-            if tcas.array[index] == 'Up Advisory Corrective':
-                self.create_kpv(index, +1)
-            elif tcas.array[index] == 'Down Advisory Corrective':
-                self.create_kpv(index, -1)
-            elif tcas.array[index] == 'Preventive':
-                self.create_kpv(index, 0)
-            else:
-                pass # Can arise for masked data
+            try:
+                self.create_kpv(tcas_ra.slice.start, {
+                    'Up Advisory Corrective': +1,
+                    'Down Advisory Corrective': -1,
+                    'Preventive': 0}[tcas_cc.array[tcas_ra.slice.start]])
+            except KeyError:
+                pass
 
-                    
+
 class TCASRAReactionDelay(KeyPointValueNode):
     '''
     This measures the time taken for the pilot to react, determined by the onset
@@ -18629,27 +18628,21 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
                ## rate_1=P('TCAS Altitude Rate Advisory'), # Wrongly scaled so produces changes with the wrong sign. See EI-DRA
-               rate_2=P('TCAS Advisory Rate To Maintain'),
-               rate_3=P('TCAS Altitude Rate To Maintain'),
-               rate_4=P('TCAS Advisory Rate')):
-        
-        rates = [rate_2, rate_3, rate_4]
-        rate = next((item for item in rates if item is not None), None)
-        if rate:
-            array = rate.array
-        else:
-            array = tcas_cc.array.data
-            
+               rate_1=P('TCAS Advisory Rate To Maintain'),
+               rate_2=P('TCAS Altitude Rate To Maintain'),
+               rate_3=P('TCAS Advisory Rate')):
+
+        rate = next((r for r in (rate_1, rate_2, rate_3) if r is not None), None)
+
         for tcas_ra in tcas_ras:
             # For the data of interest, ediff1d finds the changes, nonzero picks the first non-zero change and
             # we extract just the first index from the array then reset the datum.
             try:
-                change_index = np.ma.nonzero(np.ma.ediff1d(array[tcas_ra.slice]))[0][0] + tcas_ra.slice.start
-                # If using CC, check this was not a change to Clear Of Conflict
-                if not rate and array[change_index + 1] == 1:
-                    continue
-            except:
-                # If no change present, skip to the next RA
+                change_index = np.ma.nonzero(np.ma.ediff1d((rate or tcas_cc).array[tcas_ra.slice]))[0][0] + tcas_ra.slice.start
+            except IndexError:
+                continue  # if no change present, skip to the next RA
+            # check this was not a change to Clear of Conflict
+            if not rate and tcas_cc.array[change_index + 1] == 'Clear of Conflict':
                 continue
             exceed_index = int(change_index) + 1
             to_scan = slice(exceed_index, tcas_ra.slice.stop)
@@ -18657,7 +18650,7 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
                                 max(np.ma.std(acc.array[to_scan]), TCAS_THRESHOLD))
             try:
                 self.create_kpv(exceed_index + i[1], p[1] - 1.0)
-            except:
+            except IndexError:
                 pass
 
 
@@ -18676,48 +18669,42 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
                ## rate_1=P('TCAS Altitude Rate Advisory'), # Wrongly scaled so produces changes with the wrong sign. See EI-DRA
-               rate_2=P('TCAS Advisory Rate To Maintain'),
-               rate_3=P('TCAS Altitude Rate To Maintain'),
-               rate_4=P('TCAS Advisory Rate')):
-        
-        rates = [rate_2, rate_3, rate_4]
-        rate = next((item for item in rates if item is not None), None)
+               rate_1=P('TCAS Advisory Rate To Maintain'),
+               rate_2=P('TCAS Altitude Rate To Maintain'),
+               rate_3=P('TCAS Advisory Rate')):
+
+        rate = next((r for r in (rate_1, rate_2, rate_3) if r is not None), None)
+
         for tcas_ra in tcas_ras:
+            # For the data of interest, ediff1d finds the changes, nonzero picks the first non-zero change and
+            # we extract just the first index from the array then reset the datum.
+            try:
+                change_index = np.ma.nonzero(np.ma.ediff1d((rate or tcas_cc).array[tcas_ra.slice]))[0][0] + tcas_ra.slice.start
+            except IndexError:
+                continue  # if no change present, skip to the next RA
+
             if rate:
-                array = rate.array
-                try:
-                    change_index = np.ma.nonzero(np.ma.ediff1d(array[tcas_ra.slice]))[0][0] + tcas_ra.slice.start
-                except:
-                    # No change in advisory rate to maintain, so nothing to do.
-                    return
-                change = array[change_index + 1] - array[change_index]
+                change = rate.array[change_index + 1] - rate.array[change_index]
                 sense = int(change / abs(change))
             else:
-                array = tcas_cc.array
-                try:
-                    change_index = np.ma.nonzero(np.ma.ediff1d(array[tcas_ra.slice]))[0][0] + tcas_ra.slice.start
-                except:
-                    # Combined Control setting did not change at all, hence ediff1d has no values
-                    # and there is nothing to do.
-                    return
-                
-                # Some LFLs have "Of" while others have "of", hence:
-                if array[change_index + 1].lower() == 'clear of conflict':
+                # check this was not a change to Clear of Conflict
+                if tcas_cc.array[change_index + 1] == 'Clear of Conflict':
                     continue
-                if array[change_index + 1] == 'Down Advisory Corrective' or \
-                   array[change_index] == 'Up Advisory Corrective':
+                if tcas_cc.array[change_index + 1] == 'Down Advisory Corrective' or \
+                   tcas_cc.array[change_index] == 'Up Advisory Corrective':
                     sense = -1
                 else:
                     sense = +1
-                    
+
             to_scan = slice(change_index, tcas_ra.slice.stop)
             if np.ma.count(acc.array[to_scan]) == 0:
                 continue
-            react_index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=to_scan)            
+            react_index = index_at_value(np.ma.abs(acc.array - 1.0), TCAS_THRESHOLD, _slice=to_scan)
             if not react_index:
-                # The pilot reaction was unclear.
-                continue
-            peak_curve = peak_curvature(acc.array, _slice=slice(react_index + 5, to_scan.start, -1), curve_sense='Bipolar', gap=3, ttp=5)
+                continue  # the pilot reaction was unclear
+            peak_curve = peak_curvature(
+                acc.array, _slice=slice(react_index + 5, to_scan.start, -1),
+                curve_sense='Bipolar', gap=3, ttp=5)
             self.create_kpv(change_index, (peak_curve - change_index) / acc.frequency)
 
 
@@ -18755,9 +18742,9 @@ class TCASRAAltitudeSTD(KeyPointValueNode):
     def derive(self, alt=P('Altitude STD'),
                tcas_ras=S('TCAS Resolution Advisory')):
         for tcas_ra in tcas_ras:
-            index = tcas_ra.slice.start
-            self.create_kpv(index, alt.array[index])
-    
+            self.create_kpv(tcas_ra.slice.start, alt.array[tcas_ra.slice.start])
+
+
 class TCASRAAltitudeAAL(KeyPointValueNode):
     
     name = 'TCAS RA Altitude AAL'
@@ -18766,8 +18753,8 @@ class TCASRAAltitudeAAL(KeyPointValueNode):
     def derive(self, alt=P('Altitude AAL'),
                tcas_ras=S('TCAS Resolution Advisory')):
         for tcas_ra in tcas_ras:
-            index = tcas_ra.slice.start
-            self.create_kpv(index, alt.array[index])
+            self.create_kpv(tcas_ra.slice.start, alt.array[tcas_ra.slice.start])
+
 
 class TCASRAHeading(KeyPointValueNode):
     
@@ -18777,8 +18764,8 @@ class TCASRAHeading(KeyPointValueNode):
     def derive(self, hdg=P('Heading'),
                tcas_ras=S('TCAS Resolution Advisory')):
         for tcas_ra in tcas_ras:
-            index = tcas_ra.slice.start
-            self.create_kpv(index, hdg.array[index])
+            self.create_kpv(tcas_ra.slice.start, hdg.array[tcas_ra.slice.start])
+
 
 class TCASTAAltitudeSTD(KeyPointValueNode):
     
@@ -18787,10 +18774,9 @@ class TCASTAAltitudeSTD(KeyPointValueNode):
     
     def derive(self, alt=P('Altitude STD'),
                ta_warns=KPV('TCAS TA Warning Duration')):
-        for ta_warn in ta_warns:
-            index = ta_warn.index
-            self.create_kpv(index, alt.array[index])
-    
+        self.create_kpvs_at_kpvs(alt.array, ta_warns)
+
+
 class TCASTAAltitudeAAL(KeyPointValueNode):
     
     name = 'TCAS TA Altitude AAL'
@@ -18798,9 +18784,8 @@ class TCASTAAltitudeAAL(KeyPointValueNode):
     
     def derive(self, alt=P('Altitude AAL'),
                ta_warns=KPV('TCAS TA Warning Duration')):
-        for ta_warn in ta_warns:
-            index = ta_warn.index
-            self.create_kpv(index, alt.array[index])
+        self.create_kpvs_at_kpvs(alt.array, ta_warns)
+
 
 class TCASTAHeading(KeyPointValueNode):
     
@@ -18809,9 +18794,8 @@ class TCASTAHeading(KeyPointValueNode):
     
     def derive(self, hdg=P('Heading'),
                ta_warns=KPV('TCAS TA Warning Duration')):
-        for ta_warn in ta_warns:
-            index = ta_warn.index
-            self.create_kpv(index, hdg.array[index])
+        self.create_kpvs_at_kpvs(hdg.array, ta_warns)
+
 
 """
 ####################################################################################

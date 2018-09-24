@@ -3321,6 +3321,8 @@ class TestStableApproachExcludingEngThrust(unittest.TestCase):
             ('Approach Information', 'Descent', 'Gear Down', 'Flap', 'Track Deviation From Runway', 'Airspeed Relative For 3 Sec', 'Vertical Speed', 'Altitude AAL'),
             # using EPR and exc. Airspeed Relative
             ('Approach Information', 'Descent', 'Gear Down', 'Flap', 'Track Deviation From Runway', 'Vertical Speed', 'ILS Glideslope', 'ILS Localizer', 'Altitude AAL', 'Vapp'),
+            # exc. Track Deviation From Runway
+            ('Approach Information', 'Descent', 'Gear Down', 'Flap', 'Airspeed Relative For 3 Sec', 'Vertical Speed', 'ILS Glideslope', 'ILS Localizer', 'Altitude AAL', 'Vapp'),
         ]
         for combo in combinations:
             self.assertIn(combo, opts)

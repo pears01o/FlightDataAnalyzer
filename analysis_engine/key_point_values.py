@@ -18642,7 +18642,8 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
             except IndexError:
                 continue  # if no change present, skip to the next RA
             # check this was not a change to Clear of Conflict
-            if not rate and tcas_cc.array[change_index + 1] == 'Clear of Conflict':
+            # will be run against historic data with inconsistent state names
+            if not rate and tcas_cc.array[change_index + 1].lower() == 'clear of conflict':
                 continue
             exceed_index = int(change_index) + 1
             to_scan = slice(exceed_index, tcas_ra.slice.stop)
@@ -18688,7 +18689,8 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
                 sense = int(change / abs(change))
             else:
                 # check this was not a change to Clear of Conflict
-                if tcas_cc.array[change_index + 1] == 'Clear of Conflict':
+                # will be run against historic data with inconsistent state names
+                if tcas_cc.array[change_index + 1].lower() == 'clear of conflict':
                     continue
                 if tcas_cc.array[change_index + 1] == 'Down Advisory Corrective' or \
                    tcas_cc.array[change_index] == 'Up Advisory Corrective':

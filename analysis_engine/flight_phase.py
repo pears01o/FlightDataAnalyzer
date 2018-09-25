@@ -2164,6 +2164,7 @@ class TCASOperational(FlightPhaseNode):
             for op in operating:
                 samples = np.ma.sum(tcas_cc.array[op].any_of(
                     'Clear of Conflict',
+                    'Clear Of Conflict',  # will be run against historic data with inconsistent state names
                     'Drop Track',
                     'Altitude Lost',
                     'Up Advisory Corrective',
@@ -2280,7 +2281,7 @@ class TCASResolutionAdvisory(FlightPhaseNode):
     '''
     This uses the Combined Control parameter only because the TCAS RA signals are only 
     present on aircraft with Combined Control as well, and the TCAS RA signals include 
-    the Clear Of Conflict period, making the duration of the phase inconsistent.
+    the Clear of Conflict period, making the duration of the phase inconsistent.
     '''
 
     name = 'TCAS Resolution Advisory'

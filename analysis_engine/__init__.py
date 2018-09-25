@@ -5,7 +5,7 @@
 # See the file "LICENSE" for the full license governing this code.
 
 __packagename__ = 'AnalysisEngine'
-__version__ = '0.40.7'
+__version__ = '0.40.8'
 __author__ = 'Flight Data Services Ltd'
 __author_email__ = 'developers@flightdataservices.com'
 __maintainer__ = 'Flight Data Services Ltd'

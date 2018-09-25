@@ -8,6 +8,11 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.40.8
+-------
+  - AE-1793: replace Acceleration Normal parameter with Acceleration Normal At Touchdown KPV 
+  - AE-1793: change output of requested KPV - should return difference between acceleration normal touchdown and limit
+
 v0.40.7
 -------
   - AE-1811: Remove angle from Flap Lever KPV

@@ -2286,13 +2286,19 @@ class TCASResolutionAdvisory(FlightPhaseNode):
     present on aircraft with Combined Control as well, and the TCAS RA signals include 
     the Clear of Conflict period, making the duration of the phase inconsistent.
     '''
-
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('TCAS Combined Control', 'TCAS Down Advisory', 'TCAS Up Advisory', 'TCAS Operational'), available) or \
+               all_of(('TCAS RA', 'TCAS Operational'), available)
+    
     name = 'TCAS Resolution Advisory'
 
     def derive(self, tcas_cc=M('TCAS Combined Control'), 
                tcas_da=M('TCAS Down Advisory'),
                tcas_ua=M('TCAS Up Advisory'), 
-               tcas_ops=S('TCAS Operational')):
+               tcas_ops=S('TCAS Operational'),
+               tcas_ra=M('TCAS RA')):
 
         for tcas_op in tcas_ops:
             ra_slices = runs_of_ones(tcas_cc.array[tcas_op.slice].any_of(

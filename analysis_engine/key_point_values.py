@@ -18347,18 +18347,44 @@ class TCASRADirection(KeyPointValueNode):
 
     name = 'TCAS RA Direction'
     units = None
-    
+
+    @classmethod
+    def can_operate(cls, available):
+        return 'TCAS Resolution Advisory' in available and (
+            'TCAS Combined Control' in available or
+            any_of(('TCAS Advisory Rate To Maintain',
+                    'TCAS Altitude Rate To Maintain',
+                    'TCAS Advisory Rate'), available))
+
     def derive(self, tcas_ras=S('TCAS Resolution Advisory'),
-               tcas_cc=M('TCAS Combined Control')):
-        
+               tcas_cc=M('TCAS Combined Control'),
+               ## rate_1=P('TCAS Altitude Rate Advisory'), # Wrongly scaled so produces changes with the wrong sign. See EI-DRA
+               rate_1=P('TCAS Advisory Rate To Maintain'),
+               rate_2=P('TCAS Altitude Rate To Maintain'),
+               rate_3=P('TCAS Advisory Rate')):
+
+        rate = next((r for r in (rate_1, rate_2, rate_3) if r is not None), None)
+        sense_lookup = {
+            'Up Advisory Corrective': +1,
+            'Down Advisory Corrective': -1,
+            'Preventive': 0,
+        }
+
         for tcas_ra in tcas_ras:
-            try:
-                self.create_kpv(tcas_ra.slice.start, {
-                    'Up Advisory Corrective': +1,
-                    'Down Advisory Corrective': -1,
-                    'Preventive': 0}[tcas_cc.array[tcas_ra.slice.start]])
-            except KeyError:
-                pass
+            if tcas_cc:
+                try:
+                    self.create_kpv(tcas_ra.slice.start,
+                                    sense_lookup[tcas_cc.array[tcas_ra.slice.start]])
+                except KeyError:
+                    continue
+            else:
+                try:
+                    change_index = np.ma.nonzero(np.ma.ediff1d(
+                        rate.array[tcas_ra.slice]))[0][0] + tcas_ra.slice.start
+                except IndexError:
+                    continue
+                change = rate.array[change_index + 1] - rate.array[change_index]
+                self.create_kpv(change_index, int(change / abs(change)))
 
 
 class TCASRAReactionDelay(KeyPointValueNode):
@@ -18684,19 +18710,10 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
             except IndexError:
                 continue  # if no change present, skip to the next RA
 
-            if rate:
-                change = rate.array[change_index + 1] - rate.array[change_index]
-                sense = int(change / abs(change))
-            else:
-                # check this was not a change to Clear of Conflict
-                # will be run against historic data with inconsistent state names
-                if tcas_cc.array[change_index + 1].lower() == 'clear of conflict':
-                    continue
-                if tcas_cc.array[change_index + 1] == 'Down Advisory Corrective' or \
-                   tcas_cc.array[change_index] == 'Up Advisory Corrective':
-                    sense = -1
-                else:
-                    sense = +1
+            # check this was not a change to Clear of Conflict
+            # will be run against historic data with inconsistent state names
+            if not rate and tcas_cc.array[change_index + 1].lower() == 'clear of conflict':
+                continue
 
             to_scan = slice(change_index, tcas_ra.slice.stop)
             if np.ma.count(acc.array[to_scan]) == 0:

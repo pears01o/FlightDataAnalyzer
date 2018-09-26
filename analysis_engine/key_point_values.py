@@ -19052,13 +19052,12 @@ class TakeoffConfigurationWarningDuration(KeyPointValueNode):
                liftoffs=KTI('Liftoff')):
         if not liftoffs:
             return
-        movement_start = movement_starts.get_first()
         liftoff_index = liftoffs.get_first().index
+        movement_start = movement_starts.get_previous(liftoff_index)
         self.create_kpvs_where(
             takeoff_warn.array == 'Warning',
             takeoff_warn.hz,
-            phase=slice(movement_start.index if movement_start and
-                        movement_start.index < liftoff_index else None,
+            phase=slice(movement_start.index if movement_start else None,
                         liftoff_index),
         )
 
@@ -19075,12 +19074,13 @@ class TakeoffConfigurationFlapWarningDuration(KeyPointValueNode):
                liftoffs=S('Liftoff')):
         if not liftoffs:
             return
-        movement_start = movement_starts.get_first()
+        liftoff_index = liftoffs.get_first().index
+        movement_start = movement_starts.get_previous(liftoff_index)
         self.create_kpvs_where(
             takeoff_warn.array == 'Warning',
             takeoff_warn.hz,
             phase=[slice(movement_start.index if movement_start else None,
-                         liftoffs.get_first().index)],
+                         liftoff_index)],
         )
 
 
@@ -19097,12 +19097,13 @@ class TakeoffConfigurationParkingBrakeWarningDuration(KeyPointValueNode):
                liftoffs=S('Liftoff')):
         if not liftoffs:
             return
-        movement_start = movement_starts.get_first()
+        liftoff_index = liftoffs.get_first().index
+        movement_start = movement_starts.get_previous(liftoff_index)
         self.create_kpvs_where(
             takeoff_warn.array == 'Warning',
             takeoff_warn.hz,
             phase=[slice(movement_start.index if movement_start else None,
-                         liftoffs.get_first().index)],
+                         liftoff_index)],
         )
 
 
@@ -19119,12 +19120,13 @@ class TakeoffConfigurationSpoilerWarningDuration(KeyPointValueNode):
                liftoffs=S('Liftoff')):
         if not liftoffs:
             return
-        movement_start = movement_starts.get_first()
+        liftoff_index = liftoffs.get_first().index
+        movement_start = movement_starts.get_previous(liftoff_index)
         self.create_kpvs_where(
             takeoff_warn.array == 'Warning',
             takeoff_warn.hz,
             phase=[slice(movement_start.index if movement_start else None,
-                         liftoffs.get_first().index)],
+                         liftoff_index)],
         )
 
 
@@ -19141,12 +19143,13 @@ class TakeoffConfigurationStabilizerWarningDuration(KeyPointValueNode):
                liftoffs=S('Liftoff')):
         if not liftoffs:
             return
-        movement_start = movement_starts.get_first()
+        liftoff_index = liftoffs.get_first().index
+        movement_start = movement_starts.get_previous(liftoff_index)
         self.create_kpvs_where(
             takeoff_warn.array == 'Warning',
             takeoff_warn.hz,
             phase=[slice(movement_start.index if movement_start else None,
-                         liftoffs.get_first().index)],
+                         liftoff_index)],
         )
 
 

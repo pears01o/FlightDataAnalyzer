@@ -353,7 +353,7 @@ LANDING_THRESHOLD_HEIGHT = 50  # (Radio, where available)
 LANDING_ROLL_END_SPEED = 65.0
 
 # Level flight minimum duration
-LEVEL_FLIGHT_MIN_DURATION = 60  # sec
+LEVEL_FLIGHT_MIN_DURATION = 20  # sec
 
 # Maximum age of a Segment's timebase in days. A value of None allows any age.
 MAX_TIMEBASE_AGE = 365 * 10  # days

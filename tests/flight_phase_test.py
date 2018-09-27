@@ -2033,7 +2033,7 @@ class TestLevelFlight(unittest.TestCase, NodeTest):
         ])
 
     def test_rejects_short_segments(self):
-        data = [400]*50+[0]*20+[400]*50+[0]*80+[-400]*40+[4]*40+[500]*40
+        data = [400]*50+[0]*20+[400]*50+[0]*80+[-400]*40+[4]*10+[500]*70
         vrt_spd = Parameter(
             name='Vertical Speed For Flight Phases',
             array=np.ma.array(data),

@@ -959,7 +959,7 @@ class CreateKPVsWhereTest(NodeTest):
         alter the expected test results.
         '''
         if not hasattr(self, 'values_array'):
-            self.values_array = np.ma.array([0] * 3 + [1] * 6 + [0] * 3)
+            self.values_array = np.ma.concatenate((np.zeros(3), np.ones(6), np.zeros(3)))
 
         if not hasattr(self, 'phase_slice'):
             self.phase_slice = slice(2, 7)
@@ -1271,8 +1271,8 @@ class TestAccelerationLateralAtTouchdown(unittest.TestCase, NodeTest):
             call(acc_lat, touchdowns[1].index),
         ])
         self.assertEqual(node, [
-            KeyPointValue(3, 4.0, 'Acceleration Lateral At Touchdown', slice(None, None)),
-            KeyPointValue(1, 2.0, 'Acceleration Lateral At Touchdown', slice(None, None)),
+            KeyPointValue(3, 4.0, 'Acceleration Lateral At Touchdown'),
+            KeyPointValue(1, 2.0, 'Acceleration Lateral At Touchdown'),
         ])
 
 
@@ -11104,8 +11104,8 @@ class TestEngN2DuringTakeoffForXSecMax(unittest.TestCase):
         go_arounds=buildsection('Go Around 5 Min Rating', 10, 360)
         takeoffs=buildsection('Takeoff 5 Min Rating', 380, 720)
         eng_N2_max=P('Eng (*) N2 Max', array=np.tile(np.ma.array([80, 81, 82, 83, 85, 90, 92, 95, 96, 99] + 
-                                                                         [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
-                                                                         [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]), 2))
+                                                                 [99, 100, 99, 99, 99, 100, 99, 98, 99, 98] * 35 + 
+                                                                 [95, 94, 92, 89, 86, 82, 80, 80, 81, 82]), 2))
         name = self.node_class.get_name()
         node = self.node_class()
         node.derive(eng_N2_max, takeoffs, go_arounds)
@@ -22059,7 +22059,7 @@ class TestTAWSGlideslopeWarning1500To1000FtDuration(unittest.TestCase,
 
     def test_derive(self):
         taws_glideslope = M('TAWS Glideslope',
-                            np.ma.array([0]*10 + [1]*15 + [0]*25),
+                            np.ma.concatenate((np.zeros(10), np.ones(15), np.zeros(25))),
                             values_mapping=self.warn_map)
 
         node = self.node_class()
@@ -22071,7 +22071,7 @@ class TestTAWSGlideslopeWarning1500To1000FtDuration(unittest.TestCase,
 
     def test_derive_2(self):
         taws_alert = M('TAWS Glideslope Alert',
-                       np.ma.array([0]*25 + [1]*10 + [0]*15),
+                       np.ma.concatenate((np.zeros(25), np.ones(10), np.zeros(15))),
                        values_mapping=self.alert_map)
 
         node = self.node_class()
@@ -22083,10 +22083,10 @@ class TestTAWSGlideslopeWarning1500To1000FtDuration(unittest.TestCase,
 
     def test_derive_3(self):
         taws_glideslope = M('TAWS Glideslope',
-                            np.ma.array([0]*15 + [1]*15 + [0]*20),
+                            np.ma.concatenate((np.zeros(15), np.ones(15), np.zeros(20))),
                             values_mapping=self.warn_map)
         taws_alert = M('TAWS Glideslope Alert',
-                       np.ma.array([0]*25 + [1]*10 + [0]*15),
+                       np.ma.concatenate((np.zeros(25), np.ones(10), np.zeros(15))),
                        values_mapping=self.alert_map)
 
         node = self.node_class()
@@ -22098,11 +22098,11 @@ class TestTAWSGlideslopeWarning1500To1000FtDuration(unittest.TestCase,
 
     def test_derive_4(self):
         taws_glideslope = M('TAWS Glideslope',
-                            np.ma.array([0]*23 + [1]*5 + [0]*22),
+                            np.ma.concatenate((np.zeros(23), np.ones(5), np.zeros(22))),
                             values_mapping=self.warn_map)
 
         taws_alert = M('TAWS Glideslope Alert',
-                       np.ma.array([0]*30 + [1]*10 + [0]*10),
+                       np.ma.concatenate((np.zeros(30), np.ones(10), np.zeros(10))),
                        values_mapping=self.alert_map)
 
         node = self.node_class()
@@ -22143,7 +22143,7 @@ class TestTAWSGlideslopeWarning1000To500FtDuration(unittest.TestCase,
 
     def test_derive(self):
         taws_glideslope = M('TAWS Glideslope',
-                            np.ma.array([0]*10 + [1]*15 + [0]*25),
+                            np.ma.concatenate((np.zeros(10), np.ones(15), np.zeros(25))),
                             values_mapping=self.warn_map)
 
         node = self.node_class()
@@ -22155,7 +22155,7 @@ class TestTAWSGlideslopeWarning1000To500FtDuration(unittest.TestCase,
 
     def test_derive_2(self):
         taws_alert = M('TAWS Glideslope Alert',
-                       np.ma.array([0]*25 + [1]*10 + [0]*15),
+                       np.ma.concatenate((np.zeros(25), np.ones(10), np.zeros(15))),
                        values_mapping=self.alert_map)
 
         node = self.node_class()
@@ -22167,10 +22167,10 @@ class TestTAWSGlideslopeWarning1000To500FtDuration(unittest.TestCase,
 
     def test_derive_3(self):
         taws_glideslope = M('TAWS Glideslope',
-                            np.ma.array([0]*15 + [1]*15 + [0]*20),
+                            np.ma.concatenate((np.zeros(15), np.ones(15), np.zeros(20))),
                             values_mapping=self.warn_map)
         taws_alert = M('TAWS Glideslope Alert',
-                       np.ma.array([0]*25 + [1]*10 + [0]*15),
+                       np.ma.concatenate((np.zeros(25), np.ones(10), np.zeros(15))),
                        values_mapping=self.alert_map)
 
         node = self.node_class()
@@ -22182,10 +22182,10 @@ class TestTAWSGlideslopeWarning1000To500FtDuration(unittest.TestCase,
 
     def test_derive_4(self):
         taws_glideslope = M('TAWS Glideslope',
-                            np.ma.array([0]*23 + [1]*5 + [0]*22),
+                            np.ma.concatenate((np.zeros(23), np.ones(5), np.zeros(22))),
                             values_mapping=self.warn_map)
         taws_alert = M('TAWS Glideslope Alert',
-                       np.ma.array([0]*30 + [1]*10 + [0]*10),
+                       np.ma.concatenate((np.zeros(30), np.ones(10), np.zeros(10))),
                        values_mapping=self.alert_map)
 
         node = self.node_class()
@@ -22225,7 +22225,7 @@ class TestTAWSGlideslopeWarning500To200FtDuration(unittest.TestCase, NodeTest):
 
     def test_derive(self):
         taws_glideslope = M('TAWS Glideslope',
-                            np.ma.array([0]*15 + [1]*10 + [0]*25),
+                            np.ma.concatenate((np.zeros(15), np.ones(10), np.zeros(25))),
                             values_mapping=self.warn_map)
 
         node = self.node_class()
@@ -22237,7 +22237,7 @@ class TestTAWSGlideslopeWarning500To200FtDuration(unittest.TestCase, NodeTest):
 
     def test_derive_2(self):
         taws_alert = M('TAWS Glideslope Alert',
-                       np.ma.array([0]*25 + [1]*10 + [0]*15),
+                       np.ma.concatenate((np.zeros(25), np.ones(10), np.zeros(15))),
                        values_mapping=self.alert_map)
 
         node = self.node_class()
@@ -22249,10 +22249,10 @@ class TestTAWSGlideslopeWarning500To200FtDuration(unittest.TestCase, NodeTest):
 
     def test_derive_3(self):
             taws_glideslope = M('TAWS Glideslope',
-                                np.ma.array([0]*15 + [1]*10 + [0]*25),
+                                np.ma.concatenate((np.zeros(15), np.ones(10), np.zeros(25))),
                                 values_mapping=self.warn_map)
             taws_alert = M('TAWS Glideslope Alert',
-                           np.ma.array([0]*25 + [1]*10 + [0]*15),
+                           np.ma.concatenate((np.zeros(25), np.ones(10), np.zeros(15))),
                            values_mapping=self.alert_map)
 
             node = self.node_class()
@@ -22264,10 +22264,10 @@ class TestTAWSGlideslopeWarning500To200FtDuration(unittest.TestCase, NodeTest):
 
     def test_derive_4(self):
             taws_glideslope = M('TAWS Glideslope',
-                                np.ma.array([0]*23 + [1]*5 + [0]*22),
+                                np.ma.concatenate((np.zeros(23), np.ones(5), np.zeros(22))),
                                 values_mapping=self.warn_map)
             taws_alert = M('TAWS Glideslope Alert',
-                           np.ma.array([0]*30 + [1]*10 + [0]*10),
+                           np.ma.concatenate((np.zeros(30), np.ones(10), np.zeros(10))),
                            values_mapping=self.alert_map)
 
             node = self.node_class()
@@ -22503,7 +22503,7 @@ class TestTCASTAAcceleration(unittest.TestCase, NodeTest):
                 array=np.ma.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.2, 1.3, 1.0, 1.0]))
         ta = buildsection('TCAS Traffic Advisory', 4, 8)
         ta_warns = KPV(name='TCAS TA Warning Duration', items=[
-            KeyPointValue(name='TCAS TA Warning Duration', index=4, value=4)])        
+            KeyPointValue(name='TCAS TA Warning Duration', index=4, value=4)])
         node = self.node_class()
         node.derive(acc, ta, ta_warns)
         self.assertEqual(node[0].name, 'TCAS TA Acceleration', None)
@@ -22536,7 +22536,7 @@ class TestTCASTAAcceleration(unittest.TestCase, NodeTest):
         
     def test_not_after_ra(self):
         acc = P(name='Acceleration Vertical',
-                array=np.ma.array([1.0]*10 + [1.2]*5))
+                array=np.ma.concatenate((np.ones(10), np.ones(5) * 1.2)))
         ta = buildsections('TCAS Traffic Advisory', [2, 5], [9,14])
         ta_warns = KPV(name='TCAS TA Warning Duration', items=[])
         node = self.node_class()
@@ -22590,7 +22590,7 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
     def test_basic(self):
         # For this simple test, acceleration sample rate = 1.0 
         acc = P('Acceleration Vertical',
-                array=np.ma.array([1.0]*20 + [1.1, 1.2, 1.3, 1.4, 1.5, 1.6] + [1.7]*4))
+                array=np.ma.concatenate((np.ones(20), [1.1, 1.2, 1.3, 1.4, 1.5, 1.6], np.ones(4) * 1.7)))
         ra = buildsection('TCAS Resolution Advisory', 15, 30)
         node = self.node_class()
         node.derive(acc, ra, None)
@@ -22600,23 +22600,24 @@ class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
 
     def test_ta_overlap(self):
         acc = P('Acceleration Vertical',
-                array=np.ma.array([1.0]*5 + [1.2]*15))
+                array=np.ma.concatenate((np.ones(5), np.ones(15) * 1.2)))
         ra = buildsection('TCAS Resolution Advisory', 10, 20)
         ta = buildsection('TCAS Traffic Advisory', 3, 10)
         node = self.node_class()
         node.derive(acc, ra, ta)
         self.assertEqual(node[0].index, 10)
-        self.assertAlmostEqual(node[0].value, -4.25, places=1)        
+        self.assertAlmostEqual(node[0].value, -4.25, places=1)
 
     def test_not_second_ta_overlap(self):
         acc = P('Acceleration Vertical',
-                array=np.ma.array([1.0]*5 + [1.2]*15))
+                array=np.ma.concatenate((np.ones(5), np.ones(15) * 1.2)))
         ra = buildsection('TCAS Resolution Advisory', 10, 16)
         ta = buildsections('TCAS Traffic Advisory', [3, 10], [16, 20])
         node = self.node_class()
         node.derive(acc, ra, ta)
         self.assertEqual(node[0].index, 10)
-        self.assertAlmostEqual(node[0].value, -4.25, places=1)        
+        self.assertAlmostEqual(node[0].value, -4.25, places=1)
+
 
 class TestTCASRADirection(unittest.TestCase, NodeTest):
 
@@ -22749,7 +22750,7 @@ class TestTCASRAAPDisengaged(unittest.TestCase, NodeTest):
         tcas_ta = buildsection('TCAS Traffic Advisory', 10, 20)
         node = self.node_class()
         node.derive(ap_offs, tcas_ra, tcas_ta)
-        self.assertEqual(node, 
+        self.assertEqual(node,
                          [KeyPointValue(11.0, 1.0, 'TCAS RA AP Disengaged')])
 
         
@@ -22762,7 +22763,7 @@ class TestTCASRAToAPDisengagedDelay(unittest.TestCase, NodeTest):
 
     def test_derive(self):
         kti_name = 'AP Disengaged Selection'
-        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*10))        
+        acc = P('Acceleration Vertical', array=np.ma.ones(10))
         ap_offs = KTI(kti_name, items=[KeyTimeInstance(5, kti_name)])
         tcas_ra = buildsection('TCAS Resolution Advisory', 3, 9)
         node = self.node_class()
@@ -22772,7 +22773,7 @@ class TestTCASRAToAPDisengagedDelay(unittest.TestCase, NodeTest):
 
     def test_preemptive_disengagement_by_time(self):
         kti_name = 'AP Disengaged Selection'
-        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*100))        
+        acc = P('Acceleration Vertical', array=np.ma.ones(100))
         ap_offs = KTI(kti_name, items=[KeyTimeInstance(10, kti_name)])
         tcas_ra = buildsection('TCAS Resolution Advisory', 15, 70)
         node = self.node_class()
@@ -22782,7 +22783,7 @@ class TestTCASRAToAPDisengagedDelay(unittest.TestCase, NodeTest):
 
     def test_preemptive_disengagement_by_ta(self):
         kti_name = 'AP Disengaged Selection'
-        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*10))        
+        acc = P('Acceleration Vertical', array=np.ma.ones(10))
         ap_offs = KTI(kti_name, items=[KeyTimeInstance(15, kti_name)])
         tcas_ra = buildsection('TCAS Resolution Advisory', 30, 70)
         tcas_ta = buildsection('TCAS Traffic Advisory', 10, 28)
@@ -22793,7 +22794,7 @@ class TestTCASRAToAPDisengagedDelay(unittest.TestCase, NodeTest):
 
     def test_no_disengagement(self):
         kti_name = 'AP Disengaged Selection'
-        acc = P('Acceleration Vertical', array=np.ma.array([1.0]*10))        
+        acc = P('Acceleration Vertical', array=np.ma.ones(10))
         ap_offs = KTI(kti_name, items=[KeyTimeInstance(9, kti_name)])
         tcas_ra = buildsection('TCAS Resolution Advisory', 3, 7)
         node = self.node_class()
@@ -22802,7 +22803,7 @@ class TestTCASRAToAPDisengagedDelay(unittest.TestCase, NodeTest):
 
 
 class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
-    
+
     def setUp(self):
         self.node_class = TCASRAErroneousAcceleration
         self.operational_combinations = [('Acceleration Vertical',
@@ -22815,16 +22816,16 @@ class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
                                          ('Acceleration Vertical',
                                           'TCAS Resolution Advisory',
                                           'TCAS RA Acceleration',
-                                          'TCAS RA Direction'),                                         
+                                          'TCAS RA Direction'),
                                          ('Acceleration Vertical',
                                           'TCAS Traffic Advisory',
                                           'TCAS Resolution Advisory',
                                           'TCAS RA Acceleration',
-                                          'TCAS RA Direction')]        
+                                          'TCAS RA Direction')]
 
     def test_not_up(self):
         acc = P('Acceleration Vertical',
-                array=np.ma.array([1.0]*13 + [0.95, 0.85, 0.6, 1.15, 1.2, 1.0, 1.0]))
+                array=np.ma.concatenate((np.ones(13), [0.95, 0.85, 0.6, 1.15, 1.2, 1.0, 1.0])))
         ra = buildsection('TCAS Resolution Advisory', 12, 20)
         tcas_dir = KPV(name='TCAS RA Direction', items=[
             KeyPointValue(name='TCAS RA Direction', index=13, value=1)])
@@ -22836,7 +22837,7 @@ class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
 
     def test_not_down(self):
         acc = P('Acceleration Vertical',
-                array=np.ma.array([1.0]*13 + [1.05, 1.15, 1.6, 1.15, 0.2, 1.0, 1.0]))
+                array=np.ma.concatenate((np.ones(13), [1.05, 1.15, 1.6, 1.15, 0.2, 1.0, 1.0])))
         ra = buildsection('TCAS Resolution Advisory', 12, 20)
         tcas_dir = KPV(name='TCAS RA Direction', items=[
             KeyPointValue(name='TCAS RA Direction', index=13, value=-1)])
@@ -22845,20 +22846,20 @@ class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
         self.assertEqual(node[0].name, 'TCAS RA Erroneous Acceleration')
         self.assertEqual(node[0].index, 15)
         self.assertAlmostEqual(node[0].value, 0.6)
-        
+
     def test_neither_up_nor_down(self):
         acc = P('Acceleration Vertical',
-                array=np.ma.array([1.0]*13 + [0.95, 0.85, 0.6, 1.15, 1.2, 1.0, 1.0]))
+                array=np.ma.concatenate((np.ones(13), [0.95, 0.85, 0.6, 1.15, 1.2, 1.0, 1.0])))
         ra = buildsection('TCAS Resolution Advisory', 12, 20)
         tcas_dir = KPV(name='TCAS RA Direction', items=[
             KeyPointValue(name='TCAS RA Direction', index=13, value=0)])
         node = self.node_class()
         node.derive(acc, None, ra, None, tcas_dir)
         self.assertEqual(node, [])
-        
+
     def test_ta_overlap(self):
         acc = P('Acceleration Vertical',
-                array=np.ma.array([1.0]*15 + [1.2]*2 + [1.35] + [1.0]*12))
+                array=np.ma.concatenate((np.ones(15), [1.2, 1.2, 1.35], np.ones(12))))
         ra = buildsection('TCAS Resolution Advisory', 20, 30)
         ta = buildsection('TCAS Traffic Advisory', 3, 18)
         tcas_dir = KPV(name='TCAS RA Direction', items=[
@@ -22866,7 +22867,7 @@ class TestTCASRAErroneousAcceleration (unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(acc, ta, ra, None, tcas_dir)
         self.assertEqual(node[0].index, 17)
-        self.assertAlmostEqual(node[0].value, 0.35)     
+        self.assertAlmostEqual(node[0].value, 0.35)
 
 
 class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
@@ -22877,14 +22878,15 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
             ('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Advisory Rate To Maintain'),
             ('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Altitude Rate To Maintain'),
             ('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Advisory Rate'),
-            ]
+        ]
         self.values_mapping = {
             0: 'None',
             1: 'Clear of Conflict',
             4: 'Up Advisory Corrective',
             5: 'Down Advisory Corrective',
-            6: 'Preventive'}
-        
+            6: 'Preventive',
+        }
+
     def test_rate_advisory_data_up(self):
         acc = P('Acceleration Vertical', array=np.ma.concatenate((np.ones(15), np.ones(5) * 1.2)))
         ta = buildsection('TCAS Resolution Advisory', 5, 20)

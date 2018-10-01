@@ -8354,6 +8354,89 @@ class VLSLookup(DerivedParameterNode):
 
 
 ########################################
+# Minimum Airspeed Lookup (Vfmin)
+
+class VfminLookup(DerivedParameterNode):
+    '''
+    Minimum Airpeed with Configuration (Vfmin)
+
+    In cases where values cannot be derived solely from recorded parameters, we
+    can make use of a look-up table to determine values for velocity speeds.
+
+    For Vfmin, looking up a value requires the weight and flap (lever detents).
+
+    Flap is used as the first dependency to avoid interpolation of flap detents
+    when flap is recorded at a lower frequency than airspeed.
+    '''
+
+    units = ut.KT
+
+    @classmethod
+    def can_operate(cls, available,
+                    model=A('Model'), series=A('Series'), family=A('Family'),
+                    engine_type=A('Engine Type'), engine_series=A('Engine Series')):
+
+        core = all_of((
+            'Airspeed',
+            'Model',
+            'Series',
+            'Family',
+            'Engine Type',
+            'Engine Series',
+            'Gross Weight Smoothed',
+        ), available)
+
+        flap = any_of((
+            'Flap Lever',
+            'Flap Lever (Synthetic)',
+        ), available)
+
+        attrs = (model, series, family, engine_type, engine_series)
+        return core and flap and lookup_table(cls, 'vfmin', *attrs)
+
+    def derive(self,
+               flap_lever=M('Flap Lever'),
+               flap_synth=M('Flap Lever (Synthetic)'),
+               air_spd=P('Airspeed'),
+               gw=P('Gross Weight Smoothed'),
+               model=A('Model'),
+               series=A('Series'),
+               family=A('Family'),
+               engine_type=A('Engine Type'),
+               engine_series=A('Engine Series')):
+
+        ## Prepare a zeroed, masked array based on the airspeed:
+        self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
+        
+        # Determine the sections of flight to populate:
+        phases = [airborne.slice for airborne in airborne_sections]
+        
+        # Initialise the velocity speed lookup table:
+        attrs = (model, series, family, engine_type, engine_series)
+        table = lookup_table(self, 'vfmin', *attrs)
+
+        # If we have gross weight, repair gaps up to 2 superframes in length:
+        if gw is not None:
+            try:
+                repaired_gw = repair_mask(gw.array, repair_duration=130,
+                                          extrapolate=True)
+            except ValueError:
+                self.warning("'%s' will be fully masked because '%s' array "
+                             "could not be repaired.", self.name, gw.name)
+                return
+        
+        # Use Flap Lever in preference over Flap Lever Synthetic
+        parameter = flap_lever or flap_synth
+
+        for state in (parameter.array.values_mapping[r] for r in np.ma.unique(parameter.array.raw.compressed())):
+            try:
+                self.array[parameter.array == state] = table.vfmin(state, repaired_gw)[parameter.array == state]
+                #self.array[parameter.array == state] = table.vfmin(state, repaired_gw)
+            except (KeyError, ValueError) as error:
+                self.warning("Error in '%s': %s", self.name, error)
+
+
+########################################
 # Maximum Operating Speed (VMO)
 
 
@@ -8495,6 +8578,7 @@ class MinimumAirspeed(DerivedParameterNode):
                mos=P('Min Operating Speed'),
                vls=P('VLS'),
                vls_lookup=P('VLS Lookup'),
+               vfmin=P('Vfmin Lookup'),
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                airborne=S('Airborne')):

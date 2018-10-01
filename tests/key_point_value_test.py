@@ -1979,8 +1979,8 @@ class TestAccelerationNormalMinusLoadFactorThresholdAtTouchdown(unittest.TestCas
             KeyTimeInstance(index=self.tdwn_idx, name='Touchdown'),
         ])
         self.touch_and_go = KTI('Touch And Go', items=[])
-        self.roll = np.ma.array([0.]*10)
-        
+        self.roll = np.ma.zeros(10)
+
     def test_attributes(self):
         node = self.node_class()
         self.assertEqual(node.units, 'g')
@@ -11156,7 +11156,7 @@ class TestEngN2DuringMaximumContinuousPowerForXSecMax(unittest.TestCase):
                 KeyPointValue(index=23, value=75, name='Eng (*) N2 During Maximum Continuous Power For 10 Sec Max'),
                 KeyPointValue(index=23, value=75, name='Eng (*) N2 During Maximum Continuous Power For 20 Sec Max'),
                 KeyPointValue(index=23, value=75, name='Eng (*) N2 During Maximum Continuous Power For 5 Min Max'),
-            ]))        
+            ]))
     
     def test_derive_masked_data(self):
         mcp=buildsection('Maximum Continuous Power', 20, 700)

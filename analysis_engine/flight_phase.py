@@ -1954,7 +1954,7 @@ class Takeoff5MinRating(FlightPhaseNode):
 
     def get_metrics(self, angle):
         window_sizes = [2,4,8,16,32]
-        metrics = np.ma.array([1000000] * len(angle))
+        metrics = np.ma.ones(len(angle)) * 1000000
         for l in window_sizes:
             maxy = filters.maximum_filter1d(angle, l)
             miny = filters.minimum_filter1d(angle, l)

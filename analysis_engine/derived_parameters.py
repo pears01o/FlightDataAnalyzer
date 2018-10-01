@@ -8354,22 +8354,31 @@ class VLSLookup(DerivedParameterNode):
 
 
 ########################################
-# Minimum Airspeed Lookup (Vfmin)
+# Minimum Airspeed Lookup (VFmin)
 
-class VfminLookup(DerivedParameterNode):
+class VFminLookup(DerivedParameterNode):
     '''
-    Minimum Airpeed with Configuration (Vfmin)
+    Operating Speeds (VFmin)
+    Source: Airbus Quick Reference Handbook, OPS.02A
+    
+    Speeds are as follows:
+    Lever 0: Green Dot
+    Lever 1: S
+    Lever 2: F
+    Lever 3: VLS CONF 3
+    Lever 4: VREF
 
     In cases where values cannot be derived solely from recorded parameters, we
     can make use of a look-up table to determine values for velocity speeds.
 
-    For Vfmin, looking up a value requires the weight and flap (lever detents).
+    For VFmin, looking up a value requires the weight and flap (lever detents).
 
     Flap is used as the first dependency to avoid interpolation of flap detents
     when flap is recorded at a lower frequency than airspeed.
     '''
 
     units = ut.KT
+    name = 'VFmin Lookup'
 
     @classmethod
     def can_operate(cls, available,
@@ -8378,6 +8387,7 @@ class VfminLookup(DerivedParameterNode):
 
         core = all_of((
             'Airspeed',
+            'Altitude STD',
             'Model',
             'Series',
             'Family',
@@ -8398,6 +8408,7 @@ class VfminLookup(DerivedParameterNode):
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                air_spd=P('Airspeed'),
+               alt_std=P('Altitude STD'),
                gw=P('Gross Weight Smoothed'),
                model=A('Model'),
                series=A('Series'),
@@ -8407,9 +8418,6 @@ class VfminLookup(DerivedParameterNode):
 
         ## Prepare a zeroed, masked array based on the airspeed:
         self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
-        
-        # Determine the sections of flight to populate:
-        phases = [airborne.slice for airborne in airborne_sections]
         
         # Initialise the velocity speed lookup table:
         attrs = (model, series, family, engine_type, engine_series)
@@ -8431,9 +8439,16 @@ class VfminLookup(DerivedParameterNode):
         for state in (parameter.array.values_mapping[r] for r in np.ma.unique(parameter.array.raw.compressed())):
             try:
                 self.array[parameter.array == state] = table.vfmin(state, repaired_gw)[parameter.array == state]
-                #self.array[parameter.array == state] = table.vfmin(state, repaired_gw)
             except (KeyError, ValueError) as error:
                 self.warning("Error in '%s': %s", self.name, error)
+                
+        # Green Dot Speed is: lookup value + 1kt per 1000ft above FL200
+        gd_correction = np_ma_masked_zeros_like(air_spd.array, np.int)
+        gd_correction = 0.001*(alt_std.array - 20000)
+        
+        # Cast as float as gd_correction is float and casting to int creates spikes at round values
+        self.array = self.array.astype(float)
+        self.array[gd_correction>0] += gd_correction[gd_correction>0]
 
 
 ########################################
@@ -8578,13 +8593,13 @@ class MinimumAirspeed(DerivedParameterNode):
                mos=P('Min Operating Speed'),
                vls=P('VLS'),
                vls_lookup=P('VLS Lookup'),
-               vfmin=P('Vfmin Lookup'),
+               vfmin=P('VFmin Lookup'),
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                airborne=S('Airborne')):
 
         # Use whatever minimum speed parameter we have available:
-        parameter = first_valid_parameter(vls, vls_lookup, mms_fmf, mms_fmc, mos_fc, mos)
+        parameter = first_valid_parameter(vfmin, vls, vls_lookup, mms_fmf, mms_fmc, mos_fc, mos)
         if not parameter:
             self.array = np_ma_masked_zeros_like(airspeed.array)
             return
@@ -9097,6 +9112,43 @@ class AirspeedMinusVLSFor3Sec(DerivedParameterNode):
 
     def derive(self, speed=P('Airspeed Minus VLS')):
 
+        self.array = second_window(speed.array, self.frequency, 3)
+        
+class AirspeedMinusVFmin(DerivedParameterNode):
+    '''
+    Airspeed Relative to VFmin
+    '''
+    units = ut.KT
+    name = 'Airspeed Minus VFmin'
+    
+    def derive(self,
+               airspeed=P('Airspeed'),
+               vfmin=P('VFmin Lookup'),
+               airborne_sections=S('Airborne'),):
+        
+        # Prepare a zeroed, masked array based on the airspeed:
+        self.array = np_ma_masked_zeros_like(airspeed.array)
+
+        # Determine the sections of flight where data must be valid:
+        phases = [airborne.slice for airborne in airborne_sections]
+
+        for phase in phases:
+            self.array[phase] = airspeed.array[phase] - vfmin.array[phase]        
+
+
+class AirspeedMinusVFminFor3Sec(DerivedParameterNode):
+    '''
+    Airspeed relative to VFmin over a 3 second window.
+    
+    See the derived parameter 'Airspeed Minus VFmin' for further details.
+    '''
+    
+    name = 'Airspeed Minus VFmin For 3 Sec'
+    align_frequency = 2
+    align_offset = 0
+    units = ut.KT
+    
+    def derive(self, speed=P('Airspeed Minus VFmin')):
         self.array = second_window(speed.array, self.frequency, 3)
         
         

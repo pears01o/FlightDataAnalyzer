@@ -23358,7 +23358,7 @@ class TestThrustAsymmetryDuringFlightMax(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(ta, air)
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].value, 30)
+        self.assertEqual(node[0].value, 31)
        
 
 class TestThrustAsymmetryDuringGoAroundMax(unittest.TestCase, CreateKPVsWithinSlicesTest):

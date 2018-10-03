@@ -19306,8 +19306,8 @@ class ThrustAsymmetryDuringFlightMax(KeyPointValueNode):
                airborne=S('Airborne')):
 
 
-        ta_5_min = second_window(ta.array, ta.frequency, 300)
-        self.create_kpvs_within_slices(ta_5_min, airborne, max_value)
+        ta_1_min = second_window(ta.array, ta.frequency, 60)
+        self.create_kpvs_within_slices(ta_1_min, airborne, max_value)
 
 
 class ThrustAsymmetryDuringGoAroundMax(KeyPointValueNode):

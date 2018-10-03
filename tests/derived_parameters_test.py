@@ -7747,7 +7747,7 @@ class TestMinimumCleanLookup(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(self.air_spd, gw, self.airborne, model, series, family, 
                     eng_type, eng_series, self.alt, crz)
-        expected = np.ma.repeat((217, 248, 271, 279), 10)
+        expected = np.ma.repeat((217, 228, 271, 279), 10)
         expected.mask = np.array([1]*5 + [0]*30 + [1]*5)
         ma_test.assert_masked_array_equal(node.array, expected)
 

@@ -7621,7 +7621,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
     def test_derive__vls(self):
         vls = P('VLS', np.ma.repeat(180, 100))
         node = self.node_class()
-        node.derive(self.airspeed, None, None, None, None, vls, None, None, None, self.airborne)
+        node.derive(self.airspeed, None, None, None, None, vls, None, None, None, None, self.airborne)
         expected = np.ma.array(vls.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
@@ -7629,15 +7629,23 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
     def test_derive__vls_lookup(self):
         vls_lookup = P('VLS Lookup', np.ma.repeat(180, 100))
         node = self.node_class()
-        node.derive(self.airspeed, None, None, None, None, None, vls_lookup, None, None, self.airborne)
+        node.derive(self.airspeed, None, None, None, None, None, vls_lookup, None, None, None, self.airborne)
         expected = np.ma.array(vls_lookup.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
-        ma_test.assert_masked_array_equal(node.array, expected)        
+        ma_test.assert_masked_array_equal(node.array, expected)
+        
+    def test_derive__vfmin_lookup(self):
+        vls_lookup = P('VFmin Lookup', np.ma.repeat(180, 100))
+        node = self.node_class()
+        node.derive(self.airspeed, None, None, None, None, None, vls_lookup, None, None, None, self.airborne)
+        expected = np.ma.array(vls_lookup.array)
+        expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
+        ma_test.assert_masked_array_equal(node.array, expected)                
 
     def test_derive__mos(self):
         mos = P('Min Operating Speed', np.ma.repeat(190, 100))
         node = self.node_class()
-        node.derive(self.airspeed, None, None, None, mos, None, None, None, None, self.airborne)
+        node.derive(self.airspeed, None, None, None, mos, None, None, None, None, None, self.airborne)
         expected = np.ma.array(mos.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
@@ -7645,7 +7653,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
     def test_derive__mos_fc(self):
         mos_fc = P('FC Min Operating Speed', np.ma.repeat(200, 100))
         node = self.node_class()
-        node.derive(self.airspeed, None, None, mos_fc, None, None, None, None, None, self.airborne)
+        node.derive(self.airspeed, None, None, mos_fc, None, None, None, None, None, None, self.airborne)
         expected = np.ma.array(mos_fc.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
@@ -7655,7 +7663,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
         array = np.ma.repeat((20, 10, 10, 0, 0, 0, 0, 10, 10, 20), 10)
         flap = M('Flap Lever', array, values_mapping={0: '0', 10: '10', 20: '20'})
         node = self.node_class()
-        node.derive(self.airspeed, None, mms_fmc, None, None, None, None, flap, None, self.airborne)
+        node.derive(self.airspeed, None, mms_fmc, None, None, None, None, None, flap, None, self.airborne)
         expected = np.ma.array(mms_fmc.array)
         expected.mask = np.repeat((1, 1, 1, 0, 0, 0, 0, 1, 1, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
@@ -7663,7 +7671,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
     def test_derive__mms_fmf(self):
         mms_fmf = P('FMF Min Manoeuvre Speed', np.ma.repeat(210, 100))
         node = self.node_class()
-        node.derive(self.airspeed, mms_fmf, None, None, None, None, None, None, None, self.airborne)
+        node.derive(self.airspeed, mms_fmf, None, None, None, None, None, None, None, None, self.airborne)
         expected = np.ma.array(mms_fmf.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)

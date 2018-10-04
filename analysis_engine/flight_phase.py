@@ -2174,10 +2174,8 @@ class TCASOperational(FlightPhaseNode):
                 if ras_local[-1]:
                     invalid_slices.append(ra_slices[-1]) # RA at landing not valid
 
-                # 2, 3 & 7 are invalid conditions
-                ras_local = np.ma.logical_or(tcas_cc.array[op].data == 7, 
-                                              np.ma.logical_or(tcas_cc.array[op].data == 2, 
-                                                               tcas_cc.array[op].data == 3))
+                # Combined Control = 7 is an invalid condition
+                ras_local = tcas_cc.array[op].data == 7
                 invalid_slices.extend(shift_slices(runs_of_ones(ras_local), op.start))                
 
                 # Overlay the original mask

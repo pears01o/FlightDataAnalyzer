@@ -3156,15 +3156,13 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
 
     def test_not_out_of_scope(self):        
         tcas_cc = M('TCAS Combined Control', 
-                    array=np.ma.array(data=[0]*200 +\
-                                      [2]*20 + [0]*30 + \
-                                      [3]*20 + [0]*30 + \
+                    array=np.ma.array(data=[0]*300 +\
                                       [7]*20 + [0]*660),
                     values_mapping=self.values_mapping_cc)        
         alt_aal=P('Altitude AAL', array=range(0, 1000, 200) + [1000]*1000 + range(1000, -100, -200))
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, None)
-        self.assertEqual(node.get_slices(), [slice(2, 200, None), slice(220, 250, None), slice(270, 300, None), slice(320, 1009, None)])
+        self.assertEqual(node.get_slices(), [slice(2, 300, None), slice(320, 1009, None)])
                 
     def test_not_if_status_wrong(self):
         # Embraer map status zero to Normal Operation

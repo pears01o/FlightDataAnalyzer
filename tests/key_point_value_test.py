@@ -5740,14 +5740,14 @@ class TestDifferenceBetweenAirspeedAndMinimumCleanMax(unittest.TestCase, NodeTes
     
     def setUp(self):
         self.node_class = DifferenceBetweenAirspeedAndMinimumCleanMax
-        self.operational_combinations = [('Airspeed', 'Flap', 'Airborne', 'Minimum Clean Lookup',)]
+        self.operational_combinations = [('Airspeed', 'Flap Including Transition', 'Airborne', 'Minimum Clean Lookup',)]
         
         self.airborne = buildsection('Airborne', 5, 95)
         self.min_clean = P('Minimum Clean Lookup', np.array([180]*150))
         
         flap_array = np.ma.array([1]*10 + [0]*4 + [1]*11 + [0]*40 + [1]*60 + [0]*25)
         mapping = {int(f): str(f) for f in np.ma.unique(flap_array)}
-        self.flap=M(name='Flap', array=flap_array, values_mapping=mapping)        
+        self.flap=M(name='Flap Including Transition', array=flap_array, values_mapping=mapping)        
         
     def test_derive(self):
         '''

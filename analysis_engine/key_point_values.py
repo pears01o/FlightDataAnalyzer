@@ -17467,7 +17467,7 @@ class DifferenceBetweenAirspeedAndMinimumCleanMax(KeyPointValueNode):
     '''
     def derive(self,
                air_spd=P('Airspeed'),
-               flap = M('Flap'),
+               flap = M('Flap Including Transition'),
                airborne = S('Airborne'),
                min_clean = P('Minimum Clean Lookup'),):
         

@@ -2315,6 +2315,7 @@ class TCASResolutionAdvisory(FlightPhaseNode):
                                                    time_limit=4.0,
                                                    hz=tcas_cc.frequency)
             self.create_phases(ra_slices)
+            
                         
 ################################################################################
 

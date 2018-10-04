@@ -2301,14 +2301,47 @@ class TCASResolutionAdvisory(FlightPhaseNode):
                tcas_ra=M('TCAS RA')):
 
         for tcas_op in tcas_ops:
-            ra_slices = runs_of_ones(tcas_cc.array[tcas_op.slice].any_of(
-                'Up Advisory Corrective',
-                'Down Advisory Corrective',
-                'Preventive',
-                ignore_missing=True,
-            ))
-            ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
+            # We can be sloppy about error conditions because these have been taken 
+            # care of in the TCAS Operational definition.
+            if tcas_cc:
+                ra_slices = runs_of_ones(tcas_cc.array[tcas_op.slice].any_of(
+                    'Up Advisory Corrective',
+                    'Down Advisory Corrective',
+                    'Preventive',
+                    ignore_missing=True,
+                ))
+    
+                dn_slices = runs_of_ones(tcas_da.array[tcas_op.slice].any_of(
+                    "Descent",
+                    "Don't Climb",
+                    "Don't Climb > 500",
+                    "Don't Climb > 1000",
+                    "Don't Climb > 2000",
+                    ignore_missing=True,
+                ))
+    
+                up_slices = runs_of_ones(tcas_ua.array[tcas_op.slice].any_of(
+                    "Climb",
+                    "Don't Descend",
+                    "Don't Descend > 500",
+                    "Don't Descend > 1000",
+                    "Don't Descend > 2000",            
+                    ignore_missing=True,
+                ))
+                
+                ra_slices = shift_slices(slices_or(ra_slices, dn_slices, up_slices), tcas_op.slice.start)
 
+                hz = tcas_cc.frequency
+                
+            else:
+                # Operating with only a single TCAS RA signal, as recorded on some aircraft.
+                ra_slices = runs_of_ones(tcas_ra.array[tcas_op.slice].any_of(
+                    'RA',
+                    ignore_missing=True,
+                ))                
+                ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
+                hz = tcas_ra.frequency
+            
             # Where data is corrupted, single samples are a common source of error
             # time_limit rejects single samples, but 4+ sample events are retained.
             ra_slices = slices_remove_small_slices(ra_slices,

@@ -3341,7 +3341,6 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
         node.derive(None, None, None, tcas_op, tcas_ra)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_ordered_by_index()[0].slice, slice(4, 14))
-        
 
 class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
 

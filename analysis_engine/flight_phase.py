@@ -2281,18 +2281,28 @@ class TCASResolutionAdvisory(FlightPhaseNode):
         for tcas_op in tcas_ops:
             # We can be sloppy about error conditions because these have been taken 
             # care of in the TCAS Operational definition.
-            ra_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_cc.array.data[tcas_op.slice], 4))
-            dn_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_da.array.data[tcas_op.slice], 1))
-            up_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_ua.array.data[tcas_op.slice], 1))
+            if tcas_cc:
+                ra_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_cc.array.data[tcas_op.slice], 4))
+                dn_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_da.array.data[tcas_op.slice], 1))
+                up_slices = np.ma.clump_unmasked(np.ma.masked_less(tcas_ua.array.data[tcas_op.slice], 1))
+                
+                ra_slices = shift_slices(slices_or(ra_slices, dn_slices, up_slices), tcas_op.slice.start)
+                hz = tcas_cc.frequency
+                
+            else:
+                # Operating with only a single TCAS RA signal, as recorded on some aircraft.
+                ra_slices =  np.ma.clump_unmasked(np.ma.masked_less(tcas_ra.array.data[tcas_op.slice], 1))
+                
+                ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
+                hz = tcas_ra.frequency
             
-            ra_slices = shift_slices(slices_or(ra_slices, dn_slices, up_slices), tcas_op.slice.start)
-
             # Where data is corrupted, single samples are a common source of error
             # time_limit rejects single samples, but 4+ sample events are retained.
             ra_slices = slices_remove_small_slices(ra_slices,
                                                    time_limit=4.0, 
-                                                   hz=tcas_cc.frequency)
+                                                   hz=hz)
             self.create_phases(ra_slices)
+            
                         
 ################################################################################
 

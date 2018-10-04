@@ -3303,19 +3303,15 @@ class TestTCASResolutionAdvisory(unittest.TestCase):
         self.assertEqual(node.get_ordered_by_index()[2].slice, slice(204, 211))
         
     def test_derive_ra(self):
-        
         self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Operational', 'TCAS RA')))
         tcas_ra = M('TCAS RA', array=np.ma.array([0]*4 + [1]*10 + 498*[0]),
-                    values_mapping={0: '-',
-                                    1: 'RA'})
+                    values_mapping={0: '-', 1: 'RA'})
         tcas_op = buildsection('TCAS Operating', 3, 480)
         node = TCASResolutionAdvisory()
         node.derive(None, None, None, tcas_op, tcas_ra)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
-        self.assertEqual(node.get_ordered_by_index()[0].slice, slice(4, 11))
-        self.assertEqual(node.get_ordered_by_index()[1].slice, slice(104, 111))
-        self.assertEqual(node.get_ordered_by_index()[2].slice, slice(204, 211))
-
+        self.assertEqual(node.get_ordered_by_index()[0].slice, slice(4, 14))
+        
 
 class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
 

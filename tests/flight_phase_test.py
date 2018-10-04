@@ -3161,7 +3161,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         alt_aal=P('Altitude AAL', array=np.ma.concatenate([np.arange(0, 1000, 200), np.ones(1000) * 1000, np.arange(1000, -100, -200)]))
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, None)
-        self.assertEqual(node.get_slices(), [slice(2, 200, None), slice(220, 250, None), slice(270, 300, None), slice(320, 1009, None)])
+        self.assertEqual(node.get_slices(), [slice(2, 300, None), slice(320, 1009, None)])
                 
     def test_not_if_status_wrong(self):
         # Embraer map status zero to Normal Operation

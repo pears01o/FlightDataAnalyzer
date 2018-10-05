@@ -17415,8 +17415,7 @@ class AirspeedIncreaseAlertDuration(KeyPointValueNode):
 
 class AirspeedBelowMinimumAirspeedMin(KeyPointValueNode):
     '''
-    Duration in which the Airspeed is below Minimum Airspeed in clean
-    configuration. 
+    Minimum value of Airspeed below Minimum Airspeed.
     
     If no Minimum Airspeed parameter, KPV will use the Flap and 
     Flap Manoeuvre Speed

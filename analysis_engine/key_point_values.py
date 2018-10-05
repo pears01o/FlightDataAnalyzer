@@ -18629,11 +18629,12 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
                ## rate_1=P('TCAS Altitude Rate Advisory'), # Wrongly scaled so produces changes with the wrong sign. See EI-DRA
+               rate_1=P('TCAS Advance Rate To Maintain'),
                rate_2=P('TCAS Advisory Rate To Maintain'),
                rate_3=P('TCAS Altitude Rate To Maintain'),
                rate_4=P('TCAS Advisory Rate')):
         
-        rates = [rate_2, rate_3, rate_4]
+        rates = [rate_1, rate_2, rate_3, rate_4]
         rate = next((item for item in rates if item is not None), None)
         if rate:
             array = rate.array
@@ -18676,11 +18677,12 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
                ## rate_1=P('TCAS Altitude Rate Advisory'), # Wrongly scaled so produces changes with the wrong sign. See EI-DRA
+               rate_1=P('TCAS Advance Rate To Maintain'),
                rate_2=P('TCAS Advisory Rate To Maintain'),
                rate_3=P('TCAS Altitude Rate To Maintain'),
                rate_4=P('TCAS Advisory Rate')):
         
-        rates = [rate_2, rate_3, rate_4]
+        rates = [rate_1, rate_2, rate_3, rate_4]
         rate = next((item for item in rates if item is not None), None)
         for tcas_ra in tcas_ras:
             if rate:

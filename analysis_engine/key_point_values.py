@@ -18659,7 +18659,8 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
             try:
                 self.create_kpv(exceed_index + i[1], p[1] - 1.0)
             except:
-                pass
+                # Return something to show that there was a change in commanded vertical speed, but the reaction was trivial.
+                self.create_kpv(exceed_index + i[0], p[0] - 1.0)
 
 
 class TCASRASubsequentReactionDelay(KeyPointValueNode):

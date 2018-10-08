@@ -708,7 +708,7 @@ class TestAirspeedTrue(unittest.TestCase):
         alt.array[1] = np.ma.masked
         tat.array[2] = np.ma.masked
         tas.derive(cas, alt, tat)
-        assert_array_equal(tas.array.mask, [True] * 3)
+        self.assertTrue(tas.array.mask.all())
 
     def test_tas_no_tat(self):
         cas = P('Airspeed', np.ma.array([100, 200, 300]))
@@ -4704,12 +4704,10 @@ class TestEng_FuelFlow(unittest.TestCase):
         ff1 = P(name='Eng (1) Fuel Flow', array=ff1_arr, frequency=1)
         ff2 = P(name='Eng (2) Fuel Flow', array=ff2_arr, frequency=1)
 
-        expected_arr = np.ma.array([99] * 100)
-
         node = Eng_FuelFlow()
         node.derive(ff1, ff2, None, None)
 
-        assert_array_equal(node.array, expected_arr)
+        assert_array_equal(node.array, np.ma.ones(100) * 99)
 
 
 class TestEng_FuelFlowMax(unittest.TestCase):
@@ -5132,12 +5130,12 @@ class TestEngTPRLimitDifference(unittest.TestCase):
         eng_tpr_max_array = np.ma.concatenate([
             np.arange(0, 150, 10), np.arange(150, 0, -10)])
         eng_tpr_limit_array = np.ma.concatenate([
-            np.arange(10, 110, 10), [110] * 10, np.arange(110, 10, -10)])
+            np.arange(10, 110, 10), np.ones(10) * 110, np.arange(110, 10, -10)])
         eng_tpr_max = P('Eng (*) TPR Max', array=eng_tpr_max_array)
         eng_tpr_limit = P('Eng (*) TPR Limit Max', array=eng_tpr_limit_array)
         node = EngTPRLimitDifference()
         node.derive(eng_tpr_max, eng_tpr_limit)
-        expected = [0] * 5
+        expected = np.zeros(5)
         self.assertEqual(
             node.array.tolist(),
             [-10, -10, -10, -10, -10, -10, -10, -10, -10, -10, -10, 0, 10, 20,
@@ -6512,7 +6510,7 @@ class TestGrossWeight(unittest.TestCase):
         node = GrossWeight()
         node.derive(None, None, duration, afr_land_wgt, None, None, None, None, None)
 
-        self.assertEqual(node.array.tolist(), [1000] * 100)
+        assert_array_equal(node.array, np.ones(100) * 1000)
 
     def test_derive_afr_interpolated_wgt(self):
         duration = A('HDF Duration', 100)
@@ -6525,13 +6523,12 @@ class TestGrossWeight(unittest.TestCase):
         node.derive(None, None, duration, afr_land_wgt, afr_takeoff_wgt,
                     None, None, touchdowns, liftoffs)
 
-        result = node.array.tolist()
-        self.assertEqual(result[:10], [None] * 10)
-        self.assertEqual(result[-9:], [None] * 9)
-        self.assertEqual(result[10], 2000)
-        self.assertEqual(result[-10], 1000)
-        self.assertEqual(result[:10], [None] * 10)
-        self.assertAlmostEqual(result[50], 1500.0, 1)
+        self.assertTrue(node.array.mask[:10].all())
+        self.assertTrue(node.array.mask[-9:].all())
+        self.assertEqual(node.array[10], 2000)
+        self.assertEqual(node.array[-10], 1000)
+        self.assertTrue(node.array.mask[:10].all())
+        self.assertAlmostEqual(node.array[50], 1500.0, 1)
 
     def test_using_zero_fuel_weight(self):
         fuel_qty_array = np.ma.arange(10000, 4000, -100)
@@ -7092,7 +7089,7 @@ class TestVrefLookup(unittest.TestCase, NodeTest):
             
             node = self.node_class()
             
-            gw = P('Gross Weight Smoothed', [64300] * 16)
+            gw = P('Gross Weight Smoothed', np.ones(16) * 64300)
             
             node.derive(self.flap_lever, None, self.airspeed, gw, self.approach,
                         model, series, family, engine_type, engine_series, None)
@@ -7120,8 +7117,8 @@ class TestVrefLookup(unittest.TestCase, NodeTest):
             
             node = self.node_class()
             
-            gw = P('Gross Weight Smoothed', [264300] * 16)
-            cg = P('Center Of Gravity', [22.5] * 16)
+            gw = P('Gross Weight Smoothed', np.ones(16) * 264300)
+            cg = P('Center Of Gravity', np.ones(16) * 22.5)
             
             node.derive(self.flap_lever, None, self.airspeed, gw, self.approach,
                         model, series, family, engine_type, engine_series, cg)

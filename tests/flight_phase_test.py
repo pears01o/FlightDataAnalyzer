@@ -2668,11 +2668,7 @@ class TestTaxiing(unittest.TestCase):
 
     def test_taxiing_mobile_takeoff_landing_gspd(self):
         mobiles = buildsection('Mobile', 10, 100)
-        gspd_array = np.ma.array([0] * 15 +
-                                 [10] * 70 +
-                                 [0] * 5 +
-                                 [10] * 5 +
-                                 [0] * 5)
+        gspd_array = np.ma.concatenate((np.zeros(15), np.ones(70) * 10, np.zeros(5), np.ones(5) * 10, np.zeros(5)))
         gspd = P('Groundspeed', array=gspd_array)
         toffs = buildsection('Takeoff', 20, 30)
         lands = buildsection('Landing', 60, 70)
@@ -2690,11 +2686,7 @@ class TestTaxiing(unittest.TestCase):
 
     def test_taxiing_including_rejected_takeoff(self):
         mobiles = buildsection('Mobile', 3, 100)
-        gspd_array = np.ma.array([0] * 10 +
-                                 [10] * 30 +
-                                 [0] * 5 +
-                                 [10] * 50 +
-                                 [0] * 5)
+        gspd_array = np.ma.concatenate((np.zeros(10), np.ones(30) * 10, np.zeros(5), np.ones(50) * 10, np.zeros(5)))
         gspd = P('Groundspeed', array=gspd_array)
         toffs = buildsection('Takeoff',  50, 60)
         lands = buildsection('Landing', 80, 90)

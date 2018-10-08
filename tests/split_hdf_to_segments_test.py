@@ -208,8 +208,8 @@ class TestSplitSegments(unittest.TestCase):
                                             np.arange(0, 200, 0.5),
                                             np.arange(200, 0, -0.5)])
         airspeed_secs = len(airspeed_array) / airspeed_frequency
-        heading_array = np.ma.concatenate([np.arange(len(airspeed_array) / 4, dtype=float) % 360,
-                                          [0] * (len(airspeed_array) / 4)])
+        heading_array = np.ma.concatenate((np.arange(len(airspeed_array) / 4, dtype=float) % 360,
+                                           np.zeros(len(airspeed_array) / 4)))
 
         # DFC jumps exactly half way.
         dfc_array = np.ma.concatenate([np.arange(0, 100),

@@ -947,7 +947,7 @@ class TestDualInput(unittest.TestCase, NodeTest):
             os.path.join(test_data_path, 'dual_input.hdf5'),
             ['Sidestick Angle (Capt)', 'Sidestick Angle (FO)'])
 
-        pilot_array = MappedArray([1] * 840,
+        pilot_array = MappedArray(np.ones(840),
                                   values_mapping=self.pilot_map)
         pilot = M('Pilot Flying', pilot_array, values_mapping=self.pilot_map)
         family = A('Family', 'A330')
@@ -2567,7 +2567,7 @@ class TestPilotFlying(unittest.TestCase, NodeTest):
         stick_fo = P('Sidestick Angle (FO)', array=stick_fo_array)
         node = self.node_class()
         node.derive(stick_capt, stick_fo)
-        expected_array = MappedArray([2.] * 100 + [1.] * 100)
+        expected_array = MappedArray(np.concatenate((np.ones(100) * 2, np.ones(100))))
         expected = M('Pilot Flying', expected_array,
                      values_mapping=PilotFlying.values_mapping)
         np.testing.assert_array_equal(node.array, expected.array)

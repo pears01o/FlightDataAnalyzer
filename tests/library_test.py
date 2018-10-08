@@ -3084,9 +3084,9 @@ class TestHashArray(unittest.TestCase):
                             hash_array(np.ma.arange(1,11), section, 5))
         # Tests that mask contents affect the generated hash.
 
-        ma1 = np.ma.array(np.ma.arange(100,200), mask=[False] * 100)
-        ma2 = np.ma.array(np.ma.arange(100,200),
-                          mask=[False] * 50 + [True] + 49 * [False])
+        ma1 = np.ma.arange(100, 200)
+        ma2 = np.ma.array(np.arange(100, 200),
+                          mask=np.concatenate((np.zeros(50), np.ones(1), np.zeros(49))))
         section = [slice(0,100)]
         self.assertNotEqual(hash_array(ma1, section, 5), hash_array(ma2, section, 5))
         self.assertEqual(hash_array(ma2, section, 5), hash_array(ma2, section, 5))

@@ -5761,9 +5761,9 @@ class TestDifferenceBetweenAirspeedAndMinimumCleanMax(unittest.TestCase, NodeTes
         node = self.node_class()
         node.derive(air_spd, self.flap, self.airborne, self.min_clean)
         
-        self.assertEqual(len(node), 1)
+        self.assertEqual(len(node), 2)
         self.assertEqual(node[0].value, 10)
-        self.assertEqual(node[0].index, 130)
+        self.assertEqual(node[0].index, 10)
         
     def test_multiple_kpvs(self):
         '''
@@ -5778,9 +5778,9 @@ class TestDifferenceBetweenAirspeedAndMinimumCleanMax(unittest.TestCase, NodeTes
         
         self.assertEqual(len(node), 2)
         self.assertEqual(node[0].value, 10)
-        self.assertEqual(node[0].index, 30)
+        self.assertEqual(node[0].index, 10)
         self.assertEqual(node[1].value, 10)
-        self.assertEqual(node[1].index, 130)        
+        self.assertEqual(node[1].index, 125)        
 
 
 class TestAirspeedTopOfDescentTo10000FtMax(unittest.TestCase, NodeTest):

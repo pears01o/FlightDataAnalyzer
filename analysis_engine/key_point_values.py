@@ -17481,11 +17481,6 @@ class DifferenceBetweenAirspeedAndMinimumCleanMax(KeyPointValueNode):
         spd_slices = runs_of_ones(diff > 0)
         flap_slices = runs_of_ones(flap.array == '0')
         
-        # remove first 5 seconds of Flaps 0 from each slice
-        number_of_samples = self.hz * 5
-        flap_slices = [slice(s.start + number_of_samples, s.stop) for s in
-                       flap_slices if s.start + number_of_samples < s.stop]
-        
         # define sections where flaps were up for at least 5s and airspeed was
         # below minimum clean, remove small gaps (<60s) and create a KPV for 
         # each occurence

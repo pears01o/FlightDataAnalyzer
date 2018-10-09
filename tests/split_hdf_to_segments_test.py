@@ -86,15 +86,17 @@ class TestDateTimeFunctions(unittest.TestCase):
         hour = P('Hour', array=np.ma.array([0]*duration))
         minute = P('Minute', array=np.ma.repeat(np.ma.arange(duration/60), 60))
         second = P('Second', array=np.ma.array(np.tile(np.arange(60), duration/60)))
+        second = None
         values = {'Year': year, 'Month': month, 'Day': day, 'Hour': hour, 'Minute': minute, 'Second': second}
         def hdf_get(arg):
             return values[arg]
         hdf = mock.Mock()
         hdf.duration = duration
         hdf.get.side_effect = hdf_get
-        dt_arrays, precise_timestamp = get_dt_arrays(hdf, datetime(2016, 8, 4, 23, 59, 59), datetime(2016, 8, 5, 1, 59, 59))
+        dt_arrays, precise_timestamp, dt_param_state = get_dt_arrays(hdf, datetime(2016, 8, 4, 23, 59, 59), datetime(2016, 8, 5, 1, 59, 59))
         self.assertEqual(dt_arrays, [year.array, month.array, day.array, hour.array, minute.array, second.array])
         self.assertTrue(precise_timestamp)
+        self.assertTrue([p for p in dt_param_state if p[1] != 'Precise'] == [])
 
 
 class TestSplitSegments(unittest.TestCase):

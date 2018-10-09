@@ -2257,7 +2257,10 @@ class TCASTrafficAdvisory(FlightPhaseNode):
 
         all_slices = []
         for tcas_op in tcas_ops:
-            tas_local = tcas_ta.array[tcas_op.slice].any_of('TA', 'Alert', ignore_missing=True)
+            array = tcas_ta.array[tcas_op.slice]
+            if not len(array):
+                continue
+            tas_local = array.any_of('TA', 'Alert', ignore_missing=True)
             ta_slices = shift_slices(runs_of_ones(tas_local), tcas_op.slice.start)
             ta_slices = slices_remove_small_slices(ta_slices,
                                                    time_limit=4.0, 

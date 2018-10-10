@@ -3295,7 +3295,6 @@ class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
             4: "Don't Descend > 1000",
             5: "Don't Descend > 2000",
             }
-
             
     def test_derive_cc_da_or_ua(self):
         self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Combined Control', 'TCAS Down Advisory', 'TCAS Up Advisory', 'TCAS Operational')))

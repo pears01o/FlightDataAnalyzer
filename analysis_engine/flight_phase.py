@@ -2198,7 +2198,6 @@ class TCASOperational(FlightPhaseNode):
                     ignore_missing=True,
                 )
                 invalid_slices.extend(shift_slices(runs_of_ones(ras_local), op.start))
-
                 # Overlay the original mask
                 mask_local = np.ma.getmaskarray(tcas_cc.array[op])
                 invalid_slices.extend(shift_slices(runs_of_ones(mask_local), op.start))
@@ -2345,8 +2344,8 @@ class TCASResolutionAdvisory(FlightPhaseNode):
             # Where data is corrupted, single samples are a common source of error
             # time_limit rejects single samples, but 4+ sample events are retained.
             ra_slices = slices_remove_small_slices(ra_slices,
-                                                   time_limit=4.0,
-                                                   hz=tcas_cc.frequency)
+                                                   time_limit=4.0, 
+                                                   hz=hz)
             self.create_phases(ra_slices)
             
                         

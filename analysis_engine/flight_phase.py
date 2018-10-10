@@ -2191,8 +2191,6 @@ class TCASOperational(FlightPhaseNode):
 
                 # invalid conditions
                 ras_local = tcas_cc.array[op].any_of(
-                    'Altitude Lost',
-                    'Drop Track',
                     'Not Used',
                     'Spare',
                     ignore_missing=True,
@@ -2223,7 +2221,7 @@ class TCASOperational(FlightPhaseNode):
 
         if tcas_fail:
             # With Altitude AAL defaulting to 2Hz and TCAS Fail at once per 4-sec frame, the interval is 8 samples.
-            tcas_bad = slices_remove_small_gaps(runs_of_ones(~(tcas_fail.array == 'Failed')), count=8)
+            tcas_bad = slices_remove_small_gaps(runs_of_ones((tcas_fail.array == 'Failed')), count=8)
             tcas_good = slices_not(slices_overlap_merge(tcas_bad, possible_ras), begin_at=0, end_at=len(tcas_fail.array))
             operating = slices_and(operating, tcas_good)
 

@@ -8,6 +8,14 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+
+v0.41.2
+-------
+ - Fix: TCAS RA Phase noe operates with only RA signal
+ - Fix: TCAS RA amended to reflect Up and Down advisory status as well as Combined Control flags
+ - Fix: TCAS event not being triggered due to Boeing Drop Track logic
+ - Fix: Alternative forms of Resolution Advisory added
+
 v0.41.1
 -------
  - New KPV:

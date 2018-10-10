@@ -8531,7 +8531,6 @@ class MinimumAirspeed(DerivedParameterNode):
             'FC Min Operating Speed',
             'Min Operating Speed',
             'VLS',
-            'VLS Lookup',
         ), available)
         b = any_of((
             'FMC Min Manoeuvre Speed',
@@ -8546,13 +8545,12 @@ class MinimumAirspeed(DerivedParameterNode):
                mos_fc=P('FC Min Operating Speed'),
                mos=P('Min Operating Speed'),
                vls=P('VLS'),
-               vls_lookup=P('VLS Lookup'),
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                airborne=S('Airborne')):
 
         # Use whatever minimum speed parameter we have available:
-        parameter = first_valid_parameter(vls, vls_lookup, mms_fmf, mms_fmc, mos_fc, mos)
+        parameter = first_valid_parameter(vls, mms_fmf, mms_fmc, mos_fc, mos)
         if not parameter:
             self.array = np_ma_masked_zeros_like(airspeed.array)
             return

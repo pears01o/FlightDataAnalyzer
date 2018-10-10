@@ -3217,6 +3217,26 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         node.derive(alt_aal, tcas_cc, None, valid, None)
         self.assertEqual(node.get_slices(), [slice(2, 490, None), slice(510, 998, None)])
 
+    def test_not_if_failure(self):
+        tcas_cc = M('TCAS Combined Control', array=np.ma.concatenate([np.zeros(500), np.ones(10) * 5, np.zeros(490)]),
+                   values_mapping=self.values_mapping_cc)
+        alt_aal=P('Altitude AAL', array=np.ma.concatenate([np.arange(0, 1000, 200), np.ones(989) * 1000, np.arange(1000, -100, -200)]))
+        fail = M('TCAS Failure', array=np.ma.zeros(1000), values_mapping={0:'-', 1:'Failed'})
+        node = self.node_class()
+        node.derive(alt_aal, tcas_cc, None, None, fail)
+        self.assertEqual(node.get_first().slice.start, 2)
+
+        fail = M('TCAS Failure', array=np.ma.ones(1000), values_mapping={0:'-', 1:'Failed'})
+        node = self.node_class()
+        node.derive(alt_aal, tcas_cc, None, None, fail)
+        self.assertEqual(node, [])
+
+        fail = M('TCAS Failure', array=np.ma.concatenate([np.zeros(490), np.ones(15), np.zeros(495)]), values_mapping={0:'-', 1:'Failed'})
+        node = self.node_class()
+        node.derive(alt_aal, tcas_cc, None, None, fail)
+        self.assertEqual(node.get_slices(), [slice(2, 490, None), slice(510, 998, None)])
+
+
     def test_masked_1(self):
         # This replicates the format seen from real data.
         tcas_cc = M('TCAS Combined Control', 
@@ -3260,44 +3280,6 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
 
 class TestTCASResolutionAdvisory(unittest.TestCase):
 
-    #def setUp(self):
-        #self.node_class = TCASResolutionAdvisory
-        
-        #self.operational_combinations = [('TCAS Combined Control', 
-                                          #'TCAS Down Advisory', 
-                                          #'TCAS Up Advisory', 
-                                          #'TCAS Operational'),
-                                         #('TCAS RA', 'TCAS Operational')]
-        
-        #''' Values from ARINC 735 '''
-        #self.values_mapping_cc = {
-            #0: 'No Advisory',
-            #1: 'Clear of Conflict',
-            #2: 'Spare',
-            #3: 'Spare',
-            #4: 'Up Advisory Corrective',
-            #5: 'Down Advisory Corrective',
-            #6: 'Preventive',
-            #7: 'Not Used'}
-        
-        #self.values_mapping_da = {
-            #0: "No Down Advisory",
-            #1: "Descent",
-            #2: "Don't Climb",
-            #3: "Don't Climb > 500",
-            #4: "Don't Climb > 1000",
-            #5: "Don't Climb > 2000",
-            #}
-        
-        #self.values_mapping_ua = {
-            #0: "No Up Advisory",
-            #1: "Climb",
-            #2: "Don't Descend",
-            #3: "Don't Descend > 500",
-            #4: "Don't Descend > 1000",
-            #5: "Don't Descend > 2000",
-            #}
-        
     def test_can_operate(self):
         self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Combined Control',
                                                             'TCAS Down Advisory',

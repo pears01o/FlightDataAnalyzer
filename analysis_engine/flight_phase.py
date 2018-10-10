@@ -2348,7 +2348,7 @@ class TCASResolutionAdvisory(FlightPhaseNode):
                     "Dont Descend",
                     "Dont Descend > 500",
                     "Dont Descend > 1000",
-                    "Don't Descend > 2000",            
+                    "Dont Descend > 2000",            
                     ignore_missing=True,
                 ))
                 

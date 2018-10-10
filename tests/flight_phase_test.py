@@ -3161,7 +3161,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         alt_aal=P('Altitude AAL', array=np.ma.concatenate([np.arange(0, 1000, 200), np.ones(1000) * 1000, np.arange(1000, -100, -200)]))
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, None)
-        self.assertEqual(node.get_slices(), [slice(2, 300, None), slice(320, 1009, None)])
+        self.assertEqual(node.get_slices(), [slice(2, 200, None), slice(220, 250, None), slice(270, 300, None), slice(320, 1009, None)])
                 
     def test_not_if_status_wrong(self):
         # Embraer map status zero to Normal Operation
@@ -3258,45 +3258,54 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         self.assertEqual(node, [])
 
 
-class TestTCASResolutionAdvisory(unittest.TestCase, NodeTest):
+class TestTCASResolutionAdvisory(unittest.TestCase):
 
-    def setUp(self):
-        self.node_class = TCASResolutionAdvisory
-        self.operational_combinations = [('TCAS Combined Control', 
-                                          'TCAS Down Advisory', 
-                                          'TCAS Up Advisory', 
-                                          'TCAS Operational')]
+    #def setUp(self):
+        #self.node_class = TCASResolutionAdvisory
         
-        ''' Values from ARINC 735 '''
-        self.values_mapping_cc = {
-            0: 'No Advisory',
-            1: 'Clear of Conflict',
-            2: 'Spare',
-            3: 'Spare',
-            4: 'Up Advisory Corrective',
-            5: 'Down Advisory Corrective',
-            6: 'Preventive',
-            7: 'Not Used'}
+        #self.operational_combinations = [('TCAS Combined Control', 
+                                          #'TCAS Down Advisory', 
+                                          #'TCAS Up Advisory', 
+                                          #'TCAS Operational'),
+                                         #('TCAS RA', 'TCAS Operational')]
         
-        self.values_mapping_da = {
-            0: "No Down Advisory",
-            1: "Descent",
-            2: "Don't Climb",
-            3: "Don't Climb > 500",
-            4: "Don't Climb > 1000",
-            5: "Don't Climb > 2000",
-            }
+        #''' Values from ARINC 735 '''
+        #self.values_mapping_cc = {
+            #0: 'No Advisory',
+            #1: 'Clear of Conflict',
+            #2: 'Spare',
+            #3: 'Spare',
+            #4: 'Up Advisory Corrective',
+            #5: 'Down Advisory Corrective',
+            #6: 'Preventive',
+            #7: 'Not Used'}
         
-        self.values_mapping_ua = {
-            0: "No Up Advisory",
-            1: "Climb",
-            2: "Don't Descend",
-            3: "Don't Descend > 500",
-            4: "Don't Descend > 1000",
-            5: "Don't Descend > 2000",
-            }
-
-            
+        #self.values_mapping_da = {
+            #0: "No Down Advisory",
+            #1: "Descent",
+            #2: "Don't Climb",
+            #3: "Don't Climb > 500",
+            #4: "Don't Climb > 1000",
+            #5: "Don't Climb > 2000",
+            #}
+        
+        #self.values_mapping_ua = {
+            #0: "No Up Advisory",
+            #1: "Climb",
+            #2: "Don't Descend",
+            #3: "Don't Descend > 500",
+            #4: "Don't Descend > 1000",
+            #5: "Don't Descend > 2000",
+            #}
+        
+    def test_can_operate(self):
+        self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Combined Control',
+                                                            'TCAS Down Advisory',
+                                                            'TCAS Up Advisory',
+                                                            'TCAS Operational')))
+        self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS RA', 
+                                                            'TCAS Operational')))
+                        
     def test_derive_cc_da_or_ua(self):
         self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Combined Control', 'TCAS Down Advisory', 'TCAS Up Advisory', 'TCAS Operational')))
         tcas_cc = M('TCAS Combined Control', array=np.ma.array([0,0,0,0,4,5,4,5,5,5,4,3,2,1]+498*[0]),

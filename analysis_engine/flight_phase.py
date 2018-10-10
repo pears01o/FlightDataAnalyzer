@@ -2370,7 +2370,7 @@ class TCASResolutionAdvisory(FlightPhaseNode):
             # time_limit rejects single samples, but 4+ sample events are retained.
             ra_slices = slices_remove_small_slices(ra_slices,
                                                    time_limit=4.0,
-                                                   hz=tcas_cc.frequency)
+                                                   hz=hz)
             self.create_phases(ra_slices)
             
                         

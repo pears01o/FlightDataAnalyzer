@@ -8,6 +8,37 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.41.1
+-------
+ - New KPV:
+   - AE-1816 Added new KPV EngTorqueWithin1SecOfTouchdownMax
+   - AE-1854 New KPV: AT Disengaged AP Engaged Duration
+ - Improvements:
+   - AE-1640 Flight then engines off then RTO in one segment and graph
+   - AE-1852 Invalid segment type added where flight splitting parameters are invalid.
+   - AE-1926 Various TCAS KPV and event improvements including not triggering incorrectly close to takeoff and landing
+ - Bug Fixes:
+   - AE-1176 Fix: Rejected Takeoff TXX002 events not triggering when Longitudinal Acceleration doesn't drop to approximately zero before takeoff
+   - AE-1712 Fix: Tailwind Hi events to not trigger during rotation or while in ground effect
+   - AE-1743 Fix: Longitude Smoothed being incorreclty masked when overflowing between 180 and -180
+   - AE-1813 Fix: Hard Landing event not triggering in certain circumstances when Altitude Radio is missing
+   - AE-1831 Fix: AirspeedWithFlap KPV not working as expected - triggering invalid events
+   - AE-1871 Fix: FuelQty can_operate method
+   - AE-1873 Fix: handling masked sections greater than 10 seconds in Latitude and Longitude Smoothed
+   - AE-1883 Fix: H175 flight splitting to identify multiple flights within the same data file
+   - AE-1885 Fix: problem with Vertical Speed Inertial
+   - AE-1886 Fix: Missed hard landing after bounce
+   - AE-1895 Fix: Missing Unstable Approach
+   - AE-1899 Fix: Flap not set at first movement triggering incorrectly by switching to Flap Including Transition and an 8 kts mobile threshold
+ - Other changes:
+   - Fix: align returned engine parmeter index
+   - Fix: split: fix for None / float TypeError
+   - Fix: takeoff config KPVs selects the last 'Movement Start' slice before 'Liftoff'
+   - Fix: TouchdownToSpoilersDeployedDuration: returns a 0 second value if not deployed
+   - Fix: track_to_kml: fix kti.name to kpv.name
+   - Improvments: Eng N1 500-50ft include last 5 secs
+   - Improvments: FuelQty: restrict validit check to Airborne
+
 v0.40.8
 -------
   - AE-1793: replace Acceleration Normal parameter with Acceleration Normal At Touchdown KPV 

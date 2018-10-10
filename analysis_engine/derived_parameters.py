@@ -8640,6 +8640,7 @@ class MinimumAirspeed(DerivedParameterNode):
             'FMF Min Manoeuvre Speed',
             'FC Min Operating Speed',
             'Min Operating Speed',
+            'Minimum Clean Lookup',
             'VLS',
             'VLS Lookup',
         ), available)
@@ -8657,12 +8658,13 @@ class MinimumAirspeed(DerivedParameterNode):
                mos=P('Min Operating Speed'),
                vls=P('VLS'),
                vls_lookup=P('VLS Lookup'),
+               min_clean=P('Minimum Clean Lookup'),
                flap_lever=M('Flap Lever'),
                flap_synth=M('Flap Lever (Synthetic)'),
                airborne=S('Airborne')):
 
         # Use whatever minimum speed parameter we have available:
-        parameter = first_valid_parameter(vls, vls_lookup, mms_fmf, mms_fmc, mos_fc, mos)
+        parameter = first_valid_parameter(vls, vls_lookup, mms_fmf, min_clean, mms_fmc, mos_fc, mos)
         if not parameter:
             self.array = np_ma_masked_zeros_like(airspeed.array)
             return
@@ -8670,9 +8672,15 @@ class MinimumAirspeed(DerivedParameterNode):
             self.array = parameter.array
 
         # Handle where minimum manoeuvre speed is for clean configuration only:
-        if parameter is mms_fmc:
+        if parameter in (mms_fmc, min_clean):
             flap = flap_lever or flap_synth
             self.array[flap.array != '0'] = np.ma.masked
+        
+        # No matter what parameter we've used, we still want to use 'Minimum
+        # Clean Lookup' if available for clean config.
+        if min_clean:
+            flap = flap_lever or flap_synth
+            self.array[flap.array == '0'] = min_clean.array[flap.array == '0']
 
         # We want to mask out grounded sections of flight:
         self.array = mask_outside_slices(self.array, airborne.get_slices())

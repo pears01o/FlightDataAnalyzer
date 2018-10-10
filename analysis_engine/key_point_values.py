@@ -18744,11 +18744,17 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
                ## rate_1=P('TCAS Altitude Rate Advisory'), # Wrongly scaled so produces changes with the wrong sign. See EI-DRA
-               rate_1=P('TCAS Advisory Rate To Maintain'),
-               rate_2=P('TCAS Altitude Rate To Maintain'),
-               rate_3=P('TCAS Advisory Rate')):
-
-        rate = next((r for r in (rate_1, rate_2, rate_3) if r is not None), None)
+               rate_1=P('TCAS Advance Rate To Maintain'),
+               rate_2=P('TCAS Advisory Rate To Maintain'),
+               rate_3=P('TCAS Altitude Rate To Maintain'),
+               rate_4=P('TCAS Advisory Rate')):
+        
+        rates = [rate_1, rate_2, rate_3, rate_4]
+        rate = next((item for item in rates if item is not None), None)
+        if rate:
+            array = rate.array
+        else:
+            array = tcas_cc.array.data
 
         for tcas_ra in tcas_ras:
             # For the data of interest, ediff1d finds the changes, nonzero picks the first non-zero change and
@@ -18767,8 +18773,9 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
                                 max(np.ma.std(acc.array[to_scan]), TCAS_THRESHOLD))
             try:
                 self.create_kpv(exceed_index + i[1], p[1] - 1.0)
-            except IndexError:
-                pass
+            except:
+                # Return something to show that there was a change in commanded vertical speed, but the reaction was trivial.
+                self.create_kpv(exceed_index + i[0], p[0] - 1.0)
 
 
 class TCASRASubsequentReactionDelay(KeyPointValueNode):
@@ -18786,12 +18793,13 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
                tcas_ras=S('TCAS Resolution Advisory'),
                tcas_cc=M('TCAS Combined Control'),
                ## rate_1=P('TCAS Altitude Rate Advisory'), # Wrongly scaled so produces changes with the wrong sign. See EI-DRA
-               rate_1=P('TCAS Advisory Rate To Maintain'),
-               rate_2=P('TCAS Altitude Rate To Maintain'),
-               rate_3=P('TCAS Advisory Rate')):
-
-        rate = next((r for r in (rate_1, rate_2, rate_3) if r is not None), None)
-
+               rate_1=P('TCAS Advance Rate To Maintain'),
+               rate_2=P('TCAS Advisory Rate To Maintain'),
+               rate_3=P('TCAS Altitude Rate To Maintain'),
+               rate_4=P('TCAS Advisory Rate')):
+        
+        rates = [rate_1, rate_2, rate_3, rate_4]
+        rate = next((item for item in rates if item is not None), None)
         for tcas_ra in tcas_ras:
             # For the data of interest, ediff1d finds the changes, nonzero picks the first non-zero change and
             # we extract just the first index from the array then reset the datum.

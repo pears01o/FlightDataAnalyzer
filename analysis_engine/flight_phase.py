@@ -2191,14 +2191,11 @@ class TCASOperational(FlightPhaseNode):
 
                 # invalid conditions
                 ras_local = tcas_cc.array[op].any_of(
-                    'Altitude Lost',
-                    'Drop Track',
                     'Not Used',
                     'Spare',
                     ignore_missing=True,
                 )
                 invalid_slices.extend(shift_slices(runs_of_ones(ras_local), op.start))
-
                 # Overlay the original mask
                 mask_local = np.ma.getmaskarray(tcas_cc.array[op])
                 invalid_slices.extend(shift_slices(runs_of_ones(mask_local), op.start))
@@ -2224,7 +2221,7 @@ class TCASOperational(FlightPhaseNode):
 
         if tcas_fail:
             # With Altitude AAL defaulting to 2Hz and TCAS Fail at once per 4-sec frame, the interval is 8 samples.
-            tcas_bad = slices_remove_small_gaps(runs_of_ones(~(tcas_fail.array == 'Failed')), count=8)
+            tcas_bad = slices_remove_small_gaps(runs_of_ones((tcas_fail.array == 'Failed')), count=8)
             tcas_good = slices_not(slices_overlap_merge(tcas_bad, possible_ras), begin_at=0, end_at=len(tcas_fail.array))
             operating = slices_and(operating, tcas_good)
 
@@ -2286,27 +2283,95 @@ class TCASResolutionAdvisory(FlightPhaseNode):
     present on aircraft with Combined Control as well, and the TCAS RA signals include 
     the Clear of Conflict period, making the duration of the phase inconsistent.
     '''
-
+    
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('TCAS Combined Control', 'TCAS Down Advisory', 'TCAS Up Advisory', 'TCAS Operational'), available) or \
+               all_of(('TCAS RA', 'TCAS Operational'), available)
+    
     name = 'TCAS Resolution Advisory'
 
-    def derive(self, tcas_cc=M('TCAS Combined Control'),
-               tcas_ops=S('TCAS Operational')):
+    def derive(self, tcas_cc=M('TCAS Combined Control'), 
+               tcas_da=M('TCAS Down Advisory'),
+               tcas_ua=M('TCAS Up Advisory'), 
+               tcas_ops=S('TCAS Operational'),
+               tcas_ra=M('TCAS RA')):
 
         for tcas_op in tcas_ops:
-            ra_slices = runs_of_ones(tcas_cc.array[tcas_op.slice].any_of(
-                'Up Advisory Corrective',
-                'Down Advisory Corrective',
-                'Preventive',
-                ignore_missing=True,
-            ))
-            ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
+            # We can be sloppy about error conditions because these have been taken 
+            # care of in the TCAS Operational definition.
+            if tcas_cc:
+                ra_slices = runs_of_ones(tcas_cc.array[tcas_op.slice].any_of(
+                    'Up Advisory Corrective',
+                    'Down Advisory Corrective',
+                    'Preventive',
+                    ignore_missing=True,
+                ))
+    
+                dn_slices = runs_of_ones(tcas_da.array[tcas_op.slice].any_of(
+                    "Descent",
+                    "Don't Climb",
+                    "Don't Climb < 500",
+                    "Don't Climb < 1000",
+                    "Don't Climb < 2000",
+                    "Don't Climb > 500",
+                    "Don't Climb > 1000",
+                    "Don't Climb > 2000",
+                    "Don't Climb > 500 fpm",
+                    "Don't Climb > 1000 fpm",
+                    "Don't Climb > 2000 fpm",
+                    "Don't Climb >500 fpm",
+                    "Don't Climb >1000 fpm",
+                    "Don't Climb >2000 fpm",
+                    "Dont Climb",
+                    "Dont Climb > 500",
+                    "Dont Climb > 1000",
+                    "Dont Climb > 2000",
+                    ignore_missing=True,
+                ))
+    
+                up_slices = runs_of_ones(tcas_ua.array[tcas_op.slice].any_of(
+                    "Climb",
+                    "Don't Descend",
+                    "Don't Descend > 500",
+                    "Don't Descend > 1000",
+                    "Don't Descend > 2000",
+                    "Don't Descend > 500 fpm",
+                    "Don't Descend > 1000 fpm",
+                    "Don't Descend > 2000 fpm",            
+                    "Don't Descend >500",
+                    "Don't Descend >1000",
+                    "Don't Descend >2000",
+                    "Don't Descend >500 fpm",
+                    "Don't Descend >1000 fpm",
+                    "Don't Descend >2000 fpm",            
+                    "Dont Descend",
+                    "Dont Descend > 500",
+                    "Dont Descend > 1000",
+                    "Don't Descend > 2000",            
+                    ignore_missing=True,
+                ))
+                
+                ra_slices = shift_slices(slices_or(ra_slices, dn_slices, up_slices), tcas_op.slice.start)
 
+                hz = tcas_cc.frequency
+                
+            else:
+                # Operating with only a single TCAS RA signal, as recorded on some aircraft.
+                ra_slices = runs_of_ones(tcas_ra.array[tcas_op.slice].any_of(
+                    'RA',
+                    ignore_missing=True,
+                ))                
+                ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
+                hz = tcas_ra.frequency
+            
             # Where data is corrupted, single samples are a common source of error
             # time_limit rejects single samples, but 4+ sample events are retained.
             ra_slices = slices_remove_small_slices(ra_slices,
-                                                   time_limit=4.0,
-                                                   hz=tcas_cc.frequency)
+                                                   time_limit=4.0, 
+                                                   hz=hz)
             self.create_phases(ra_slices)
+            
                         
 ################################################################################
 

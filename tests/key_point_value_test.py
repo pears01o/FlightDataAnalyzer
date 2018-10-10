@@ -22920,6 +22920,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         self.node_class = TCASRASubsequentReactionDelay
         self.operational_combinations = [
             ('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control'),
+            ('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Advance Rate To Maintain'),
             ('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Advisory Rate To Maintain'),
             ('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Altitude Rate To Maintain'),
             ('Acceleration Vertical', 'TCAS Resolution Advisory', 'TCAS Combined Control', 'TCAS Advisory Rate'),
@@ -22936,11 +22937,12 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         acc = P('Acceleration Vertical', array=np.ma.concatenate((np.ones(15), np.ones(5) * 1.2)))
         ta = buildsection('TCAS Resolution Advisory', 5, 20)
         cc = M('TCAS Combined Control', array=np.ma.ones(20) * 4, values_mapping=self.values_mapping)
+        rate_1 = None #TCAS Advance Rate To Maintain
         rate_2 = None #TCAS Advisory Rate To Maintain
         rate_3 = P('TCAS Altitude Rate To Maintain', array=np.ma.concatenate((np.zeros(10), np.ones(10) * 1000)))
         rate_4 = None #TCAS Advisory Rate
         node = self.node_class()
-        node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
+        node.derive(acc, ta, cc, rate_1, rate_2, rate_3, rate_4)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
         self.assertAlmostEqual(node[0].value, 6.75)
@@ -22949,12 +22951,13 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         acc = P('Acceleration Vertical', array=np.ma.array([1.0]*15+[0.8]*5))
         ta = buildsection('TCAS Resolution Advisory', 5, 20)
         cc = M('TCAS Combined Control', array=np.ma.array([4]*20),
-               values_mapping=self.values_mapping)        
+               values_mapping=self.values_mapping)
+        rate_1 = None #TCAS Advance Rate To Maintain
         rate_2 = P('TCAS Advisory Rate To Maintain', array=np.ma.array([0]*10 + [-1000]*10))
         rate_3 = None #TCAS Altitude Rate To Maintain
         rate_4 = None #TCAS Advisory Rate
         node = self.node_class()
-        node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
+        node.derive(acc, ta, cc, rate_1, rate_2, rate_3, rate_4)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
         self.assertAlmostEqual(node[0].value, 6.75)
@@ -22965,7 +22968,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*8 + [4]*10),
                values_mapping=self.values_mapping)        
         node = self.node_class()
-        node.derive(acc, ta, cc, None, None, None)
+        node.derive(acc, ta, cc, None, None, None, None)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
         self.assertAlmostEqual(node[0].value, 6.75)
@@ -22976,7 +22979,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*8 + [5]*10),
                values_mapping=self.values_mapping)
         node = self.node_class()
-        node.derive(acc, ta, cc, None, None, None)
+        node.derive(acc, ta, cc, None, None, None, None)
         self.assertEqual(node[0].name, 'TCAS RA Subsequent Reaction Delay')
         self.assertEqual(node[0].index, 9)
         self.assertAlmostEqual(node[0].value, 6.75)
@@ -22987,7 +22990,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*8 + [1]*10),
                values_mapping=self.values_mapping)
         node = self.node_class()
-        node.derive(acc, ta, cc, None, None, None)
+        node.derive(acc, ta, cc, None, None, None, None)
         self.assertEqual(node, [])
 
     def test_combined_control_no_change(self):
@@ -22996,7 +22999,7 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*18),
                values_mapping=self.values_mapping)
         node = self.node_class()
-        node.derive(acc, ta, cc, None, None, None)
+        node.derive(acc, ta, cc, None, None, None, None)
         self.assertEqual(node, [])
 
     def test_no_reaction(self):
@@ -23004,12 +23007,12 @@ class TestTCASRASubsequentReactionDelay (unittest.TestCase, NodeTest):
         ta = buildsection('TCAS Resolution Advisory', 2, 20)
         cc = M('TCAS Combined Control', array=np.ma.array([0]*2 + [6]*8 + [4]*10),
                values_mapping=self.values_mapping)        
-        ##rate_1 = None #TCAS Altitude Rate Advisory
+        rate_1 = None #TCAS Altitude Rate Advisory
         rate_2 = None #TCAS Advisory Rate To Maintain
         rate_3 = None #TCAS Altitude Rate To Maintain
         rate_4 = None #TCAS Advisory Rate
         node = self.node_class()
-        node.derive(acc, ta, cc, rate_2, rate_3, rate_4)
+        node.derive(acc, ta, cc, rate_1, rate_2, rate_3, rate_4)
         self.assertEqual(node, [])
 
 
@@ -23034,6 +23037,7 @@ class TestTCASRASubsequentAcceleration (unittest.TestCase, NodeTest):
         ta = buildsection('TCAS Resolution Advisory', 5, 20)
         cc = M('TCAS Combined Control', array=np.ma.array([4]*20),
                values_mapping=self.values_mapping)
+        rate_1 = None #TCAS Advance Rate To Maintain
         rate_2 = None #TCAS Advisory Rate To Maintain
         rate_3 = P('TCAS Altitude Rate To Maintain', array=np.ma.array([0]*10 + [1000]*10))
         rate_4 = None #TCAS Advisory Rate

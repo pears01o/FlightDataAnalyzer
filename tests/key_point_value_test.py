@@ -21496,7 +21496,7 @@ class TestAirspeedBelowMinimumAirspeedFlapCleanMin(unittest.TestCase):
                              190, 190, 190, 190, 190, 190, 190, 190, 190, 190,
                              190, 190, 190, 190, 190, 190, 190
                          ]))
-        self.flap = M('Flap',
+        self.flap = M('Flap Including Transition',
                       np.ma.array([
                           5, 5, 5, 5, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -21521,7 +21521,7 @@ class TestAirspeedBelowMinimumAirspeedFlapCleanMin(unittest.TestCase):
         for opt in opts:
             self.assertIn('Airspeed', opt)
             self.assertIn('Airborne', opt)
-            self.assertIn('Flap', opt)
+            self.assertIn('Flap Including Transition', opt)
             self.assertTrue(any_of(['Flap Manoeuvre Speed','Minimum Airspeed',],
                                    opt))
 

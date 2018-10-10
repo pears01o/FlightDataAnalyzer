@@ -17656,7 +17656,7 @@ class AirspeedBelowMinimumAirspeedFlapCleanMin(KeyPointValueNode):
 
     @classmethod
     def can_operate(cls, available):
-        core = all_of(['Airspeed', 'Airborne', 'Flap'], available)
+        core = all_of(['Airspeed', 'Airborne', 'Flap Including Transition'], available)
         min_spd = any_of(['Minimum Airspeed', 'Flap Manoeuvre Speed',],
                          available)
         return core and min_spd
@@ -17664,7 +17664,7 @@ class AirspeedBelowMinimumAirspeedFlapCleanMin(KeyPointValueNode):
     def derive(self,
                air_spd=P('Airspeed'),
                min_spd=P('Minimum Airspeed'),
-               flap = M('Flap'),
+               flap = M('Flap Including Transition'),
                f_m_spd = P('Flap Manoeuvre Speed'),
                airborne = S('Airborne')):
         

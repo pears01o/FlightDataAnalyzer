@@ -16850,30 +16850,31 @@ class RollAboveFL200Max(KeyPointValueNode):
 
 class RollRateMaxAboveLimitAtTouchdown(KeyPointValueNode):
     '''
-    Maximum value of roll rate limit exceedance at touchdown.
+    Roll rate limit exceedance at touchdown.
     '''
     units = ut.DEGREE_S
     
     def derive(self,
-               appr_ldg=S('Approach And Landing'),
                limit=P('Roll Rate At Touchdown Limit'),
                roll_rate=P('Roll Rate For Touchdown'),
-               accel_normal=P('Acceleration Normal'),):
-        '''
-        Roll rate exceedance within +/-2 seconds of peak acceleration 
-        during Approach And Landing phase.
-        '''
-        max_acc_indices = [np.argmax(accel_normal.array[window.start:window.stop]) + \
-                           window.start for window in appr_ldg.get_slices()]
-        
-        for i in max_acc_indices:
+               touchdowns=KTI('Touchdown'),
+               touch_and_go=KTI('Touch And Go'),
+               bounces=S('Bounced Landing'),):
+
+        tdwns = touchdowns
+        if touch_and_go:
+            tdwns += touch_and_go
+
+        indices = [touchdown.index for touchdown in tdwns] + \
+                  [bounce.slice.stop for bounce in bounces]
+
+        for i in indices:
             window_start = i - (2*self.hz)
             window_end = i + (2*self.hz) + 1 # +1 so that the number of indices is equal on both sides of peak acceleration
             rr_over_limit = abs(roll_rate.array[window_start:window_end]) - \
                             limit.array[window_start:window_end]
-            
-            if rr_over_limit.any() > 0:
-                self.create_kpv(np.argmax(rr_over_limit)+window_start, max(rr_over_limit))
+            self.create_kpv(np.argmax(rr_over_limit)+window_start, max(rr_over_limit))
+
 
 
 ##############################################################################

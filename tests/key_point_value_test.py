@@ -118,7 +118,6 @@ from analysis_engine.key_point_values import (
     AirspeedAtThrustReversersSelection,
     AirspeedAtTouchdown,
     AirspeedBelow10000FtDuringDescentMax,
-    DifferenceBetweenAirspeedAndMinimumCleanMax,
     AirspeedDuringCruiseMax,
     AirspeedDuringCruiseMin,
     AirspeedDuringLevelFlightMax,
@@ -562,7 +561,7 @@ from analysis_engine.key_point_values import (
     CruiseSpeedLowDuration,
     DegradedPerformanceCautionDuration,
     AirspeedIncreaseAlertDuration,
-    AirspeedBelowMinimumAirspeedMin,
+    AirspeedBelowMinimumAirspeedFlapCleanMin,
     PackValvesOpenAtLiftoff,
     PercentApproachStable,
     Pitch100To20FtMax,
@@ -5698,53 +5697,6 @@ class TestAirspeedBelow10000FtDuringDescentMax(unittest.TestCase, NodeTest):
     @unittest.skip('Test Not Implemented')
     def test_derive(self):
         self.assertTrue(False, msg='Test not implemented.')
-
-
-class TestDifferenceBetweenAirspeedAndMinimumCleanMax(unittest.TestCase, NodeTest):
-    
-    def setUp(self):
-        self.node_class = DifferenceBetweenAirspeedAndMinimumCleanMax
-        self.operational_combinations = [('Airspeed', 'Flap Including Transition', 'Airborne', 'Minimum Clean Lookup',)]
-        
-        self.airborne = buildsection('Airborne', 5, 95)
-        self.min_clean = P('Minimum Clean Lookup', np.ones(150) * 180)
-        
-        flap_array = np.ma.concatenate((np.ones(10), np.zeros(4), np.ones(11), np.zeros(40), np.ones(60), np.zeros(25))).astype(np.int32)
-        mapping = {int(f): str(f) for f in np.ma.unique(flap_array)}
-        self.flap = M(name='Flap Including Transition', array=flap_array, values_mapping=mapping)
-        
-    def test_derive(self):
-        '''
-        This test covers the following:
-        Airspeed below VMc for less than 5s with flaps up at index 10:14
-        Airspeed below VMc for less than 5s and then above VMc with flaps 0 at index 25 onwards
-        Airspeed below VMc for more than 5s with flaps 0, starting at index 125, KPV expected at 130 (5s of delay)
-        '''
-        air_spd=P('Airspeed', np.ma.concatenate((np.ones(10) * 200, np.ones(18) * 170, np.ones(57) * 200, np.ones(65) * 170)))
-        
-        node = self.node_class()
-        node.derive(air_spd, self.flap, self.airborne, self.min_clean)
-        
-        self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].value, 10)
-        self.assertEqual(node[0].index, 130)
-        
-    def test_multiple_kpvs(self):
-        '''
-        This test checks if multiple KPVs are generated. Airspeed has a fixed 
-        value of 170kts, which is 10kts below VMc and flaps were at 0 degrees 
-        twice, more than 60s apart. Two separate KPVs expected.
-        '''
-        air_spd=P('Airspeed', np.ma.ones(150) * 170)
-        
-        node = self.node_class()
-        node.derive(air_spd, self.flap, self.airborne, self.min_clean)
-        
-        self.assertEqual(len(node), 2)
-        self.assertEqual(node[0].value, 10)
-        self.assertEqual(node[0].index, 30)
-        self.assertEqual(node[1].value, 10)
-        self.assertEqual(node[1].index, 130)
 
 
 class TestAirspeedTopOfDescentTo10000FtMax(unittest.TestCase, NodeTest):
@@ -21308,9 +21260,9 @@ class TestAirspeedIncreaseAlertDuration(unittest.TestCase,
         self.basic_setup()
 
 
-class TestAirspeedBelowMinimumAirspeedMin(unittest.TestCase):
+class TestAirspeedBelowMinimumAirspeedFlapCleanMin(unittest.TestCase):
     def setUp(self):
-        self.node_class = AirspeedBelowMinimumAirspeedMin
+        self.node_class = AirspeedBelowMinimumAirspeedFlapCleanMin
         self.air_spd = P('Airspeed',
                          np.ma.array([
                              170, 170, 171, 172, 172, 172, 174, 174, 175, 176,
@@ -21358,7 +21310,7 @@ class TestAirspeedBelowMinimumAirspeedMin(unittest.TestCase):
     def test_attributes(self):
         node = self.node_class()
         self.assertEqual(node.units, 's')
-        self.assertEqual(node.name, 'Airspeed Below Minimum Airspeed Min')
+        self.assertEqual(node.name, 'Airspeed Below Minimum Airspeed Flap Clean Min')
 
     def test_can_operate(self):
         opts = self.node_class.get_operational_combinations()

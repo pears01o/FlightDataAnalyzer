@@ -17682,7 +17682,7 @@ class AirspeedBelowMinimumAirspeedFlapCleanMin(KeyPointValueNode):
             spd_slices
         )
         slices = slices_remove_small_gaps(slices, 60, self.hz)
-        self.create_kpv_from_slices(to_test, slices, min_value)
+        self.create_kpvs_within_slices(to_test, slices, min_value)
 
 
 ##############################################################################

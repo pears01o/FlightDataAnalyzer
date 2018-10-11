@@ -4464,8 +4464,11 @@ class ApproachFlightPathAngle(DerivedParameterNode):
             if not np.ma.count(alt_aal.array[app.slice]):
                 continue
             # What's the temperature deviation from ISA at landing?
-            dev = from_isa(alt_aal.array[app.slice].compressed()[-1],
-                           sat.array[app.slice].compressed()[-1])
+            try:
+                dev = from_isa(alt_aal.array[app.slice].compressed()[-1],
+                               sat.array[app.slice].compressed()[-1])
+            except IndexError:
+                continue  # either array is entirely masked during slice
             # now correct the altitude for temperature deviation.
             alt = alt_dev2alt(alt_aal.array[app.slice], dev)
 

@@ -4470,6 +4470,11 @@ class ApproachFlightPathAngle(DerivedParameterNode):
             alt = alt_dev2alt(alt_aal.array[app.slice], dev)
 
             alt_cropped = mask_outside_slices(alt, runs_of_ones(alt >= 200.0))
+            
+            if min(alt_cropped) > 500:
+                # Can occur in an approach to a go-around
+                continue
+            
             alt_band = runs_of_ones(alt_cropped < 500)[0]
 
             corr, slope, offset = coreg(

@@ -399,47 +399,34 @@ class Configuration(MultistateDerivedParameterNode):
     Parameter for aircraft that use configuration. Reflects the actual state
     of the aircraft. See "Flap Lever" or "Flap Lever (Synthetic)" which show
     the physical lever detents selectable by the crew.
-
+    
     Multi-state with the following mapping::
-
         %s
-
+    
     Some values are based on footnotes in various pieces of documentation:
-
     - 2(a) corresponds to CONF 1*
     - 3(b) corresponds to CONF 2*
-
+    
     Note: Does not use the Flap Lever position. This parameter reflects the
     actual configuration state of the aircraft rather than the intended state
     represented by the selected lever position.
-    
-    Note: Flap Lever position used for A330/A340 to improve CONF 1* and CONF 2* detection.
-
-    Note: Values that do not map directly to a required state are masked
     ''' % pformat(at.constants.AVAILABLE_CONF_STATES)
     values_mapping = at.constants.AVAILABLE_CONF_STATES
     align_frequency = 2
-
+    
     @classmethod
     def can_operate(cls, available, manufacturer=A('Manufacturer'),
-                    model=A('Model'), series=A('Series'), family=A('Family')):
-
+                    model=A('Model'), series=A('Series'), family=A('Family'),):
+        
         if manufacturer and not manufacturer.value == 'Airbus':
             return False
-
-        if family and family.value in ('A300', 'A310'):
-            return False
-
-        if not all_of(('Slat', 'Flap', 'Model', 'Series', 'Family'), available):
+        
+        if family and family.value in ('A300', 'A310',):
             return False
         
-        has_flap_relief = all_of(('Flap Relief Engaged', 'Flap Lever', 'Slat', 'Flap', 'Model', 'Series', 'Family'), available)
-        is_a340 = series and series.value in ('A340-300', 'A340-500')
-        is_a330 = family and family.value in ('A330')
-        
-        if (is_a340 or is_a330) and has_flap_relief:
-            return True
-            
+        if not all_of(('Slat Including Transition', 'Flap Including Transition', 'Model', 'Series', 'Family'), available):
+            return False
+
         try:
             at.get_conf_angles(model.value, series.value, family.value)
         except KeyError:
@@ -448,41 +435,28 @@ class Configuration(MultistateDerivedParameterNode):
             return False
 
         return True
-
-    def derive(self, slat=M('Slat'), flap=M('Flap'), flaperon=M('Flaperon'), 
-               relief=M('Flap Relief Engaged'), lever=M('Flap Lever'),
-               model=A('Model'), series=A('Series'), family=A('Family')):
-
+    
+    def derive(self, flap=M('Flap Including Transition'), slat=M('Slat Including Transition'), 
+               model=A('Model'), series=A('Series'), family=A('Family'),):
+        
         angles = at.get_conf_angles(model.value, series.value, family.value)
+        
+        # initialize an empty masked array the same length as flap array
         self.array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
                                  values_mapping=self.values_mapping)
-
-        # Check if A330 or A340-300/500 and derive CONF 1* or CONF 2* from flap lever position and flap relief state
-        is_a340 = series and series.value in ('A340-300', 'A340-500')
-        is_a330 = family and family.value in ('A330')
-        
         
         for (state, (s, f, a)) in six.iteritems(angles):
             condition = (flap.array == f)
-            # Check if star config on a340 or a330 so that aileron can be ignored in config lookup
-            is_star_config = (is_a340 or is_a330) and [s,f] in ([20,8], [23,14], [24,17])
             if s is not None:
                 condition &= (slat.array == s)
-            if (a is not None) and not is_star_config:
-                condition &= (flaperon.array == a)
-            self.array[condition] = state
-
-        # Repair the mask to smooth out transitions:
+                
+            self.array[condition] = state        
+        
         nearest_neighbour_mask_repair(self.array, copy=False,
-                                          repair_gap_size=(30 * self.hz),
-                                          direction='backward')
-
-        if (is_a340 or is_a330) and relief and lever:
-            self.array[(lever.array == "Lever 2") & (relief.array == "Engaged")] = '1*'
-            if is_a330:
-                self.array[(lever.array == "Lever 3") & (relief.array == "Engaged")] = '2*'
-
-
+                                      repair_gap_size=(30 * self.hz),
+                                      direction='backward')
+            
+        
 class Daylight(MultistateDerivedParameterNode):
     '''
     Calculate Day or Night based upon Civil Twilight.
@@ -2336,15 +2310,10 @@ class SlatIncludingTransition(MultistateDerivedParameterNode):
 
     def derive(self, slat=P('Slat Angle'),
                model=A('Model'), series=A('Series'), family=A('Family')):
-
-        self.values_mapping, self.array, self.frequency, self.offset = calculate_slat(
-            'including',
-            slat,
-            model,
-            series,
-            family,
-        )
-
+    
+        self.values_mapping = at.get_slat_map(model.value, series.value, family.value)
+        self.array=including_transition(slat.array, self.values_mapping, hz=self.hz)
+        
 
 class SlatFullyExtended(MultistateDerivedParameterNode):
     '''

@@ -1259,12 +1259,25 @@ class FlapIncludingTransition(MultistateDerivedParameterNode):
     def derive(self, flap_angle=P('Flap Angle'), flap=M('Flap'),
                model=A('Model'), series=A('Series'), family=A('Family')):
         self.values_mapping = at.get_flap_map(model.value, series.value, family.value)
-        if flap_angle:
-            self.array = including_transition(flap_angle.array, self.values_mapping, hz=self.hz)
+        
+        flap_param = first_valid_parameter(flap_angle, flap)
+        
+        if flap_angle: 
+            # If average RoC on flap angle is greater than 0.02 we're most 
+            # likely dealing with a very noisy signal, use flap instead.
+            # To establish noise level we look at an average of ediff1d on 
+            # flap angle array, between 0 and 0.75 degrees            
+            noise = np.ma.average(np.ma.abs(np.ma.ediff1d(np.ma.masked_where(
+                    flap_angle.array > 0.75, flap_angle.array.data), to_begin=0.0)))
+            if noise > 0.02:
+                flap_param = flap if flap else None
+            
+        if flap_param == flap_angle:
+            self.array = including_transition(flap_param.array, self.values_mapping, hz=self.hz)
         else:
             # if we do not have flap angle use flap, use states as values
             # will vary between frames
-            array = MappedArray(np_ma_masked_zeros_like(flap.array),
+            array = MappedArray(np_ma_masked_zeros_like(flap_param.array),
                                 values_mapping=self.values_mapping)
             for value, state in six.iteritems(self.values_mapping):
                 array[flap.array == state] = state

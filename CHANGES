@@ -8,6 +8,13 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.41.5
+-------
+ - AE-250 Reworked Airbus Configuration parameter
+ - AE-1831 Flap Including Transition rework included
+ - AE-1929 RollRateAtTouchdownLimit KPV fix
+ - AE-1902 Fuel Quantity Low Warning - change to Airborne only
+
 v0.41.4
 -------
  - Fix: re-added commits which were part of the master branch history, but the changes were not applied

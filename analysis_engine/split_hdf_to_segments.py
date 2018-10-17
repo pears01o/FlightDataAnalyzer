@@ -38,6 +38,10 @@ from hdfaccess.utils import segment_boundaries, write_segment
 
 from flightdatautilities.filesystem_tools import sha_hash_file
 
+# Timestamp infomation
+PRECISE = 'PRECISE'
+FALLBACK_NO_PARAM = 'FALLBACK_NO_PARAM'
+FALLBACK_VALIDATION = 'FALLBACK_VALIDATION'
 
 logger = logging.getLogger(name=__name__)
 
@@ -770,7 +774,7 @@ def get_dt_arrays(hdf, fallback_dt, validation_dt):
             else:
                 # values returned, continue
                 dt_arrays.append(array)
-                dt_parameter_origin[name]='Precise' # parameter is good
+                dt_parameter_origin[name]=PRECISE # parameter is good
                 continue
             
         if fallback_dt:
@@ -779,7 +783,7 @@ def get_dt_arrays(hdf, fallback_dt, validation_dt):
             logger.warning("%s not available, using range from %d to %d from fallback_dt %s",
                            name, array[0], array[-1], fallback_dt)
             dt_arrays.append(array)
-            dt_parameter_origin[name]='Fallback (validation)' if param else 'Fallback (no param)' # issue with parameter
+            dt_parameter_origin[name]=FALLBACK_VALIDATION if param else FALLBACK_NO_PARAM
             continue
         else:
             raise TimebaseError("Required parameter '%s' not available" % name)
@@ -815,22 +819,17 @@ def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None,
     the end of data and if there's a constant timebase within the data it
     will use this as the fallback datetime.
     """
-    print('<<<<<<<<<< Called calculate_fallback_dt >>>>>>>>>>')
     if fallback_dt and not fallback_relative_to_start:
         # fallback_dt is relative to the end of the data; remove the data
         # duration to make it relative to the start of the data
         secs = hdf.duration
-        print(fallback_dt)
         fallback_dt -= timedelta(seconds=secs)
         logger.info("Reduced fallback_dt by %ddays %dhr %dmin to %s",
                     secs // 86400, secs % 86400 // 3600,
                     secs % 86400 % 3600 // 60, fallback_dt)
-        print('<<<<<< fallback_dt adjust to start >>>>>>')
-        print(fallback_dt)
 
     if not frame_doubled or not has_constant_time(hdf):
         # we don't need to do any further corrections
-        print(fallback_dt)
         return fallback_dt
 
     # Only use this for certain recorders where we use timestamps from headers
@@ -841,12 +840,9 @@ def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None,
         fallback_changes = [v for v in dt_parameter_origin.itervalues() if 'fallback' in v]
     except (KeyError, ValueError):
         # The time parameters are not available/operational
-        print('<<<<<<< timebase errored >>>>>>>')
         return fallback_dt
     else:
         logger.warning("Time doesn't change, using the starting time as the fallback_dt")
-        if fallback_changes:
-            print('<<<<<< fallback_dt has been updated >>>>>>')
         return timebase
 
 
@@ -872,7 +868,6 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
     a TimebaseError is raised
     """
     now = datetime.utcnow().replace(tzinfo=pytz.utc)
-    print('<<<<<<<<<< Called _calculate_start_datetime >>>>>>>>>>')
     if fallback_dt is not None:
         if (fallback_dt.tzinfo is None or
                 fallback_dt.tzinfo.utcoffset(fallback_dt) is None):

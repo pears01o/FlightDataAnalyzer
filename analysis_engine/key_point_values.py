@@ -16965,8 +16965,8 @@ class RollRateMaxAboveLimitAtTouchdown(KeyPointValueNode):
     units = ut.DEGREE_S
     
     def derive(self,
-               limit=P('Roll Rate At Touchdown Limit'),
                roll_rate=P('Roll Rate For Touchdown'),
+               limit=P('Roll Rate At Touchdown Limit'),
                touchdowns=KTI('Touchdown'),
                touch_and_go=KTI('Touch And Go'),
                bounces=S('Bounced Landing'),):

@@ -20279,7 +20279,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                              0, 0, 0, 0, 0, ]))
         
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns)
+        node.derive(roll_rate, limit, touchdowns=touchdowns)
         
         self.assertEqual(node[0].index, 12)
         self.assertEqual(node[0].value, 4)
@@ -20303,7 +20303,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                                  0, 0, 0, 0, 0, ]))
     
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns)
+        node.derive(roll_rate, limit, touchdowns=touchdowns)
 
         self.assertEqual(node[0].index, 11)
         self.assertEqual(node[0].value, 0)
@@ -20327,7 +20327,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                                  0, 0, 0, 0, 0, ]))
     
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns)
+        node.derive(roll_rate, limit, touchdowns=touchdowns)
         
         self.assertEqual(node[0].index, 10)
         self.assertEqual(node[0].value, 5)        
@@ -20351,7 +20351,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                                  0, 0, 0, 0, 0, ]))
     
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns)
+        node.derive(roll_rate, limit, touchdowns=touchdowns)
         
         self.assertEqual(node[0].index, 10)
         self.assertEqual(node[0].value, 2)
@@ -20375,7 +20375,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                                  0, 2, 3, 4, 5, ]))
     
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns)
+        node.derive(roll_rate, limit, touchdowns=touchdowns)
         
         self.assertEqual(node[0].index, 11)
         self.assertEqual(node[0].value, 0)
@@ -20399,7 +20399,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                                  0, 0, 0, 0, 0, ]))
     
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns)
+        node.derive(roll_rate, limit, touchdowns=touchdowns)
         
         self.assertEqual(node[0].index, 11)
         self.assertEqual(node[0].value, 0)
@@ -20424,7 +20424,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                              0, 0, 0, 0, 0, ]))
 
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns, bounces=bounces)
+        node.derive(roll_rate, limit, touchdowns=touchdowns, bounces=bounces)
 
         self.assertEqual(node[0].index, 15)
         self.assertEqual(node[0].value, 3)
@@ -20449,7 +20449,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                              0, 0, 0, 0, 0, ]))
 
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns, bounces=bounces)
+        node.derive(roll_rate, limit, touchdowns=touchdowns, bounces=bounces)
 
         self.assertEqual(node[0].index, 12)
         self.assertEqual(node[0].value, 4)
@@ -20474,7 +20474,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                              0, 0, 0, 0, 0, ]))
 
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns, bounces=bounces)
+        node.derive(roll_rate, limit, touchdowns=touchdowns, bounces=bounces)
 
         self.assertEqual(node[0].index, 12)
         self.assertEqual(node[0].value, 4)
@@ -20502,7 +20502,7 @@ class TestRollRateMaxAboveLimitAtTouchdown(unittest.TestCase):
                              0, 0, 0, 0, 0, ]))
 
         node = RollRateMaxAboveLimitAtTouchdown()
-        node.derive(limit, roll_rate, touchdowns=touchdowns, touch_and_go=touch_and_go, bounces=bounces)
+        node.derive(roll_rate, limit, touchdowns=touchdowns, touch_and_go=touch_and_go, bounces=bounces)
 
         self.assertEqual(node[0].index, 12)
         self.assertEqual(node[0].value, 4)

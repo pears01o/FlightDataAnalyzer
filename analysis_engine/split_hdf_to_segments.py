@@ -919,7 +919,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
                 logger.info(
                     "Timebase was in the future, using a DAY before "
                     "satisfies requirements: %s", a_day_before)
-                return a_day_before, False
+                return a_day_before, False, timestamp_configuration
             # continue to take away a Year
         if 'Year' not in hdf:
             # remove a year from the timebase
@@ -927,7 +927,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
             if a_year_before < now:
                 logger.info("Timebase was in the future, using a YEAR before "
                             "satisfies requirements: %s", a_year_before)
-                return a_year_before, False
+                return a_year_before, False, timestamp_configuration
 
         raise TimebaseError("Timebase '%s' is in the future.", timebase)
 

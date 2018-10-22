@@ -18795,7 +18795,7 @@ class TCASRASubsequentAcceleration(KeyPointValueNode):
                 continue  # if no change present, skip to the next RA
             # check this was not a change to Clear of Conflict
             # will be run against historic data with inconsistent state names
-            if not rate and tcas_cc.array[change_index + 1].lower() == 'clear of conflict':
+            if not rate and tcas_cc.array[change_index + 1].lower() in ['clear of conflict', 'no advisory']:
                 continue
             exceed_index = int(change_index) + 1
             to_scan = slice(exceed_index, tcas_ra.slice.stop)
@@ -18840,7 +18840,7 @@ class TCASRASubsequentReactionDelay(KeyPointValueNode):
 
             # check this was not a change to Clear of Conflict
             # will be run against historic data with inconsistent state names
-            if not rate and tcas_cc.array[change_index + 1].lower() == 'clear of conflict':
+            if not rate and tcas_cc.array[change_index + 1].lower() in ['clear of conflict', 'no advisory']:
                 continue
 
             to_scan = slice(change_index, tcas_ra.slice.stop)

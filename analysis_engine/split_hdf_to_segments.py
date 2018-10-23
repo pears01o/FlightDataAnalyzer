@@ -1102,7 +1102,6 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
             dest_path, segment_type, segment_slice, part,
             fallback_dt=segment_start_dt, validation_dt=validation_dt,
             aircraft_info=aircraft_info)
-        logger.debug('>>>>>> %s', segment.timestamp_configuration)
         if previous_stop_dt and segment.start_dt < previous_stop_dt - timedelta(0, 4):
             # In theory, this should not happen - but be warned of superframe
             # padding?

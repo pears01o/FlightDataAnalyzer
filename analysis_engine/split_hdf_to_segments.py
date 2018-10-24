@@ -353,10 +353,10 @@ def _split_on_eng_params(slice_start_secs, slice_stop_secs, split_params_min,
     )
 
     if not eng_min_slices:
-        return round(split_index / split_params_frequency), split_value
+        return py2round(split_index / split_params_frequency), split_value
 
     split_index = eng_min_slices[0].start + \
-        ((eng_min_slices[0].stop - eng_min_slices[0].start) / 2) + slice_start
+        ((eng_min_slices[0].stop - eng_min_slices[0].start) // 2) + slice_start
     return py2round(split_index / split_params_frequency), split_value
 
 

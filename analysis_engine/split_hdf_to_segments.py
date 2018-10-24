@@ -874,8 +874,15 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
     if fallback_dt is not None:
         if (fallback_dt.tzinfo is None or
                 fallback_dt.tzinfo.utcoffset(fallback_dt) is None):
-            # Assume fallback_dt is UTC.
+            # Assume fallback_dt is UTC
             fallback_dt = fallback_dt.replace(tzinfo=pytz.utc)
+        
+        # Even if fallback_dt is UTC, there's a chance that the timezone was
+        # wrong, so if we're still in the future, let's see if it's less than
+        # 12 hours, and if it is, try to fix it
+        if fallback_dt >= now and (fallback_dt - now).seconds/3600 < 12:
+            fallback_dt -= fallback_dt - now
+        
         assert fallback_dt <= now, (
             "Fallback time '%s' in the future is not allowed. Current time "
             "is '%s'." % (fallback_dt, now))

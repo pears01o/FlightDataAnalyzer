@@ -37,7 +37,7 @@ from hdfaccess.file import hdf_file
 from hdfaccess.utils import segment_boundaries, write_segment
 
 from flightdatautilities.filesystem_tools import sha_hash_file
-
+from six import string_types
 
 logger = logging.getLogger(name=__name__)
 
@@ -1040,7 +1040,7 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
         from analysis_engine.plot_flight import plot_essential
         plot_essential(hdf_path)
 
-    if validation_dt and type(validation_dt) is unicode:
+    if isinstance(validation_dt, string_types):
         validation_dt = datetime.strptime(validation_dt, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.utc)
 
     with hdf_file(hdf_path) as hdf:

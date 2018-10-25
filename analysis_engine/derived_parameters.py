@@ -4473,13 +4473,13 @@ class ApproachFlightPathAngle(DerivedParameterNode):
             # now correct the altitude for temperature deviation.
             alt = alt_dev2alt(alt_aal.array[app.slice], dev)
 
-            if any(runs_of_ones(alt>=200.0)):
+            if np.ma.any(alt>=200.0):
                 alt_cropped = mask_outside_slices(alt, runs_of_ones(alt >= 200.0))
             else:
                 # Altitude too low to calculate angle
                 continue
 
-            if min(alt_cropped) > 500:
+            if np.min(alt_cropped) > 500:
                 # Can occur in an approach to a go-around
                 continue
 

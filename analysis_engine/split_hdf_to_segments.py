@@ -39,6 +39,13 @@ from hdfaccess.utils import segment_boundaries, write_segment
 from flightdatautilities.filesystem_tools import sha_hash_file
 from six import string_types
 
+
+# Timestamp infomation
+PRECISE = 'PRECISE'
+FALLBACK_NO_PARAM = 'FALLBACK_NO_PARAM'
+FALLBACK_VALIDATION = 'FALLBACK_VALIDATION'
+
+
 logger = logging.getLogger(name=__name__)
 
 
@@ -752,6 +759,7 @@ def get_dt_arrays(hdf, fallback_dt, validation_dt):
     onehz = P(frequency=1)
     dt_arrays = []
     precise = True
+    dt_parameter_origin = {}
     for name in ('Year', 'Month', 'Day', 'Hour', 'Minute', 'Second'):
         param = hdf.get(name)
         if param:
@@ -769,17 +777,20 @@ def get_dt_arrays(hdf, fallback_dt, validation_dt):
             else:
                 # values returned, continue
                 dt_arrays.append(array)
+                dt_parameter_origin[name]=PRECISE # parameter is good
                 continue
+            
         if fallback_dt:
             precise = False
             array = [getattr(dt, name.lower()) for dt in fallback_dts]
             logger.warning("%s not available, using range from %d to %d from fallback_dt %s",
                            name, array[0], array[-1], fallback_dt)
             dt_arrays.append(array)
+            dt_parameter_origin[name]=FALLBACK_VALIDATION if param else FALLBACK_NO_PARAM
             continue
         else:
             raise TimebaseError("Required parameter '%s' not available" % name)
-    return dt_arrays, precise
+    return dt_arrays, precise, dt_parameter_origin
 
 
 def has_constant_time(hdf):
@@ -801,7 +812,9 @@ def has_constant_time(hdf):
     return samples > 5 and duration > 5 and np.ptp(minutes.array) == 0
 
 
-def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None, fallback_relative_to_start=True, frame_doubled=False):
+def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None,
+                          fallback_relative_to_start=True,
+                          frame_doubled=False, dt_origin_kwargs={}):
     """
     Check the time parameters in the HDF5 file and update the fallback_dt.
 
@@ -825,7 +838,9 @@ def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None, fallback_re
     # Only use this for certain recorders where we use timestamps from headers
     # to provide a fallback which happens to be a constant value.
     try:
-        timebase = calculate_timebase(*get_dt_arrays(hdf, fallback_dt, validation_dt)[0])
+        dt_arrays, _, dt_parameter_origin = get_dt_arrays(hdf, fallback_dt, validation_dt)
+        timebase = calculate_timebase(*dt_arrays)
+        fallback_changes = [v for v in dt_parameter_origin.itervalues() if 'fallback' in v]
     except (KeyError, ValueError):
         # The time parameters are not available/operational
         return fallback_dt
@@ -856,7 +871,6 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
     a TimebaseError is raised
     """
     now = datetime.utcnow().replace(tzinfo=pytz.utc)
-
     if fallback_dt is not None:
         if (fallback_dt.tzinfo is None or
                 fallback_dt.tzinfo.utcoffset(fallback_dt) is None):
@@ -870,7 +884,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
                 "Fallback time '%s' ahead of validation time is not allowed. "
                 "Validation time is '%s'." % (fallback_dt, validation_dt))
     # align required parameters to 1Hz
-    dt_arrays, precise_timestamp = get_dt_arrays(hdf, fallback_dt, validation_dt)
+    dt_arrays, precise_timestamp, timestamp_configuration = get_dt_arrays(hdf, fallback_dt, validation_dt)
 
     length = max([len(a) for a in dt_arrays])
     if length > 1:
@@ -908,7 +922,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
                 logger.info(
                     "Timebase was in the future, using a DAY before "
                     "satisfies requirements: %s", a_day_before)
-                return a_day_before, False
+                return a_day_before, False, timestamp_configuration
             # continue to take away a Year
         if 'Year' not in hdf:
             # remove a year from the timebase
@@ -916,7 +930,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
             if a_year_before < now:
                 logger.info("Timebase was in the future, using a YEAR before "
                             "satisfies requirements: %s", a_year_before)
-                return a_year_before, False
+                return a_year_before, False, timestamp_configuration
 
         raise TimebaseError("Timebase '%s' is in the future.", timebase)
 
@@ -928,7 +942,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
         raise TimebaseError(error_msg)
 
     logger.info("Valid timebase identified as %s", timebase)
-    return timebase, precise_timestamp
+    return timebase, precise_timestamp, timestamp_configuration
 
 
 def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
@@ -959,7 +973,7 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
         speed, _, thresholds = _get_speed_parameter(hdf, aircraft_info)
         duration = hdf.duration
         try:
-            start_datetime, precise_timestamp = _calculate_start_datetime(
+            start_datetime, precise_timestamp, timestamp_configuration = _calculate_start_datetime(
                 hdf, fallback_dt, validation_dt)
         except TimebaseError:
             # Warn the user and store the fake datetime. The code on the other
@@ -968,6 +982,7 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
                 'Unable to calculate timebase, using 1970-01-01 00:00:00+0000!')
             start_datetime = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
             precise_timestamp = False
+            timestamp_configuration = None
         stop_datetime = start_datetime + timedelta(seconds=duration)
         hdf.start_datetime = start_datetime
 
@@ -1001,13 +1016,15 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
         go_fast_datetime,
         stop_datetime,
         precise_timestamp,
+        timestamp_configuration,
     )
     return segment
 
 
 def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
                           validation_dt=None, fallback_relative_to_start=True,
-                          draw=False, dest_dir=None, pre_file_kwargs={}):
+                          draw=False, dest_dir=None, pre_file_kwargs={},
+                          dt_origin_kwargs={}):
     """
     Main method - analyses an HDF file for flight segments and splits each
     flight into a new segment appropriately.
@@ -1066,7 +1083,9 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
         segment_tuples = split_segments(hdf, aircraft_info)
         frame_doubled = aircraft_info.get('Frame Doubled', False)
 
-        fallback_dt = calculate_fallback_dt(hdf, fallback_dt, validation_dt, fallback_relative_to_start, frame_doubled)
+        fallback_dt = calculate_fallback_dt(hdf, fallback_dt, validation_dt,
+                                            fallback_relative_to_start,
+                                            frame_doubled, dt_origin_kwargs)
 
     # process each segment (into a new file) having closed original hdf_path
     segments = []
@@ -1089,7 +1108,6 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
             dest_path, segment_type, segment_slice, part,
             fallback_dt=segment_start_dt, validation_dt=validation_dt,
             aircraft_info=aircraft_info)
-
         if previous_stop_dt and segment.start_dt < previous_stop_dt - timedelta(0, 4):
             # In theory, this should not happen - but be warned of superframe
             # padding?

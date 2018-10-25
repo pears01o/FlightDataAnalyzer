@@ -2290,14 +2290,12 @@ class TCASResolutionAdvisory(FlightPhaseNode):
     
     @classmethod
     def can_operate(cls, available):
-        return all_of(('TCAS Combined Control', 'TCAS Down Advisory', 'TCAS Up Advisory', 'TCAS Operational'), available) or \
+        return all_of(('TCAS Combined Control', 'TCAS Operational'), available) or \
                all_of(('TCAS RA', 'TCAS Operational'), available)
     
     name = 'TCAS Resolution Advisory'
 
     def derive(self, tcas_cc=M('TCAS Combined Control'), 
-               tcas_da=M('TCAS Down Advisory'),
-               tcas_ua=M('TCAS Up Advisory'), 
                tcas_ops=S('TCAS Operational'),
                tcas_ra=M('TCAS RA')):
 
@@ -2309,55 +2307,11 @@ class TCASResolutionAdvisory(FlightPhaseNode):
                     'Up Advisory Corrective',
                     'Down Advisory Corrective',
                     'Preventive',
+                    'Drop Track',
                     ignore_missing=True,
                 ))
     
-                dn_slices = runs_of_ones(tcas_da.array[tcas_op.slice].any_of(
-                    "Descent",
-                    "Don't Climb",
-                    "Don't Climb < 500",
-                    "Don't Climb < 1000",
-                    "Don't Climb < 2000",
-                    "Don't Climb > 500",
-                    "Don't Climb > 1000",
-                    "Don't Climb > 2000",
-                    "Don't Climb > 500 fpm",
-                    "Don't Climb > 1000 fpm",
-                    "Don't Climb > 2000 fpm",
-                    "Don't Climb >500 fpm",
-                    "Don't Climb >1000 fpm",
-                    "Don't Climb >2000 fpm",
-                    "Dont Climb",
-                    "Dont Climb > 500",
-                    "Dont Climb > 1000",
-                    "Dont Climb > 2000",
-                    ignore_missing=True,
-                ))
-    
-                up_slices = runs_of_ones(tcas_ua.array[tcas_op.slice].any_of(
-                    "Climb",
-                    "Don't Descend",
-                    "Don't Descend > 500",
-                    "Don't Descend > 1000",
-                    "Don't Descend > 2000",
-                    "Don't Descend > 500 fpm",
-                    "Don't Descend > 1000 fpm",
-                    "Don't Descend > 2000 fpm",            
-                    "Don't Descend >500",
-                    "Don't Descend >1000",
-                    "Don't Descend >2000",
-                    "Don't Descend >500 fpm",
-                    "Don't Descend >1000 fpm",
-                    "Don't Descend >2000 fpm",            
-                    "Dont Descend",
-                    "Dont Descend > 500",
-                    "Dont Descend > 1000",
-                    "Don't Descend > 2000",            
-                    ignore_missing=True,
-                ))
-                
-                ra_slices = shift_slices(slices_or(ra_slices, dn_slices, up_slices), tcas_op.slice.start)
-
+                ra_slices = shift_slices(ra_slices, tcas_op.slice.start)
                 hz = tcas_cc.frequency
                 
             else:

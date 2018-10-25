@@ -3282,14 +3282,11 @@ class TestTCASResolutionAdvisory(unittest.TestCase):
 
     def test_can_operate(self):
         self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Combined Control',
-                                                            'TCAS Down Advisory',
-                                                            'TCAS Up Advisory',
                                                             'TCAS Operational')))
         self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS RA', 
                                                             'TCAS Operational')))
                         
-    def test_derive_cc_da_or_ua(self):
-        self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Combined Control', 'TCAS Down Advisory', 'TCAS Up Advisory', 'TCAS Operational')))
+    def test_derive_cc(self):
         tcas_cc = M('TCAS Combined Control', array=np.ma.array([0,0,0,0,4,5,4,5,5,5,4,3,2,1]+498*[0]),
                     values_mapping={0: 'No Advisory',
                                     1: 'Clear of Conflict',
@@ -3299,29 +3296,11 @@ class TestTCASResolutionAdvisory(unittest.TestCase):
                                     5: 'Down Advisory Corrective',
                                     6: 'Preventive',
                                     7: 'Not Used'})
-        tcas_da = M('TCAS Down Advisory', array=np.ma.array(100*[0]+[0,0,0,0,1,2,2,3,4,5,5,0]+400*[0]),
-                    values_mapping={0: "No Down Advisory",
-                                    1: "Descent",
-                                    2: "Don't Climb",
-                                    3: "Don't Climb > 500",
-                                    4: "Don't Climb > 1000",
-                                    5: "Don't Climb > 2000",
-                                    })
-        tcas_ua = M('TCAS Up Advisory', array=np.ma.array(200*[0]+[0,0,0,0,1,2,2,3,4,5,5,0]+300*[0]),
-                    values_mapping={0: "No Up Advisory",
-                                    1: "Climb",
-                                    2: "Don't Descend",
-                                    3: "Don't Descend > 500",
-                                    4: "Don't Descend > 1000",
-                                    5: "Don't Descend > 2000",
-                                    })
         tcas_op = buildsection('TCAS Operating', 3, 480)
         node = TCASResolutionAdvisory()
-        node.derive(tcas_cc, tcas_da, tcas_ua, tcas_op)
+        node.derive(tcas_cc, tcas_op)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_ordered_by_index()[0].slice, slice(4, 11))
-        self.assertEqual(node.get_ordered_by_index()[1].slice, slice(104, 111))
-        self.assertEqual(node.get_ordered_by_index()[2].slice, slice(204, 211))
         
     def test_derive_ra(self):
         self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Operational', 'TCAS RA')))
@@ -3329,7 +3308,7 @@ class TestTCASResolutionAdvisory(unittest.TestCase):
                     values_mapping={0: '-', 1: 'RA'})
         tcas_op = buildsection('TCAS Operating', 3, 480)
         node = TCASResolutionAdvisory()
-        node.derive(None, None, None, tcas_op, tcas_ra)
+        node.derive(None, tcas_op, tcas_ra)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_ordered_by_index()[0].slice, slice(4, 14))
 

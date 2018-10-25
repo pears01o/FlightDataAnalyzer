@@ -1325,14 +1325,14 @@ class OnDeck(FlightPhaseNode):
         for gnd in gnds:
             # The fourier transform for pitching motion...
             p = pitch.array[gnd.slice]
-            if all(p.mask):
+            if np.all(p.mask):
                 continue
             n = float(len(p)) # Scaling the result to be independet of data length.
             fft_p = np.abs(np.fft.rfft(p - moving_average(p))) / n
 
             # similarly for roll
             r = roll.array[gnd.slice]
-            if all(r.mask):
+            if np.all(r.mask):
                 continue
             fft_r = np.abs(np.fft.rfft(r - moving_average(r))) / n
 

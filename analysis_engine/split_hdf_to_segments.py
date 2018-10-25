@@ -1040,6 +1040,9 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
         from analysis_engine.plot_flight import plot_essential
         plot_essential(hdf_path)
 
+    if validation_dt and type(validation_dt) is unicode:
+        validation_dt = datetime.strptime(validation_dt, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.utc)
+
     with hdf_file(hdf_path) as hdf:
 
         # Confirm aircraft tail for the entire datafile

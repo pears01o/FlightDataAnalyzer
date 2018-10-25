@@ -6132,7 +6132,33 @@ class TailRotorPedalWhileTaxiingMin(KeyPointValueNode):
         self.create_kpvs_within_slices(pedal.array, taxiing.get_slices(),
                                        min_value)
 
+class TailRotorPedalOnGroundMax(KeyPointValueNode):
+    '''
+    
+    '''
+    can_operate = helicopter_only
+    
+    units = ut.PERCENT
+    
+    def derive(self,
+               collective=P('Collective'),
+               nr=P('Nr'),
+               grounded=S('Grounded'),
+               stationary=S('Stationary'),
+               pedal=P('Tail Rotor Pedal'),):
+        
+        collective_slices = slices_below(collective.array, 6)
+        nr_slices = slices_above(nr.array, 100)
+        #pedal_above = slices_above(pedal.array, 4)
+        #pedal_below = slices_below(pedal.array, -4)
+        #pedal_slices = slices_or(pedal_above[1], pedal_below[1])
+        on_ground = slices_and(stationary.get_slices(), grounded.get_slices())
 
+        sections = slices_and(on_ground, slices_and(collective_slices[1], nr_slices[1]))
+        
+        self.create_kpvs_within_slices(pedal.array, sections, max_abs_value)
+        
+        
 ##############################################################################
 # Cyclic
 

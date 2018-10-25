@@ -11056,7 +11056,7 @@ class EngN1Below60PercentAfterTouchdownDuration(KeyPointValueNode):
                 continue
             last_tdwn_idx = tdwn.get_last().index
             last_eng_stop_idx = eng_stop[-1].index
-            if last_tdwn_idx > last_eng_stop_idx:
+            if last_tdwn_idx >= last_eng_stop_idx:
                 self.debug('Engine %d was stopped before last touchdown', eng_num)
                 continue
             eng_array = repair_mask(eng.array)

@@ -18988,32 +18988,24 @@ class TCASTADevelopmentPlot(KeyPointValueNode):
                                   to_sec(_slice.stop, _slice, tcas_tas) + dt, 
                                   num=_slice.stop - _slice.start + 2 * extend_samples, 
                                   endpoint=True)
-            ax1 = fig.add_subplot(313)
-            ax1.tick_params(labelsize=12)
-            ax1.plot([to_sec(_slice.start, _slice, tcas_tas), to_sec(_slice.stop, _slice, tcas_tas)],
-                     [0.5, 0.5], '-g')
     
-            ax2 = fig.add_subplot(312, sharex=ax1)
-            plt.setp(ax2.get_xticklabels(), visible=False)
-            ax2.plot(x_scale, vs.array[scope])
+            ax1 = fig.add_subplot(212)
+            plt.setp(ax1.get_xticklabels(), visible=False)
+            ax1.plot(x_scale, vs.array[scope])
     
             vs0 = max(vs.array[_slice])
             vs1 = min(vs.array[_slice])
             ix = to_sec(np.ma.argmax(vs.array[_slice]) + _slice.start, _slice, tcas_tas)
-            ax2.plot([ix, ix], [vs0, vs1], '-ob', markersize=4)
-            ax2.set_ylabel('vert spd')
+            ax1.plot([ix, ix], [vs0, vs1], '-ob', markersize=4)
+            ax1.set_ylabel('vert spd')
             
-            ax3 = fig.add_subplot(311, sharex=ax1)
-            plt.setp(ax3.get_xticklabels(), visible=False)
-            ax3.plot(x_scale, acc.array[scope])
-            ax3.set_ylim(0.6, 1.4)
-            ax3.set_ylabel('norm g')
-            ##if trrd: #'TCAS RA Reaction Delay'
-                ##ax3.arrow(to_sec(trrd[0].index, _slice), 0.65, trrd[0].value, 0, color='red')
-    
-            if tta:
-                ax3.plot(to_sec(tta[0].index, _slice, tcas_tas), tta[0].value + 1.0, 'og')
-
+            ax2 = fig.add_subplot(211, sharex=ax1)
+            plt.setp(ax2.get_xticklabels(), visible=False)
+            ax2.plot(x_scale, acc.array[scope])
+            ax2.set_ylim(0.6, 1.4)
+            ax2.set_ylabel('norm g')
+            ax2.plot(to_sec(tta[0].index, _slice, tcas_tas), tta[0].value + 1.0, 'og', label='TCAS TA Acceleration')
+                
             with open('C:\\Temp\\TCAS_plot_names.txt', 'a') as the_file:
                 the_file.write(str(int(abs(np.ma.sum(vs.array[scope])))) + '\n')
                 
@@ -19059,17 +19051,7 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
                tradd=KPV('TCAS RA To AP Disengaged Duration'),
                trea=KPV('TCAS RA Erroneous Acceleration'),
                trsa=KPV('TCAS RA Subsequent Acceleration'),
-               trsdd=KPV('TCAS RA Subsequent Reaction Delay'),
-                              
-               # These parameters were investigated, but found to be
-               # less useful than acceleration / unresponsive during RAs
-               ##pitch=P('Pitch'),
-               ##elevator=P('Elevator'),
-               ##ri_1=P('TCAS Reply Information'),
-               ##ri_2=P('TCAS Reply Info Air - Air'),
-               ##ri_3=P('TCAS Operational Mode Status Reply Information'),
-               ##ri_4=P('TCAS Reply Info Air'),
-               ##ri_5=P('TCAS Reply Info Air-Air'),
+               trsdd=KPV('TCAS RA Subsequent Reaction Delay')
                ):
         
         def to_sec(index, tcas_ras):
@@ -19077,11 +19059,11 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
             hz = tcas_ras.frequency
             return (index - datum) / hz
         
-        if not tcas_ras:
-            return
-        
         dt = 20
         
+        if not tcas_ras:
+            return
+                
         import matplotlib.pyplot as plt
         font = {'size' : 10}
         plt.rc('font', **font)
@@ -19095,6 +19077,7 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
                               to_sec(_slice.stop, tcas_ras) + dt, 
                               num=_slice.stop - _slice.start + 2 * extend_samples, 
                               endpoint=True)
+        
         ax1 = fig.add_subplot(313)
         ax1.tick_params(labelsize=12)
         ax1.plot(x_scale, tcas_cc.array.data[scope])
@@ -19102,30 +19085,12 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
         ax1.set_ylabel('TCAS Mode')
         ax1.set_yticklabels(['No TCAS', 'Clear', '', '', 'RA Up', 'RA Down', 'Preventive'])
             
-        # Draw the phase periods
-        if tcas_tas:
-            for tcas_ta in tcas_tas.get_slices()[:2]:
-                if is_index_within_slice(tcas_ta.start, scope):
-                    ax1.plot([to_sec(tcas_ta.start, tcas_ras), to_sec(tcas_ta.stop, tcas_ras)],
-                             [0.5, 0.5], '-g')
-        if tcas_ras:
-            for tcas_ra in tcas_ras.get_slices():
-                ax1.plot([to_sec(tcas_ra.start, tcas_ras), to_sec(tcas_ra.stop, tcas_ras)],
-                         [0.7, 0.7], '-r')
-
         ax2 = fig.add_subplot(312, sharex=ax1)
         plt.setp(ax2.get_xticklabels(), visible=False)
         ax2.plot(x_scale, vs.array[scope])
-        ##if arm_1:
-            ### Correct incorrect sign scaling
-            ##ax2.plot(x_scale, np.ma.where(arm_1.array[scope] > 6400,
-                                          ##arm_1.array[scope] - 12800,
-                                          ##arm_1.array[scope]),
-                                          ##'-r')            
+ 
         if arm_2:
             ax2.plot(x_scale, arm_2.array[scope], '-r')
-        ##elif arm_3:
-            ##ax2.plot(x_scale, arm_3.array[scope], '-r')
         elif arm_4:
             ax2.plot(x_scale, arm_4.array[scope], '-r')
         elif arm_5:
@@ -19150,25 +19115,22 @@ class TCASRADevelopmentPlot(KeyPointValueNode):
         ax3.plot(x_scale, acc.array[scope])
         ax3.set_ylim(0.5, 1.5)
         ax3.set_ylabel('Vertical g')
-        if trrd: #'TCAS RA Reaction Delay'
-            ax3.arrow(to_sec(trrd[0].index, tcas_ras), 0.65, trrd[0].value, 0, color='red')
-        if tradd: #'TCAS RA To AP Disengaged Duration'
-            ax3.arrow(to_sec(tradd[0].index, tcas_ras), 0.7, tradd[0].value, 0, color='green')
-        if trsdd: #'TCAS RA Subsequent Reaction Delay'
-            ax3.arrow(to_sec(trsdd[0].index, tcas_ras), 0.75, trsdd[0].value, 0, color='orange')
-
-        if tta:
-            ax3.plot(to_sec(tta[0].index, tcas_ras), tta[0].value + 1.0, 'og')
-        if tra:
-            ax3.plot(to_sec(tra[0].index, tcas_ras), tra[0].value + 1.0, 'or')
-        if trea:
-            ax3.plot(to_sec(trea[0].index, tcas_ras), trea[0].value + 1.0, 'ok')
-        if trsa:
-            ax3.plot(to_sec(trsa[0].index, tcas_ras), trsa[0].value + 1.0, 'oc')
         
-        ident = int(abs(np.ma.sum(vs.array[scope])))
-            
-        # plt.show()        
+        if trrd: #'TCAS RA Reaction Delay'
+            ax3.arrow(to_sec(trrd[0].index, tcas_ras), 0.65, trrd[0].value, 0, color='red', label='TCAS RA Reaction Delay')
+        if tradd: #'TCAS RA To AP Disengaged Duration'
+            ax3.arrow(to_sec(tradd[0].index, tcas_ras), 0.7, tradd[0].value, 0, color='green', label='TCAS RA To AP Disengaged Duration')
+        if trsdd: #'TCAS RA Subsequent Reaction Delay'
+            ax3.arrow(to_sec(trsdd[0].index, tcas_ras), 0.75, trsdd[0].value, 0, color='orange', label='TCAS RA Subsequent Reaction Delay')
+
+        if tra:
+            ax3.plot(to_sec(tra[0].index, tcas_ras), tra[0].value + 1.0, 'or', label='TCAS RA Acceleration')
+        if trea:
+            ax3.plot(to_sec(trea[0].index, tcas_ras), trea[0].value + 1.0, 'ok', label='TCAS RA Erroneous Acceleration')
+        if trsa:
+            ax3.plot(to_sec(trsa[0].index, tcas_ras), trsa[0].value + 1.0, 'oc', label='TCAS RA Subsequent Acceleration')
+        ax3.legend(fontsize = 'small', numpoints=1)
+          
         filename = 'RA_plot-%s' % os.path.basename(self._h.file_path) if getattr(self, '_h', None) else 'Plot'
         plt.savefig('C:\\Temp\\TCAS_plots\\' + filename + '.png')
         plt.clf()

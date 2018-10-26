@@ -7766,7 +7766,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
         ma_test.assert_masked_array_equal(node.array, expected)
         
 
-class TestMinimumCleanLookup(unittest.TestCase, NodeTest):
+class TestMinimumCleanLookup(unittest.TestCase):
 
     class VS0(VelocitySpeed):
         '''
@@ -7791,10 +7791,12 @@ class TestMinimumCleanLookup(unittest.TestCase, NodeTest):
                 np.ma.repeat((15000, 20000, 26000, 27000), 10))
         self.airborne = buildsection('Airborne', 5, 35)
         self.air_spd = P('Airspeed', np.ma.repeat((170, 180, 190, 230), 10))
-        self.operational_combinations = [
-        ('Airspeed', 'Gross Weight Smoothed', 'Airborne', 'Model', 
-         'Series', 'Family', 'Engine Type', 'Engine Series', 
-         'Altitude STD Smoothed', 'Cruise',)]
+
+    def test_can_operate(self):
+        self.assertFalse(self.node_class.can_operate([], A('Family', 'B757')))
+        self.assertTrue(self.node_class.can_operate(self.node_class.get_dependency_names(), A('Family', 'B757')))
+        self.assertTrue(self.node_class.can_operate(self.node_class.get_dependency_names(), A('Family', 'B767')))
+        self.assertFalse(self.node_class.can_operate(self.node_class.get_dependency_names(), A('Family', 'A320')))
 
     @patch('analysis_engine.derived_parameters.at')
     @patch('analysis_engine.library.at')        

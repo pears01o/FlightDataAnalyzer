@@ -8590,6 +8590,12 @@ class MinimumCleanLookup(DerivedParameterNode):
     
     757/767: Vref30+80kts below FL250, Vref30+100kts above FL250
     '''
+
+    @classmethod
+    def can_operate(cls, available, family=A('Family')):
+        return family and family.value in ('B757', 'B767') and \
+               all_of(cls.get_dependency_names(), available)
+
     def derive(self,
                air_spd=P('Airspeed'),
                gw=P('Gross Weight Smoothed'),
@@ -8604,9 +8610,6 @@ class MinimumCleanLookup(DerivedParameterNode):
 
         # Prepare a zeroed, masked array based on the airspeed:
         self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
-        
-        if not family or not family.value in ('B767', 'B757',):
-            return
         
         # Initialise the velocity speed lookup table:
         attrs = (model, series, family, engine_type, engine_series)

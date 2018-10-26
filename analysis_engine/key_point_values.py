@@ -6132,9 +6132,16 @@ class TailRotorPedalWhileTaxiingMin(KeyPointValueNode):
         self.create_kpvs_within_slices(pedal.array, taxiing.get_slices(),
                                        min_value)
 
+
 class TailRotorPedalOnGroundMax(KeyPointValueNode):
     '''
-    
+    Maximum recorded value, maintained for at least 5s, of Tail Rotor Pedal with:
+     - Collective < 6%
+     - Nr > 100%
+     - In phase Grounded and Stationary
+    Uses second window to find the highest (absolute) value maintained for at 
+    least 5 seconds.
+    Helicopter only.
     '''
     can_operate = helicopter_only
     
@@ -6147,17 +6154,21 @@ class TailRotorPedalOnGroundMax(KeyPointValueNode):
                stationary=S('Stationary'),
                pedal=P('Tail Rotor Pedal'),):
         
+        # Collective below 6%
         collective_slices = slices_below(collective.array, 6)
+        
+        # Nr above 100%
         nr_slices = slices_above(nr.array, 100)
-        #pedal_above = slices_above(pedal.array, 4)
-        #pedal_below = slices_below(pedal.array, -4)
-        #pedal_slices = slices_or(pedal_above[1], pedal_below[1])
+        
+        # We need to be on ground and stationary - we're not interested in taxi and/or liftoff
         on_ground = slices_and(stationary.get_slices(), grounded.get_slices())
-
+        
+        # Combine all of the above into a list of slices
         sections = slices_and(on_ground, slices_and(collective_slices[1], nr_slices[1]))
         
-        self.create_kpvs_within_slices(pedal.array, sections, max_abs_value)
-        
+        # second_window for the 5s time slug
+        self.create_kpvs_within_slices(second_window(pedal.array, pedal.hz, 5), sections, max_abs_value)
+
         
 ##############################################################################
 # Cyclic

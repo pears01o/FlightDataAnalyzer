@@ -6163,8 +6163,8 @@ class TailRotorPedalOnGroundMax(KeyPointValueNode):
         # We need to be on ground and stationary - we're not interested in taxi and/or liftoff
         on_ground = slices_and(stationary.get_slices(), grounded.get_slices())
         
-        # Combine all of the above into a list of slices
-        sections = slices_and(on_ground, slices_and(collective_slices[1], nr_slices[1]))
+        # Combine all of the above into a list of slices, remove gaps <10s
+        sections = slices_remove_small_gaps(slices_and(on_ground, slices_and(collective_slices[1], nr_slices[1])), time_limit=10, hz=self.hz)
         
         # second_window for the 5s time slug
         self.create_kpvs_within_slices(second_window(pedal.array, pedal.hz, 5), sections, max_abs_value)

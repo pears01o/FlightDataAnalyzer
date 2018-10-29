@@ -2625,50 +2625,104 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
 
     @classmethod
     def can_operate(cls, available):
-        return any_of(cls.get_dependency_names(), available)
+        return 'Spoiler Deployed' in available or \
+               all_of(('Spoiler (L) Deployed', 'Spoiler (R) Deployed'), available) or \
+               all_of(('Spoiler (L) (1) Deployed', 'Spoiler (R) (1) Deployed'), available) or \
+               all_of(('Spoiler (L) (2) Deployed', 'Spoiler (R) (2) Deployed'), available) or \
+               all_of(('Spoiler (L) (3) Deployed', 'Spoiler (R) (3) Deployed'), available) or \
+               all_of(('Spoiler (L) (4) Deployed', 'Spoiler (R) (4) Deployed'), available) or \
+               all_of(('Spoiler (L) (5) Deployed', 'Spoiler (R) (5) Deployed'), available) or \
+               all_of(('Spoiler (L) (6) Deployed', 'Spoiler (R) (6) Deployed'), available) or \
+               all_of(('Spoiler (L) (7) Deployed', 'Spoiler (R) (7) Deployed'), available) or \
+               all_of(('Spoiler (L) Outboard Deployed', 'Spoiler (R) Outboard Deployed'), available) or \
+               'Spoiler' in available or \
+               all_of(('Spoiler (L)', 'Spoiler (R)'), available) or \
+               all_of(('Spoiler (L) (1)', 'Spoiler (R) (1)'), available) or \
+               all_of(('Spoiler (L) (2)', 'Spoiler (R) (2)'), available) or \
+               all_of(('Spoiler (L) (3)', 'Spoiler (R) (3)'), available) or \
+               all_of(('Spoiler (L) (4)', 'Spoiler (R) (4)'), available) or \
+               all_of(('Spoiler (L) (5)', 'Spoiler (R) (5)'), available) or \
+               all_of(('Spoiler (L) (6)', 'Spoiler (R) (6)'), available) or \
+               all_of(('Spoiler (L) (7)', 'Spoiler (R) (7)'), available) or \
+               all_of(('Spoiler (L) Outboard', 'Spoiler (R) Outboard'), available)
 
     def derive(self, dep=M('Spoiler Deployed'),
-               l=M('Spoiler (L) Deployed'),
-               r=M('Spoiler (R) Deployed'),
-               l1=M('Spoiler (L) (1) Deployed'),
-               l2=M('Spoiler (L) (2) Deployed'),
-               l3=M('Spoiler (L) (3) Deployed'),
-               l4=M('Spoiler (L) (4) Deployed'),
-               l5=M('Spoiler (L) (5) Deployed'),
-               l6=M('Spoiler (L) (6) Deployed'),
-               l7=M('Spoiler (L) (7) Deployed'),
-               r1=M('Spoiler (R) (1) Deployed'),
-               r2=M('Spoiler (R) (2) Deployed'),
-               r3=M('Spoiler (R) (3) Deployed'),
-               r4=M('Spoiler (R) (4) Deployed'),
-               r5=M('Spoiler (R) (5) Deployed'),
-               r6=M('Spoiler (R) (6) Deployed'),
-               r7=M('Spoiler (R) (7) Deployed'),
-               l_out=M('Spoiler (L) Outboard Deployed'),
-               r_out=M('Spoiler (R) Outboard Deployed')):
+               ld=M('Spoiler (L) Deployed'),
+               rd=M('Spoiler (R) Deployed'),
+               l1d=M('Spoiler (L) (1) Deployed'),
+               l2d=M('Spoiler (L) (2) Deployed'),
+               l3d=M('Spoiler (L) (3) Deployed'),
+               l4d=M('Spoiler (L) (4) Deployed'),
+               l5d=M('Spoiler (L) (5) Deployed'),
+               l6d=M('Spoiler (L) (6) Deployed'),
+               l7d=M('Spoiler (L) (7) Deployed'),
+               r1d=M('Spoiler (R) (1) Deployed'),
+               r2d=M('Spoiler (R) (2) Deployed'),
+               r3d=M('Spoiler (R) (3) Deployed'),
+               r4d=M('Spoiler (R) (4) Deployed'),
+               r5d=M('Spoiler (R) (5) Deployed'),
+               r6d=M('Spoiler (R) (6) Deployed'),
+               r7d=M('Spoiler (R) (7) Deployed'),
+               loutd=M('Spoiler (L) Outboard Deployed'),
+               routd=M('Spoiler (R) Outboard Deployed'),
+               spoiler=P('Spoiler'),
+               l=P('Spoiler (L)'),
+               r=P('Spoiler (R)'),
+               l1=P('Spoiler (L) (1)'),
+               l2=P('Spoiler (L) (2)'),
+               l3=P('Spoiler (L) (3)'),
+               l4=P('Spoiler (L) (4)'),
+               l5=P('Spoiler (L) (5)'),
+               l6=P('Spoiler (L) (6)'),
+               l7=P('Spoiler (L) (7)'),
+               r1=P('Spoiler (R) (1)'),
+               r2=P('Spoiler (R) (2)'),
+               r3=P('Spoiler (R) (3)'),
+               r4=P('Spoiler (R) (4)'),
+               r5=P('Spoiler (R) (5)'),
+               r6=P('Spoiler (R) (6)'),
+               r7=P('Spoiler (R) (7)'),
+               lout=P('Spoiler (L) Outboard'),
+               rout=P('Spoiler (R) Outboard')):
 
-        left = (l, l1, l2, l3, l4, l5, l6, l7, l_out)
-        right = (r, r1, r2, r3, r4, r5, r6, r7, r_out)
+        left = (ld, l1d, l2d, l3d, l4d, l5d, l6d, l7d, loutd,
+                l, l1, l2, l3, l4, l5, l6, l7, lout)
+        right = (rd, r1d, r2d, r3d, r4d, r5d, r6d, r7d, routd,
+                 r, r1, r2, r3, r4, r5, r6, r7, rout)
         pairs = zip(left, right)
         state = 'Deployed'
 
-        combined = [dep.array] if dep else []
-        for pair in pairs:
-            if not pair[0] or not pair[1]:
-                continue
-            pair_stack = []
-            for param in pair:
-                if state in param.array.state:
-                    array = np_ma_zeros_like(param.array, dtype=np.bool)
-                    array.mask = param.array.mask
-                    slices = runs_of_ones(param.array == state, min_samples=1)
-                    for s in slices:
-                        array[s] = True
-                    pair_stack.append(array)
-                else:
+        def is_deployed(param):
+            array = np_ma_zeros_like(
+                param.array, dtype=np.bool, mask=param.array.mask)
+            if state in param.name:
+                if state not in param.array.state:
                     logger.warning("State '%s' not found in param '%s'", state, param.name)
-                    break
-            combined.append(np.ma.vstack(pair_stack).all(axis=0))
+                    return None
+                matching = param.array == state
+            else:
+                matching = param.array >= 10
+
+            for s in runs_of_ones(matching, min_samples=1):
+                array[s] = True
+            return array
+
+        combined = [a for a in (is_deployed(p) for p in (dep, spoiler) if p) if a is not None]
+
+        for pair in pairs:
+            if not all(pair):
+                continue
+            arrays = [is_deployed(p) for p in pair]
+            if not all(a is not None for a in arrays):
+                continue
+            combined.append(np.ma.vstack(arrays).all(axis=0))
+
+        if not combined:
+            self.array = np_ma_zeros_like(
+                next(p.array for p in (dep, spoiler) + left + right if p is not None),
+                dtype=np.short, mask=True)
+            return
+
         stack = np.ma.vstack(combined)
 
         array = np_ma_zeros_like(stack[0], dtype=np.short)

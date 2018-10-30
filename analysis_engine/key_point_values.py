@@ -6600,7 +6600,7 @@ class NumberOfAPChannelsEngagedAtTouchdown(KeyPointValueNode):
                ap_engaged=P('AP Engaged'),
                ap_ch_count=P('AP Channels Engaged'),):
 
-        if ap_ch_count:
+        if ap_ch_count and not np.ma.is_masked(ap_ch_count.array[tdwn.get_last().index]):
             self.create_kpv(tdwn.get_last().index, ap_ch_count.array.data[tdwn.get_last().index])
         elif ap_engaged and ap_engaged.array[tdwn.get_last().index] == 'Engaged':
             self.create_kpv(tdwn.get_last().index, 1)

@@ -42,6 +42,7 @@ from analysis_engine.library import (
     slice_duration,
     slices_extend_duration,
     slices_from_to,
+    slices_int,
     slices_not,
     slices_or,
     slices_overlap,
@@ -213,8 +214,8 @@ class GoAroundAndClimbout(FlightPhaseNode):
         )
         dlc_slices = []
         for low_alt in low_alt_slices:
-            if (alt_aal.array[low_alt.start] and
-                alt_aal.array[low_alt.stop - 1]):
+            if (alt_aal.array[int(low_alt.start)] and
+                alt_aal.array[int(low_alt.stop - 1)]):
                 dlc_slices.append(low_alt)
 
         self.create_phases(dlc_slices)
@@ -324,7 +325,7 @@ class ApproachAndLanding(FlightPhaseNode):
             cycle_size=500.0), 5, alt_aal.hz)
 
         for low_alt in low_alt_slices:
-            if not alt_aal.array[low_alt.start]:
+            if not alt_aal.array[int(low_alt.start)]:
                 # Exclude Takeoff.
                 continue
 
@@ -388,9 +389,9 @@ class Approach(FlightPhaseNode):
                                  level_flights=level_flights)
         for low_alt in low_alts:
             # Select landings only.
-            if alt_aal.array[low_alt.start] and \
-               alt_aal.array[low_alt.stop] and \
-               alt_aal.array[low_alt.start] > alt_aal.array[low_alt.stop]:
+            if alt_aal.array[int(low_alt.start)] and \
+               alt_aal.array[int(low_alt.stop)] and \
+               alt_aal.array[int(low_alt.start)] > alt_aal.array[int(low_alt.stop)]:
                 self.create_phase(low_alt)
 
     def _derive_helicopter(self, alt_agl, alt_std):
@@ -692,8 +693,8 @@ class DescentLowClimb(FlightPhaseNode):
                                        3000,
                                        level_flights=level_flights)
         for low_alt in low_alt_slices:
-            if (alt_aal.array[low_alt.start] and
-                alt_aal.array[low_alt.stop - 1]):
+            if (alt_aal.array[int(low_alt.start)] and
+                alt_aal.array[int(low_alt.stop - 1)]):
                 self.create_phase(low_alt)
 
 
@@ -986,7 +987,7 @@ def scan_ils(beam, ils_dots, height, scan_slice, frequency,
         if idx_200 is not None:
             ils_lost_idx = min(ils_lost_idx, idx_200) + 1
 
-        if np.ma.count(ils_dots[scan_slice.start:ils_lost_idx]) < 5:
+        if np.ma.count(ils_dots[int(scan_slice.start):int(ils_lost_idx)]) < 5:
             # less than 5 valid values within remaining section
             return None
 
@@ -996,7 +997,7 @@ def scan_ils(beam, ils_dots, height, scan_slice, frequency,
     # last time we were within 2.5dots
     scan_start_idx = index_at_value(ils_abs, 2.5, slice(ils_lost_idx-1, scan_slice.start-1, -1))
 
-    first_valid_idx, first_valid_value = first_valid_sample(ils_abs[scan_slice.start:ils_lost_idx])
+    first_valid_idx, first_valid_value = first_valid_sample(ils_abs[int(scan_slice.start):int(ils_lost_idx)])
 
     ils_capture_idx = None
     if scan_start_idx or (first_valid_value > ILS_CAPTURE):
@@ -1032,7 +1033,9 @@ def scan_ils(beam, ils_dots, height, scan_slice, frequency,
         width = 5.0
         if frequency < 0.5:
             width = 10.0
-        ils_rate = rate_of_change_array(ils_dots[ils_slice], frequency, width=width, method='regression')
+        ils_rate = rate_of_change_array(ils_dots[slices_int(ils_slice)],
+                                        frequency, width=width,
+                                        method='regression')
         top = max(ils_rate)
         bottom = min(ils_rate)
         if top*bottom > 0.0:
@@ -1525,7 +1528,7 @@ class Landing(FlightPhaseNode):
 
             # Scan forwards to find lowest collective shortly after touchdown.
             to_scan = tdn + coll.frequency*LANDING_COLLECTIVE_PERIOD
-            landing_end = tdn  + np.ma.argmin(coll.array[tdn:to_scan])
+            landing_end = tdn  + np.ma.argmin(coll.array[int(tdn):int(to_scan)])
             if landing_begin and landing_end:
                 new_phase = [slice(landing_begin, landing_end)]
                 phases = slices_or(phases, new_phase)
@@ -1717,7 +1720,7 @@ class RejectedTakeoff(FlightPhaseNode):
                 self.create_phases(rto_list)
         else:
             for running_on_ground in running_on_grounds:
-                accel_lon_ground = accel_lon.array[running_on_ground]
+                accel_lon_ground = accel_lon.array[slices_int(running_on_ground)]
                 accel_lon_slices = runs_of_ones(
                     accel_lon_ground >= TAKEOFF_ACCELERATION_THRESHOLD
                 )
@@ -1802,7 +1805,7 @@ class Takeoff(FlightPhaseNode):
             # Find the start of the takeoff phase from the turn onto the runway.
 
             # The heading at the start of the slice is taken as a datum for now.
-            datum = head.array[takeoff_run]
+            datum = head.array[int(takeoff_run)]
 
             # Track back to the turn
             # If he took more than 5 minutes on the runway we're not interested!
@@ -1867,7 +1870,7 @@ class TakeoffRoll(FlightPhaseNode):
                     begin = acc_start.index
             chunk = slice(begin, toff.slice.stop)
             if pitch:
-                pwo = first_order_washout(pitch.array[chunk], 3.0, pitch.frequency)
+                pwo = first_order_washout(pitch.array[slices_int(chunk)], 3.0, pitch.frequency)
                 two_deg_idx = index_at_value(pwo, 2.0)
                 if two_deg_idx is None:
                     roll_end = toff.slice.stop

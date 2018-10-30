@@ -6625,7 +6625,7 @@ def including_transition(array, steps, hz=1, mode='include'):
         bands = slices_and(runs_of_ones(array > mid_1), runs_of_ones(array <= mid_2))
         for band in bands:
             # Find where the data did not change in this band...
-            partial = np.ma.where(np.ma.abs(change[band.start:band.stop]) < 0.01, flap, np.ma.masked) # threshold of 0.01 to account for slight changes/flutter
+            partial = np.ma.where(np.ma.abs(change[band.start:band.stop]) < 0.03, flap, np.ma.masked) # threshold of 0.03 to account for slight changes/flutter
             
             if len(partial) == 1:
                 if change[band.start] > 0:

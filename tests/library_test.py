@@ -5617,6 +5617,42 @@ class TestRunsOfOnes(unittest.TestCase):
         self.assertEqual(result, [slice(4, 9), slice(11, 14)])
 
 
+class TestSlicesInt(unittest.TestCase):
+    def test_single_slice(self):
+        self.assertEqual(slices_int(slice(None, None, None)), slice(None, None, None))
+        self.assertEqual(slices_int(slice(1, 2, 3)), slice(1, 2, 3))
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)), slice(1, 2, 3))
+        self.assertEqual(slices_int(slice(1, 2.2, 3)), slice(1, 2, 3))
+        self.assertEqual(slices_int(slice(1, 2.2, None)), slice(1, 2, None))
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).start, 1)
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).stop, 2)
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).step, 3)
+        self.assertEqual(slices_int(slice(None, None, None)).start, None)
+        self.assertEqual(slices_int(slice(None, None, None)).stop, None)
+        self.assertEqual(slices_int(slice(None, None, None)).step, None)
+
+    def test_list_slices(self):
+        self.assertEqual(slices_int([slice(None,None,None),]), [slice(None,None,None),])
+        self.assertEqual(slices_int((slice(None,None,None),)), [slice(None,None,None),])
+        mixed_slices = [
+            slice(1629.0, 2299.0),
+            slice(3722, 4708),
+            slice(4726, 4807.0),
+            slice(5009.0, 5071),
+            slice(5168, 6883.0, 2),
+            slice(8433.0, 9058, 2.5)
+        ]
+        expected_slices = [
+            slice(1629, 2299),
+            slice(3722, 4708),
+            slice(4726, 4807),
+            slice(5009, 5071),
+            slice(5168, 6883, 2),
+            slice(8433, 9058, 2)
+        ]
+        self.assertEqual(slices_int(mixed_slices), expected_slices)
+
+
 class TestSlicesOfRuns(unittest.TestCase):
 
     def test__slices_of_runs(self):

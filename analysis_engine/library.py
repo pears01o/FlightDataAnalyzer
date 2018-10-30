@@ -3750,6 +3750,24 @@ def slices_and_not(first, second):
                                  begin_at=min([s.start for s in first]),
                                  end_at=max([s.stop for s in first])))
 
+def slices_int(_slice):
+    '''
+    Ensure that a data in a slice, or a list of slices, are integers
+    or NoneType.
+    '''
+    def make_slice_int(s):
+        return slice(
+            None if s.start is None else int(s.start),
+            None if s.stop is None else int(s.stop),
+            None if s.step is None else int(s.step)
+        )
+    if isinstance(_slice, slice):
+        return make_slice_int(_slice)
+    elif all(isinstance(_s, slice) for _s in _slice):
+        return [make_slice_int(_s) for _s in _slice]
+    else:
+        raise ValueError("slices_int not a slice or a list of slices.")
+
 
 def slices_not(slice_list, begin_at=None, end_at=None):
     '''

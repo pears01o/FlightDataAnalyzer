@@ -1888,7 +1888,7 @@ def find_low_alts(array, frequency, threshold_alt,
         if low_alt_slice:
             low_alt_slices.append(low_alt_slice)
 
-    return sorted(slices_int(low_alt_slices))
+    return sorted(low_alt_slices)
 
 
 def find_level_off(array, frequency, _slice):
@@ -5442,7 +5442,7 @@ def peak_curvature(array, _slice=slice(None), curve_sense='Concave',
     trailer = int(ttp)+int(gap)
     overall = 2*int(ttp) + int(gap)
 
-    input_data = array[_slice]
+    input_data = array[slices_int(_slice)]
     if np.ma.count(input_data)==0:
         return None
 
@@ -5452,12 +5452,12 @@ def peak_curvature(array, _slice=slice(None), curve_sense='Concave',
         if (valid_slice.stop - valid_slice.start) <= 3:
             # No valid segment data is not long enough to process
             continue
-        elif np.ma.ptp(input_data[valid_slice]) == 0:
+        elif np.ma.ptp(input_data[slices_int(valid_slice)]) == 0:
             # No variation to scan in current valid slice.
             continue
         elif valid_slice.stop - valid_slice.start > overall:
             # Use truck and trailer as we have plenty of data
-            data = array[_slice][valid_slice]
+            data = array[slices_int(_slice)][slices_int(valid_slice)]
             # The normal path is to go and process this data.
             corner = truck_and_trailer(data, int(ttp), overall, trailer, curve_sense, _slice)  #Q: What is _slice going to do if we've already subsliced it?
             if corner:
@@ -5469,7 +5469,7 @@ def peak_curvature(array, _slice=slice(None), curve_sense='Concave',
             if _slice.step not in (None, 1, -1):
                 raise ValueError("Index returned cannot handle big steps!")
             # Simple methods for small data sets.
-            data = input_data[valid_slice]
+            data = input_data[slices_int(valid_slice)]
             curve = data[2:] - 2.0*data[1:-1] + data[:-2]
             if curve_sense == 'Concave':
                 curve_index, val = max_value(curve)

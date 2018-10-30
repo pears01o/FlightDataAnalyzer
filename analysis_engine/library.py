@@ -425,7 +425,7 @@ def align_args(slave_array, slave_frequency, slave_offset, master_frequency, mas
     if len_aligned != (len(slave_array) * r):
         raise ValueError("Array length problem in align. Probable cause is flight cutting not at superframe boundary")
 
-    slave_aligned = np.ma.zeros(len(slave_array) * r, dtype=_dtype)
+    slave_aligned = np.ma.zeros(int(len(slave_array) * r), dtype=_dtype)
 
     # Where offsets are equal, the slave_array recorded values remain
     # unchanged and interpolation is performed between these values.
@@ -435,7 +435,7 @@ def align_args(slave_array, slave_frequency, slave_offset, master_frequency, mas
         slave_aligned.mask = True
         if master_frequency > slave_frequency:
             # populate values and interpolate
-            slave_aligned[0::r] = slave_array[0::1]
+            slave_aligned[0::int(r)] = slave_array[0::1]
             # Interpolate and do not extrapolate masked ends or gaps
             # bigger than the duration between slave samples (i.e. where
             # original slave data is masked).
@@ -450,10 +450,12 @@ def align_args(slave_array, slave_frequency, slave_offset, master_frequency, mas
 
         else:
             # step through slave taking the required samples
-            return slave_array[0::1/r]
-
+            return slave_array[0::int(1/r)]
+    # wm & ws used for indexing from now on ensure they are integars
+    wm = int(wm)
+    ws = int(ws)
     # Each sample in the master parameter may need different combination parameters
-    for i in range(int(wm)):
+    for i in range(wm):
         bracket = (i / r) + delta
         # Interpolate between the hth and (h+1)th samples of the slave array
         h = int(floor(bracket))
@@ -1450,10 +1452,10 @@ def closest_unmasked_value(array, index, start_index=None, stop_index=None):
     array.mask = np.ma.getmaskarray(array)
 
     # Normalise indices.
-    index = positive_index(array, index)
+    index = floor(positive_index(array, index))
 
     if not array.mask[index]:
-        return Value(floor(index), array[index])
+        return Value(index, array[index])
 
     if start_index and stop_index:
         # Fix invalid index ranges, I assume slice.step was -1.
@@ -1886,7 +1888,7 @@ def find_low_alts(array, frequency, threshold_alt,
         if low_alt_slice:
             low_alt_slices.append(low_alt_slice)
 
-    return sorted(low_alt_slices)
+    return sorted(slices_int(low_alt_slices))
 
 
 def find_level_off(array, frequency, _slice):
@@ -3711,8 +3713,10 @@ def slices_and(first_list, second_list):
             return _slice
 
     result_list = []
-    for first_slice in first_list:
-        for second_slice in second_list:
+    _first_list = slices_int(first_list)
+    _second_list = slices_int(second_list)
+    for first_slice in _first_list:
+        for second_slice in _second_list:
             slice_1 = fwd(first_slice)
             slice_2 = fwd(second_slice)
 
@@ -3782,16 +3786,22 @@ def slices_not(slice_list, begin_at=None, end_at=None):
 
     :returns: list of slices. If begin or end is specified, the range will extend to these points. Otherwise the scope is within the end slices.
     '''
-    if not slice_list:
-        return [slice(begin_at, end_at)]
+    # Only integers or None allowed
+    begin = None if begin_at is None else int(begin_at)
+    end = None if end_at is None else int(end_at)
 
-    start_slices = [s.start for s in slice_list]
+    if not slice_list:
+        return [slice(begin, end)]
+
+    _slice_list = slices_int(slice_list)
+
+    start_slices = [s.start for s in _slice_list]
     a = None if None in start_slices else min(start_slices)
 
-    stop_slices  = [s.stop for s in slice_list]
+    stop_slices  = [s.stop for s in _slice_list]
     b =  None if None in stop_slices else min(stop_slices)
 
-    c = max([s.step or 1 for s in slice_list])
+    c = max([s.step or 1 for s in _slice_list])
     if c>1:
         raise ValueError("slices_not does not cater for non-unity steps")
 
@@ -3800,8 +3810,8 @@ def slices_not(slice_list, begin_at=None, end_at=None):
     except TypeError:
         startpoint = None
 
-    if begin_at is not None and startpoint is not None and begin_at < startpoint:
-        startpoint = begin_at
+    if begin is not None and startpoint is not None and begin < startpoint:
+        startpoint = begin
     if startpoint is None:
         startpoinstartpointt = 0
 
@@ -3814,12 +3824,12 @@ def slices_not(slice_list, begin_at=None, end_at=None):
     endpoint = max(c,d) if c and d else c or d
 
     try:
-        endpoint = end_at if end_at > endpoint else endpoint
+        endpoint = end if end > endpoint else endpoint
     except TypeError:
-        endpoint = end_at or endpoint
+        endpoint = end or endpoint
 
     workspace = np.ma.zeros(endpoint)
-    for each_slice in slice_list:
+    for each_slice in _slice_list:
         workspace[each_slice] = 1
     workspace=np.ma.masked_equal(workspace, 1)
     return shift_slices(np.ma.clump_unmasked(workspace[startpoint:endpoint]),
@@ -4687,7 +4697,7 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     p_valid_slices = []
 
     # Prepare a place for the output signal
-    length = len(params[0].array) * frequency / params[0].frequency
+    length = int(len(params[0].array) * frequency / params[0].frequency)
     result = np_ma_masked_zeros(length)
     # Ensure mask is expanded for slicing.
     result.mask = np.ma.getmaskarray(result)
@@ -4870,12 +4880,12 @@ def blend_parameters_weighting(array, wt):
 
     for i in range(1, len(param_weight) - 1):
         if param_weight[i] == 0.0:
-            result_weight[i * wt] = 0.0
+            result_weight[int(i * wt)] = 0.0
             continue
         if param_weight[i - 1] == 0.0 or param_weight[i + 1] == 0.0:
-            result_weight[i * wt] = 0.1 # Low weight to tail of valid data. Non-zero to avoid problems of overlapping invalid sections.
+            result_weight[int(i * wt)] = 0.1 # Low weight to tail of valid data. Non-zero to avoid problems of overlapping invalid sections.
             continue
-        result_weight[i * wt] = 1.0 / wt
+        result_weight[int(i * wt)] = 1.0 / wt
 
     for i in range(1, len(result_weight) - 1):
         if result_weight[i-1]==0.0 or result_weight[i + 1] == 0.0:
@@ -5115,7 +5125,10 @@ def np_ma_zeros_like(array, mask=False, dtype=float):
 
     :returns: Numpy masked array of unmasked zero values, length same as input array.
     """
-    return np.ma.array(np.zeros_like(array.data), mask=mask, dtype=dtype)
+    return np.ma.array(
+        np.zeros_like(array.data),
+        mask=mask.copy() if isinstance(mask, np.ndarray) else mask,
+        dtype=dtype)
 
 
 def np_ma_ones_like(array, **kwargs):
@@ -5797,7 +5810,7 @@ def resample(array, orig_hz, resample_hz):
     else:
         # Only convert complete blocks of data.
         endpoint = floor(len(array)*modifier)/modifier
-        return array[:endpoint:1 / modifier]
+        return array[:int(endpoint):int(1 / modifier)]
 
 
 def round_to_nearest(array, step):
@@ -6676,10 +6689,10 @@ def including_transition(array, steps, hz=1, mode='include'):
                 if index:
                     if array[band.start:band.stop + 1][-1] > array[band.start]:
                         # Going up
-                        output[index + band.start - 1] = flap
+                        output[int(index + band.start - 1)] = flap
                     else:
                         # Going down
-                        output[index + band.start + 1] = flap
+                        output[int(index + band.start + 1)] = flap
                 else:
                     # The data may have just crept into this band without being a 
                     # true change into the new flap setting. Let's just ignore this.
@@ -6842,7 +6855,6 @@ def step_values(array, steps, hz=1, step_at='midpoint', rate_threshold=0.5):
     # all the remaining values are above the top step level
     stepped_array[low < array] = level
     stepped_array.mask = np.ma.getmaskarray(array)
-
     if step_at == 'midpoint':
         # our work here is done
         return stepped_array
@@ -6909,7 +6921,7 @@ def step_values(array, steps, hz=1, step_at='midpoint', rate_threshold=0.5):
         is_masked = (array[floor(flap_midpoint)] is np.ma.masked or
                      array[ceil(flap_midpoint)] is np.ma.masked)
         if is_masked:
-            new_array[prev_midpoint:prev_flap.index] = prev_flap.value
+            new_array[floor(prev_midpoint):floor(prev_flap.index)] = prev_flap.value
             prev_midpoint = prev_flap.index
 
         if direction == 'increase':
@@ -7815,7 +7827,7 @@ def value_at_index(array, index, interpolate=True):
                     return low_value
         # If not interpolating and no mask or masked samples:
         if not interpolate:
-            return array[index + 0.5]
+            return array[int(index + 0.5)]
         # In the cases of no mask, or neither sample masked, interpolate.
         return r * high_value + (1 - r) * low_value
 

@@ -181,74 +181,74 @@ class TestFindLowAlts(unittest.TestCase):
         low_alts = find_low_alts(array, 1.0, 500, 3000, 2000,
                                  level_flights=level_flights)
         self.assertEqual(len(low_alts), 5)
-        self.assertAlmostEqual(low_alts[0].start, 0, places=0)
-        self.assertAlmostEqual(low_alts[0].stop, 499, places=0)
-        self.assertAlmostEqual(low_alts[1].start, 3425, places=0)
-        self.assertAlmostEqual(low_alts[1].stop, 3722, places=0)
-        self.assertAlmostEqual(low_alts[2].start, 4807, places=0)
-        self.assertAlmostEqual(low_alts[2].stop, 5009, places=0)
-        self.assertAlmostEqual(low_alts[3].start, 6883, places=0)
-        self.assertAlmostEqual(low_alts[3].stop, 7258, places=0)
-        self.assertAlmostEqual(low_alts[4].start, 10362, places=0)
-        self.assertAlmostEqual(low_alts[4].stop, 10815, places=0)
+        self.assertEqual(low_alts[0].start, 0)
+        self.assertEqual(low_alts[0].stop, 499)
+        self.assertEqual(low_alts[1].start, 3424)
+        self.assertEqual(low_alts[1].stop, 3722)
+        self.assertEqual(low_alts[2].start, 4807)
+        self.assertEqual(low_alts[2].stop, 5009)
+        self.assertEqual(low_alts[3].start, 6883)
+        self.assertEqual(low_alts[3].stop, 7257)
+        self.assertEqual(low_alts[4].start, 10361)
+        self.assertEqual(low_alts[4].stop, 10815)
 
         low_alts = find_low_alts(array, 1.0, 500, 500, 2000,
                                         level_flights=level_flights,
                                         relative_start=True,
                                         relative_stop=True)
         self.assertEqual(len(low_alts), 5)
-        self.assertAlmostEqual(low_alts[0].start, 0, places=0)
-        self.assertAlmostEqual(low_alts[0].stop, 499, places=0)
-        self.assertAlmostEqual(low_alts[1].start, 3586, places=0)
-        self.assertAlmostEqual(low_alts[1].stop, 3722, places=0)
-        self.assertAlmostEqual(low_alts[2].start, 4895, places=0)
-        self.assertAlmostEqual(low_alts[2].stop, 5009, places=0)
-        self.assertAlmostEqual(low_alts[3].start, 7124, places=0)
-        self.assertAlmostEqual(low_alts[3].stop, 7265, places=0)
-        self.assertAlmostEqual(low_alts[4].start, 10522, places=0)
-        self.assertAlmostEqual(low_alts[4].stop, 10815, places=0)
+        self.assertEqual(low_alts[0].start, 0)
+        self.assertEqual(low_alts[0].stop, 499)
+        self.assertEqual(low_alts[1].start, 3586)
+        self.assertEqual(low_alts[1].stop, 3722)
+        self.assertEqual(low_alts[2].start, 4895)
+        self.assertEqual(low_alts[2].stop, 5009)
+        self.assertEqual(low_alts[3].start, 7124)
+        self.assertEqual(low_alts[3].stop, 7265)
+        self.assertEqual(low_alts[4].start, 10522)
+        self.assertEqual(low_alts[4].stop, 10815)
 
         low_alts = find_low_alts(array, 1.0, 500, 3000,
                                  level_flights=level_flights)
         self.assertEqual(len(low_alts), 5)
-        self.assertAlmostEqual(low_alts[0].start, 0, places=0)
-        self.assertAlmostEqual(low_alts[0].stop, 455, places=0)
-        self.assertAlmostEqual(low_alts[1].start, 3425, places=0)
-        self.assertAlmostEqual(low_alts[1].stop, 3643, places=0)
-        self.assertAlmostEqual(low_alts[2].start, 4807, places=0)
-        self.assertAlmostEqual(low_alts[2].stop, 4955, places=0)
-        self.assertAlmostEqual(low_alts[3].start, 6883, places=0)
-        self.assertAlmostEqual(low_alts[3].stop, 7182, places=0)
-        self.assertAlmostEqual(low_alts[4].start, 10362, places=0)
-        self.assertAlmostEqual(low_alts[4].stop, 10815, places=0)
+        self.assertEqual(low_alts[0].start, 0)
+        self.assertEqual(low_alts[0].stop, 454)
+        self.assertEqual(low_alts[1].start, 3424)
+        self.assertEqual(low_alts[1].stop, 3642)
+        self.assertEqual(low_alts[2].start, 4807)
+        self.assertEqual(low_alts[2].stop, 4954)
+        self.assertEqual(low_alts[3].start, 6883)
+        self.assertEqual(low_alts[3].stop, 7181)
+        self.assertEqual(low_alts[4].start, 10361)
+        self.assertEqual(low_alts[4].stop, 10815)
 
         low_alts = find_low_alts(array, 1.0, 500, level_flights=level_flights)
         self.assertEqual(len(low_alts), 5)
-        self.assertAlmostEqual(low_alts[0].start, 0, places=0)
-        self.assertAlmostEqual(low_alts[0].stop, 455, places=0)
-        self.assertAlmostEqual(low_alts[1].start, 3611, places=0)
-        self.assertAlmostEqual(low_alts[1].stop, 3643, places=0)
-        self.assertAlmostEqual(low_alts[2].start, 4919, places=0)
-        self.assertAlmostEqual(low_alts[2].stop, 4955, places=0)
-        self.assertAlmostEqual(low_alts[3].start, 7150, places=0)
-        self.assertAlmostEqual(low_alts[3].stop, 7182, places=0)
-        self.assertAlmostEqual(low_alts[4].start, 10522, places=0)
-        self.assertAlmostEqual(low_alts[4].stop, 10815, places=0)
+        self.assertEqual(low_alts[0].start, 0)
+        self.assertEqual(low_alts[0].stop, 454)
+        self.assertEqual(low_alts[1].start, 3610)
+        self.assertEqual(low_alts[1].stop, 3642)
+        self.assertEqual(low_alts[2].start, 4918)
+        self.assertEqual(low_alts[2].stop, 4954)
+        self.assertEqual(low_alts[3].start, 7150)
+        self.assertEqual(low_alts[3].stop, 7181)
+        self.assertEqual(low_alts[4].start, 10522)
+        self.assertEqual(low_alts[4].stop, 10815)
 
 
         # Slices will include level flight without passing in slices.
         low_alts = find_low_alts(array, 1.0, 500, 3000, 2000)
         self.assertEqual(len(low_alts), 5)
-        self.assertAlmostEqual(low_alts[0].start, 0, places=0)
-        self.assertAlmostEqual(low_alts[0].stop, 499, places=0)
-        self.assertAlmostEqual(low_alts[1].start, 3425, places=0)
-        self.assertAlmostEqual(low_alts[1].stop, 4384, places=0)
-        self.assertAlmostEqual(low_alts[2].start, 4805, places=0)
-        self.assertAlmostEqual(low_alts[2].stop, 5130, places=0)
-        self.assertAlmostEqual(low_alts[3].start, 6648, places=0)
-        self.assertAlmostEqual(low_alts[3].stop, 7258, places=0)
-        self.assertAlmostEqual(low_alts[4].start, 10362, places=0)
-        self.assertAlmostEqual(low_alts[4].stop, 10815, places=0)
+        self.assertEqual(low_alts[0].start, 0)
+        self.assertEqual(low_alts[0].stop, 499)
+        self.assertEqual(low_alts[1].start, 3424)
+        self.assertEqual(low_alts[1].stop, 4384)
+        self.assertEqual(low_alts[2].start, 4805)
+        self.assertEqual(low_alts[2].stop, 5130)
+        self.assertEqual(low_alts[3].start, 6648)
+        self.assertEqual(low_alts[3].stop, 7257)
+        self.assertEqual(low_alts[4].start, 10361)
+        self.assertEqual(low_alts[4].stop, 10815)
 
 
         # Support negative climbout_alt (search backwards).
@@ -256,29 +256,29 @@ class TestFindLowAlts(unittest.TestCase):
         low_alts = find_low_alts(array, 1.0, 500, 3000, 50, stop_mode='descent',
                                  level_flights=level_flights)
         self.assertEqual(len(low_alts), 5)
-        self.assertAlmostEqual(low_alts[0].start, 0, places=0)
-        self.assertAlmostEqual(low_alts[0].stop, 1629, places=0)
-        self.assertAlmostEqual(low_alts[1].start, 3425, places=0)
-        self.assertAlmostEqual(low_alts[1].stop, 3632, places=0)
-        self.assertAlmostEqual(low_alts[2].start, 4807, places=0)
-        self.assertAlmostEqual(low_alts[2].stop, 4943, places=0)
-        self.assertAlmostEqual(low_alts[3].start, 6883, places=0)
-        self.assertAlmostEqual(low_alts[3].stop, 7171, places=0)
-        self.assertAlmostEqual(low_alts[4].start, 10362, places=0)
-        self.assertAlmostEqual(low_alts[4].stop, 10556, places=0)
+        self.assertEqual(low_alts[0].start, 0)
+        self.assertEqual(low_alts[0].stop, 1629)
+        self.assertEqual(low_alts[1].start, 3424)
+        self.assertEqual(low_alts[1].stop, 3632)
+        self.assertEqual(low_alts[2].start, 4807)
+        self.assertEqual(low_alts[2].stop, 4943)
+        self.assertEqual(low_alts[3].start, 6883)
+        self.assertEqual(low_alts[3].stop, 7171)
+        self.assertEqual(low_alts[4].start, 10361)
+        self.assertEqual(low_alts[4].stop, 10556)
 
         # 0 climbout_alt (lowest point of descent).
         low_alts = find_low_alts(array, 1.0, 500, 3000, 0,
                                  level_flights=level_flights)
         self.assertEqual(len(low_alts), 4)
-        self.assertAlmostEqual(low_alts[0].start, 3425, places=0)
-        self.assertAlmostEqual(low_alts[0].stop, 3632, places=0)
-        self.assertAlmostEqual(low_alts[1].start, 4807, places=0)
-        self.assertAlmostEqual(low_alts[1].stop, 4941, places=0)
-        self.assertAlmostEqual(low_alts[2].start, 6883, places=0)
-        self.assertAlmostEqual(low_alts[2].stop, 7171, places=0)
-        self.assertAlmostEqual(low_alts[3].start, 10362, places=0)
-        self.assertAlmostEqual(low_alts[3].stop, 10569, places=0)
+        self.assertEqual(low_alts[0].start, 3424)
+        self.assertEqual(low_alts[0].stop, 3632)
+        self.assertEqual(low_alts[1].start, 4807)
+        self.assertEqual(low_alts[1].stop, 4941)
+        self.assertEqual(low_alts[2].start, 6883)
+        self.assertEqual(low_alts[2].stop, 7171)
+        self.assertEqual(low_alts[3].start, 10361)
+        self.assertEqual(low_alts[3].stop, 10569)
 
     @unittest.skip('Known failure case')
     def test_find_low_alts_2(self):
@@ -4699,6 +4699,21 @@ class TestNpMaZerosLike(unittest.TestCase):
         expected = np.ma.array([0,0,0])
         assert_array_equal(expected, result)
 
+    def test_zeros_like_seperate_mask(self):
+        start_arr = np.ma.array([1, 2, 3], mask=[1, 0, 1])
+        np.testing.assert_array_equal(start_arr.data, [1, 2, 3])
+        np.testing.assert_array_equal(start_arr.mask, [1, 0, 1])
+        new_arr = np_ma_zeros_like(start_arr, mask=start_arr.mask)
+        np.testing.assert_array_equal(new_arr.data, [0, 0, 0,])
+        np.testing.assert_array_equal(new_arr.mask, [1, 0, 1,])
+        self.assertTrue(start_arr.mask is not new_arr.mask)
+        new_arr[0] = 1
+        self.assertTrue(start_arr.mask is not new_arr.mask)
+        np.testing.assert_array_equal(new_arr.data, [1, 0, 0,])
+        np.testing.assert_array_equal(new_arr.mask, [0, 0, 1,])
+        np.testing.assert_array_equal(start_arr.data, [1, 2, 3,])
+        np.testing.assert_array_equal(start_arr.mask, [1, 0, 1,])
+
 
 class TestNpMaConcatenate(unittest.TestCase, M):
     def test_concatenation_of_numeric_arrays(self):
@@ -6901,7 +6916,6 @@ class TestStepValues(unittest.TestCase):
         flap_angle[480:500] = np.ma.masked
         flap_angle[520:540] = np.ma.masked
         flap_angle[560:580] = np.ma.masked
-
         #flap_angle = np.ma.array([0.004763]*3 + [0.0]*10 + [0.99]*4)
         #flap_angle[3:13] = np.ma.masked
         res = step_values(flap_angle, (0, 1, 5, 15, 20, 25, 30), hz=1,
@@ -8483,7 +8497,7 @@ class TestMaxMaintainedValue(unittest.TestCase):
         go_arounds=load(os.path.join(test_data_path,
                                      'ebe456663820_go_arounds.nod'))
         phase = go_arounds.get_slices()[0]
-        array = eng_torq_max.array[phase]
+        array = eng_torq_max.array[slices_int(phase)]
         expected = (
             (10, 2922, 148.697),
             (20, 2920, 146.5),

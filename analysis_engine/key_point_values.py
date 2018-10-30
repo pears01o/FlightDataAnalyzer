@@ -6581,6 +6581,33 @@ class ATDisengagedAPEngagedDuration(KeyPointValueNode):
         self.create_kpvs_from_slice_durations(phases, self.frequency)    
 
 
+class NumberOfAPChannelsEngagedAtTouchdown(KeyPointValueNode):
+    '''
+    Number of AP channels engaged at Touchdown KTI.
+    
+    This KPV uses 'AP Channels Engaged' if available and 'AP Engaged' as a fallback.
+    If AP is disengaged on Touchdown the value will be 0.
+    '''
+    name = 'Number of AP Channels Engaged At Touchdown'
+    
+    @classmethod
+    def can_operate(cls, available):
+        ap = any_of(['AP Engaged', 'AP Channels Engaged'], available)
+        return ap and 'Touchdown' in available
+    
+    def derive(self, 
+               tdwn=KTI('Touchdown'),
+               ap_engaged=P('AP Engaged'),
+               ap_ch_count=P('AP Channels Engaged'),):
+
+        if ap_ch_count:
+            self.create_kpv(tdwn.get_last().index, ap_ch_count.array.data[tdwn.get_last().index])
+        elif ap_engaged and ap_engaged.array[tdwn.get_last().index] == 'Engaged':
+            self.create_kpv(tdwn.get_last().index, 1)
+        else:
+            self.create_kpv(tdwn.get_last().index, 0)
+
+
 ##############################################################################
 
 

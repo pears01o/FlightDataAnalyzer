@@ -3713,10 +3713,8 @@ def slices_and(first_list, second_list):
             return _slice
 
     result_list = []
-    _first_list = slices_int(first_list)
-    _second_list = slices_int(second_list)
-    for first_slice in _first_list:
-        for second_slice in _second_list:
+    for first_slice in first_list:
+        for second_slice in second_list:
             slice_1 = fwd(first_slice)
             slice_2 = fwd(second_slice)
 
@@ -3793,15 +3791,15 @@ def slices_not(slice_list, begin_at=None, end_at=None):
     if not slice_list:
         return [slice(begin, end)]
 
-    _slice_list = slices_int(slice_list)
+    slice_list = slices_int(slice_list)
 
-    start_slices = [s.start for s in _slice_list]
+    start_slices = [s.start for s in slice_list]
     a = None if None in start_slices else min(start_slices)
 
-    stop_slices  = [s.stop for s in _slice_list]
+    stop_slices  = [s.stop for s in slice_list]
     b =  None if None in stop_slices else min(stop_slices)
 
-    c = max([s.step or 1 for s in _slice_list])
+    c = max([s.step or 1 for s in slice_list])
     if c>1:
         raise ValueError("slices_not does not cater for non-unity steps")
 
@@ -3829,7 +3827,7 @@ def slices_not(slice_list, begin_at=None, end_at=None):
         endpoint = end or endpoint
 
     workspace = np.ma.zeros(endpoint)
-    for each_slice in _slice_list:
+    for each_slice in slice_list:
         workspace[each_slice] = 1
     workspace=np.ma.masked_equal(workspace, 1)
     return shift_slices(np.ma.clump_unmasked(workspace[startpoint:endpoint]),

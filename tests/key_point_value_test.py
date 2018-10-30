@@ -560,6 +560,7 @@ from analysis_engine.key_point_values import (
     MasterCautionDuringTakeoffDuration,
     MasterWarningDuration,
     MasterWarningDuringTakeoffDuration,
+    NumberOfAPChannelsEngagedAtTouchdown,
     OverspeedDuration,
     StallFaultCautionDuration,
     CruiseSpeedLowDuration,
@@ -6574,6 +6575,37 @@ class TestATDisengagedAPEngagedDuration(unittest.TestCase, NodeTest):
             KeyPointValue(name=name, index=5, value=30),
         ])
         self.assertEqual(node, expected)
+
+
+class TestNumberOfAPChannelsEngagedAtTouchdown(unittest.TestCase, NodeTest):
+    def setUp(self):
+        self.node_class = NumberOfAPChannelsEngagedAtTouchdown
+        self.operational_combinations = [('Touchdown', 'AP Engaged', 'AP Channels Engaged'), ('Touchdown', 'AP Engaged'), ('Touchdown', 'AP Channels Engaged')]
+        self.tdwn = KTI('Touchdown', items=[KeyTimeInstance(3, 'Touchdown')])
+        
+    def test_can_operate(self):
+        opts = self.node_class.get_operational_combinations()
+        self.assertEqual(len(opts), 3)
+        for combination in self.operational_combinations:
+            self.assertTrue(combination in opts)
+
+    def test_derive_ap_engaged(self):
+        ap_engaged = M('AP Engaged', np.ma.array([1,1,1,1,1,1]), values_mapping={0: '-', 1: 'Engaged'})
+        node = self.node_class()
+        node.derive(self.tdwn, ap_engaged, None)
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, 1)
+        
+    def test_derive_channel_count(self):
+        mapping = {0: '-',
+                   1: 'Single', 
+                   2: 'Dual',
+                   3: 'Triple',}
+        ap_ch_count = M('AP Channels Engaged', np.ma.array([3,3,3,3,3]), values_mapping=mapping)
+        node = self.node_class()
+        node.derive(self.tdwn, None, ap_ch_count)
+        self.assertEqual(node[0].index, 3)
+        self.assertEqual(node[0].value, 3)
 
 
 ##############################################################################

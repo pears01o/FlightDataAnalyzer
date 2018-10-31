@@ -3752,10 +3752,27 @@ def slices_and_not(first, second):
                                  begin_at=min([s.start for s in first]),
                                  end_at=max([s.stop for s in first])))
 
-def slices_int(_slice):
+
+def slices_int(*args):
     '''
-    Ensure that a data in a slice, or a list of slices, are integers
-    or NoneType.
+    Create or modify a slice, ensuring that a data in a slice,
+    or a list of slices, are integers or NoneType.
+
+    cast a single slice to an integar slice:
+       slices_int(slice) -> slice
+
+    cast multiple slices returns a list of integar slices:
+       slices_int([slice, slice, ...]) -> [slice, slice, ...]
+       slices_int((slice, slice, ...)) -> [slice, slice, ...]
+
+    create an integar slice:
+
+       slices_int(value) -> slice(int(value))
+    value can be an int, float or numpy.number based value.
+
+       slices_int(value, value) -> slice(int(value), int(value))
+       slices_int(value, value, value) -> slice(int(value), int(value), int(value))
+    value can be an NoneType, int, float or numpy.number based value.
     '''
     def make_slice_int(s):
         return slice(
@@ -3763,12 +3780,31 @@ def slices_int(_slice):
             None if s.stop is None else int(s.stop),
             None if s.step is None else int(s.step)
         )
-    if isinstance(_slice, slice):
-        return make_slice_int(_slice)
-    elif all(isinstance(_s, slice) for _s in _slice):
-        return [make_slice_int(_s) for _s in _slice]
+    arg_len = len(args)
+    if arg_len == 1 and isinstance(args[0], slice):
+        return make_slice_int(args[0])
+    elif arg_len == 1 and isinstance(args[0], (int, float, np.number)):
+        return slice(int(args[0]))
+    elif arg_len == 1 and all(isinstance(_s, slice) for _s in args[0]):
+        return [make_slice_int(_s) for _s in args[0]]
+    elif arg_len in (2, 3) and \
+         all(isinstance(_s, (int, float, np.number)) for _s in args):
+        return slice(
+            None if args[0] is None else int(args[0]),
+            None if args[1] is None else int(args[1]),
+            None if arg_len==2 or args[2] is None else int(args[2]),
+        )
     else:
-        raise ValueError("slices_int not a slice or a list of slices.")
+        if arg_len == 1:
+            raise TypeError("slices_int needs to be a slice, "
+                            "multiple slices or a value type of int, "
+                            "float, np.number")
+        if arg_len in (2, 3):
+            raise TypeError("slices_int needs 2 or 3 values with the type of"
+                            " int, float, np.number")
+        else:
+            raise TypeError("slices_int expects 1 to 3 arguments. Got %s",
+                            arg_len)
 
 
 def slices_not(slice_list, begin_at=None, end_at=None):

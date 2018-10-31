@@ -1411,37 +1411,64 @@ class AltitudeVisualizationWithGroundOffset(DerivedParameterNode):
 
         self.array = np.ma.array(data=alt_qnh, mask=alt_aal.array.mask)
 
-
-# TODO: Account for 'Touch & Go' - need to adjust QNH for additional airfields!
 class AltitudeVisualizationWithoutGroundOffset(DerivedParameterNode):
     '''
-    This altitude is above aerodrome level, but excludes the jump in Altitude
-    AAL by blending with Altitude STD in the Cruise.
+    Excludes the jump in Altitude AAL by blending with Altitude STD in the Cruises.
+    Helicopters use Altitude AGL instead of Altitude AAL.
     '''
-
+    name = 'Altitude Visualization Without Ground Offset'
     units = ut.FT
 
+    @classmethod
+    def can_operate(cls, available, ac_type=A('Aircraft Type')):
+        return 'Altitude STD Smoothed' in available \
+               and (('Altitude AGL' in available and ac_type == helicopter) \
+               or ('Altitude AAL' in available and ac_type != helicopter))
+
     def derive(self,
+               alt_agl=P('Altitude AGL'),
                alt_aal=P('Altitude AAL'),
                alt_std=P('Altitude STD Smoothed'),
-               cruise=S('Cruise')):
+               cruises=S('Cruise')):
+
+        try:
+            if alt_agl.array.any(): alt_aal = alt_agl
+        except AttributeError:
+            pass
+
         alt_qnh = np_ma_masked_zeros_like(alt_aal.array)
-        
-        if cruise == []:
-            max_alt_std = max_value(alt_std.array)
-            start_idx = max_alt_std.index
-            stop_idx =  max_alt_std.index
-        else:
-            start_idx = cruise.get_first().slice.start
-            stop_idx = cruise.get_last().slice.stop - 1
-                
-        start_offset = alt_std.array[start_idx] - alt_aal.array[start_idx]
-        stop_offset = alt_std.array[stop_idx] - alt_aal.array[stop_idx]
-        
-        alt_qnh[:start_idx] = alt_aal.array[:start_idx]
-        alt_qnh[stop_idx:] = alt_aal.array[stop_idx:]
-        alt_qnh[start_idx:stop_idx] = alt_std.array[start_idx:stop_idx] - \
-            np.linspace(start_offset, stop_offset, stop_idx - start_idx)
+
+        first_iter = True
+
+        while True:
+            if cruises:
+                start_idx = cruises[-1].slice.start
+                stop_idx = cruises.pop().slice.stop - 1
+
+                if cruises:
+                    previous_start_idx = cruises[-1].slice.start
+                    previous_stop_idx = cruises[-1].slice.stop - 1
+            else:
+                max_alt_std = max_value(alt_std.array)
+                start_idx = max_alt_std.index
+                stop_idx = max_alt_std.index
+
+            start_offset = alt_std.array[start_idx] - alt_aal.array[start_idx]
+            stop_offset = alt_std.array[stop_idx] - alt_aal.array[stop_idx]
+
+            if len(cruises) >= 1:
+                alt_qnh[previous_stop_idx:start_idx] = alt_aal.array[previous_stop_idx:start_idx]
+            else:
+                alt_qnh[:start_idx] = alt_aal.array[:start_idx]
+
+            if first_iter:
+                alt_qnh[stop_idx:] = alt_aal.array[stop_idx:]
+
+            alt_qnh[start_idx:stop_idx] = alt_std.array[start_idx:stop_idx] - np.linspace(start_offset, stop_offset, stop_idx - start_idx)
+
+            first_iter = False
+            if not cruises: break
+
         self.array = alt_qnh
 
 

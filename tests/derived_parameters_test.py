@@ -1450,20 +1450,42 @@ class TestAltitudeVisualizationWithGroundOffset(unittest.TestCase, NodeTest):
         alt_qnh = self.node_class()
         self.assertRaises(ValueError, alt_qnh.derive, self.alt_aal_2, self.alt_std, self.l_apt, self.t_apt, climbs, descents)
 
-
 class TestAltitudeVisualizationWithoutGroundOffset(unittest.TestCase, NodeTest):
+
+    def test_can_operate(self):
+        self.assertFalse(self.node_class.can_operate([], ac_type=aeroplane))
+        self.assertFalse(self.node_class.can_operate([], ac_type=helicopter))
+        self.assertFalse(self.node_class.can_operate(('Altitude STD Smoothed')))
+        self.assertFalse(self.node_class.can_operate(('Altitude STD Smoothed', 'Cruise')))
+        self.assertFalse(self.node_class.can_operate(('Altitude AAL', 'Cruise')))
+        self.assertTrue(self.node_class.can_operate(('Altitude AGL', 'Altitude STD Smoothed'),
+                                                    ac_type=helicopter))
+        self.assertFalse(self.node_class.can_operate(('Altitude AAL', 'Altitude STD Smoothed'),
+                                                     ac_type=helicopter))
+        self.assertTrue(self.node_class.can_operate(('Altitude AAL', 'Altitude STD Smoothed'),
+                                                    ac_type=aeroplane))
+        self.assertTrue(self.node_class.can_operate(('Altitude AAL', 'Altitude STD Smoothed', 'Cruise')))
+
     def setUp(self):
         self.node_class = AltitudeVisualizationWithoutGroundOffset
         self.operational_combinations = [
-            ('Altitude AAL', 'Altitude STD Smoothed', 'Cruise'),
+            ('Altitude AAL', 'Altitude STD Smoothed'),
+            ('Altitude AGL', 'Altitude STD Smoothed'),
+            ('Altitude AGL', 'Altitude AAL', 'Altitude STD Smoothed'),
         ]
         data = [np.ma.arange(0, 1000, step=30)]
         data.append(data[0][::-1] + 50)
         self.alt_aal_1 = P(name='Altitude AAL', array=np.ma.concatenate(data))
         self.alt_aal_2 = P(name='Altitude AAL', array=np.ma.concatenate((np.zeros(5), np.arange(0, 15000, 1000), np.ones(4) * 10000, np.arange(10000, -1000, -1000), np.zeros(5))))
-        self.alt_std = P(name='Altitude STD Smoothed', array=np.ma.concatenate((np.ones(5) * 1000, np.arange(1000, 16000, 1000), np.ones(4) * 15000, np.arange(15000, 4000, -1000), np.ones(5) * 4000)))
-
+        self.alt_aal_3 = P(name='Altitude AAL', array=np.ma.append(self.alt_aal_2.array, self.alt_aal_2.array))
+        self.alt_std_1 = P(name='Altitude STD Smoothed', array=np.ma.concatenate((np.ones(5) * 1000, np.arange(1000, 16000, 1000), np.ones(4) * 15000, np.arange(15000, 4000, -1000), np.ones(5) * 4000)))
+        self.alt_std_2 = P(name='Altitude STD Smoothed', array=np.ma.append(self.alt_std_1.array, self.alt_std_1.array))
+        self.alt_std_3 = P(name='Altitude STD Smoothed', array=np.ma.concatenate((np.ones(5) * 150, np.arange(150, 2400, 150), np.ones(4) * 2250, np.arange(2250, 600, -150), np.ones(5) * 600)))
+        self.alt_std_4 = P(name='Altitude STD Smoothed', array=np.ma.append(self.alt_std_3.array, self.alt_std_3.array))
+        self.alt_agl_1 = P(name='Altitude AGL', array=np.ma.concatenate((np.zeros(5), np.arange(0, 2250, 150), np.ones(4) * 2000, np.arange(2000, -200, -200), np.zeros(5))))
+        self.alt_agl_2 = P(name='Altitude AGL', array=np.ma.append(self.alt_agl_1.array, self.alt_agl_1.array))
         self.expected = []
+
 
         # 1. Data same as Altitude AAL, no mask applied:
         data = np.ma.copy(self.alt_aal_1.array)
@@ -1487,7 +1509,7 @@ class TestAltitudeVisualizationWithoutGroundOffset(unittest.TestCase, NodeTest):
         self.assertEqual(alt_qnh.offset, self.alt_aal_1.offset)
         self.assertEqual(alt_qnh.frequency, self.alt_aal_1.frequency)
         # Check everything works calling with airport details:
-        alt_qnh.derive(self.alt_aal_1, self.alt_std)
+        alt_qnh.derive(self.alt_aal_1, self.alt_std_1)
         ma_test.assert_masked_array_approx_equal(alt_qnh.array, self.expected[1])
         self.assertEqual(alt_qnh.offset, self.alt_aal_1.offset)
         self.assertEqual(alt_qnh.frequency, self.alt_aal_1.frequency)
@@ -1495,20 +1517,44 @@ class TestAltitudeVisualizationWithoutGroundOffset(unittest.TestCase, NodeTest):
     def test_alt_std_adjustment(self):
         cruise = buildsection('Cruise', 19, 25)
         alt_qnh = self.node_class()
-        alt_qnh.derive(self.alt_aal_2, self.alt_std, cruise)
+        alt_qnh.derive(None, self.alt_aal_2, self.alt_std_1, cruise)
         self.assertEqual(alt_qnh.array[2], 0.0)
         self.assertEqual(alt_qnh.array[36], 0.0)
         self.assertEqual(alt_qnh.array[22], 11600.0)  # Cruise at STD
-        
+
     def test_no_cruise(self):
         cruise = S('Cruise', items=[])
-        #cruise = buildsection('Cruise', None, None)
         alt_vis = self.node_class()
-        alt_vis.derive(self.alt_aal_2, self.alt_std, cruise)
+        alt_vis.derive(None, self.alt_aal_2, self.alt_std_1, cruise)
         self.assertEqual(alt_vis.array[2], 0.0)
         self.assertEqual(alt_vis.array[36], 0.0)
-        self.assertEqual(alt_vis.array[22], 10000.0)  # at Max STD    
+        self.assertEqual(alt_vis.array[22], 10000.0)  # at Max STD
 
+    def test_multiple_cruises(self):
+        cruises = buildsections('Cruise', [19, 25], [59, 65])
+        alt_qnh = self.node_class()
+        alt_qnh.derive(None, self.alt_aal_3, self.alt_std_2, cruises)
+        self.assertEqual(alt_qnh.array[2], 0.0)
+        self.assertEqual(alt_qnh.array[36], 0.0)
+        self.assertEqual(alt_qnh.array[22], 11600.0)  # Cruise at STD
+        self.assertEqual(alt_qnh.array[62], 11600.0)  # Cruise at STD
+
+    def test_agl_single_cruise(self):
+        cruise = buildsection('Cruise', 19, 25)
+        alt_qnh = self.node_class()
+        alt_qnh.derive(self.alt_agl_1, None, self.alt_std_3, cruise)
+        self.assertEqual(alt_qnh.array[2], 0.0)
+        self.assertEqual(alt_qnh.array[36], 0.0)
+        self.assertEqual(alt_qnh.array[22], 2010.0)  # Cruise at STD
+
+    def test_agl_multiple_cruises(self):
+        cruises = buildsections('Cruise', [19, 25], [59, 65])
+        alt_qnh = self.node_class()
+        alt_qnh.derive(self.alt_agl_2, None, self.alt_std_4, cruises)
+        self.assertEqual(alt_qnh.array[2], 0.0)
+        self.assertEqual(alt_qnh.array[36], 0.0)
+        self.assertEqual(alt_qnh.array[22], 2010.0)  # Cruise at STD
+        self.assertEqual(alt_qnh.array[62], 2010.0)  # Cruise at STD
 
 class TestAltitudeRadio(unittest.TestCase):
     """

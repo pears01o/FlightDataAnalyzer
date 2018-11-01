@@ -774,8 +774,8 @@ class TestConfiguration(unittest.TestCase, NodeTest):
         self.assertEqual(node.values_mapping, AVAILABLE_CONF_STATES)
         self.assertEqual(node.units, None)
         self.assertIsInstance(node.array, MappedArray)
-        values = unique_values(node.array.astype(int))
-        self.assertEqual(values, {0: 4, 10: 4, 13: 4, 16: 1, 20: 4, 26: 1, 30: 4, 90: 4})
+        values = unique_values(node.array)
+        self.assertEqual(values, {'Full': 4, '1+F': 4, '1': 4, '0': 4, '3': 4, '2': 4, '1*': 1, '2*': 1})
 
 
 class TestDaylight(unittest.TestCase):

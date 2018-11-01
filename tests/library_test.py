@@ -277,7 +277,7 @@ class TestFindLowAlts(unittest.TestCase):
         self.assertAlmostEqual(low_alts[1].stop, 4941, places=0)
         self.assertAlmostEqual(low_alts[2].start, 6883, places=0)
         self.assertAlmostEqual(low_alts[2].stop, 7171, places=0)
-        self.assertAlmostEqual(low_alts[3].start, 10362, places=00)
+        self.assertAlmostEqual(low_alts[3].start, 10362, places=0)
         self.assertAlmostEqual(low_alts[3].stop, 10569, places=0)
 
 
@@ -5592,54 +5592,6 @@ class TestRunsOfOnes(unittest.TestCase):
         self.assertEqual(result, [slice(4, 9), slice(11, 14)])
 
 
-class TestSlicesInt(unittest.TestCase):
-    def test_single_slice(self):
-        self.assertEqual(slices_int(slice(None, None, None)),
-                         slice(None, None, None))
-        self.assertEqual(slices_int(slice(1, 2, 3)), slice(1, 2, 3))
-        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)), slice(1, 2, 3))
-        self.assertEqual(slices_int(slice(1, 2.2, 3)), slice(1, 2, 3))
-        self.assertEqual(slices_int(slice(1, 2.2, None)), slice(1, 2, None))
-        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).start, 1)
-        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).stop, 2)
-        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).step, 3)
-        self.assertEqual(slices_int(slice(None, None, None)).start, None)
-        self.assertEqual(slices_int(slice(None, None, None)).stop, None)
-        self.assertEqual(slices_int(slice(None, None, None)).step, None)
-
-    def test_list_of_slices(self):
-        self.assertEqual(slices_int([slice(None,None,None),]),
-                         [slice(None,None,None),])
-        self.assertEqual(slices_int((slice(None,None,None),)),
-                         [slice(None,None,None),])
-        mixed_slices = [
-            slice(1629.0, 2299.0),
-            slice(3722, 4708),
-            slice(4726, 4807.0),
-            slice(5009.0, 5071),
-            slice(5168, 6883.0, 2),
-            slice(8433.0, 9058, 2.5)
-        ]
-        expected_slices = [
-            slice(1629, 2299),
-            slice(3722, 4708),
-            slice(4726, 4807),
-            slice(5009, 5071),
-            slice(5168, 6883, 2),
-            slice(8433, 9058, 2)
-        ]
-        self.assertEqual(slices_int(mixed_slices), expected_slices)
-
-    def test_create_slice_single_arg(self):
-        self.assertEqual(slices_int(1.5), slice(1))
-
-    def test_create_slice_two_args(self):
-        self.assertEqual(slices_int(1.5, 10.9), slice(1, 10))
-
-    def test_create_slice_three_args(self):
-        self.assertEqual(slices_int(1.5, 10.9, 2.2), slice(1, 10, 2))
-
-
 class TestSlicesOfRuns(unittest.TestCase):
 
     def test__slices_of_runs(self):
@@ -8482,6 +8434,9 @@ class TestMaxMaintainedValue(unittest.TestCase):
             self.assertAlmostEqual(value, val, places=3)
 
 
+###############################################################################
+# Python 3 and Numpy 1.15 upgrade helper.
+
 class TestPy2Round(unittest.TestCase):
     def test_py2round(self):
         test_range = list(np.arange(0,100,0.1))
@@ -8492,6 +8447,61 @@ class TestPy2Round(unittest.TestCase):
         expected += [float(100)]*5
         self.assertEqual(len(rounded), len(expected))
         self.assertEqual(rounded, expected)
+
+
+class TestSlicesInt(unittest.TestCase):
+    def test_single_slice(self):
+        self.assertEqual(slices_int(slice(None, None, None)),
+                         slice(None, None, None))
+        self.assertEqual(slices_int(slice(1, 2, 3)), slice(1, 2, 3))
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)), slice(1, 2, 3))
+        self.assertEqual(slices_int(slice(1, 2.2, 3)), slice(1, 2, 3))
+        self.assertEqual(slices_int(slice(1, 2.2, None)), slice(1, 2, None))
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).start, 1)
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).stop, 2)
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).step, 3)
+        self.assertEqual(slices_int(slice(None, None, None)).start, None)
+        self.assertEqual(slices_int(slice(None, None, None)).stop, None)
+        self.assertEqual(slices_int(slice(None, None, None)).step, None)
+
+    def test_list_of_slices(self):
+        self.assertEqual(slices_int([slice(None,None,None),]),
+                         [slice(None,None,None),])
+        self.assertEqual(slices_int((slice(None,None,None),)),
+                         [slice(None,None,None),])
+        mixed_slices = [
+            slice(1629.0, 2299.0),
+            slice(3722, 4708),
+            slice(4726, 4807.0),
+            slice(5009.0, 5071),
+            slice(5168, 6883.0, 2),
+            slice(8433.0, 9058, 2.5)
+        ]
+        expected_slices = [
+            slice(1629, 2299),
+            slice(3722, 4708),
+            slice(4726, 4807),
+            slice(5009, 5071),
+            slice(5168, 6883, 2),
+            slice(8433, 9058, 2)
+        ]
+        self.assertEqual(slices_int(mixed_slices), expected_slices)
+
+    def test_create_slice_single_arg(self):
+        self.assertEqual(slices_int(1.5), slice(1))
+
+    def test_create_slice_two_args(self):
+        self.assertEqual(slices_int(1.5, 10.9), slice(1, 10))
+
+    def test_create_slice_three_args(self):
+        self.assertEqual(slices_int(1.5, 10.9, 2.2), slice(1, 10, 2))
+
+
+class TestNpMaZeros(unittest.TestCase):
+    def test_np_ma_zeros(self):
+        self.assertEqual(np_ma_zeros(None), np.ma.zeros(None))
+        np.testing.assert_equal(np_ma_zeros(10), np.ma.zeros(10))
+        np.testing.assert_equal(np_ma_zeros(10.6), np.ma.zeros(10))
 
 
 if __name__ == '__main__':

@@ -455,8 +455,74 @@ class Configuration(MultistateDerivedParameterNode):
         nearest_neighbour_mask_repair(self.array, copy=False,
                                       repair_gap_size=(30 * self.hz),
                                       direction='backward')
-            
+
+
+class ConfigurationExcludingTransition(MultistateDerivedParameterNode):
+    '''
+    Parameter for aircraft that use configuration. Reflects the actual state
+    of the aircraft. See "Flap Lever" or "Flap Lever (Synthetic)" which show
+    the physical lever detents selectable by the crew.
+    
+    Multi-state with the following mapping::
+        %s
+    
+    Some values are based on footnotes in various pieces of documentation:
+    - 2(a) corresponds to CONF 1*
+    - 3(b) corresponds to CONF 2*
+    
+    Note: Does not use the Flap Lever position. This parameter reflects the
+    actual configuration state of the aircraft rather than the intended state
+    represented by the selected lever position.
+    ''' % pformat(at.constants.AVAILABLE_CONF_STATES)
+    values_mapping = at.constants.AVAILABLE_CONF_STATES
+    align_frequency = 2
+    
+    @classmethod
+    def can_operate(cls, available, manufacturer=A('Manufacturer'),
+                    model=A('Model'), series=A('Series'), family=A('Family'),):
         
+        if manufacturer and not manufacturer.value == 'Airbus':
+            return False
+        
+        if family and family.value in ('A300', 'A310',):
+            return False
+        
+        if not all_of(('Slat Excluding Transition', 'Flap Excluding Transition', 'Model', 'Series', 'Family'), available):
+            return False
+
+        try:
+            at.get_conf_angles(model.value, series.value, family.value)
+        except KeyError:
+            cls.warning("No conf angles available for '%s', '%s', '%s'.",
+                        model.value, series.value, family.value)
+            return False
+
+        return True
+    
+    def derive(self, flap=M('Flap Excluding Transition'), slat=M('Slat Excluding Transition'), 
+               model=A('Model'), series=A('Series'), family=A('Family'),
+               
+               
+               conf=M('Configuration')):
+        
+        angles = at.get_conf_angles(model.value, series.value, family.value)
+        
+        # initialize an empty masked array the same length as flap array
+        self.array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
+                                 values_mapping=self.values_mapping)
+        
+        for (state, (s, f, a)) in six.iteritems(angles):
+            condition = (flap.array == f)
+            if s is not None:
+                condition &= (slat.array == s)
+                
+            self.array[condition] = state        
+        
+        nearest_neighbour_mask_repair(self.array, copy=False,
+                                      repair_gap_size=(30 * self.hz),
+                                      direction='backward')
+
+
 class Daylight(MultistateDerivedParameterNode):
     '''
     Calculate Day or Night based upon Civil Twilight.

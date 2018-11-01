@@ -1503,7 +1503,7 @@ class Touchdown(KeyTimeInstanceNode):
                     # (i.e. we ignore bounces)
                     index = edges[0] + land.slice.start
                     # Check we were within 10ft of the ground when the switch triggered.
-                    if not alt or alt.array[index] < 10.0:
+                    if not alt or alt.array[int(index)] < 10.0:
                         index_gog = index
 
             if manufacturer and manufacturer.value == 'Saab' and \

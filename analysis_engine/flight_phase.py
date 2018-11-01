@@ -997,7 +997,7 @@ def scan_ils(beam, ils_dots, height, scan_slice, frequency,
         if idx_200 is not None:
             ils_lost_idx = min(ils_lost_idx, idx_200) + 1
 
-        if np.ma.count(ils_dots[int(scan_slice.start):int(ils_lost_idx)]) < 5:
+        if np.ma.count(ils_dots[slices_int(scan_slice.start, ils_lost_idx)]) < 5:
             # less than 5 valid values within remaining section
             return None
 
@@ -1007,7 +1007,9 @@ def scan_ils(beam, ils_dots, height, scan_slice, frequency,
     # last time we were within 2.5dots
     scan_start_idx = index_at_value(ils_abs, 2.5, slice(ils_lost_idx-1, scan_slice.start-1, -1))
 
-    first_valid_idx, first_valid_value = first_valid_sample(ils_abs[int(scan_slice.start):int(ils_lost_idx)])
+    first_valid_idx, first_valid_value = first_valid_sample(
+        ils_abs[slices_int(scan_slice.start, ils_lost_idx)]
+    )
 
     ils_capture_idx = None
     if scan_start_idx or (first_valid_value > ILS_CAPTURE):
@@ -1613,7 +1615,7 @@ class Landing(FlightPhaseNode):
 
             # Scan forwards to find lowest collective shortly after touchdown.
             to_scan = tdn + coll.frequency*LANDING_COLLECTIVE_PERIOD
-            landing_end = tdn  + np.ma.argmin(coll.array[int(tdn):int(to_scan)])
+            landing_end = tdn  + np.ma.argmin(coll.array[slices_int(tdn,to_scan)])
             if landing_begin and landing_end:
                 new_phase = [slice(landing_begin, landing_end)]
                 phases = slices_or(phases, new_phase)

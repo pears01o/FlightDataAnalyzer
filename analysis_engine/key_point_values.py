@@ -4034,6 +4034,25 @@ class AirspeedWithConfigurationMax(KeyPointValueNode, FlapOrConfigurationMaxOrMi
             self.create_kpv(index, value, conf=detent)
 
 
+class AirspeedWithConfiguration1FExcludingTransitionMax(KeyPointValueNode):
+    '''
+    Maximum airspeed recorded for Configuration 1+F Excluding Transition. Airbus only KPV.
+    '''
+
+    NAME_FORMAT = 'Airspeed With Configuration 1+F Excluding Transition Max'
+
+    units = ut.KT
+
+    def derive(self,
+               airspeed=P('Airspeed'),
+               conf=M('Configuration Excluding Transition'),):
+
+        conf_slices = runs_of_ones(conf.array=='1+F')
+        
+        for s in conf_slices:
+            self.create_kpv_from_slices(airspeed, s, max_value)
+
+
 class AirspeedRelativeWithConfigurationDuringDescentMin(KeyPointValueNode, FlapOrConfigurationMaxOrMin):
     '''
     Minimum airspeed relative to the approach speed during from Descent to

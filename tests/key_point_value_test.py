@@ -182,6 +182,7 @@ from analysis_engine.key_point_values import (
     AirspeedWhileGearExtendingMax,
     AirspeedWhileGearRetractingMax,
     AirspeedWithConfigurationMax,
+    AirspeedWithConfiguration1FExcludingTransitionMax,
     AirspeedWithFlapAndSlatExtendedMax,
     AirspeedWithFlapIncludingTransition20AndSlatFullyExtendedMax,
     AirspeedWithFlapDuringClimbMax,
@@ -5092,6 +5093,38 @@ class TestAirspeedWithConfigurationMax(unittest.TestCase, NodeTest):
             KeyPointValue(index=6, value=6, name='Airspeed With Configuration 3 Max'),
         ]))
 
+
+class TestAirspeedWithConfiguration1FExcludingTransitionMaxunittest(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = AirspeedWithConfiguration1FExcludingTransitionMax
+        self.operational_combinations = [
+            ('Configuration Excluding Transition', 'Airspeed',),
+        ]
+        self.mapping = {
+            0: '0',
+            1: '1',
+            2: '1+F',
+            3: '1*',
+            4: '2',
+            5: '2*',
+            6: '3',
+            7: '4',
+            8: '5',
+            9: 'Full',
+        }
+
+    def test_derive(self):
+        array = np.ma.array((0, 1, 1, 2, 2, 4, 6, 4, 4, 2, 1, 0, 0, 0, 0, 0))
+        conf = M(name='Configuration Excluding Transition', array=array, values_mapping=self.mapping)
+        air_spd = P(name='Airspeed', array=np.ma.arange(16))
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(air_spd, conf)
+        self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=4, value=4.0, name='Airspeed With Configuration 1+F Excluding Transition Max'),
+            KeyPointValue(index=9, value=9.0, name='Airspeed With Configuration 1+F Excluding Transition Max'),
+        ]))
 
 class TestAirspeedRelativeWithConfigurationDuringDescentMin(unittest.TestCase, NodeTest):
 

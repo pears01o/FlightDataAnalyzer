@@ -8725,7 +8725,7 @@ def slices_int(*args):
     elif arg_len == 1 and all(isinstance(_s, slice) for _s in args[0]):
         return [make_slice_int(_s) for _s in args[0]]
     elif arg_len in (2, 3) and \
-         all(isinstance(_s, (int, float, np.number)) for _s in args):
+         all(isinstance(_s, (int, float, np.number)) or _s is None for _s in args):
         return slice(
             None if args[0] is None else int(args[0]),
             None if args[1] is None else int(args[1]),

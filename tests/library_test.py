@@ -8533,9 +8533,13 @@ class TestSlicesInt(unittest.TestCase):
 
     def test_create_slice_two_args(self):
         self.assertEqual(slices_int(1.5, 10.9), slice(1, 10))
+        self.assertEqual(slices_int(1.5, None), slice(1, None))
+        self.assertEqual(slices_int(None, None), slice(None, None))
 
     def test_create_slice_three_args(self):
         self.assertEqual(slices_int(1.5, 10.9, 2.2), slice(1, 10, 2))
+        self.assertEqual(slices_int(1.5, 10.9, None), slice(1, 10, None))
+        self.assertEqual(slices_int(None, None, None), slice(None, None, None))
 
 
 class TestNpMaZeros(unittest.TestCase):

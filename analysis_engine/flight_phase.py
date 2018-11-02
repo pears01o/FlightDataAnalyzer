@@ -1607,6 +1607,8 @@ class TakeoffRunwayHeading(FlightPhaseNode):
                 if not slices_overlap(toff.slice, gnd.slice):
                     continue
                 gnd_hdg = hdg.array[gnd.slice]
+                if not np.ma.count(gnd_hdg):
+                    continue
                 rwy_hdg = np.ma.mean(hdg.array[toff.slice])
                 max_hdg = (rwy_hdg + diff) % overflow
                 min_hdg = (rwy_hdg - diff) % overflow

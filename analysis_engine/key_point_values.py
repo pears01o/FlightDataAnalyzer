@@ -4048,9 +4048,7 @@ class AirspeedWithConfiguration1FExcludingTransitionMax(KeyPointValueNode):
                conf=M('Configuration Excluding Transition'),):
 
         conf_slices = runs_of_ones(conf.array=='1+F')
-        
-        for s in conf_slices:
-            self.create_kpv_from_slices(airspeed, s, max_value)
+        self.create_kpvs_within_slices(airspeed.array, conf_slices, max_value)
 
 
 class AirspeedRelativeWithConfigurationDuringDescentMin(KeyPointValueNode, FlapOrConfigurationMaxOrMin):

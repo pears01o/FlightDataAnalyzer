@@ -711,6 +711,7 @@ from analysis_engine.key_point_values import (
     SpeedbrakeDeployedDuringGoAroundDuration,
     SpeedbrakeDeployedWithFlapDuration,
     SpeedbrakeDeployedWithPowerOnDuration,
+    SpoilersDeployedDurationDuringLanding,
     StallWarningDuration,
     StickPusherActivatedDuration,
     StickShakerActivatedDuration,
@@ -21159,6 +21160,51 @@ class TestRudderPedalForceMax(unittest.TestCase, NodeTest):
 
 ##############################################################################
 # Speedbrake
+
+
+class TestSpoilersDeployedDurationDuringLanding(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = SpoilersDeployedDurationDuringLanding
+        self.values_mapping = {0: 'Stowed', 1: 'Armed/Cmd Dn', 2: 'Deployed/Cmd Up'}
+        self.speedbrake_array =  np.ma.array(([0] * 4 + [1] * 2 + [2] * 4) * 3)
+        self.speedbrake = M('Speedbrake Selected', values_mapping=self.values_mapping,
+                       array=self.speedbrake_array)
+        self.landing = S('Landing')
+        self.landing.create_section(slice(5, 28, None),
+                           begin=5.265625, end=27.265625)
+
+    def test_can_operate(self):
+        opts = self.node_class.get_operational_combinations()
+        self.assertEqual(len(opts), 1)
+        self.assertIn('Speedbrake Selected', opts[0])
+        self.assertIn('Landing', opts[0])
+
+    def test_derive(self):
+        node = self.node_class()
+        node.derive(self.speedbrake, self.landing)
+        self.assertEqual(node, [KeyPointValue(27.265625, 9.265625,
+                                              'Spoilers Deployed Duration During Landing')])
+
+    def test_derive_multiple_landings(self):
+        node = self.node_class()
+        self.landing.create_section(slice(32, 40, None),
+                                    begin=32.2505, end=40.331)
+        self.speedbrake_array = np.concatenate((self.speedbrake_array, self.speedbrake_array))
+        self.speedbrake.array = self.speedbrake_array
+        node.derive(self.speedbrake, self.landing)
+        self.assertEqual(node[0], KeyPointValue(27.265625, 9.265625,
+                                              'Spoilers Deployed Duration During Landing'))
+        self.assertEqual(node[1], KeyPointValue(40.331, 4.0,
+                                              'Spoilers Deployed Duration During Landing'))
+
+    def test_derive_landing_without_spoilers_deployed(self):
+        node = self.node_class()
+        self.speedbrake_array = np.ma.array(([0] * 4 + [1] * 2 + [0] * 4) * 3)
+        self.speedbrake.array = self.speedbrake_array
+        node.derive(self.speedbrake, self.landing)
+        self.assertEqual(node, [KeyPointValue(27.265625, 0,
+                                              'Spoilers Deployed Duration During Landing')])
 
 
 class TestSpeedbrakeDeployed1000To20FtDuration(unittest.TestCase, NodeTest):

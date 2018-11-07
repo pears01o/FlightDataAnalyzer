@@ -4747,6 +4747,29 @@ class TouchdownToSpoilersDeployedDuration(KeyPointValueNode):
                 self.create_kpv(land.slice.start, 0)
 
 
+class SpoilersDeployedDurationDuringLanding(KeyPointValueNode):
+    '''
+    Duration of spoiler deployment during landing.
+    '''
+
+    units = ut.SECOND
+
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(('Speedbrake Selected', 'Landing'), available)
+
+    def derive(self, brake=M('Speedbrake Selected'), landings=S('Landing')):
+
+        for landing in landings.get_slices():
+            slices = clump_multistate(brake.array, 'Deployed/Cmd Up',
+                                      landing)
+            if not slices:
+                self.create_kpv(landing.stop, 0)
+            else:
+                self.create_kpv(landing.stop, slices_duration(slices,
+                                                              brake.hz))
+
+
 class TrackDeviationFromRunway1000To500Ft(KeyPointValueNode):
     '''
     Track deviation from the runway centreline from 1000 to 500 feet.
@@ -17374,28 +17397,6 @@ class RudderPedalMin(KeyPointValueNode):
 ##############################################################################
 # Speedbrake
 
-
-class SpoilersDeployedDurationDuringLanding(KeyPointValueNode):
-    '''
-    Duration of spoiler deployment during landing.
-    '''
-
-    units = ut.SECOND
-
-    @classmethod
-    def can_operate(cls, available):
-        return all_of(('Speedbrake Selected', 'Landing'), available)
-
-    def derive(self, brake=M('Speedbrake Selected'), landings=S('Landing')):
-
-        for landing in landings.get_slices():
-            slices = clump_multistate(brake.array, 'Deployed/Cmd Up',
-                                      landing)
-            if not slices:
-                self.create_kpv(landing.stop, 0)
-            else:
-                self.create_kpv(landing.stop, slices_duration(slices,
-                                                              brake.hz))
 
 class SpeedbrakeDeployed1000To20FtDuration(KeyPointValueNode):
     '''

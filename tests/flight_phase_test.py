@@ -2890,13 +2890,33 @@ class TestGearRetracted(unittest.TestCase):
 
 
 class TestGoAround5MinRating(unittest.TestCase):
-    def test_can_operate(self):
-        self.assertEqual(GoAround5MinRating.get_operational_combinations(),
-                         [('Go Around And Climbout', 'Touchdown')])
+    def setUp(self):
+        self.node_class = GoAround5MinRating
+        self.jet = A('Engine Propulsion', value='JET')
+        self.prop = A('Engine Propulsion', value='PROP')
+        self.ga = KTI('Go Around', items=[KeyTimeInstance(index=50)])
+        self.duration = A('HDF Duration', value=360)
+    
+    def test_derive_prop(self):
+        array = np.ma.array([70]*40 + [75, 80, 85, 90, 95] + [100]*120 + [95, 90, 85, 80] + [75]*191)
+        eng_np = P('Eng (*) Np Avg', array=array)
+        node = GoAround5MinRating()
+        node.derive(self.ga, eng_np, self.duration,
+                    eng_type=self.prop)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].slice.start, 50)
+        self.assertEqual(node[0].slice.stop, 169)
 
-    @unittest.skip('Test Not Implemented')
-    def test_derive(self):
-        self.assertTrue(False, msg='Test not implemented.')
+    def test_derive_jet(self):
+        array = np.ma.array([70]*40 + [75, 80, 85, 90, 95] + [100]*120 + [95, 90, 85, 80] + [75]*191)
+        eng_np = P('Eng (*) Np Avg', array=array)
+        node = GoAround5MinRating()
+        node.derive(self.ga, eng_np, self.duration,
+                    eng_type=self.jet)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].slice.start, 50)
+        self.assertEqual(node[0].slice.stop, 350)
+        
 
 
 class TestMaximumContinuousPower(unittest.TestCase):

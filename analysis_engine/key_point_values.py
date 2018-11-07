@@ -940,7 +940,7 @@ class LoadFactorThresholdAtTouchdown(KeyPointValueNode):
             ratio = roll.frequency / self.frequency
             scope = slice((tdwn.index - 1) * ratio, 
                                       (tdwn.index * ratio) + 1)
-            roll_tdwn = np.max(abs(roll.array[scope]))
+            roll_tdwn = np.ma.max(abs(roll.array[scope]))
 
             gw_value = [k.value for k in gw_kpv if k.index == tdwn.index]
             if not gw_value:
@@ -981,15 +981,16 @@ class LoadFactorThresholdAtTouchdown(KeyPointValueNode):
                                                   np.linspace(1.80, 1.40, 6))
             else:
                 continue
-
-            # Use roll_tdwn as the index for ld_factor_grph
-            load_factor = value_at_index(ld_factor_grph, roll_tdwn,
-                                         interpolate=True)
-            # At 6 deg the graph drops to zero. 
-            if roll_tdwn > 6.0:
-                load_factor = 0.0
-                
-            self.create_kpv(tdwn.index, load_factor)
+            
+            if not np.ma.is_masked(roll_tdwn):
+                # Use roll_tdwn as the index for ld_factor_grph
+                load_factor = value_at_index(ld_factor_grph, roll_tdwn,
+                                             interpolate=True)
+                # At 6 deg the graph drops to zero. 
+                if roll_tdwn > 6.0:
+                    load_factor = 0.0
+                    
+                self.create_kpv(tdwn.index, load_factor)
 
 
 class AccelerationNormalMinusLoadFactorThresholdAtTouchdown(KeyPointValueNode):

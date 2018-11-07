@@ -1938,13 +1938,10 @@ class Takeoff5MinRating(FlightPhaseNode):
     '''
     For engines, the period of high power operation is normally a maximum of
     5 minutes from the start of takeoff.
-
     For all aeroplanes we use the Takeoff Acceleration Start to indicate the
     start of the Takeoff 5 Minute Rating
-
     For turbo prop aircraft we look for NP stabalising at least 5% less than
     liftoff NP
-
     For Jet aircraft we look for 5 minutes following Takeoff Acceleration Start.
     '''
     align_frequency = 1
@@ -2024,27 +2021,56 @@ class Takeoff5MinRating(FlightPhaseNode):
                 self.create_phase(slice(toff.index, min(toff.index + five_minutes, max_idx)))
 
 
-# TODO: Write some unit tests!
 class GoAround5MinRating(FlightPhaseNode):
     '''
     For engines, the period of high power operation is normally 5 minutes from
     the start of takeoff. Also applies in the case of a go-around.
     '''
     align_frequency = 1
+    
+    def derive(self, gas=KTI('Go Around'),
+               eng_np=P('Eng (*) Np Avg'),
+               duration=A('HDF Duration'),
+               eng_type=A('Engine Propulsion'),):
 
-    def derive(self, gas=S('Go Around And Climbout'), tdwn=S('Touchdown')):
-        '''
-        We check that the computed phase cannot extend beyond the last
-        touchdown, which may arise if a go-around was detected on the final
-        approach.
-        '''
-        for ga in gas:
-            startpoint = ga.slice.start
-            endpoint = ga.slice.start + 300
-            if tdwn:
-                endpoint = min(endpoint, tdwn[-1].index)
-            if startpoint < endpoint:
-                self.create_phase(slice(startpoint, endpoint))
+        five_minutes = 300 * self.frequency
+        #define max index to prevent out of bounds exception
+        max_idx = duration.value * self.frequency
+        
+        if eng_type and eng_type.value == 'PROP':
+            # smoothen the signal
+            filter_median_window = 11 # 11 to get one median per section in window
+            enp_filt = medfilt(eng_np.array, filter_median_window)
+            enp_filt = np.ma.array(enp_filt)
+            
+            #generate RoC array and find 'flat' slices
+            g = np.ma.abs(np.ma.ediff1d(enp_filt))
+            enp_filt.mask = g > 1/self.hz # 1% of change per second is enough to notice thrust reduction
+            flat_slices = np.ma.clump_unmasked(enp_filt)
+            
+            for ga in gas:
+                rating_end = ga_slice_avg = None
+                for flat in flat_slices:
+                    if is_index_within_slice(ga.index, flat):
+                        ga_slice_avg = np.ma.average(enp_filt[flat])
+                    elif ga_slice_avg is not None:
+                        flat_avg = np.ma.average(enp_filt[flat])
+                        if abs(ga_slice_avg - flat_avg) >= 5:
+                            rating_end = flat.start
+                            break
+                    else:
+                        continue
+                if rating_end is None:
+                    rating_end = ga.index + (five_minutes)
+                self.create_phase(slice(ga.index, min(rating_end, max_idx)))
+        else:
+            for ga in gas:
+                startpoint = ga.slice.start
+                endpoint = ga.slice.start + 300
+                if tdwn:
+                    endpoint = min(endpoint, tdwn[-1].index)
+                if startpoint < endpoint:
+                    self.create_phase(slice(startpoint, endpoint))
 
 
 class MaximumContinuousPower(FlightPhaseNode):

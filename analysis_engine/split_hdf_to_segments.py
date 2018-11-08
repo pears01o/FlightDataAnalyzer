@@ -27,6 +27,7 @@ from analysis_engine.library import (align,
                                      py2round,
                                      runs_of_ones,
                                      slices_and_not,
+                                     slices_int,
                                      slices_multiply,
                                      slices_of_runs,
                                      slices_remove_small_gaps,
@@ -109,12 +110,12 @@ def _segment_type_and_slice(speed_array, speed_frequency,
     * 'MID_FLIGHT'
     """
 
-    speed_start = start * speed_frequency
-    speed_stop = stop * speed_frequency
+    speed_start = int(start * speed_frequency)
+    speed_stop = int(stop * speed_frequency)
     speed_array = speed_array[speed_start:speed_stop]
 
-    heading_start = start * heading_frequency
-    heading_stop = stop * heading_frequency
+    heading_start = int(start * heading_frequency)
+    heading_stop = int(stop * heading_frequency)
     heading_array = heading_array[heading_start:heading_stop]
 
 
@@ -150,9 +151,9 @@ def _segment_type_and_slice(speed_array, speed_frequency,
         # if any gear params use them
         gog = next(iter([hdf.get(name) for name in ('Gear On Ground', 'Gear (R) On Ground', 'Gear (L) On Ground')]))
         if gog:
-            gog_start_idx = start * gog.frequency
-            gog_stop_idx = stop * gog.frequency
-            gog_window_samples = 120 * gog.frequency
+            gog_start_idx = int(start * gog.frequency)
+            gog_stop_idx = int(stop * gog.frequency)
+            gog_window_samples = int(120 * gog.frequency)
             gog_min_samples = 4 * gog.frequency
             gog_start_slices = sorted(slices_of_runs(
                 gog.array[gog_start_idx:gog_start_idx + gog_window_samples],
@@ -165,7 +166,10 @@ def _segment_type_and_slice(speed_array, speed_frequency,
                 # 90+% at beginning or end of segment.
                 slow_start = (gog.array[gog_start_slices[0].start] == 'Ground')
                 slow_stop = (gog.array[gog_stop_slices[-1].stop - 1] == 'Ground')
-            temp = np.ma.array(gog.array[gog_start_idx:gog_stop_idx].data, mask=gog.array[gog_start_idx:gog_stop_idx].mask)
+            temp = np.ma.array(
+                gog.array[gog_start_idx:gog_stop_idx].data,
+                mask=gog.array[gog_start_idx:gog_stop_idx].mask
+            )
             gog_test = np.ma.masked_less(temp, 1.0)
             # We have seeen 12-second spurious gog='Air' signals during rotor rundown. Hence increased limit.
             did_move = slices_remove_small_slices(np.ma.clump_masked(gog_test),
@@ -349,7 +353,7 @@ def _split_on_eng_params(slice_start_secs, slice_stop_secs, split_params_min,
         return split_index, split_value
 
     eng_min_slices = runs_of_ones(
-        split_params_min[split_params_slice] == split_value
+        split_params_min[slices_int(split_params_slice)] == split_value
     )
 
     if not eng_min_slices:
@@ -383,7 +387,7 @@ def _split_on_dfc(slice_start_secs, slice_stop_secs, dfc_frequency,
     '''
     dfc_slice = slice(slice_start_secs * dfc_frequency,
                       floor(slice_stop_secs * dfc_frequency) + 1)
-    unmasked_edges = np.ma.flatnotmasked_edges(dfc_diff[dfc_slice])
+    unmasked_edges = np.ma.flatnotmasked_edges(dfc_diff[slices_int(dfc_slice)])
     if unmasked_edges is None:
         return None
     unmasked_edges = unmasked_edges.astype(float)
@@ -423,7 +427,7 @@ def _split_on_rot(slice_start_secs, slice_stop_secs, heading_frequency,
     rot_slice = slice(slice_start_secs * heading_frequency,
                       slice_stop_secs * heading_frequency)
     midpoint = (rot_slice.stop - rot_slice.start) // 2
-    stopped_slices = np.ma.clump_unmasked(rate_of_turn[rot_slice])
+    stopped_slices = np.ma.clump_unmasked(rate_of_turn[slices_int(rot_slice)])
     if not stopped_slices:
         return
 

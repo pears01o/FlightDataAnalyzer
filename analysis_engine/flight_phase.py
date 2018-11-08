@@ -129,7 +129,7 @@ class Airborne(FlightPhaseNode):
             start_point = speedy.start or 0
             stop_point = speedy.stop or len(alt_aal.array)
             # Restrict data to the fast section (it's already been repaired)
-            working_alt = alt_aal.array[start_point:stop_point]
+            working_alt = alt_aal.array[slices_int(start_point, stop_point)]
     
             # Stop here if there is inadequate airborne data to process.
             if working_alt is None or np.ma.ptp(working_alt)==0.0:
@@ -2365,7 +2365,7 @@ class TransitionHoverToFlight(FlightPhaseNode):
                 if trans_slices:
                     for trans in trans_slices:
                         base = air.slice.start + low.start
-                        ext_start = base  + trans.start - 20*ias.frequency
+                        ext_start = int(base  + trans.start - 20*ias.frequency)
                         if alt_agl.array[ext_start]==0.0:
                             trans_start = index_at_value(ias.array, 0.0,
                                                          _slice=slice(base+trans.start, ext_start, -1),

@@ -1980,7 +1980,7 @@ class DistanceToLanding(DerivedParameterNode):
         self.array = np.zeros_like(dist.array)
         if tdwns:
             last_tdwn = 0
-            for this_tdwn in [t.index for t in tdwns.get_ordered_by_index()]:
+            for this_tdwn in [int(t.index) for t in tdwns.get_ordered_by_index()]:
                 self.array[last_tdwn:this_tdwn+1] = np.ma.abs(dist.array[last_tdwn:this_tdwn+1] - (value_at_index(dist.array, this_tdwn) or np.ma.masked))
                 last_tdwn = this_tdwn+1
             self.array[last_tdwn:] = np.ma.abs(dist.array[last_tdwn:] - dist.array[this_tdwn])
@@ -5199,8 +5199,8 @@ class CoordinatesSmoothed(object):
             if approach.type == 'LANDING' and ac_type == aeroplane:
                 # This function returns the lowest non-None offset.
                 try:
-                    join_idx = min(filter(bool, [ils_join_offset,
-                                             approach.turnoff]))
+                    join_idx = int(min(filter(bool, [ils_join_offset,
+                                             approach.turnoff])))
                 except ValueError:
                     join_idx = None
 
@@ -8049,10 +8049,10 @@ class V2Lookup(DerivedParameterNode):
             if index is None:
                 continue
 
-            detent = (flap_lever or flap_synth).array[index]
+            detent = (flap_lever or flap_synth).array[int(index)]
 
             try:
-                self.array[phase] = table.v2(detent, weight)
+                self.array[slices_int(phase)] = table.v2(detent, weight)
             except (KeyError, ValueError) as error:
                 self.warning("Error in '%s': %s", self.name, error)
                 # Where the aircraft takes off with flap settings outside the

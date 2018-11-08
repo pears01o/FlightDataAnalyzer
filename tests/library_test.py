@@ -4535,6 +4535,15 @@ class TestNearestNeighbourMaskRepair(unittest.TestCase):
         self.assertEqual(len(res), 30)
         self.assertEqual(list(res[19:23]), [19,19,22,22])
 
+    def test_nn_mask_repair_mappedarray(self):
+        ms = M('Test', array=np.ma.array([0]*21 + [1]*9),
+               values_mapping={0:'off', 1:'on'})
+        ms.array[18:22] = np.ma.masked
+        res = nearest_neighbour_mask_repair(ms.array)
+        self.assertEqual(len(res), 30)
+        self.assertEqual(list(res[17:23]),
+                         ['off', 'off', 'off', 'on', 'on', 'on'])
+
     def test_nn_mask_repair_with_masked_edges(self):
         array = np.ma.arange(30)
         array[:10] = np.ma.masked

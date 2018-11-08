@@ -5153,7 +5153,7 @@ class TestAirspeedRelativeWithConfigurationDuringDescentMin(unittest.TestCase, N
         array = np.ma.array((0, 1, 1, 2, 2, 4, 6, 4, 4, 2, 1, 0, 0, 0, 0, 0))
         array = np.ma.concatenate((array, array[::-1]))
         conf = M(name='Configuration', array=array, values_mapping=self.mapping)
-        array = np.ma.concatenate((np.arange(16), np.arange(16, -1, -1)))
+        array = np.ma.concatenate((np.arange(16), np.arange(16, 0, -1)))
         air_spd = P(name='Airspeed', array=array)
         descent = buildsection('Descent To Flare', 16, 30)
         name = self.node_class.get_name()
@@ -5212,8 +5212,8 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         flap_synth = M('Flap Lever (Synthetic)', array.copy(), values_mapping=mapping)
         flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
         flap_exc_trans = M('Flap Excluding Transition', array.copy(), values_mapping=mapping)
-        air_spd = P('Airspeed', np.ma.arange(30))
-        fast = buildsection('Fast', 0, 30)
+        air_spd = P('Airspeed', np.ma.arange(20))
+        fast = buildsection('Fast', 0, 20)
 
         node = self.node_class()
         node.derive(air_spd, None, None, flap_inc_trans, None, fast)
@@ -16246,7 +16246,7 @@ class TestFlapWithSpeedbrakeDeployedMax(unittest.TestCase, NodeTest):
         landings = buildsection('Landing', 10, 15)
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(flap, spd_brk, airborne, landings)
+        node.derive(flap, spd_brk, airborne, landings, None)
         self.assertEqual(node, KPV(name=name, items=[
             KeyPointValue(index=7, value=7, name=name),
         ]))

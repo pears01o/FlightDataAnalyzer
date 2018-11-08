@@ -48,6 +48,8 @@ from analysis_engine.settings import (
     WRAPPING_PARAMS,
 )
 
+#from analysis_engine.library import slices_int
+
 # There is no numpy masked array function for radians, so we just multiply thus:
 deg2rad = radians(1.0)
 
@@ -1402,7 +1404,7 @@ def next_unmasked_value(array, index, stop_index=None):
     stop_index = positive_index(array, stop_index)
 
     try:
-        unmasked_index = np.where(np.invert(array.mask[index:stop_index]))[0][0]
+        unmasked_index = np.where(np.invert(array.mask[slices_int(index, stop_index)]))[0][0]
     except IndexError:
         return None
     else:
@@ -1429,7 +1431,7 @@ def prev_unmasked_value(array, index, start_index=None):
     start_index = positive_index(array, start_index)
 
     try:
-        unmasked_index = np.where(np.invert(array.mask[start_index:index + 1]))[0][-1]
+        unmasked_index = np.where(np.invert(array.mask[slices_int(start_index,index + 1)]))[0][-1]
     except IndexError:
         return None
     else:
@@ -1716,7 +1718,7 @@ def index_of_first_start(bool_array, _slice=slice(0, None), min_dur=0.0,
     '''
     if _slice.step and _slice.step < 0:
         raise ValueError("Reverse step not supported")
-    runs = runs_of_ones(bool_array[_slice])
+    runs = runs_of_ones(bool_array[slices_int(_slice)])
     if min_dur:
         runs = filter_slices_duration(runs, min_dur, frequency=frequency)
     if runs:
@@ -2057,12 +2059,12 @@ def find_edges_on_state_change(state, array, change='entering', phase=None, min_
         '''
         min_samples of 3 means 3 or more samples must be in the state for it to be returned.
         '''
-        length = len(array[_slice])
+        length = len(array[slices_int(_slice)])
         # The offset allows for phase slices and puts the transition midway
         # between the two conditions as this is the most probable time that
         # the change took place.
         offset = _slice.start - 0.5
-        state_periods = runs_of_ones(array[_slice] == state)
+        state_periods = runs_of_ones(array[slices_int(_slice)] == state)
         # ignore small periods where slice is in state, then remove small
         # gaps where slices are not in state
         # we are taking 1 away from min_samples here as
@@ -2124,7 +2126,7 @@ def first_valid_parameter(*parameters, **kwargs):
     for parameter in parameters:
         if not parameter:
             continue
-        for phase in phases:
+        for phase in slices_int(phases):
             if not parameter.array[phase].mask.all():
                 return parameter
     else:
@@ -3003,16 +3005,23 @@ def ils_established(array, _slice, hz, point='established'):
         time_required = 1.0
 
     # When is the ILS signal within ILS_CAPTURE (0.5 dots)?
-    captures = np.ma.clump_unmasked(np.ma.masked_greater(np.ma.abs(array[_slice]), ILS_CAPTURE))
+    captures = np.ma.clump_unmasked(
+        np.ma.masked_greater(
+            np.ma.abs(array[slices_int(_slice)]),
+            ILS_CAPTURE)
+    )
     # When is the signal changing at less than ILS_CAPTURE_RATE (+/- 0.1 dots/second)?
-    ils_rate = rate_of_change_array(array[_slice], hz)
+    ils_rate = rate_of_change_array(array[slices_int(_slice)], hz)
     low_rocs = np.ma.clump_unmasked(np.ma.masked_greater(np.ma.abs(ils_rate), ILS_CAPTURE_ROC))
 
     # We want both conditions to be true at the same time, so AND the two conditions
     capture_slices = slices_and(captures, low_rocs)
     if point == 'end':
-        valid = slices_remove_small_gaps(np.ma.clump_unmasked(array[_slice]), time_limit=time_required,
-                                         hz=hz)
+        valid = slices_remove_small_gaps(
+            np.ma.clump_unmasked(array[slices_int(_slice)]),
+            time_limit=time_required,
+            hz=hz
+        )
         capture_slices = slices_and(capture_slices, valid)
 
     for capture in capture_slices:
@@ -3219,7 +3228,7 @@ def integ_value(array,
         index = len(array) - 1
 
     try:
-        value = integrate(array[_slice],
+        value = integrate(array[slices_int(_slice)],
                           frequency=frequency,
                           scale=scale,
                           repair=True,
@@ -4149,7 +4158,7 @@ def max_continuous_unmasked(array, _slice=slice(None)):
     """
     if _slice.step and _slice.step != 1:
         raise ValueError("Step not supported")
-    clumps = np.ma.clump_unmasked(array[_slice])
+    clumps = np.ma.clump_unmasked(array[slices_int(_slice)])
     if not clumps or clumps == [slice(0,0,None)]:
         return None
 
@@ -4190,7 +4199,7 @@ def max_abs_value(array, _slice=slice(None), start_edge=None, stop_edge=None):
     if value is None:
         return Value(None, None)
     else:
-        return Value(index, array[index]) # Recover sign of the value.
+        return Value(index, array[int(index)]) # Recover sign of the value.
 
 
 def max_value(array, _slice=slice(None), start_edge=None, stop_edge=None):
@@ -4292,7 +4301,7 @@ def average_value(array, _slice=slice(None), start_edge=None, stop_edge=None):
     stop = _slice.stop or len(array) if _slice else len(array)
     midpoint = start + ((stop - start) // 2)
     if _slice:
-        array = array[_slice]
+        array = array[slices_int(_slice)]
     return Value(midpoint, np.ma.mean(array))
 
 
@@ -5030,11 +5039,14 @@ def nearest_neighbour_mask_repair(array, copy=True, repair_gap_size=None, direct
         array[stop+1:] = array[stop]
 
     neighbours = next_neighbour()
-    a_copy = array.copy()
+    if isinstance(array, MappedArray):
+        a_copy = array.raw.copy()
+    else:
+        a_copy = array.copy()
     for n, shift in enumerate(neighbours):
         if not np.any(array.mask) or repair_gap_size and n >= repair_gap_size:
             break
-        a_shifted = np.roll(a_copy,shift=shift)
+        a_shifted = np.roll(a_copy, shift=shift)
         idx = ~a_shifted.mask * array.mask
         array[idx] = a_shifted[idx]
     return array
@@ -6515,7 +6527,7 @@ def level_off_index(array, frequency, seconds, variance, _slice=None,
     :rtype:
     '''
     if _slice:
-        array = array[_slice]
+        array = array[slices_int(_slice)]
 
     samples = ceil(frequency * seconds)
 
@@ -7505,7 +7517,7 @@ def index_at_value(array, threshold, _slice=slice(None), endpoint='exact'):
         if endpoint in ['closing', 'first_closing']:
             # Rescan the data to find the last point where the array data is
             # closing.
-            diff = np.ma.ediff1d(array[_slice])
+            diff = np.ma.ediff1d(array[slices_int(_slice)])
             if _slice.step is not None and _slice.step >= 0:
                 start_index = _slice.start
                 stop_index = _slice.stop
@@ -7546,7 +7558,7 @@ def index_at_value(array, threshold, _slice=slice(None), endpoint='exact'):
 
         elif endpoint == 'nearest':
             closing_array = abs(array-threshold)
-            return begin + step * np.ma.argmin(closing_array[_slice])
+            return begin + step * np.ma.argmin(closing_array[slices_int(_slice)])
         else:
             return None  #TODO: raise exception when not found?
     else:
@@ -7615,7 +7627,7 @@ def _value(array, _slice, operator, start_edge=None, stop_edge=None):
 
     values = []
 
-    search_slice = slice(slice_start, slice_stop, _slice.step)
+    search_slice = slices_int(slice_start, slice_stop, _slice.step)
 
     if _slice.step and _slice.step < 0:
         raise ValueError("Negative step not supported")
@@ -8375,7 +8387,12 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
         lat_oil_rig = lat[-1]
         lon_oil_rig = lon[-1]
 
-    head_two_miles, _ = bearing_and_distance(lat[two_miles], lon[two_miles], lat_oil_rig, lon_oil_rig)
+    head_two_miles, _ = bearing_and_distance(
+        lat[int(two_miles)],
+        lon[int(two_miles)],
+        lat_oil_rig,
+        lon_oil_rig
+    )
     param_arrays['head_off_two_miles'] = head_diff(heading, head_two_miles)
     param_arrays['head_final'] = np.ma.median(heading[-30:])
     param_arrays['head_off_final'] = head_diff(heading, param_arrays['head_final'])
@@ -8420,7 +8437,7 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
     # ...then reshape the conditions array to be the number of named conditions by the length of the arrays supplied.
     num_condition_names = len(condition_names)
     conditions = conditions.reshape(num_condition_names,
-                                    len(conditions)/num_condition_names)
+                                    len(conditions)//num_condition_names)
 
     #========================================================================
     # Define the phases and which conditions have to be met for each phase

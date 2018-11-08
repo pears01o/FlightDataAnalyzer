@@ -35,6 +35,7 @@ from analysis_engine.library import (
     slices_below,
     slices_between,
     slices_from_to,
+    slices_int,
     slices_remove_small_gaps,
     value_at_index,
     value_at_time,
@@ -1987,7 +1988,7 @@ class KeyPointValueNode(FormattedNameNode):
         if not all(s.step in (1, None) for s in slices):
             raise ValueError('Slices must have a step of 1 in '
                              'create_kpv_from_slices.')
-        arrays = [array[s] for s in slices]
+        arrays = [array[s] for s in slices_int(slices)]
         # Trap for empty arrays or no slices to scan.
         if not arrays:
             return
@@ -2175,7 +2176,7 @@ class KeyPointValueNode(FormattedNameNode):
             # Handle slices and phases with slice attributes
             slices = [getattr(p, 'slice', p) for p in phase]
 
-        for _slice in slices:
+        for _slice in slices_int(slices):
             start = _slice.start or 0
             if _slice.stop is not None and _slice.stop == _slice.start:
                 continue # e.g. if section is aligned to lower frequency

@@ -85,8 +85,8 @@ class TestDateTimeFunctions(unittest.TestCase):
         month = P('Month', array=np.ma.array([8]*duration))
         day = P('Day', array=np.ma.array([5]*duration))
         hour = P('Hour', array=np.ma.array([0]*duration))
-        minute = P('Minute', array=np.ma.repeat(np.ma.arange(duration/60), 60))
-        second = P('Second', array=np.ma.array(np.tile(np.arange(60), duration/60)))
+        minute = P('Minute', array=np.ma.repeat(np.ma.arange(duration//60), 60))
+        second = P('Second', array=np.ma.array(np.tile(np.arange(60), duration//60)))
         values = {'Year': year, 'Month': month, 'Day': day, 'Hour': hour, 'Minute': minute, 'Second': second}
         def hdf_get(arg):
             return values[arg]
@@ -143,7 +143,7 @@ class TestSplitSegments(unittest.TestCase):
             elif key == 'Segment Split':
                 seg_split = M('Segment Split', array=np.ma.zeros(len(heading_array), dtype=int),
                                  frequency=heading_frequency, values_mapping={0: "-", 1: "Split"})
-                seg_split.array[390/heading_frequency] = "Split"
+                seg_split.array[390//heading_frequency] = "Split"
                 return seg_split
             else:
                 raise KeyError
@@ -436,8 +436,8 @@ class TestSplitSegments(unittest.TestCase):
                           ('START_AND_STOP', slice(26607.0, 28534.0, None), 3),
                           ('START_AND_STOP', slice(28534.0, 30875.0, None), 2),
                           ('START_AND_STOP', slice(30875.0, 33680.0, None), 3)]
-        for a, e in zip(segment_tuples, expected):
-            print(a,e,a==e)
+        #for a, e in zip(segment_tuples, expected):
+            #print(a,e,a==e)
 
         self.assertEqual(segment_tuples,
                          [('START_AND_STOP', slice(0, 3989.0, None), 0),

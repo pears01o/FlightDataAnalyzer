@@ -12,6 +12,7 @@ from analysis_engine.library import (
     cycle_finder,
     integrate,
     np_ma_masked_zeros_like,
+    slices_int,
 )
 
 
@@ -44,12 +45,13 @@ class ApproachRange(DerivedParameterNode):
 
         for tdwn in tdwns:
             end = tdwn.index
-            endpoint = {'latitude': lat.array[end], 'longitude': lon.array[end]}
+            endpoint = {'latitude': lat.array[int(end)],
+                        'longitude': lon.array[int(end)]}
             try:
                 begin = tdwns.get_previous(end).index+stop_delay
             except:
                 begin = 0
-            this_leg = slice(begin, end+stop_delay)
+            this_leg = slices_int(begin, end+stop_delay)
             _, app_range[this_leg] = bearings_and_distances(lat.array[this_leg],
                                                             lon.array[this_leg],
                                                             endpoint)

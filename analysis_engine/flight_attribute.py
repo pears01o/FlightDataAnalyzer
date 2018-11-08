@@ -4,6 +4,7 @@
 
 import numpy as np
 import pytz
+import re
 
 from datetime import datetime
 from operator import itemgetter
@@ -245,7 +246,8 @@ class FlightNumber(FlightAttributeNode):
         if num.array.dtype.type is np.string_:
             value = most_common_value(num.array, threshold=0.45)
             if value is not None:
-                self.set_flight_attr(value)
+                # Only parse valid ASCII characters
+                self.set_flight_attr(re.sub(r'[^\x00-\x7f]', r'', value))
 
             return
 

@@ -66,6 +66,8 @@ from analysis_engine.derived_parameters import (
     AccelerationLateralSmoothed,
     AccelerationLongitudinalOffsetRemoved,
     AccelerationNormalLimitForLandingWeight,
+    AccelerationNormalLowLimitForLandingWeight,
+    AccelerationNormalHighLimitForLandingWeight,
     AccelerationSideways,
     AccelerationVertical,
     AccelerationNormalOffsetRemoved,
@@ -637,6 +639,28 @@ class TestAccelerationNormalLimitForLandingWeight(unittest.TestCase):
         acc_n_lim = AccelerationNormalLimitForLandingWeight()
         acc_n_lim.derive(gross_weight)
         expected = np.ma.concatenate((np.ones(5) * 1.75, np.ones(5) * 2, np.ones(5) * 2.1))
+        ma_test.assert_array_equal(acc_n_lim.array, expected)
+
+class TestAccelerationNormalLowLimitForLandingWeight(unittest.TestCase):
+    def test_derive(self):
+        gross_weight = P('Gross Weight Smoothed',
+                         np.ma.array([99999, 35000, 35000, 34000 ,33400,
+                                      33300, 31000, 30000, 27000, 26000,
+                                      25000, 24500, 23500, 23000, 0.000,]))
+        acc_n_lim = AccelerationNormalLowLimitForLandingWeight()
+        acc_n_lim.derive(gross_weight)
+        expected = np.ma.concatenate((np.ones(3) * 1.75, np.ones(7) * 2.0, np.ones(1) * 2.0332777592530844, np.ones(1) * 2.0666222074024674, np.ones(1) * 2.133311103701234, np.ones(1) * 2.166655551850617, np.ones(1) * 2.2))
+        ma_test.assert_array_equal(acc_n_lim.array, expected)
+
+class TestAccelerationNormalHighLimitForLandingWeight(unittest.TestCase):
+    def test_derive(self):
+        gross_weight = P('Gross Weight Smoothed',
+                         np.ma.array([99999, 35000, 35000, 34000 ,33400,
+                                      33300, 31000, 30000, 27000, 26000,
+                                      25000, 24500, 23500, 23000, 0.000,]))
+        acc_n_lim = AccelerationNormalHighLimitForLandingWeight()
+        acc_n_lim.derive(gross_weight)
+        expected = np.ma.concatenate((np.ones(3) * 1.93, np.ones(7) * 2.2, np.ones(1) * 2.236605535178393, np.ones(1) * 2.2732844281427145, np.ones(1) * 2.346642214071357, np.ones(1) * 2.3833211070356786, np.ones(1) * 2.42))
         ma_test.assert_array_equal(acc_n_lim.array, expected)
 
 

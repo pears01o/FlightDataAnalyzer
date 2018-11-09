@@ -61,6 +61,8 @@ from analysis_engine.key_point_values import (
     AccelerationLongitudinalOffset,
     AccelerationNormal20FtTo5FtMax,
     AccelerationNormalAboveWeightLimitAtTouchdown,
+    AccelerationNormalAboveWeightLowLimitAtTouchdown,
+    AccelerationNormalAboveWeightHighLimitAtTouchdown,
     AccelerationNormalAtLiftoff,
     AccelerationNormalAtTouchdown,
     AccelerationNormalMinusLoadFactorThresholdAtTouchdown,
@@ -2434,6 +2436,96 @@ class TestAccelerationNormalAboveWeightLimitAtTouchdown(unittest.TestCase):
         self.assertAlmostEqual(node[1].value, -0.9)
         self.assertLess(node[0].value, 0)
         self.assertLess(node[1].value, 0)
+
+class TestAccelerationNormalAboveWeightLowLimitAtTouchdown(unittest.TestCase):
+    def setUp(self):
+        self.node_class = AccelerationNormalAboveWeightLowLimitAtTouchdown
+
+    def test_derive(self):
+        node = self.node_class()
+        limit = P('Acceleration Normal Low Limit For Landing Weight', np.ma.zeros(15))
+
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=0, value=0),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
+                    acc_limit=limit)
+
+        self.assertEqual(node[0].index, 0)
+        self.assertEqual(node[0].value, 0)
+
+    def test_derive_hard_landing(self):
+        node = self.node_class()
+        limit = P('Acceleration Normal Low Limit For Landing Weight',
+                  np.ma.concatenate((np.ones(5) * 1.75, np.ones(7) * 2.0, np.ones(3) * 2.2)))
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=4, value=2.50),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
+                    acc_limit=limit)
+
+        self.assertEqual(node[0].index, 4)
+        self.assertAlmostEqual(node[0].value, 0.75)
+        self.assertGreater(node[0].value, 0)
+
+    def test_derive_no_hard_landing(self):
+        node = self.node_class()
+        limit = P('Acceleration Normal Low Limit For Landing Weight',
+                  np.ma.concatenate((np.ones(5) * 1.75, np.ones(7) * 2.0, np.ones(3) * 2.2)))
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=13, value=1.95),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
+                    acc_limit=limit)
+
+        self.assertEqual(node[0].index, 13)
+        self.assertAlmostEqual(node[0].value, -0.25)
+        self.assertLess(node[0].value, 0)
+
+class TestAccelerationNormalAboveWeightHighLimitAtTouchdown(unittest.TestCase):
+    def setUp(self):
+        self.node_class = AccelerationNormalAboveWeightHighLimitAtTouchdown
+
+    def test_derive(self):
+        node = self.node_class()
+        limit = P('Acceleration Normal High Limit For Landing Weight', np.ma.zeros(15))
+
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=0, value=0),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
+                    acc_limit=limit)
+
+        self.assertEqual(node[0].index, 0)
+        self.assertEqual(node[0].value, 0)
+
+    def test_derive_hard_landing(self):
+        node = self.node_class()
+        limit = P('Acceleration Normal High Limit For Landing Weight',
+                  np.ma.concatenate((np.ones(5) * 1.93, np.ones(7) * 2.2, np.ones(3) * 2.42)))
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=4, value=2.50),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
+                    acc_limit=limit)
+
+        self.assertEqual(node[0].index, 4)
+        self.assertAlmostEqual(node[0].value, 0.57)
+        self.assertGreater(node[0].value, 0)
+
+    def test_derive_no_hard_landing(self):
+        node = self.node_class()
+        limit = P('Acceleration Normal High Limit For Landing Weight',
+                  np.ma.concatenate((np.ones(5) * 1.93, np.ones(7) * 2.2, np.ones(3) * 2.42)))
+        acc_norm_tdwns = KPV(name='Acceleration Normal At Touchdown', items=[
+            KeyPointValue(index=13, value=1.95),
+        ])
+        node.derive(acc_norm_tdwns=acc_norm_tdwns,
+                    acc_limit=limit)
+
+        self.assertEqual(node[0].index, 13)
+        self.assertAlmostEqual(node[0].value, -0.47)
+        self.assertLess(node[0].value, 0)
 
 class TestAccelerationNormalLiftoffTo35FtMax(unittest.TestCase, NodeTest):
 

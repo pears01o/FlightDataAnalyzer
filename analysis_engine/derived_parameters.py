@@ -6278,6 +6278,76 @@ class AccelerationNormalLimitForLandingWeight(DerivedParameterNode):
         self.array[range3] = 1.75
 
 
+class AccelerationNormalLowLimitForLandingWeight(DerivedParameterNode):
+    '''
+    Maximum acceleration normal at touchdown for weight using the
+    low load threshold.
+    Applicable only for Embraer E-175.
+
+    If landing weight is higher than 34000kg, the threshold for a
+    hard landing is 1.75g
+
+    If between 25500 and 34000, the threshold for hard landing is 2.0g
+
+    If the landing weight is between 22500 and 25500 the threshold for
+    a hard landing is a slope line from 2.2g at 22500 to 2.0g at 25500
+    '''
+
+    @classmethod
+    def can_operate(cls, available,
+                    family=A('Family'),):
+        family_name = family.value if family else None
+        return family_name in ('ERJ-170/175',) and ('Gross Weight Smoothed' in available)
+
+    def derive(self,
+               gw=P('Gross Weight Smoothed')):
+
+        self.array = np_ma_masked_zeros_like(gw.array)
+        range1 = gw.array < 25500
+        range_slope = (gw.array >= 22500) & (gw.array < 25500)
+        self.array[range1] = 2.2
+        self.array[range_slope] = np.linspace(2.2, 2.0, num=3000)[gw.array.astype(np.int)[range_slope] - 22500]
+        range2 = (gw.array >= 25500) & (gw.array <= 34000)
+        self.array[range2] = 2.0
+        range3 = gw.array > 34000
+        self.array[range3] = 1.75
+
+
+class AccelerationNormalHighLimitForLandingWeight(DerivedParameterNode):
+    '''
+    Maximum acceleration normal at touchdown for weight using the
+    high load threshold.
+    Applicable only for Embraer E-175.
+
+    If landing weight is higher than 34000kg, the threshold for a
+    hard landing is 1.93g
+
+    If between 25500 and 34000, the threshold for hard landing is 2.20g
+
+    If the landing weight is between 22500 and 25500 the threshold for
+    a hard landing is a slope line from 2.42g at 22500 to 2.2g at 25500
+    '''
+
+    @classmethod
+    def can_operate(cls, available,
+                    family=A('Family'),):
+        family_name = family.value if family else None
+        return family_name in ('ERJ-170/175',) and ('Gross Weight Smoothed' in available)
+
+    def derive(self,
+               gw=P('Gross Weight Smoothed')):
+
+        self.array = np_ma_masked_zeros_like(gw.array)
+        range1 = gw.array < 25500
+        range_slope = (gw.array >= 22500) & (gw.array < 25500)
+        self.array[range1] = 2.42
+        self.array[range_slope] = np.linspace(2.42, 2.2, num=3000)[gw.array.astype(np.int)[range_slope] - 22500]
+        range2 = (gw.array >= 25500) & (gw.array <= 34000)
+        self.array[range2] = 2.2
+        range3 = gw.array > 34000
+        self.array[range3] = 1.93
+
+
 class Rudder(DerivedParameterNode):
     '''
     Combination of multi-part rudder elements.

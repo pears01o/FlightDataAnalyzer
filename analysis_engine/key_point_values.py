@@ -13791,8 +13791,8 @@ class FlareDuration20FtToTouchdown(KeyPointValueNode):
                         self.create_kpv(
                             tdown.index,
                             (tdown.index - idx_20) / alt_aal.frequency)
-                        # why not?
                 except ValueError:
+                    # why not?
                     self.warning("Did not cross 20ft before touchdown point - sounds unlikely")
                     return
 

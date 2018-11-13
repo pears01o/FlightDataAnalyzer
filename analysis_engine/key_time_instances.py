@@ -462,7 +462,7 @@ class EngStart(KeyTimeInstanceNode):
             # Repair 30 seconds of masked data when detecting engine starts.
             array = hysteresis(
                 repair_mask(eng_nx.array,
-                            repair_duration=120 / self.frequency,
+                            repair_duration=360 / self.frequency,
                             extrapolate=True),
                 HYSTERESIS_ENG_START_STOP)
             below_slices = runs_of_ones(array < limit)

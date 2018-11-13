@@ -814,6 +814,8 @@ class AccelerationNormalAboveWeightLowLimitAtTouchdown(KeyPointValueNode):
 
     Positive if Acceleration Normal exceeds weight limit.
     Specific to Embraer 170/175.
+
+    Reference: Embraer 175 - AMM 2134   05-50-03
     '''
 
     units = ut.G
@@ -834,6 +836,8 @@ class AccelerationNormalAboveWeightHighLimitAtTouchdown(KeyPointValueNode):
 
     Positive if Acceleration Normal exceeds weight limit.
     Specific to Embraer 170/175.
+    
+    Reference: Embraer 175 - AMM 2134   05-50-03
     '''
 
     units = ut.G

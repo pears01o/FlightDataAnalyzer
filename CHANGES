@@ -8,6 +8,12 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+v0.41.10
+--------
+ - AE-2013 Airspeed with Conf 1+F excluding transition Max KPV
+ - AE-2036 Flight Number filters invalid characters
+ - AE-2037 Embraer 170/175 Overweight Hard Landing Max Vert parameters and KPVs
+
 v0.41.9
 -------
  - AE-1267 MinimumCleanLookup and MinimumAirspeed fixed for Airbus

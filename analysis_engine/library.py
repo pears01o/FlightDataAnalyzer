@@ -99,7 +99,7 @@ def any_one_of(names, available):
     Returns True if any ONE, and only one, of the names is within the available list.
     '''
     return sum(name in available for name in names) == 1
-    
+
 
 def air_track(lat_start, lon_start, lat_end, lon_end, spd, hdg, alt_aal, frequency):
     """
@@ -2546,10 +2546,10 @@ def runway_touchdown(runway):
     Distance from runway start to centre of touchdown markings.
     ref: https://www.icao.int/safety/Implementation/Library/Manual%20Aerodrome%20Stds.pdf
     page 68, taking lenth to beginning of marking plus half the minimum length of stripe.
-    
+
     :param runway: Runway location details dictionary.
     :type runway: Dictionary
-    
+
     :return
     :param tdn_dist: distance from start of runway to touchdown point
     :type tdn_dist: float, units = metres.
@@ -2566,21 +2566,21 @@ def runway_touchdown(runway):
             tdn_dist = 322.5
         elif length > 2400:
             tdn_dist = 422.5
-        
+
         r = tdn_dist / length
-        
+
         lat = (1.0-r) * runway['start']['latitude'] + r * runway['end']['latitude']
         lon = (1.0-r) * runway['start']['longitude'] + r * runway['end']['longitude']
         return tdn_dist, {'latitude':lat, 'longitude':lon}
-    
+
     else:
         # Helipads
-        if runway: 
-            locn = runway['start'] 
-        else: 
+        if runway:
+            locn = runway['start']
+        else:
             locn = None
         return 0.0, locn
-    
+
 
 def runway_heading(runway):
     '''
@@ -3688,7 +3688,7 @@ def slices_overlap_merge(first_list, second_list, extend_stop=0):
 
     return result_list
 
-    
+
 def slices_and(first_list, second_list):
     '''
     This is a simple AND function to allow two slice lists to be merged. This
@@ -3914,7 +3914,7 @@ def slices_remove_small_slices(slices, time_limit=10, hz=1, count=None):
 def slices_find_small_slices(slices, time_limit=10, hz=1, count=None):
     '''
     Find small slices in a list of slices.
-    
+
     :param slice_list: list of slices to be processed
     :type slice_list: list of Python slices.
 
@@ -4764,7 +4764,7 @@ def blend_parameters_cubic(frequency, offset, params, result_slice):
     :type params: [Parameter]
     :param result_slice: the slice where results will be returned
     :type result_slice: slice
-    
+
     This provides cubic spline interpolation to support the generic routine
     blend_parameters. It uses cubic spline interpolation for each of the
     component parameters, then applies weighting to reflect both the
@@ -5341,7 +5341,7 @@ def overflow_correction(param, fast=None, max_val=8191):
         jump_sign = -jump / abs_jump
         steps = np.ma.where(abs_jump > delta, max_val * jump_sign, 0)
         for jump_idx in np.ma.where(steps)[0]:
-            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False 
+            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False
         correction = np.ma.cumsum(steps)
 
         array[sl] += correction
@@ -6598,35 +6598,35 @@ def including_transition(array, steps, hz=1, mode='include'):
           _____
       ___|/   \|
     _|/        \|__
-    
+
     :type array: np.ma.array
     :param steps: Steps to align the signal to.
     :type steps: [int]
     :param threshold: Threshold of difference between two flap settings to apply the next flap setting.
     :type threshold: float
-    
+
     threshold = 0.01 makes the system too late and too conservative.
     '''
     steps = sorted(steps)
     mid_steps = [steps[0] - 10.0]
-    
+
     for step_1, step_2 in zip(steps[:-1], steps[1:]):
         mid_steps.append((step_1 + step_2) / 2.0)
     mid_steps.append(steps[-1] + 10.0)
 
     change = np.ma.ediff1d(array, to_begin=0.0)
-    
+
     # first raise the array to the next step if it exceeds the previous step
     # plus a minimal threshold (step as early as possible)
     output = np_ma_masked_zeros_like(array)
-    
+
     for mid_1, flap, mid_2 in zip(mid_steps[:-1], steps, mid_steps[1:]):
         # Slice the data into bands that are between the midpoint flap values
         bands = slices_and(runs_of_ones(array > mid_1), runs_of_ones(array <= mid_2))
         for band in bands:
             # Find where the data did not change in this band...
             partial = np.ma.where(np.ma.abs(change[band.start:band.stop]) < 0.03, flap, np.ma.masked) # threshold of 0.03 to account for slight changes/flutter
-            
+
             if len(partial) == 1:
                 if change[band.start] > 0:
                     output[band.start] = flap
@@ -6649,10 +6649,10 @@ def including_transition(array, steps, hz=1, mode='include'):
                         # Going down
                         output[index + band.start + 1] = flap
                 else:
-                    # The data may have just crept into this band without being a 
+                    # The data may have just crept into this band without being a
                     # true change into the new flap setting. Let's just ignore this.
                     pass
-                
+
     for gap in np.ma.clump_masked(output):
         before = output[max(gap.start - 1, 0)]
         after = output[min(gap.stop, len(output) - 1)]
@@ -7008,17 +7008,17 @@ def smooth_track_cost_function(lat_s, lon_s, lat, lon, ac_type, hz):
 def smooth_signal(array, window_len=11, window='hanning'):
     """
     Smooth the data using a window with requested size.
-    
+
     This method is based on the convolution of a scaled window with the signal.
-    The signal is prepared by introducing reflected copies of the signal 
+    The signal is prepared by introducing reflected copies of the signal
     (with the window size) in both ends so that transient parts are minimized
     in the begining and end part of the output signal.
-    
+
     input:
         array: the input signal array to be smoothed
-        window_len: the dimension of the smoothing window and should be an odd 
+        window_len: the dimension of the smoothing window and should be an odd
                     integer
-        window: the type of window from: 
+        window: the type of window from:
             'flat' - window will produce a moving average smoothing.
             'hanning'
             'hamming'
@@ -7052,9 +7052,9 @@ def smooth_signal(array, window_len=11, window='hanning'):
     out = np.convolve(w/w.sum(), s, mode='valid')
     # Trim the extra elements of the array to make the returned array the same
     # length. The example suggest using:
-    #    "return y[(window_len/2-1):-(window_len/2)]" 
-    # This left the array size 1 element too big , the excess has been trim 
-    # off the end of the array. 
+    #    "return y[(window_len/2-1):-(window_len/2)]"
+    # This left the array size 1 element too big , the excess has been trim
+    # off the end of the array.
     if out.size > array.size:
         extra = out.size - array.size
         extra_start = window_len/2-1
@@ -8338,7 +8338,7 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
     duration = len(u)
     two_miles = index_at_value(distance, 2.0, _slice=slice(None, None, -1))
 
-    # Use the latitude and longitude of the oil rig if provided. 
+    # Use the latitude and longitude of the oil rig if provided.
     # Otherwise use the landing latitude/longitude
     if lon_oil_rig is not None and lat_oil_rig is None:
         lat_oil_rig = lat[-1]
@@ -8365,7 +8365,7 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
         plt.plot(lon[-1],lat[-1], marker='o', color='g')
         plt.show()
         plt.clf()
-        
+
         plt.plot(u, label='u')
         plt.plot(heading, label='heading')
         plt.plot(param_arrays['Groundspeed'], label='groundspeed')
@@ -8374,7 +8374,7 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
         plt.legend()
         plt.show()
         plt.clf()
-        
+
         plt.plot(height)
         plt.plot(u)
         plt.plot(param_arrays['head_off_two_miles'])
@@ -8463,8 +8463,8 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
         print(half_mile)
 
     # If ARDA/AROA is detected, this takes priority and we return this instead of checking if
-    # this is indeed the longest slice. Else, we check if the conditions for the Standard 
-    # Approach are met and return this instead. If the conditions are not met for both the 
+    # this is indeed the longest slice. Else, we check if the conditions for the Standard
+    # Approach are met and return this instead. If the conditions are not met for both the
     # ARDA/AROA and Standard Approach, we return None
     is_arda_aroa = False
     for d, name in enumerate(approach_map):
@@ -8487,16 +8487,16 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
                 elif is_arda_aroa == False:
                     longest_approach_durn = slices_duration([this_slice], 1.0)
                     longest_approach_type = name
-                    longest_approach_slice = this_slice                    
+                    longest_approach_slice = this_slice
             if debug:
                 if max_durn_slice:
                     print(name,'longest period', max_durn, 'sec, from', max_durn_slice.start,'to', max_durn_slice.stop)
                 else:
                     print(name, 'not met at half mile point')
-                    
+
         if is_arda_aroa:
             break
-        
+
     if debug:
         print('\n'+'Longest slice overall was type', longest_approach_type, longest_approach_durn, 'sec')
 
@@ -8521,14 +8521,14 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
 
 def max_maintained_value(arrays, seconds, frequency, phase):
     """
-    For the given phase, return the indices of the maximum value maintained 
+    For the given phase, return the indices of the maximum value maintained
     for the given number of samples (this is the minimum value within the slice
     equal to the number of samples containing the highest values)
-    
-    E.g. 
+
+    E.g.
     arrays = [1,2,3,4,3,4,3,4,3,2,5,2]
     samples = 5
-    
+
     max_value = 5
     windows:
     0: [[1,2,3,4,3],4,3,4,3,2,5,2] => min_diff = sum(5-1 + 5-2 + 5-3 + 5-4 + 5-3) = 12
@@ -8543,12 +8543,12 @@ def max_maintained_value(arrays, seconds, frequency, phase):
     min_difference_index = 3
     array_index = 4
     value = 3
-    
+
     The slice starting at index 3 and ending at index 8 (5 samples) is the slice
     with the minimum difference from the maximum value in the array, therefore it contains
-    the samples with the highest values. The value returned along with this index is 3, 
-    as if we return the minimum value within this slice, we ensure that all other values 
-    will be higher than this. 
+    the samples with the highest values. The value returned along with this index is 3,
+    as if we return the minimum value within this slice, we ensure that all other values
+    will be higher than this.
     """
     indices = []
     values = []
@@ -8568,7 +8568,7 @@ def max_maintained_value(arrays, seconds, frequency, phase):
             index, value = min_value(array[min_difference_index:min_difference_index+samples])
             indices.append(min_difference_index + index + phase.start + unmasked_slice.start)
             values.append(value)
-            
+
     if len(values) == 1:
         return indices[0], values[0]
     elif len(values) > 1:

@@ -496,7 +496,7 @@ def can_operate(cls, available, actype=A('Aircraft Type')):
         :rtype: None
         """
         raise NotImplementedError("Abstract Method")
-    
+
     def __getstate__(self):
         '''
         Do not pickle _cache attr when saving nodes.
@@ -506,7 +506,7 @@ def can_operate(cls, available, actype=A('Aircraft Type')):
         state = self.__dict__.copy()
         del state['_cache']
         return state
-    
+
     def __setstate__(self, state):
         '''
         Add an empty _cache attr when loading nodes.

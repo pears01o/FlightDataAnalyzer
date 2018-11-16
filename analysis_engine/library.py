@@ -6701,7 +6701,6 @@ def including_transition(array, steps, hz=1, mode='include'):
     :type steps: [int]
     :param threshold: Threshold of difference between two flap settings to apply the next flap setting.
     :type threshold: float
-
     '''
     steps = sorted(steps)
     mid_steps = [steps[0] - 10.0]

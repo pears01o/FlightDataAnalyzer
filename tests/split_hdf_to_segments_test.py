@@ -890,5 +890,3 @@ class TestSegmentTypeAndSlice(unittest.TestCase):
         self.assertEqual(segment_type, 'START_AND_STOP')
         self.assertEqual(segment, slice(0, 5560))
         self.assertEqual(array_start_secs, 0)
-
-

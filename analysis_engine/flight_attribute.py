@@ -194,7 +194,7 @@ class DestinationAirport(FlightAttributeNode):
                 self.set_flight_attr(afr_dest.value)
             return
 
-        value = most_common_value(dest.array, threshold=0.45)
+        value = most_common_value(dest.array, threshold=0.45).decode()
         if value is None or not value.isalpha():
             return
 

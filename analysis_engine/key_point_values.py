@@ -12,6 +12,7 @@ from copy import deepcopy
 from math import ceil, copysign
 from operator import itemgetter
 
+from hdfaccess.parameter import NO_MAPPING
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.geometry import midpoint, great_circle_distance__haversine
 
@@ -5537,15 +5538,15 @@ class AltitudeAtFlapExtensionWithGearDownSelected(KeyPointValueNode):
                 if gear_ext.array[index] != 'Down':
                     continue
                 value = alt_aal.array[index]
-                try:
-                    self.create_kpv(index, value, flap=flap.array[index])
-                except:
+                for i in range(1+int(flap.hz*2)):
                     # Where flap values are mapped onto bits in the recorded
                     # word (e.g. E170 family), the new flap setting may clash
                     # with the old value, giving a transient indication of
                     # both flap readings. This is a crude fix to avoid this
                     # type of error condition.
-                    self.create_kpv(index, value, flap=flap.array[index + 2])
+                    if flap.array[index] != NO_MAPPING:
+                        self.create_kpv(index, value, flap=flap.array[index+i])
+                        break
 
 
 class AirspeedAtFlapExtension(KeyPointValueNode):

@@ -22,7 +22,7 @@ from analysis_engine.split_hdf_to_segments import (
 )
 from analysis_engine.node import M, P, Parameter
 
-from hdfaccess.file import hdf_file
+from flightdataaccessor.file import hdf_file
 
 from flightdatautilities.array_operations import load_compressed
 from flightdatautilities.filesystem_tools import copy_file

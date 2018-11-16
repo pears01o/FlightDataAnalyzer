@@ -27,7 +27,7 @@ try:
 except ImportError:
     from itertools import zip_longest, tee
 
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.datatypes.parameter import MappedArray
 
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.geometry import cross_track_distance, great_circle_distance__haversine

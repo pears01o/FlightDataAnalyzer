@@ -5,7 +5,7 @@ from __future__ import print_function
 import numpy as np
 
 from flightdatautilities import units as ut
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.parameter import MappedArray
 
 from analysis_engine.node import (
     A, MultistateDerivedParameterNode,

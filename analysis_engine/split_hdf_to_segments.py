@@ -33,8 +33,8 @@ from analysis_engine.library import (align,
                                      straighten_headings,
                                      vstack_params)
 
-from hdfaccess.file import hdf_file
-from hdfaccess.utils import segment_boundaries, write_segment
+from flightdataaccessor.file import hdf_file
+from flightdataaccessor.utils import segment_boundaries, write_segment
 
 from flightdatautilities.filesystem_tools import sha_hash_file
 from six import string_types
@@ -226,7 +226,7 @@ def _get_normalised_split_params(hdf, align_param=None):
     normalise them on a scale from 0-1.0 and return the minimum.
 
     :param hdf: hdf_file object.
-    :type hdf: hdfaccess.file.hdf_file
+    :type hdf: flightdataaccessor.file.hdf_file
     :returns: Minimum of normalised split parameters along with its frequency.
         Will return None, None if no split parameters are available.
     :rtype: (None, None) or (np.ma.masked_array, float)
@@ -271,7 +271,7 @@ def _get_eng_params(hdf, align_param=None):
     Get eng parameters from hdf, and return the minimum.
 
     :param hdf: hdf_file object.
-    :type hdf: hdfaccess.file.hdf_file
+    :type hdf: flightdataaccessor.file.hdf_file
     :returns: Minimum of normalised split parameters along with its frequency.
         Will return None, None if no split parameters are available.
     :rtype: (None, None) or (np.ma.masked_array, float)
@@ -1097,8 +1097,7 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
     # process each segment (into a new file) having closed original hdf_path
     segments = []
     previous_stop_dt = None
-    for part, (segment_type, segment_slice, start_padding) in enumerate(segment_tuples,
-                                                         start=1):
+    for part, (segment_type, segment_slice, start_padding) in enumerate(segment_tuples, start=1):
         # write segment to new split file (.001)
         basename = os.path.basename(hdf_path)
         dest_basename = os.path.splitext(basename)[0] + '.%03d.hdf5' % part

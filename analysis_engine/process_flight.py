@@ -13,7 +13,7 @@ from networkx.readwrite import json_graph
 
 from flightdatautilities.filesystem_tools import copy_file
 
-from hdfaccess.file import hdf_file
+from flightdataaccessor.file import hdf_file
 
 from analysis_engine import hooks, settings, __version__
 from analysis_engine.dependency_graph import dependency_order

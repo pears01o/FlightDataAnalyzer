@@ -13,7 +13,7 @@ from flightdatautilities.aircrafttables.interfaces import VelocitySpeed
 from flightdatautilities.array_operations import load_compressed
 from flightdatautilities.geometry import midpoint
 
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.parameter import MappedArray
 
 from analysis_engine.node import (
     A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem,
@@ -788,7 +788,7 @@ class NodeTest(object):
                             phase_name='Phase'):
         import shutil
         import tempfile
-        from hdfaccess.file import hdf_file
+        from flightdataaccessor.file import hdf_file
         from analysis_engine.node import derived_param_from_hdf
 
         params = []

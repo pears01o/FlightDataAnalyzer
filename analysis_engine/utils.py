@@ -11,8 +11,8 @@ import zipfile
 from collections import defaultdict
 from inspect import getargspec, isclass, ismodule
 
-from hdfaccess.file import hdf_file
-from hdfaccess.utils import strip_hdf
+from flightdataaccessor.file import hdf_file
+from flightdataaccessor.utils import strip_hdf
 
 from flightdatautilities import api
 

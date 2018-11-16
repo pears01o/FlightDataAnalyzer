@@ -11,7 +11,7 @@ import six
 
 from copy import copy
 
-from hdfaccess.file import hdf_file
+from flightdataaccessor.file import hdf_file
 from flightdatautilities import units as ut
 from flightdatautilities.print_table import indent
 

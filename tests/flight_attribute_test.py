@@ -268,7 +268,7 @@ class TestDeterminePilot(unittest.TestCase):
     def get_params(self, hdf_path, _slice, phase_name):
         import shutil
         import tempfile
-        from hdfaccess.file import hdf_file
+        from flightdataaccessor.file import hdf_file
 
         with tempfile.NamedTemporaryFile() as temp_file:
             shutil.copy(hdf_path, temp_file.name)

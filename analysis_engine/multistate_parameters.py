@@ -11,7 +11,7 @@ from pprint import pformat
 
 from flightdatautilities import aircrafttables as at, dateext, units as ut
 
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.datatypes.parameter import MappedArray
 
 from analysis_engine.node import (
     A, M, P, S, helicopter, MultistateDerivedParameterNode

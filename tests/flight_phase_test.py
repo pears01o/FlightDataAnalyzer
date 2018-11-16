@@ -2,7 +2,7 @@ import numpy as np
 import os
 import unittest
 
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.parameter import MappedArray
 from flightdatautilities.array_operations import load_compressed
 
 from analysis_engine.node import (

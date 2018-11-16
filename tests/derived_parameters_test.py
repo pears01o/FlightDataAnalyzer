@@ -12,7 +12,7 @@ from mock import Mock, patch
 
 from numpy.ma.testutils import assert_array_almost_equal, assert_array_equal, assert_almost_equal, assert_equal
 
-from hdfaccess.file import hdf_file
+from flightdataaccessor.file import hdf_file
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.array_operations import load_compressed
 from flightdatautilities.aircrafttables.interfaces import VelocitySpeed

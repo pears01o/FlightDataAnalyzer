@@ -24,7 +24,7 @@ from scipy.ndimage import filters
 from scipy.signal import medfilt
 from six.moves import filterfalse, zip_longest
 
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.datatypes.parameter import MappedArray
 
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.geometry import cross_track_distance, great_circle_distance__haversine

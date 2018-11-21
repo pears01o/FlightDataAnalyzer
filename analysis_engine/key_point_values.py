@@ -6631,8 +6631,8 @@ class ControlWheelForceMax(KeyPointValueNode):
 
 def PreflightCheck(self, firsts, accels, disps, full_disp):
     """
-    Compute the total travel of each control during the interval between first engine
-    start and takeoff start of acceleration, as % of full travel for that control.
+    Compute the total travel of each control during the interval between first APU start
+    or first engine start and takeoff start of acceleration, as % of full travel for that control.
     """    
     for first in firsts:
         acc = accels.get_next(first.index)
@@ -6656,8 +6656,8 @@ class ElevatorPreflightCheck(KeyPointValueNode):
     def can_operate(cls, available, model=A('Model'), series=A('Series'), family=A('Family')):
 
         if not (any_of(('Elevator', 'Elevator (L)', 'Elevator (R)'), available) and
-                    all_of(('First Eng Start Before Liftoff', 'Takeoff Acceleration Start',
-                            'Model', 'Series', 'Family'), available)):
+                all_of(('Takeoff Acceleration Start', 'Model', 'Series', 'Family'), available) and
+                any_of(('First Eng Start Before Liftoff', 'First Apu Start Before Liftoff'), available)):
             return False
 
         try:
@@ -6672,7 +6672,8 @@ class ElevatorPreflightCheck(KeyPointValueNode):
     def derive(self, elev=P('Elevator'),
                elev_l=P('Elevator (L)'),
                elev_r=P('Elevator (R)'),
-               firsts=KTI('First Eng Start Before Liftoff'),
+               eng_firsts=KTI('First Eng Start Before Liftoff'),
+               apu_firsts=KTI('First Apu Start Before Liftoff'),
                accels=KTI('Takeoff Acceleration Start'),
                model=A('Model'), series=A('Series'), family=A('Family')):
 
@@ -6680,7 +6681,7 @@ class ElevatorPreflightCheck(KeyPointValueNode):
         disp_range = at.get_elevator_range(model.value, series.value, family.value)
         full_disp = disp_range * 2 if isinstance(disp_range, (float, int)) else disp_range[1] - disp_range[0]
 
-        PreflightCheck(self, firsts, accels, disps, full_disp)
+        PreflightCheck(self, apu_firsts if apu_firsts else eng_firsts, accels, disps, full_disp)
 
 
 class AileronPreflightCheck(KeyPointValueNode):
@@ -6693,8 +6694,8 @@ class AileronPreflightCheck(KeyPointValueNode):
     def can_operate(cls, available, model=A('Model'), series=A('Series'), family=A('Family')):
 
         if not (any_of(('Aileron', 'Aileron (L)', 'Aileron (R)'), available) and
-                all_of(('First Eng Start Before Liftoff', 'Takeoff Acceleration Start',
-                        'Model', 'Series', 'Family'), available)):
+                all_of(('Takeoff Acceleration Start', 'Model', 'Series', 'Family'), available) and
+                any_of(('First Eng Start Before Liftoff', 'First Apu Start Before Liftoff'), available)):
             return False
 
         try:
@@ -6709,7 +6710,8 @@ class AileronPreflightCheck(KeyPointValueNode):
     def derive(self, ail=P('Aileron'),
                ail_l=P('Aileron (L)'),
                ail_r=P('Aileron (R)'),
-               firsts=KTI('First Eng Start Before Liftoff'),
+               eng_firsts=KTI('First Eng Start Before Liftoff'),
+               apu_firsts=KTI('First Apu Start Before Liftoff'),
                accels=KTI('Takeoff Acceleration Start'),
                model=A('Model'), series=A('Series'), family=A('Family')):
 
@@ -6717,7 +6719,7 @@ class AileronPreflightCheck(KeyPointValueNode):
         disp_range = at.get_aileron_range(model.value, series.value, family.value)
         full_disp = disp_range * 2 if isinstance(disp_range, (float, int)) else disp_range[1] - disp_range[0]
 
-        PreflightCheck(self, firsts, accels, disps, full_disp)
+        PreflightCheck(self, apu_firsts if apu_firsts else eng_firsts, accels, disps, full_disp)
 
 
 class RudderPreflightCheck(KeyPointValueNode):
@@ -6729,7 +6731,8 @@ class RudderPreflightCheck(KeyPointValueNode):
     @classmethod
     def can_operate(cls, available, model=A('Model'), series=A('Series'), family=A('Family')):
 
-        if not all_of(('Rudder', 'First Eng Start Before Liftoff', 'Takeoff Acceleration Start', 'Model', 'Series', 'Family'), available):
+        if not (all_of(('Rudder', 'Takeoff Acceleration Start', 'Model', 'Series', 'Family'), available) and
+                any_of(('First Eng Start Before Liftoff', 'First Apu Start Before Liftoff'), available)):
             return False
 
         try:
@@ -6742,14 +6745,15 @@ class RudderPreflightCheck(KeyPointValueNode):
         return True
 
     def derive(self, disp=P('Rudder'),
-               firsts=KTI('First Eng Start Before Liftoff'),
+               eng_firsts=KTI('First Eng Start Before Liftoff'),
+               apu_firsts=KTI('First Apu Start Before Liftoff'),
                accels=KTI('Takeoff Acceleration Start'),
                model=A('Model'), series=A('Series'), family=A('Family')):
 
         disp_range = at.get_rudder_range(model.value, series.value, family.value)
         full_disp = disp_range * 2 if isinstance(disp_range, (float, int)) else disp_range[1] - disp_range[0]
 
-        PreflightCheck(self, firsts, accels, [disp], full_disp)
+        PreflightCheck(self, apu_firsts if apu_firsts else eng_firsts, accels, [disp], full_disp)
 
 
 class FlightControlPreflightCheck(KeyPointValueNode):

@@ -404,6 +404,7 @@ class FirstAPUStartBeforeLiftoff(KeyTimeInstanceNode):
     Check for the first APU start before liftoff. The index will be the first
     time the APU is started before liftoff.
     '''
+    name = 'First APU Start Before Liftoff'
 
     def derive(self, apu_starts=KTI('APU Start'), liftoffs=KTI('Liftoff')):
         if not liftoffs:

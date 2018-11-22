@@ -6657,7 +6657,7 @@ class ElevatorPreflightCheck(KeyPointValueNode):
 
         if not (any_of(('Elevator', 'Elevator (L)', 'Elevator (R)'), available) and
                 all_of(('Takeoff Acceleration Start', 'Model', 'Series', 'Family'), available) and
-                any_of(('First Eng Start Before Liftoff', 'First Apu Start Before Liftoff'), available)):
+                any_of(('First Eng Start Before Liftoff', 'First APU Start Before Liftoff'), available)):
             return False
 
         try:
@@ -6673,7 +6673,7 @@ class ElevatorPreflightCheck(KeyPointValueNode):
                elev_l=P('Elevator (L)'),
                elev_r=P('Elevator (R)'),
                eng_firsts=KTI('First Eng Start Before Liftoff'),
-               apu_firsts=KTI('First Apu Start Before Liftoff'),
+               apu_firsts=KTI('First APU Start Before Liftoff'),
                accels=KTI('Takeoff Acceleration Start'),
                model=A('Model'), series=A('Series'), family=A('Family')):
 
@@ -6695,7 +6695,7 @@ class AileronPreflightCheck(KeyPointValueNode):
 
         if not (any_of(('Aileron', 'Aileron (L)', 'Aileron (R)'), available) and
                 all_of(('Takeoff Acceleration Start', 'Model', 'Series', 'Family'), available) and
-                any_of(('First Eng Start Before Liftoff', 'First Apu Start Before Liftoff'), available)):
+                any_of(('First Eng Start Before Liftoff', 'First APU Start Before Liftoff'), available)):
             return False
 
         try:
@@ -6711,7 +6711,7 @@ class AileronPreflightCheck(KeyPointValueNode):
                ail_l=P('Aileron (L)'),
                ail_r=P('Aileron (R)'),
                eng_firsts=KTI('First Eng Start Before Liftoff'),
-               apu_firsts=KTI('First Apu Start Before Liftoff'),
+               apu_firsts=KTI('First APU Start Before Liftoff'),
                accels=KTI('Takeoff Acceleration Start'),
                model=A('Model'), series=A('Series'), family=A('Family')):
 
@@ -6732,7 +6732,7 @@ class RudderPreflightCheck(KeyPointValueNode):
     def can_operate(cls, available, model=A('Model'), series=A('Series'), family=A('Family')):
 
         if not (all_of(('Rudder', 'Takeoff Acceleration Start', 'Model', 'Series', 'Family'), available) and
-                any_of(('First Eng Start Before Liftoff', 'First Apu Start Before Liftoff'), available)):
+                any_of(('First Eng Start Before Liftoff', 'First APU Start Before Liftoff'), available)):
             return False
 
         try:
@@ -6746,7 +6746,7 @@ class RudderPreflightCheck(KeyPointValueNode):
 
     def derive(self, disp=P('Rudder'),
                eng_firsts=KTI('First Eng Start Before Liftoff'),
-               apu_firsts=KTI('First Apu Start Before Liftoff'),
+               apu_firsts=KTI('First APU Start Before Liftoff'),
                accels=KTI('Takeoff Acceleration Start'),
                model=A('Model'), series=A('Series'), family=A('Family')):
 

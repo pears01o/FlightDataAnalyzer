@@ -399,12 +399,12 @@ class APUStop(KeyTimeInstanceNode):
         if i is not None and v == 'Running':
             self.create_kti(i)
 
-class FirstAPUStartBeforeLiftoff(KeyTimeInstanceNode):
+class LastAPUStartBeforeLiftoff(KeyTimeInstanceNode):
     '''
-    Check for the first APU start before liftoff. The index will be the first
+    Check for the last APU start before liftoff. The index will be the last
     time the APU is started before liftoff.
     '''
-    name = 'First APU Start Before Liftoff'
+    name = 'Last APU Start Before Liftoff'
 
     def derive(self, apu_starts=KTI('APU Start'), liftoffs=KTI('Liftoff')):
         if not liftoffs:
@@ -419,7 +419,7 @@ class FirstAPUStartBeforeLiftoff(KeyTimeInstanceNode):
                          kti_name)
         else:
             apu_starts_before_liftoff.append(apu_start_before_liftoff.index)
-            self.create_kti(min(apu_starts_before_liftoff))
+            self.create_kti(max(apu_starts_before_liftoff))
 
 
 class EngStart(KeyTimeInstanceNode):

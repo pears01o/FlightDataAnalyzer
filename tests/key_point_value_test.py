@@ -24680,7 +24680,7 @@ class TestAileronPreflightCheck(unittest.TestCase):
     def test_can_operate(self, at):
         at.get_aileron_range.return_value = self.return_value
         aileron_deps = ['Aileron', 'Aileron (L)', 'Aileron (R)']
-        start_deps = ['First Eng Start Before Liftoff', 'First APU Start Before Liftoff']
+        start_deps = ['First Eng Start Before Liftoff', 'Last APU Start Before Liftoff']
         required_deps = ['Takeoff Acceleration Start', 'Model', 'Series', 'Family']
 
         # Empty tuple omitted from powerset
@@ -24722,8 +24722,8 @@ class TestAileronPreflightCheck(unittest.TestCase):
 
     @patch('analysis_engine.key_point_values.at')
     def test_derive_apu(self, at):
-        firsts = KTI('First APU Start Before Liftoff',
-                     items=[KeyTimeInstance(50, 'First APU Start Before Liftoff')])
+        lasts = KTI('Last APU Start Before Liftoff',
+                     items=[KeyTimeInstance(50, 'Last APU Start Before Liftoff')])
         accels = KTI('Takeoff Acceleration Start',
                      items=[KeyTimeInstance(375, 'Takeoff Acceleration Start')])
         x = np.linspace(0, 10, 400)
@@ -24736,7 +24736,7 @@ class TestAileronPreflightCheck(unittest.TestCase):
             if not any(args):
                 continue
             node = self.node_class()
-            node.derive(*list(args) + [None, firsts, accels, self.model, self.series, self.family])
+            node.derive(*list(args) + [None, lasts, accels, self.model, self.series, self.family])
             self.assertEqual(len(node), 1)
             self.assertEqual(node[0].index, 318)
             self.assertAlmostEqual(node[0].value, 90, delta=1) # 90% of total movement
@@ -24755,7 +24755,7 @@ class TestElevatorPreflightCheck(unittest.TestCase):
     def test_can_operate(self, at):
         at.get_aileron_range.return_value = self.return_value
         elevator_deps = ['Elevator', 'Elevator (L)', 'Elevator (R)']
-        start_deps = ['First Eng Start Before Liftoff', 'First APU Start Before Liftoff']
+        start_deps = ['First Eng Start Before Liftoff', 'Last APU Start Before Liftoff']
         required_deps = ['Takeoff Acceleration Start', 'Model', 'Series', 'Family']
 
         # Empty tuple omitted from powerset
@@ -24797,8 +24797,8 @@ class TestElevatorPreflightCheck(unittest.TestCase):
 
     @patch('analysis_engine.key_point_values.at')
     def test_derive_apu(self, at):
-        firsts = KTI('First APU Start Before Liftoff',
-                     items=[KeyTimeInstance(50, 'First APU Start Before Liftoff')])
+        lasts = KTI('Last APU Start Before Liftoff',
+                     items=[KeyTimeInstance(50, 'Last APU Start Before Liftoff')])
         accels = KTI('Takeoff Acceleration Start',
                      items=[KeyTimeInstance(375, 'Takeoff Acceleration Start')])
         x = np.linspace(0, 10, 400)
@@ -24811,7 +24811,7 @@ class TestElevatorPreflightCheck(unittest.TestCase):
             if not any(args):
                 continue
             node = self.node_class()
-            node.derive(*list(args) + [None, firsts, accels, self.model, self.series, self.family])
+            node.derive(*list(args) + [None, lasts, accels, self.model, self.series, self.family])
             self.assertEqual(len(node), 1)
             self.assertEqual(node[0].index, 318)
             self.assertAlmostEqual(node[0].value, 90, delta=1) # 90% of total movement
@@ -24833,7 +24833,7 @@ class TestRudderPreflightCheck(unittest.TestCase):
         ops = self.node_class.get_operational_combinations(model=self.model, series=self.series, family=self.family)
         # assertIn didn't work
         self.assertTrue(tuple(['Rudder', 'First Eng Start Before Liftoff'] + required_deps) in ops or
-                       (tuple(['Rudder', 'First APU Start Before Liftoff'] + required_deps) in ops))
+                       (tuple(['Rudder', 'Last APU Start Before Liftoff'] + required_deps) in ops))
 
     @patch('analysis_engine.key_point_values.at')
     def test_derive(self, at):
@@ -24860,8 +24860,8 @@ class TestRudderPreflightCheck(unittest.TestCase):
 
     @patch('analysis_engine.key_point_values.at')
     def test_derive_apu(self, at):
-        firsts = KTI('First APU Start Before Liftoff',
-                       items=[KeyTimeInstance(50, 'First APU Start Before Liftoff')])
+        lasts = KTI('Last APU Start Before Liftoff',
+                       items=[KeyTimeInstance(50, 'Last APU Start Before Liftoff')])
 
         accels = KTI('Takeoff Acceleration Start',
                        items=[KeyTimeInstance(375, 'Takeoff Acceleration Start')])
@@ -24875,7 +24875,7 @@ class TestRudderPreflightCheck(unittest.TestCase):
         at.get_rudder_range.return_value = self.return_value
 
         node = self.node_class()
-        node.derive(rudder, None, firsts, accels, self.model, self.series, self.family)
+        node.derive(rudder, None, lasts, accels, self.model, self.series, self.family)
 
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 318)

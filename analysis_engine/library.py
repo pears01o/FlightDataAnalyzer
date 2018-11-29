@@ -6642,22 +6642,12 @@ def including_transition(array, steps, hz=1, mode='include'):
                 # through the flap setting of interest.
                 index = index_at_value(array[band], flap)
                 if index:
-                    try:
-                        if array[band.stop] > array[band.start]:
-                            # Going up
-                            output[index + band.start - 1] = flap
-                        else:
-                            # Going down
-                            output[index + band.start + 1] = flap
-                    except IndexError:
-                        # Surface angle was still in transition on last sample, need to make sure band.stop is less than len(array))
-                        band = slice(band.start, band.stop - 1)
-                        if array[band.stop - 1] > array[band.start]:
-                            # Going up
-                            output[index + band.start - 1] = flap
-                        else:
-                            # Going down
-                            output[index + band.start + 1] = flap
+                    if array[band.start:band.stop + 1][-1] > array[band.start]:
+                        # Going up
+                        output[index + band.start - 1] = flap
+                    else:
+                        # Going down
+                        output[index + band.start + 1] = flap
                 else:
                     # The data may have just crept into this band without being a 
                     # true change into the new flap setting. Let's just ignore this.

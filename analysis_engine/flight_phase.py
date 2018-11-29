@@ -222,10 +222,11 @@ class GoAroundAndClimbout(FlightPhaseNode):
 
 class Holding(FlightPhaseNode):
     """
-    Holding is a process which involves multiple turns in a short period,
-    normally in the same sense. We therefore compute the average rate of turn
-    over a long period to reject short turns and pass the entire holding
-    period.
+    Holding is a process which involves multiple turns in a short period 
+    during the descent, normally in the same sense. 
+    
+    We compute the average rate of turn over a long period to reject 
+    short turns and pass the entire holding period.
 
     Note that this is the only function that should use "Heading Increasing"
     as we are only looking for turns, and not bothered about the sense or
@@ -233,37 +234,41 @@ class Holding(FlightPhaseNode):
     """
 
     can_operate = aeroplane_only
+    align_frequency = 1.0 # No need for greater accuracy
 
     def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
                hdg=P('Heading Increasing'),
+               alt_max=KPV('Altitude Max'),
+               tdwns=KTI('Touchdown'),
                lat=P('Latitude Smoothed'), lon=P('Longitude Smoothed')):
-        _, height_bands = slices_from_to(alt_aal.array, 20000, 3000)
-        # Three minutes should include two turn segments.
-        turn_rate = rate_of_change(hdg, 3 * 60)
-        for height_band in height_bands:
-            if height_band.start >= height_band.stop:
-                continue
-            # We know turn rate will be positive because Heading Increasing only
-            # increases.
-            turn_bands = np.ma.clump_unmasked(
-                np.ma.masked_less(turn_rate[height_band], 0.5))
-            hold_bands=[]
-            for turn_band in shift_slices(turn_bands, height_band.start):
-                # Reject short periods and check that the average groundspeed was
-                # low. The index is reduced by one sample to avoid overruns, and
-                # this is fine because we are not looking for great precision in
-                # this test.
-                hold_sec = turn_band.stop - turn_band.start
-                if (hold_sec > HOLDING_MIN_TIME*alt_aal.frequency):
-                    start = turn_band.start
-                    stop = turn_band.stop - 1
-                    _, hold_dist = bearing_and_distance(
-                        lat.array[start], lon.array[start],
-                        lat.array[stop], lon.array[stop])
-                    if ut.convert(hold_dist / hold_sec, ut.METER_S, ut.KT) < HOLDING_MAX_GSPD:
-                        hold_bands.append(turn_band)
 
-            self.create_phases(hold_bands)
+        # Five minutes should include two turn segments.
+        turn_rate = rate_of_change(hdg, 5 * 60)
+        
+        # We scan the entire descent, from highest altitude to the final 
+        # touchdown, to give us the best chance of finding any hold periods.
+        to_scan = slice(alt_max[0].index, tdwns[-1].index)
+        # We know turn rate will be positive because Heading Increasing only
+        # increases.
+        turn_bands = np.ma.clump_unmasked(
+            np.ma.masked_less(turn_rate[to_scan], 0.5))
+        hold_bands=[]
+        for turn_band in shift_slices(turn_bands, to_scan.start):
+            # Reject short periods and check that the average groundspeed was
+            # low. The index is reduced by one sample to avoid overruns, and
+            # this is fine because we are not looking for great precision in
+            # this test.
+            hold_sec = turn_band.stop - turn_band.start
+            if (hold_sec > HOLDING_MIN_TIME):
+                start = turn_band.start
+                stop = turn_band.stop - 1
+                _, hold_dist = bearing_and_distance(
+                    lat.array[start], lon.array[start],
+                    lat.array[stop], lon.array[stop])
+                if ut.convert(hold_dist / hold_sec, ut.METER_S, ut.KT) < HOLDING_MAX_GSPD:
+                    hold_bands.append(turn_band)
+
+        self.create_phases(hold_bands)
 
 
 class EngHotelMode(FlightPhaseNode):

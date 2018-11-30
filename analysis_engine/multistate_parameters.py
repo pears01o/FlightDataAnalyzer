@@ -1438,7 +1438,8 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
     def can_operate(cls, available,
                     model=A('Model'), series=A('Series'), family=A('Family')):
 
-        if not all_of(('Flap', 'Model', 'Series', 'Family'), available):
+        if not (all_of(('Flap', 'Model', 'Series', 'Family'), available) or \
+                all_of(('Flap Including Transition', 'Flap Excluding Transition', 'Model', 'Series', 'Family'), available)):
             return False
 
         try:
@@ -1457,7 +1458,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         slat_required = any(slat is not None for slat, flap, flaperon in
                             angles.values())
         if slat_required:
-            can_operate = can_operate and 'Slat' in available
+            can_operate = can_operate and (('Slat' in available) or (('Slat Including Transition', 'Slat Excluding Transition') in available))
 
         flaperon_required = any(flaperon is not None for slat, flap, flaperon in
                                 angles.values())
@@ -1466,7 +1467,9 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
 
         return can_operate
 
-    def derive(self, flap=M('Flap'), slat=M('Slat'), flaperon=M('Flaperon'),
+    def derive(self, flap_param=M('Flap'), slat_param=M('Slat'), flaperon=M('Flaperon'),
+               flap_inc=M('Flap Including Transition'), flap_exc=M('Flap Excluding Transition'),
+               slat_inc=M('Slat Including Transition'), slat_exc=M('Slat Excluding Transition'),
                model=A('Model'), series=A('Series'), family=A('Family'),
                approach=S('Approach And Landing'), frame=A('Frame'),):
         try:
@@ -1483,8 +1486,55 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
             self.values_mapping = at.get_lever_map(model.value, series.value, family.value)
 
         # Prepare the destination array:
-        self.array = MappedArray(np_ma_masked_zeros_like(flap.array),
+        self.array = MappedArray(np_ma_masked_zeros_like(flap_param.array),
                                  values_mapping=self.values_mapping)
+
+        # If available Flap Lever Synthetic should follow Surface Including transition on
+        # extension and Surface Excluding Transition on retraction; ref AE-2033
+
+        if flap_inc and flap_exc:
+            sections_inc = []
+            sections_exc = []
+            for value in self.values_mapping:
+                sections_inc.append(runs_of_ones(flap_inc.array == value))
+                sections_exc.append(runs_of_ones(flap_exc.array == value))
+            sections_inc = sorted(list(itertools.chain.from_iterable(sections_inc)))
+            sections_exc = sorted(list(itertools.chain.from_iterable(sections_exc)))
+
+
+            flap_inc_in_order = []
+            flap_exc_in_order = []
+            for s in sections_inc:
+                flap_inc_in_order.append(np.ma.average(flap_inc.array[s]))
+
+            for s in sections_exc:
+                flap_exc_in_order.append(np.ma.average(flap_exc.array[s]))
+
+            for i in range(0, len(flap_inc_in_order)-1):
+                if flap_inc_in_order[i] < flap_inc_in_order[i+1]:
+                    self.array[sections_inc[i]] = flap_inc.array[sections_inc[i]]
+
+            for i in range(0, len(flap_exc_in_order)-1):
+                if flap_exc_in_order[i] > flap_exc_in_order[i+1]:
+                    self.array[sections_exc[i]] = flap_exc.array[sections_exc[i]]
+
+            for gap in np.ma.clump_masked(self.array):
+                before = self.array[max(gap.start - 1, 0)]
+                after = self.array[min(gap.stop, len(self.array) - 1)]
+                self.array[gap] = max(before, after)
+
+
+        # get extension slices and append
+        # get retraction slices and append
+        # sort
+        # build array
+        # fill in the gaps?
+
+
+
+        # identify extension slices
+        # identify retraction slices
+        # build new array
 
         # Update the destination array according to the mappings:
         for (state, (s, f, a)) in six.iteritems(angles):
@@ -2414,13 +2464,10 @@ class SlatExcludingTransition(MultistateDerivedParameterNode):
     def derive(self, slat=P('Slat Angle'),
                model=A('Model'), series=A('Series'), family=A('Family')):
 
-        self.values_mapping, self.array, self.frequency, self.offset = calculate_slat(
-            'excluding',
-            slat,
-            model,
-            series,
-            family,
-        )
+        self.values_mapping = at.get_slat_map(model.value, series.value, family.value)
+        self.frequency = slat.hz
+        self.offset = slat.offset
+        self.array = excluding_transition(slat.array, self.values_mapping, hz=self.hz)
 
 
 class SlatIncludingTransition(MultistateDerivedParameterNode):

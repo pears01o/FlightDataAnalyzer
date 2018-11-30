@@ -1359,7 +1359,7 @@ class FlapForLeverSynthetic(MultistateDerivedParameterNode):
     Flap parameter for Flap Lever Synthetic. Uses Flap Including Transition on
     extension, and Flap Excluding Transition on retraction. ref. AE-2033
     '''
-    name = 'Flap Lever (Synthetic)'
+    name = 'Flap For Flap Lever Synthetic'
     units = ut.DEGREE
     align_frequency = 2  # force higher than most Flap frequencies
 

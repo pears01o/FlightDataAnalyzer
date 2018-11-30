@@ -6642,7 +6642,7 @@ def including_transition(array, steps, hz=1, mode='include'):
                 # through the flap setting of interest.
                 index = index_at_value(array[band], flap)
                 if index:
-                    if array[band.stop] > array[band.start]:
+                    if array[band.start:band.stop + 1][-1] > array[band.start]:
                         # Going up
                         output[index + band.start - 1] = flap
                     else:
@@ -6658,8 +6658,41 @@ def including_transition(array, steps, hz=1, mode='include'):
         after = output[min(gap.stop, len(output) - 1)]
         if mode == 'include':
             output[gap] = max(before, after)
-        else:
+        elif mode == 'flap':
             output[gap] = min(before, after)
+
+    return output
+
+
+def excluding_transition(array, steps, hz=1, time_limit=3):
+    '''
+    Snaps signal to step values excluding transition.
+    '''
+
+    # Sort steps, necessary for value snapping below, we don't want it to be random
+    steps = sorted(steps)
+
+    # Build masked array based on surface angle
+    output = np_ma_masked_zeros_like(array)
+
+    # Calculate RoC
+    change = np.ma.ediff1d(array, to_begin=0.0)
+
+    # find where the surface angle was not in transition and remove small chunks
+    stationary = runs_of_ones(np.ma.abs(change) < 0.03) # 0.03 seems to work for including_transition, feel free to change it
+    stationary = slices_remove_small_slices(stationary, time_limit=time_limit, hz=hz) # 3s seems reasonable
+
+    for s in stationary:
+        # get the average value of the slice and snap it to the closest value in the steps list
+        # then, populate the output array with that number
+        output[s] = min(steps, key=lambda x:abs(x-np.ma.average(array[s])))
+
+    #fill in the gaps
+    for gap in np.ma.clump_masked(output):
+        before = output[max(gap.start - 1, 0)]
+        after = output[min(gap.stop, len(output) - 1)]
+
+        output[gap] = min(before, after)
 
     return output
 

@@ -1467,7 +1467,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
 
         return can_operate
 
-    def derive(self, flap_param=M('Flap'), slat_param=M('Slat'), flaperon=M('Flaperon'),
+    def derive(self, flap=M('Flap'), slat_param=M('Slat'), flaperon=M('Flaperon'),
                flap_inc=M('Flap Including Transition'), flap_exc=M('Flap Excluding Transition'),
                slat_inc=M('Slat Including Transition'), slat_exc=M('Slat Excluding Transition'),
                model=A('Model'), series=A('Series'), family=A('Family'),

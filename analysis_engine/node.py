@@ -967,25 +967,25 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
 
         return object.__setattr__(self, name, value)
 
-    def __getstate__(self):
-        '''
-        Get the state of the object for pickling.
+    # def __getstate__(self):
+    #     '''
+    #     Get the state of the object for pickling.
 
-        :rtype: dict
-        '''
-        odict = self.__dict__.copy()
-        return odict
+    #     :rtype: dict
+    #     '''
+    #     odict = self.__dict__.copy()
+    #     return odict
 
-    def __setstate__(self, state):
-        '''
-        Set the state of the unpickled object.
+    # def __setstate__(self, state):
+    #     '''
+    #     Set the state of the unpickled object.
 
-        :type state: dict
-        '''
-        array = state.pop('array')
-        self.__dict__.update(state)
-        self.array = MappedArray(array,
-                                 values_mapping=state['values_mapping'])
+    #     :type state: dict
+    #     '''
+    #     array = state.pop('array')
+    #     self.__dict__.update(state)
+    #     self.array = MappedArray(array,
+    #                              values_mapping=state['values_mapping'])
 
 
 M = MultistateDerivedParameterNode  # shorthand

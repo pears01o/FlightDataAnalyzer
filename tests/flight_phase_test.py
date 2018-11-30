@@ -1711,95 +1711,114 @@ class TestHolding(unittest.TestCase):
         self.assertEqual(
             Holding.get_operational_combinations(ac_type=aeroplane),
             [('Altitude AAL For Flight Phases',
-             'Heading Increasing','Latitude Smoothed',
-             'Longitude Smoothed')])
+             'Heading Increasing', 'Altitude Max', 'Touchdown',
+             'Latitude Smoothed', 'Longitude Smoothed')])
 
     def test_straightish_not_detected(self):
-        hdg = P('Heading Increasing', np.ma.arange(3000)*0.45)
-        alt = P('Altitude AAL For Flight Phases', np.ma.ones(3000) * 10000)
-        lat = P('Latitude Smoothed', np.ma.ones(3000) * 24.0)
-        lon = P('Longitude Smoothed', np.ma.ones(3000) * 24.0)
+        rot=np.ma.concatenate((
+            np.zeros(600),
+            np.tile(np.concatenate((np.ones(60) * 0.3, np.zeros(60))), 6),
+            np.zeros(2180),
+            np.tile(np.concatenate((np.ones(60) * 0.6, np.zeros(60))), 6),
+            np.zeros(2180),
+            np.tile(np.concatenate((np.ones(120) * 0.5, np.zeros(90))), 6),
+            np.zeros(2180),
+            np.tile(np.concatenate((np.ones(120) * 0.5, np.zeros(120))), 6),
+            np.zeros(600),
+        ))
+        alt=P('Altitude AAL For Flight Phases', np.ones(11880) * 4000)
+        hdg=P('Heading Increasing', integrate(rot,1.0))
+        alt_max=KPV('Altitude Max', items=[
+            KeyPointValue(index=200, value=40000.0),])
+        tdwns=KTI('Touchdown', items=[
+            KeyTimeInstance(index=11500),])
+        lat=P('Latitude Smoothed', np.ma.ones(11880) * 24.0)
+        lon=P('Longitude Smoothed', np.ma.ones(11880) * 24.0)
         hold=Holding()
-        hold.derive(alt, hdg, lat, lon)
-        expected = []
-        self.assertEqual(hold, expected)
-
-    def test_bent_detected(self):
-        hdg=P('Heading Increasing', np.ma.arange(3000) * 1.1)
-        alt=P('Altitude AAL For Flight Phases', np.ma.concatenate(([25000], np.ones(3000) * 10000, [0])))
-        lat=P('Latitude Smoothed', np.ma.ones(3000) * 24.0)
-        lon=P('Longitude Smoothed', np.ma.ones(3000) * 24.0)
-        hold=Holding()
-        hold.derive(alt, hdg, lat, lon)
-        expected=buildsection('Holding',1,3000)
-        self.assertEqual(hold.get_slices(), expected.get_slices())
-
+        hold.derive(alt, hdg, alt_max, tdwns, lat, lon)
+        self.assertEqual(len(hold), 0)
+        
     def test_rejected_outside_height_range(self):
-        hdg=P('Heading Increasing', np.ma.arange(3000) * 1.1)
-        alt=P('Altitude AAL For Flight Phases', np.ma.arange(3000,0,-1) * 10)
-        lat=P('Latitude Smoothed', np.ma.ones(3000) * 24.0)
-        lon=P('Longitude Smoothed', np.ma.ones(3000) * 24.0)
+        rot=np.ma.concatenate((
+            np.zeros(600),
+            np.tile(np.concatenate((np.ones(60) * 3.0, np.zeros(60))), 6),
+            np.zeros(600),
+        ))
+        alt=P('Altitude AAL For Flight Phases', np.ones(11880) * 4000)
+        hdg=P('Heading Increasing', integrate(rot,1.0))
+        alt_max=KPV('Altitude Max', items=[
+            KeyPointValue(index=1700, value=40.0),])
+        tdwns=KTI('Touchdown', items=[
+            KeyTimeInstance(index=1900),])
+        lat=P('Latitude Smoothed', np.ma.ones(1920) * 24.0)
+        lon=P('Longitude Smoothed', np.ma.ones(1920) * 24.0)
         hold=Holding()
-        hold.derive(alt, hdg, lat, lon)
-        # OK - I cheated. Who cares about the odd one sample passing 5000ft :o)
-        expected=buildsection('Holding', 1001, 2700)
-        self.assertEqual(hold.get_slices(), expected.get_slices())
+        hold.derive(alt, hdg, alt_max, tdwns, lat, lon)
+        self.assertEqual(len(hold), 0)
 
     def test_hold_detected(self):
         rot=np.ma.concatenate((
             np.zeros(600),
             np.tile(np.concatenate((np.ones(60) * 3, np.zeros(60))), 6),
-            np.zeros(180),
-            np.tile(np.concatenate((np.ones(60) * 3, np.zeros(90))), 6),
+            np.zeros(2180),
+            np.tile(np.concatenate((np.ones(60) * 3, np.zeros(60))), 6),
+            np.zeros(2180),
+            np.tile(np.concatenate((np.ones(120) * 1.5, np.zeros(90))), 6),
+            np.zeros(2180),
+            np.tile(np.concatenate((np.ones(120) * 1.5, np.zeros(120))), 6),
             np.zeros(600),
         ))
+        alt=P('Altitude AAL For Flight Phases', np.ones(11880) * 4000)
         hdg=P('Heading Increasing', integrate(rot,1.0))
-        alt=P('Altitude AAL For Flight Phases', np.ma.concatenate(([25000], np.ones(3000) * 10000, [0])))
-        lat=P('Latitude Smoothed', np.ma.ones(3000) * 24.0)
-        lon=P('Longitude Smoothed', np.ma.ones(3000) * 24.0)
+        alt_max=KPV('Altitude Max', items=[
+            KeyPointValue(index=200, value=40000.0),])
+        tdwns=KTI('Touchdown', items=[
+            KeyTimeInstance(index=11500),])
+        lat=P('Latitude Smoothed', np.ma.ones(11880) * 24.0)
+        lon=P('Longitude Smoothed', np.ma.ones(11880) * 24.0)
         hold=Holding()
-        hold.derive(alt, hdg, lat, lon)
-        # Stopped using buildsections because someone changed the endpoints (grrr) DJ.
-        # expected=buildsections('Holding',[540,1320],[1440,2370])
-        self.assertEqual(hold[0].slice, slice(540, 1320))
-        self.assertEqual(hold[1].slice, slice(1440, 2370))
+        hold.derive(alt, hdg, alt_max, tdwns, lat, lon)
+        self.assertEqual(hold[0].slice, slice(500, 1360))
+        self.assertEqual(hold[1].slice, slice(3400, 4260))
+        self.assertEqual(hold[2].slice, slice(6350, 7620))
+        self.assertEqual(hold[3].slice, slice(9790, 11210))
 
     def test_hold_rejected_if_travelling(self):
         rot=np.ma.concatenate((
             np.zeros(600),
-            np.tile(np.concatenate((np.ones(60) * 3, np.zeros(60))), 6),
-            np.zeros(180),
-            np.tile(np.concatenate((np.ones(60) * 3, np.zeros(90))), 6),
+            np.tile(np.concatenate((np.ones(60) * 3.0, np.zeros(60))), 6),
             np.zeros(600),
         ))
-        hdg=P('Heading Increasing', integrate(rot, 1.0))
-        alt=P('Altitude AAL For Flight Phases', np.ma.ones(3000) * 10000)
-        lat=P('Latitude Smoothed', np.ma.arange(0, 30, 0.01))
-        lon=P('Longitude Smoothed', np.ma.arange(0, 30, 0.01))
+        alt=P('Altitude AAL For Flight Phases', np.ones(11880) * 4000)
+        hdg=P('Heading Increasing', integrate(rot,1.0))
+        alt_max=KPV('Altitude Max', items=[
+            KeyPointValue(index=100, value=40.0),])
+        tdwns=KTI('Touchdown', items=[
+            KeyTimeInstance(index=1900),])
+        lat=P('Latitude Smoothed', np.ma.ones(1920) * 24.0)
+        lon=P('Longitude Smoothed', np.array(range(1920)) * 0.01)
         hold=Holding()
-        hold.derive(alt, hdg, lat, lon)
-        expected=[]
-        self.assertEqual(hold, expected)
+        hold.derive(alt, hdg, alt_max, tdwns, lat, lon)
+        self.assertEqual(len(hold), 0)
+
 
     def test_single_turn_rejected(self):
         rot=np.ma.concatenate((
-            np.zeros(500),
-            np.ones(60) * 3,
             np.zeros(600),
-            np.ones(60) * 6,
-            np.zeros(1200),
-            np.ones(90) * 3,
-            np.zeros(490),
+            np.tile(np.concatenate((np.ones(60) * 3.0, np.zeros(60))), 1),
+            np.zeros(600),
         ))
-        rot=np.ma.array([0]*500+[3]*60+[0]*600+[6]*60+[0]*600+[0]*600+[3]*90+[0]*490, dtype=float)
-        hdg=P('Heading Increasing', integrate(rot, 1.0))
-        alt=P('Altitude AAL For Flight Phases', np.ma.ones(3000) * 10000)
-        lat=P('Latitude Smoothed', np.ma.ones(3000) * 24.0)
-        lon=P('Longitude Smoothed', np.ma.ones(3000) * 24.0)
+        alt=P('Altitude AAL For Flight Phases', np.ones(11880) * 4000)
+        hdg=P('Heading Increasing', integrate(rot,1.0))
+        alt_max=KPV('Altitude Max', items=[
+            KeyPointValue(index=100, value=40.0),])
+        tdwns=KTI('Touchdown', items=[
+            KeyTimeInstance(index=1900),])
+        lat=P('Latitude Smoothed', np.ma.ones(1920) * 24.0)
+        lon=P('Longitude Smoothed', np.ma.ones(1920) * 24.0)
         hold=Holding()
-        hold.derive(alt, hdg, lat, lon)
-        expected=[]
-        self.assertEqual(hold, expected)
+        hold.derive(alt, hdg, alt_max, tdwns, lat, lon)
+        self.assertEqual(len(hold), 0)
 
 
 class TestLanding(unittest.TestCase):

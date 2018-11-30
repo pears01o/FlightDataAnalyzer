@@ -282,8 +282,12 @@ HEADING_TURN_ONTO_RUNWAY = 15.0  # deg
 HEADING_TURN_OFF_RUNWAY = 45.0  # deg
 
 # Holding pattern criteria.
-# Minimum time is 4 minutes, corresponding to one racetrack pattern.
-HOLDING_MIN_TIME = 4*60  #sec
+# Minimum time was 4 minutes, corresponding to one racetrack pattern.
+# When high level holds were found with lower turn rates and longer straight
+# paths, the total pattern was up to 8 minutes. The lower turn rate detection
+# required a longer period for the rate computation and hence a longer minimum
+# time was needed to reject single turns.
+HOLDING_MIN_TIME = 5*60  #sec
 # Maximum groundspeed over the period in the hold. This segregates true
 # holds, where the effective speed is significantly reduced (that's the point
 # of the hold), from curving departures or approaches.

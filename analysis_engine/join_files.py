@@ -1,4 +1,4 @@
-from hdfaccess.utils import concat_hdf
+from flightdataaccessor.utils import concat_hdf
 
 def join_files(first_part, second_part):
     """

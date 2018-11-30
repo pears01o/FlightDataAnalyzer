@@ -7,7 +7,7 @@ import inspect
 from mock import patch
 from numpy.ma.testutils import assert_array_equal
 
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.parameter import MappedArray
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.aircrafttables.constants import AVAILABLE_CONF_STATES
 from flightdatautilities import masked_array_testutils as ma_test
@@ -145,7 +145,7 @@ class NodeTest(object):
                             phase_name='Phase'):
         import shutil
         import tempfile
-        from hdfaccess.file import hdf_file
+        from flightdataaccessor.file import hdf_file
 
         params = []
         phase = None

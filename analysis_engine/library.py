@@ -27,7 +27,7 @@ try:
 except ImportError:
     from itertools import zip_longest, tee
 
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.datatypes.parameter import MappedArray
 
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.geometry import cross_track_distance, great_circle_distance__haversine
@@ -101,7 +101,7 @@ def any_one_of(names, available):
     Returns True if any ONE, and only one, of the names is within the available list.
     '''
     return sum(name in available for name in names) == 1
-    
+
 
 def air_track(lat_start, lon_start, lat_end, lon_end, spd, hdg, alt_aal, frequency):
     """
@@ -5381,7 +5381,7 @@ def overflow_correction(param, fast=None, max_val=8191):
         jump_sign = -jump / abs_jump
         steps = np.ma.where(abs_jump > delta, max_val * jump_sign, 0)
         for jump_idx in np.ma.where(steps)[0]:
-            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False 
+            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False
         correction = np.ma.cumsum(steps)
 
         array[sl] += correction
@@ -6638,35 +6638,35 @@ def including_transition(array, steps, hz=1, mode='include'):
           _____
       ___|/   \|
     _|/        \|__
-    
+
     :type array: np.ma.array
     :param steps: Steps to align the signal to.
     :type steps: [int]
     :param threshold: Threshold of difference between two flap settings to apply the next flap setting.
     :type threshold: float
-    
+
     threshold = 0.01 makes the system too late and too conservative.
     '''
     steps = sorted(steps)
     mid_steps = [steps[0] - 10.0]
-    
+
     for step_1, step_2 in zip(steps[:-1], steps[1:]):
         mid_steps.append((step_1 + step_2) / 2.0)
     mid_steps.append(steps[-1] + 10.0)
 
     change = np.ma.ediff1d(array, to_begin=0.0)
-    
+
     # first raise the array to the next step if it exceeds the previous step
     # plus a minimal threshold (step as early as possible)
     output = np_ma_masked_zeros_like(array)
-    
+
     for mid_1, flap, mid_2 in zip(mid_steps[:-1], steps, mid_steps[1:]):
         # Slice the data into bands that are between the midpoint flap values
         bands = slices_and(runs_of_ones(array > mid_1), runs_of_ones(array <= mid_2))
         for band in bands:
             # Find where the data did not change in this band...
             partial = np.ma.where(np.ma.abs(change[band.start:band.stop]) < 0.03, flap, np.ma.masked) # threshold of 0.03 to account for slight changes/flutter
-            
+
             if len(partial) == 1:
                 if change[band.start] > 0:
                     output[band.start] = flap
@@ -6689,10 +6689,10 @@ def including_transition(array, steps, hz=1, mode='include'):
                         # Going down
                         output[int(index + band.start + 1)] = flap
                 else:
-                    # The data may have just crept into this band without being a 
+                    # The data may have just crept into this band without being a
                     # true change into the new flap setting. Let's just ignore this.
                     pass
-                
+
     for gap in np.ma.clump_masked(output):
         before = output[max(gap.start - 1, 0)]
         after = output[min(gap.stop, len(output) - 1)]
@@ -7091,9 +7091,9 @@ def smooth_signal(array, window_len=11, window='hanning'):
     out = np.convolve(w/w.sum(), s, mode='valid')
     # Trim the extra elements of the array to make the returned array the same
     # length. The example suggest using:
-    #    "return y[(window_len/2-1):-(window_len/2)]" 
-    # This left the array size 1 element too big , the excess has been trim 
-    # off the end of the array. 
+    #    "return y[(window_len/2-1):-(window_len/2)]"
+    # This left the array size 1 element too big , the excess has been trim
+    # off the end of the array.
     if out.size > array.size:
         extra = out.size - array.size
         extra_start = window_len//2-1
@@ -8377,7 +8377,7 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
     duration = len(u)
     two_miles = index_at_value(distance, 2.0, _slice=slice(None, None, -1))
 
-    # Use the latitude and longitude of the oil rig if provided. 
+    # Use the latitude and longitude of the oil rig if provided.
     # Otherwise use the landing latitude/longitude
     if lon_oil_rig is not None and lat_oil_rig is None:
         lat_oil_rig = lat[-1]
@@ -8507,8 +8507,8 @@ def find_rig_approach(condition_defs, phase_map, approach_map,
         print(half_mile)
 
     # If ARDA/AROA is detected, this takes priority and we return this instead of checking if
-    # this is indeed the longest slice. Else, we check if the conditions for the Standard 
-    # Approach are met and return this instead. If the conditions are not met for both the 
+    # this is indeed the longest slice. Else, we check if the conditions for the Standard
+    # Approach are met and return this instead. If the conditions are not met for both the
     # ARDA/AROA and Standard Approach, we return None
     is_arda_aroa = False
     for d, name in enumerate(approach_map):

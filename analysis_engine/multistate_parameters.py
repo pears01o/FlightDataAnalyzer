@@ -11,7 +11,7 @@ from pprint import pformat
 
 from flightdatautilities import aircrafttables as at, dateext, units as ut
 
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.datatypes.parameter import MappedArray
 
 from analysis_engine.node import (
     A, MultistateDerivedParameterNode,
@@ -400,31 +400,31 @@ class Configuration(MultistateDerivedParameterNode):
     Parameter for aircraft that use configuration. Reflects the actual state
     of the aircraft. See "Flap Lever" or "Flap Lever (Synthetic)" which show
     the physical lever detents selectable by the crew.
-    
+
     Multi-state with the following mapping::
         %s
-    
+
     Some values are based on footnotes in various pieces of documentation:
     - 2(a) corresponds to CONF 1*
     - 3(b) corresponds to CONF 2*
-    
+
     Note: Does not use the Flap Lever position. This parameter reflects the
     actual configuration state of the aircraft rather than the intended state
     represented by the selected lever position.
     ''' % pformat(at.constants.AVAILABLE_CONF_STATES)
     values_mapping = at.constants.AVAILABLE_CONF_STATES
     align_frequency = 2
-    
+
     @classmethod
     def can_operate(cls, available, manufacturer=A('Manufacturer'),
                     model=A('Model'), series=A('Series'), family=A('Family'),):
-        
+
         if manufacturer and not manufacturer.value == 'Airbus':
             return False
-        
+
         if family and family.value in ('A300', 'A310',):
             return False
-        
+
         if not all_of(('Slat Including Transition', 'Flap Including Transition', 'Model', 'Series', 'Family'), available):
             return False
 
@@ -436,23 +436,23 @@ class Configuration(MultistateDerivedParameterNode):
             return False
 
         return True
-    
-    def derive(self, flap=M('Flap Including Transition'), slat=M('Slat Including Transition'), 
+
+    def derive(self, flap=M('Flap Including Transition'), slat=M('Slat Including Transition'),
                model=A('Model'), series=A('Series'), family=A('Family'),):
-        
+
         angles = at.get_conf_angles(model.value, series.value, family.value)
-        
+
         # initialize an empty masked array the same length as flap array
         self.array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
                                  values_mapping=self.values_mapping)
-        
+
         for (state, (s, f, a)) in six.iteritems(angles):
             condition = (flap.array == f)
             if s is not None:
                 condition &= (slat.array == s)
-                
-            self.array[condition] = state        
-        
+
+            self.array[condition] = state
+
         nearest_neighbour_mask_repair(self.array, copy=False,
                                       repair_gap_size=(30 * self.hz),
                                       direction='backward')
@@ -463,31 +463,31 @@ class ConfigurationExcludingTransition(MultistateDerivedParameterNode):
     Parameter for aircraft that use configuration. Reflects the actual state
     of the aircraft. See "Flap Lever" or "Flap Lever (Synthetic)" which show
     the physical lever detents selectable by the crew.
-    
+
     Multi-state with the following mapping::
         %s
-    
+
     Some values are based on footnotes in various pieces of documentation:
     - 2(a) corresponds to CONF 1*
     - 3(b) corresponds to CONF 2*
-    
+
     Note: Does not use the Flap Lever position. This parameter reflects the
     actual configuration state of the aircraft rather than the intended state
     represented by the selected lever position.
     ''' % pformat(at.constants.AVAILABLE_CONF_STATES)
     values_mapping = at.constants.AVAILABLE_CONF_STATES
     align_frequency = 2
-    
+
     @classmethod
     def can_operate(cls, available, manufacturer=A('Manufacturer'),
                     model=A('Model'), series=A('Series'), family=A('Family'),):
-        
+
         if manufacturer and not manufacturer.value == 'Airbus':
             return False
-        
+
         if family and family.value in ('A300', 'A310',):
             return False
-        
+
         if not all_of(('Slat Excluding Transition', 'Flap Excluding Transition', 'Model', 'Series', 'Family'), available):
             return False
 
@@ -499,26 +499,26 @@ class ConfigurationExcludingTransition(MultistateDerivedParameterNode):
             return False
 
         return True
-    
-    def derive(self, flap=M('Flap Excluding Transition'), slat=M('Slat Excluding Transition'), 
+
+    def derive(self, flap=M('Flap Excluding Transition'), slat=M('Slat Excluding Transition'),
                model=A('Model'), series=A('Series'), family=A('Family'),
-               
-               
+
+
                conf=M('Configuration')):
-        
+
         angles = at.get_conf_angles(model.value, series.value, family.value)
-        
+
         # initialize an empty masked array the same length as flap array
         self.array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
                                  values_mapping=self.values_mapping)
-        
+
         for (state, (s, f, a)) in six.iteritems(angles):
             condition = (flap.array == f)
             if s is not None:
                 condition &= (slat.array == s)
-                
-            self.array[condition] = state        
-        
+
+            self.array[condition] = state
+
         nearest_neighbour_mask_repair(self.array, copy=False,
                                       repair_gap_size=(30 * self.hz),
                                       direction='backward')
@@ -625,9 +625,9 @@ class DualInput(MultistateDerivedParameterNode):
         the other way around as it would cause multiple short sidestick dual input
         'nudges' to be interpreted as continuous dual input, which is incorrect, as
         Airbus AFPS specifies that in order for the warning to come on dual input
-        has to be >0.5deg (we're using 2.0deg, see class docstring for details) for 
+        has to be >0.5deg (we're using 2.0deg, see class docstring for details) for
         at least 3 seconds.
-        
+
         Also using 2.9s to remove small slices instead of 3.0s as using 3.0s causes
         valid dual input events that are exactly 3 seconds (i.e 12 samples where angle
         is over 2 degrees at 4Hz) to be missed. Can't be 2.75 as in case the parameter
@@ -1062,7 +1062,7 @@ class AllEnginesOperative(MultistateDerivedParameterNode):
 
     can_operate = helicopter_only
 
-    def derive(self, 
+    def derive(self,
                any_running=M('Eng (*) Any Running'),
                eng_oei=M('One Engine Inoperative'),
                autorotation=S('Autorotation')):
@@ -1210,14 +1210,14 @@ class Flap(MultistateDerivedParameterNode):
             for land in lands:
                 self.array[land.slice] = 30
             return
-        
+
         if family_name == 'C208':
             self.values_mapping = {0: '0', 10: '10', 20: '20', 40: '40'}
             self.array = np_ma_zeros_like(alt_aal.array)
             self.array[alt_aal.array < 500.0] = 40
             self.frequency, self.offset = alt_aal.frequency, alt_aal.offset
             return
-        
+
         if 'B737' in family_name:
             _slices = runs_of_ones(np.logical_and(flap.array>=0.9, flap.array<=2.1))
             for s in _slices:
@@ -1426,10 +1426,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         approach_slices = approach.get_slices() if approach else None
 
         if frame_name == 'E170_EBD_047' and approach_slices is not None:
-            # The Lever 4 and 5 share the same flap/slat config.
-            # On approaches the config is refferred to as Lever 5
-            self.array[self.array == 32] = 16  # ensure lever 4 before approach mod
-            self.array[tuple(approach_slices)][self.array[tuple(approach_slices)] == 16] = 32
+            self.array[approach_slices][self.array[approach_slices] == 16] = 32
 
 
 class Flaperon(MultistateDerivedParameterNode):
@@ -1909,14 +1906,14 @@ class GearOnGround(MultistateDerivedParameterNode):
 
 
 class GearDownSelected(MultistateDerivedParameterNode):
-    
-    
+
+
     align_frequency = 1
     values_mapping = {
         0: 'Up',
         1: 'Down',
     }
-    
+
     def derive(self, up_sel=M('Gear Up Selected')):
         self.array = up_sel.array == 'Down'
 
@@ -2380,10 +2377,10 @@ class SlatIncludingTransition(MultistateDerivedParameterNode):
 
     def derive(self, slat=P('Slat Angle'),
                model=A('Model'), series=A('Series'), family=A('Family')):
-    
+
         self.values_mapping = at.get_slat_map(model.value, series.value, family.value)
         self.array=including_transition(slat.array, self.values_mapping, hz=self.hz)
-        
+
 
 class SlatFullyExtended(MultistateDerivedParameterNode):
     '''
@@ -3021,7 +3018,7 @@ class SpeedbrakeSelected(MultistateDerivedParameterNode):
                                      'Deployed/Cmd Up', 'Armed/Cmd Dn')
             self.array = np.ma.where((handle.array <= 1.0),
                                      'Stowed', self.array)
-            
+
         elif family_name == 'B787':
             self.array = self.b787_speedbrake(handle)
 
@@ -3115,7 +3112,7 @@ class StableApproachStages(object):
     5. Glideslope deviation within 1 dot
     6. Localizer deviation within 1 dot
     7. Vertical speed between -1100 and -200 fpm
-    8. Engine Thrust greater than 40% N1 or 35% (A319/B787) or 1.09 EPR 
+    8. Engine Thrust greater than 40% N1 or 35% (A319/B787) or 1.09 EPR
        (for 10 secs) or 1.02 (A319, A320, A321)
 
     if all the above steps are met, the result is the declaration of:
@@ -3157,7 +3154,7 @@ class StableApproachStages(object):
         9: 'Stable',
     }
 
-    align_frequency = 1 
+    align_frequency = 1
 
     def derive_stable_approach(self, apps, phases, gear, flap, tdev, aspd_rel,
                                aspd_minus_sel, vspd, gdev, ldev, eng_n1,
@@ -3227,7 +3224,7 @@ class StableApproachStages(object):
     def _stable_1_gear_down(self, _slice, gear):
         #== 1. Gear Down ==
         # prepare data for this appproach:
-        gear_down = self.repair(gear.array, _slice, method='fill_start')        
+        gear_down = self.repair(gear.array, _slice, method='fill_start')
         # Assume unstable due to Gear Down at first
         self.array[_slice] = 1
         landing_gear_set = (gear_down == 'Down')
@@ -3264,7 +3261,7 @@ class StableApproachStages(object):
         #== 3. Track Deviation ==
         # prepare data for this appproach:
         track_dev = self.repair(tdev.array, _slice)
-        
+
         self.array[_slice][stable] = 3
         runway = approach.approach_runway
         if runway and runway.get('localizer', {}).get('is_offset'):
@@ -3318,7 +3315,7 @@ class StableApproachStages(object):
     def _stable_5_glideslope_deviation(self, _slice, stable, approach, gdev, index_at_200, altitude):
         #== 5. Glideslope Deviation ==
         # prepare data for this appproach:
-        glideslope = self.repair(gdev.array, _slice) if gdev else None  # optional        
+        glideslope = self.repair(gdev.array, _slice) if gdev else None  # optional
         if approach.gs_est:
             self.array[_slice][stable] = 5
             STABLE_GLIDESLOPE = 1.0  # dots
@@ -3348,7 +3345,7 @@ class StableApproachStages(object):
         # apply quite a large moving average to smooth over peaks and troughs
         vertical_speed = moving_average(self.repair(vspd.array, _slice), 11)
         runway = approach.approach_runway
-        
+
         self.array[_slice][stable] = 7
         STABLE_VERTICAL_SPEED_MAX = -200
         STABLE_VERTICAL_SPEED_MIN = -1100
@@ -3389,8 +3386,8 @@ class StableApproachStages(object):
         stable_engine[altitude < 50] = stable_engine[index_at_50]
         stable &= stable_engine.filled(True)
         return stable
-        
-    
+
+
 class StableApproach(MultistateDerivedParameterNode,
                      StableApproachStages):
 

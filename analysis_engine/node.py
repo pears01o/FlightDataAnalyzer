@@ -43,8 +43,7 @@ from analysis_engine.library import (
 from analysis_engine.recordtype import recordtype
 from analysis_engine.settings import NODE_CACHE_OFFSET_DP
 
-# FIXME: a better place for this class
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.datatypes.parameter import MappedArray, Parameter as FlightDataParameter
 
 
 logger = logging.getLogger(name=__name__)
@@ -498,7 +497,7 @@ def can_operate(cls, available, actype=A('Aircraft Type')):
         :rtype: None
         """
         raise NotImplementedError("Abstract Method")
-    
+
     def __getstate__(self):
         '''
         Do not pickle _cache attr when saving nodes.
@@ -508,7 +507,7 @@ def can_operate(cls, available, actype=A('Aircraft Type')):
         state = self.__dict__.copy()
         del state['_cache']
         return state
-    
+
     def __setstate__(self, state):
         '''
         Add an empty _cache attr when loading nodes.
@@ -610,7 +609,7 @@ def can_operate(cls, available, actype=A('Aircraft Type')):
         logger.warning(*args, **kwargs)
 
 
-class DerivedParameterNode(Node):
+class DerivedParameterNode(Node, FlightDataParameter):
     """
     Base class for DerivedParameters which overide def derive() method.
 
@@ -629,6 +628,22 @@ class DerivedParameterNode(Node):
     def __init__(self, name='', array=np.ma.array([], dtype=float),
                  frequency=1.0, offset=0.0, data_type=None, lfl=False, *args, **kwargs):
 
+        kwargs['array'] = array
+
+        # XXX: refactor the `lfl` argument
+        if lfl:
+            # Where derived parameter is created to represent an LFL parameter, allow
+            # it to declare it came from the LFL.
+            kwargs['source'] = 'lfl'
+        else:
+            kwargs['source'] = 'derived'
+
+        FlightDataParameter.__init__(self, name=name, frequency=frequency, offset=offset, *args, **kwargs)
+        Node.__init__(self, name=name, frequency=frequency, offset=offset, *args, **kwargs)
+
+    def __init__old(self, name='', array=np.ma.array([], dtype=float), frequency=1.0, offset=0.0, data_type=None,
+                    lfl=False, *args, **kwargs):
+
         # Set the array on the derive parameter first. Some subclasses of this
         # class will handle appropriate type conversion of the provided array
         # in __setattr__:
@@ -640,10 +655,14 @@ class DerivedParameterNode(Node):
 
         if data_type:
             self.data_type = data_type
+
+        # XXX: refactor the `lfl` argument
         if lfl:
             # Where derived parameter is created to represent an LFL parameter, allow
             # it to declare it came from the LFL.
-            self.lfl = True
+            kwargs['source'] = 'lfl'
+        else:
+            kwargs['source'] = 'derived'
 
         super(DerivedParameterNode, self).__init__(
             name=name, frequency=frequency, offset=offset, *args, **kwargs)
@@ -853,8 +872,15 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
     data_type = 'Derived Multistate'
     node_type_abbr = 'Multistate'
 
-    def __init__(self, name='', array=np.ma.array([], dtype=int), frequency=1.0,
+    def __init__(self, name='', array=None, frequency=1.0,
                  offset=0.0, data_type=None, values_mapping={}, *args, **kwargs):
+
+        if array is None:
+            array = MappedArray([], values_mapping=values_mapping)
+
+        super(MultistateDerivedParameterNode, self).__init__(
+            name, array, frequency, offset, data_type, *args,
+            **kwargs)
 
         #Q: if no values_mapping set to None?
         if values_mapping:
@@ -863,10 +889,6 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
             self.values_mapping = {}
 
         self.state = {v: k for k, v in six.iteritems(self.values_mapping)}
-
-        super(MultistateDerivedParameterNode, self).__init__(
-            name, array, frequency, offset, data_type, *args,
-            **kwargs)
 
     def get_derived(self, *args, **kwargs):
         node = super(MultistateDerivedParameterNode, self).get_derived(*args,
@@ -946,25 +968,25 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
 
         return object.__setattr__(self, name, value)
 
-    def __getstate__(self):
-        '''
-        Get the state of the object for pickling.
+    # def __getstate__(self):
+    #     '''
+    #     Get the state of the object for pickling.
 
-        :rtype: dict
-        '''
-        odict = self.__dict__.copy()
-        return odict
+    #     :rtype: dict
+    #     '''
+    #     odict = self.__dict__.copy()
+    #     return odict
 
-    def __setstate__(self, state):
-        '''
-        Set the state of the unpickled object.
+    # def __setstate__(self, state):
+    #     '''
+    #     Set the state of the unpickled object.
 
-        :type state: dict
-        '''
-        array = state.pop('array')
-        self.__dict__.update(state)
-        self.array = MappedArray(array,
-                                 values_mapping=state['values_mapping'])
+    #     :type state: dict
+    #     '''
+    #     array = state.pop('array')
+    #     self.__dict__.update(state)
+    #     self.array = MappedArray(array,
+    #                              values_mapping=state['values_mapping'])
 
 
 M = MultistateDerivedParameterNode  # shorthand

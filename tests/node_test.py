@@ -29,8 +29,8 @@ from analysis_engine.node import (
     _calculate_offset,
 )
 
-from hdfaccess.file import hdf_file
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor.file import hdf_file
+from flightdataaccessor.parameter import MappedArray
 
 test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               'test_data')

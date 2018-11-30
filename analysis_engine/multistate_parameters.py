@@ -6,6 +6,7 @@ import logging
 import math
 import numpy as np
 import six
+import itertools
 
 from pprint import pformat
 
@@ -29,6 +30,7 @@ from analysis_engine.library import (
     calculate_slat,
     clump_multistate,
     datetime_of_index,
+    excluding_transition,
     find_edges_on_state_change,
     including_transition,
     index_at_value,
@@ -1221,8 +1223,11 @@ class Flap(MultistateDerivedParameterNode):
             _slices = runs_of_ones(np.logical_and(flap.array>=0.9, flap.array<=2.1))
             for s in _slices:
                 flap.array[s] = smooth_signal(flap.array[s], window_len=5, window='flat')
-        self.values_mapping, self.array, self.frequency, self.offset = calculate_flap(
-            'lever', flap, model, series, family)
+
+        self.values_mapping = at.get_flap_map(model.value, series.value, family.value)
+        self.frequency = flap.hz
+        self.offset = flap.offset
+        self.array = including_transition(flap.array, self.values_mapping, hz=self.hz, mode='flap')
 
 
 class FlapLever(MultistateDerivedParameterNode):
@@ -1313,13 +1318,9 @@ class FlapIncludingTransition(MultistateDerivedParameterNode):
 
 class FlapExcludingTransition(MultistateDerivedParameterNode):
     '''
-    Specifically designed to cater for maintenance monitoring, this assumes
-    that when moving the higher of the start and endpoints of the movement
-    apply. This increases the chance of needing a flap overspeed inspection,
-    but provides a more cautious interpretation of the maintenance
-    requirements.
+    Value will only match the flap angle once
+    the transition has stopped (at least 3s by default).
     '''
-
     units = ut.DEGREE
 
     @classmethod
@@ -1327,7 +1328,7 @@ class FlapExcludingTransition(MultistateDerivedParameterNode):
                     model=A('Model'), series=A('Series'), family=A('Family')):
 
         if not all_of(('Flap Angle', 'Model', 'Series', 'Family'), available):
-            return False
+            return all_of(('Flap', 'Model', 'Series', 'Family'), available)
 
         try:
             at.get_flap_map(model.value, series.value, family.value)
@@ -1338,15 +1339,90 @@ class FlapExcludingTransition(MultistateDerivedParameterNode):
 
         return True
 
-    def derive(self, flap_angle=P('Flap Angle'),
+    def derive(self, flap_angle=P('Flap Angle'), flap=M('Flap'),
                model=A('Model'), series=A('Series'), family=A('Family')):
-        family_name = family.value if family else None
-        if "B737" in family_name:
-            _slices = runs_of_ones(np.logical_and(flap_angle.array>=0.9, flap_angle.array<=2.1))
-            for s in _slices:
-                flap_angle.array[s] = smooth_signal(flap_angle.array[s], window_len=5, window='flat')
-        self.values_mapping, self.array, self.frequency, self.offset = calculate_flap(
-            'excluding', flap_angle, model, series, family)
+        self.values_mapping = at.get_flap_map(model.value, series.value, family.value)
+        if flap_angle:
+            self.array = excluding_transition(flap_angle.array, self.values_mapping, hz=self.hz)
+        else:
+            # if we do not have flap angle use flap, use states as values
+            # will vary between frames
+            array = MappedArray(np_ma_masked_zeros_like(flap.array),
+                                values_mapping=self.values_mapping)
+            for value, state in six.iteritems(self.values_mapping):
+                array[flap.array == state] = state
+            self.array = array
+
+
+class FlapForLeverSynthetic(MultistateDerivedParameterNode):
+    '''
+    Flap parameter for Flap Lever Synthetic. Uses Flap Including Transition on
+    extension, and Flap Excluding Transition on retraction. ref. AE-2033
+    '''
+    name = 'Flap Lever (Synthetic)'
+    units = ut.DEGREE
+    align_frequency = 2  # force higher than most Flap frequencies
+
+
+    @classmethod
+    def can_operate(cls, available,
+                    model=A('Model'), series=A('Series'), family=A('Family')):
+
+        return all_of(('Flap Including Transition', 'Flap Excluding Transition', 'Model', 'Series', 'Family'), available)
+
+    def derive(self, flap_inc=M('Flap Including Transition'), flap_exc=M('Flap Excluding Transition'),
+               model=A('Model'), series=A('Series'), family=A('Family'),):
+
+        try:
+            angles = at.get_conf_angles(model.value, series.value, family.value)
+            use_conf = True
+        except KeyError:
+            angles = at.get_lever_angles(model.value, series.value, family.value)
+            use_conf = False
+
+        # Get the values mapping, airbus requires some hacking:
+        if use_conf:
+            self.values_mapping = at.constants.LEVER_STATES
+        else:
+            self.values_mapping = at.get_lever_map(model.value, series.value, family.value)
+
+        # Prepare the destination array:
+        self.array = MappedArray(np_ma_masked_zeros_like(flap_inc.array),
+                                 values_mapping=self.values_mapping)
+
+        # If available Flap Lever Synthetic should follow Surface Including transition on
+        # extension and Surface Excluding Transition on retraction; ref AE-2033
+
+        sections_inc = []
+        sections_exc = []
+        for value in self.values_mapping:
+            sections_inc.append(runs_of_ones(flap_inc.array == value))
+            sections_exc.append(runs_of_ones(flap_exc.array == value))
+        sections_inc = sorted(list(itertools.chain.from_iterable(sections_inc)))
+        sections_exc = sorted(list(itertools.chain.from_iterable(sections_exc)))
+
+        flap_inc_in_order = []
+        flap_exc_in_order = []
+        for s in sections_inc:
+            flap_inc_in_order.append(np.ma.average(flap_inc.array[s]))
+
+        for s in sections_exc:
+            flap_exc_in_order.append(np.ma.average(flap_exc.array[s]))
+
+        for i in range(0, len(flap_inc_in_order) - 1):
+            if (flap_inc_in_order[i] < flap_inc_in_order[i + 1]) or (flap_inc_in_order[i] == np.ma.max(flap_inc.array)):
+                self.array[sections_inc[i]] = flap_inc.array[sections_inc[i]]
+
+        for i in range(0, len(flap_exc_in_order) - 1):
+            if (flap_exc_in_order[i] > flap_exc_in_order[i + 1]) or (flap_exc_in_order[i] == np.ma.max(flap_exc.array)):
+                self.array[sections_exc[i]] = flap_exc.array[sections_exc[i]]
+
+        for gap in np.ma.clump_masked(self.array):
+            before = self.array[max(gap.start - 1, 0)]
+            after = self.array[min(gap.stop, len(self.array) - 1)]
+            self.array[gap] = max(before, after)
+
+        print('k')
 
 
 class FlapLeverSynthetic(MultistateDerivedParameterNode):

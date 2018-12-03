@@ -1033,7 +1033,7 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
     return segment
 
 
-def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
+def split_hdf_to_segments(source, aircraft_info, fallback_dt=None,
                           validation_dt=None, fallback_relative_to_start=True,
                           draw=False, dest_dir=None, pre_file_kwargs={},
                           dt_origin_kwargs={}):
@@ -1041,8 +1041,8 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
     Main method - analyses an HDF file for flight segments and splits each
     flight into a new segment appropriately.
 
-    :param hdf_path: path to HDF file
-    :type hdf_path: string
+    :param source: path to HDF file or FlightDataFormat object
+    :type source: string or FlightDataFormat
     :param aircraft_info: Information which identify the aircraft, specfically
         with the keys 'Tail Number', 'MSN'...
     :type aircraft_info: Dict
@@ -1060,19 +1060,16 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
     :returns: List of Segments
     :rtype: List of Segment recordtypes ('slice type part duration path hash')
     """
-    logger.debug("Processing file: %s", hdf_path)
-
-    if dest_dir is None:
-        dest_dir = os.path.dirname(hdf_path)
+    logger.debug("Processing file: %s", source)
 
     if draw:
         from analysis_engine.plot_flight import plot_essential
-        plot_essential(hdf_path)
+        plot_essential(source)
 
     if isinstance(validation_dt, string_types):
         validation_dt = datetime.strptime(validation_dt, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.utc)
 
-    with hdf_file(hdf_path) as hdf:
+    with hdf_file(source) as hdf:
 
         # Confirm aircraft tail for the entire datafile
         logger.debug("Validating aircraft matches that recorded in data")
@@ -1099,24 +1096,19 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
                                             fallback_relative_to_start,
                                             frame_doubled, dt_origin_kwargs)
 
-    # process each segment (into a new file) having closed original hdf_path
+    # process each segment (into a new file) having closed original source
     segments = []
     previous_stop_dt = None
     for part, (segment_type, segment_slice, start_padding) in enumerate(segment_tuples, start=1):
-        # write segment to new split file (.001)
-        basename = os.path.basename(hdf_path)
-        dest_basename = os.path.splitext(basename)[0] + '.%03d.hdf5' % part
-        dest_path = os.path.join(dest_dir, dest_basename)
-        logger.debug("Writing segment %d: %s", part, dest_path)
-
-        write_segment(hdf_path, segment_slice, dest_path, boundary,
-                      submasks=('arinc', 'invalid_states', 'padding', 'saturation'))
+        dest = write_segment(
+            source, segment_slice, boundary, part, dest_dir=dest_dir,
+            submasks=('arinc', 'invalid_states', 'padding', 'saturation'))
 
         # adjust fallback time to account for any padding added at start of segment
         segment_start_dt = fallback_dt - timedelta(seconds=start_padding)
 
         segment = append_segment_info(
-            dest_path, segment_type, segment_slice, part,
+            dest, segment_type, segment_slice, part,
             fallback_dt=segment_start_dt, validation_dt=validation_dt,
             aircraft_info=aircraft_info)
         if previous_stop_dt and segment.start_dt < previous_stop_dt - timedelta(0, 4):
@@ -1132,7 +1124,7 @@ def split_hdf_to_segments(hdf_path, aircraft_info, fallback_dt=None,
             fallback_dt += timedelta(seconds=(segment_slice.stop - segment_slice.start))
         segments.append(segment)
         if draw:
-            plot_essential(dest_path)
+            plot_essential(dest)
 
     if draw:
         # show all figures together

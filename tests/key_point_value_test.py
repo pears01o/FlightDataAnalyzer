@@ -750,11 +750,15 @@ from analysis_engine.key_point_values import (
     TCASRAAltitudeSTD,
     TCASRAChangeOfVerticalSpeed,
     TCASRADirection,
-    TCASRAErroneousAcceleration,TCASRAHeading,
+    TCASRAErroneousAcceleration,
+    TCASRAHeading,
     TCASRAReactionDelay,
     TCASRASubsequentAcceleration,
     TCASRASubsequentReactionDelay,
     TCASRAWarningDuration,
+    TCASRAWarningAboveFL100Duration,
+    TCASRAWarningBelowFL100InClimbDuration,
+    TCASRAWarningBelowFL100InDescentDuration,
     TCASTAAcceleration,
     TCASTAAltitudeAAL,
     TCASTAAltitudeSTD,
@@ -22870,6 +22874,97 @@ class TestTCASRAWarningDuration(unittest.TestCase, NodeTest):
         node.derive(ra)
         self.assertEqual([KeyPointValue(5.0, 3.0, 'TCAS RA Warning Duration')],
                          node)
+
+class TestTCASRAWarningBelowFL100InClimbDuration(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = TCASRAWarningBelowFL100InClimbDuration
+        self.operational_combinations = [('TCAS Resolution Advisory',
+                                          'Altitude STD',
+                                          'Climb')]
+        
+    def test_derive(self):
+        ra = buildsection('TCAS Resolution Advisory', 5, 8)
+        alt_std = P('Altitude STD', np.ma.array([5000]*10))
+        clb = buildsection('Climb', 1, 10)
+        node = self.node_class()
+        node.derive(ra, alt_std, clb)
+        self.assertEqual([KeyPointValue(5.0, 3.0, 'TCAS RA Warning Below FL100 In Climb Duration')],
+                         node)
+
+    def test_not_above_fl100(self):
+        ra = buildsection('TCAS Resolution Advisory', 5, 8)
+        alt_std = P('Altitude STD', np.ma.array([15000]*10))
+        clb = buildsection('Climb', 1, 10)
+        node = self.node_class()
+        node.derive(ra, alt_std, clb)
+        self.assertEqual(len(node), 0)
+
+    def test_not_passing_fl100(self):
+        ra = buildsection('TCAS Resolution Advisory', 2, 8)
+        alt_std = P('Altitude STD', np.ma.array(range(10))*100+9500)
+        clb = buildsection('Climb', 1, 10)
+        node = self.node_class()
+        node.derive(ra, alt_std, clb)
+        self.assertEqual(len(node), 0)
+
+class TestTCASRAWarningAboveFL100Duration(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = TCASRAWarningAboveFL100Duration
+        self.operational_combinations = [('TCAS Resolution Advisory',
+                                          'Altitude STD')]        
+        
+    def test_derive(self):
+        ra = buildsection('TCAS Resolution Advisory', 5, 8)
+        alt_std = P('Altitude STD', np.ma.array([25000]*10))
+        node = self.node_class()
+        node.derive(ra, alt_std)
+        self.assertEqual([KeyPointValue(5.0, 3.0, 'TCAS RA Warning Above FL100 Duration')],
+                         node)
+        
+    def test_include_passing_fl100(self):
+        ra = buildsection('TCAS Resolution Advisory', 2, 8)
+        alt_std = P('Altitude STD', 10500 - np.ma.array(range(10)) * 100)
+        node = self.node_class()
+        node.derive(ra, alt_std)
+        self.assertEqual([KeyPointValue(2.0, 6.0, 'TCAS RA Warning Above FL100 Duration')],
+                         node)
+        
+        
+class TestTCASRAWarningBelowFL100InDescentDuration(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = TCASRAWarningBelowFL100InDescentDuration
+        self.operational_combinations = [('TCAS Resolution Advisory',
+                                          'Altitude STD',
+                                          'Descent')]
+        
+    def test_derive(self):
+        ra = buildsection('TCAS Resolution Advisory', 5, 8)
+        alt_std = P('Altitude STD', np.ma.array([5000]*10))
+        dsc = buildsection('Descent', 1, 10)
+        node = self.node_class()
+        node.derive(ra, alt_std, dsc)
+        self.assertEqual([KeyPointValue(5.0, 3.0, 'TCAS RA Warning Below FL100 In Descent Duration')],
+                         node)
+
+    def test_not_above_fl100(self):
+        ra = buildsection('TCAS Resolution Advisory', 5, 8)
+        alt_std = P('Altitude STD', np.ma.array([15000]*10))
+        dsc = buildsection('Descent', 1, 10)
+        node = self.node_class()
+        node.derive(ra, alt_std, dsc)
+        self.assertEqual(len(node), 0)
+
+    def test_not_passing_fl100(self):
+        ra = buildsection('TCAS Resolution Advisory', 2, 8)
+        alt_std = P('Altitude STD', 10500 - np.ma.array(range(10)) * 100)
+        dsc = buildsection('Descent', 1, 10)
+        node = self.node_class()
+        node.derive(ra, alt_std, dsc)
+        self.assertEqual(len(node), 0)
+
 
 class TestTCASRAReactionDelay(unittest.TestCase, NodeTest):
 

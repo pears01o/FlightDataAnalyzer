@@ -2138,8 +2138,8 @@ class TCASOperational(FlightPhaseNode):
     to avoid repetition elsewhere.
     
     TCAS determines the approximate altitude of each aircraft above the ground. 
-    If this difference is less than 360 feet, TCAS considers the reporting aircraft 
-    to be on the ground. [FAA Introduction to TCAS II V7.1].
+    If this difference is less than 900 feet, TCAS considers the reporting aircraft 
+    to be on the ground.
     """
     
     name = 'TCAS Operational'
@@ -2155,7 +2155,7 @@ class TCASOperational(FlightPhaseNode):
                tcas_valid=P('TCAS Valid'),
                tcas_fail=P('TCAS Failure')):
 
-        operating = runs_of_ones(alt_aal.array >= 360.0)
+        operating = runs_of_ones(alt_aal.array >= 900.0)
         invalid_slices = []
         possible_ras = []
 

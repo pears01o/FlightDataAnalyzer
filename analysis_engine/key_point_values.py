@@ -70,6 +70,7 @@ from analysis_engine.library import (ambiguous_runway,
                                      integrate,
                                      is_index_within_slice,
                                      is_index_within_slices,
+                                     is_slice_within_slice,
                                      lookup_table,
                                      nearest_neighbour_mask_repair,
                                      mask_inside_slices,
@@ -18538,6 +18539,79 @@ class TCASRAWarningDuration(KeyPointValueNode):
     def derive(self, tcas_ras=S('TCAS Resolution Advisory')):
         self.create_kpvs_from_slice_durations(tcas_ras, self.frequency,
                                               mark='start')
+
+
+class TCASRAWarningBelowFL100InClimbDuration(KeyPointValueNode):
+    '''
+    The duration for which the TCAS RA Warning was active in the climb below FL100.
+    '''
+
+    name = 'TCAS RA Warning Below FL100 In Climb Duration'
+    units = ut.SECOND
+
+    def derive(self, tcas_ras=S('TCAS Resolution Advisory'),
+               alt_std=P('Altitude STD'),
+               clbs=S('Climb')):
+        
+        if not tcas_ras.get_slices():
+            return
+        _, lows = slices_below(alt_std.array, 10000.0)
+        climbs = clbs.get_slices()
+        clb_to_fl100 = slices_and(lows, climbs)
+        # Check that the tcas was entirely within the height band...
+        for ra in tcas_ras.get_slices():
+            for clb in clb_to_fl100:
+                if is_slice_within_slice(ra, clb):
+                    # ...then make the KPV.
+                    self.create_kpvs_from_slice_durations([ra], self.frequency, mark='start')
+
+
+class TCASRAWarningAboveFL100Duration(KeyPointValueNode):
+    '''
+    The duration for which the TCAS RA Warning was active above FL100.
+    '''
+
+    name = 'TCAS RA Warning Above FL100 Duration'
+    units = ut.SECOND
+
+    def derive(self, tcas_ras=S('TCAS Resolution Advisory'),
+               alt_std=P('Altitude STD')):
+        
+        if not tcas_ras.get_slices():
+            return
+        _, highs = slices_above(alt_std.array, 10000.0)
+        # Any RA which overlaps the height band is included. This ensures that
+        # RA crossing FL100 is accounted once completely, and not split into
+        # two partial events.
+        for ra in tcas_ras.get_slices():
+            for high in highs:
+                if slices_overlap(ra, high):
+                    self.create_kpvs_from_slice_durations([ra], self.frequency, mark='start')
+
+
+class TCASRAWarningBelowFL100InDescentDuration(KeyPointValueNode):
+    '''
+    The duration for which the TCAS RA Warning was active in the descent below FL100.
+    '''
+
+    name = 'TCAS RA Warning Below FL100 In Descent Duration'
+    units = ut.SECOND
+
+    def derive(self, tcas_ras=S('TCAS Resolution Advisory'),
+               alt_std=P('Altitude STD'),
+               dscs=S('Descent')):
+        
+        if not tcas_ras.get_slices():
+            return
+        _, lows = slices_below(alt_std.array, 10000.0)
+        descents = dscs.get_slices()
+        dsc_from_fl100 = slices_and(lows, descents)
+        for ra in tcas_ras.get_slices():
+            # Check that the tcas was entirely within the height band...
+            for dsc in dsc_from_fl100:
+                if is_slice_within_slice(ra, dsc):
+                    # ...then make the KPV.
+                    self.create_kpvs_from_slice_durations([ra], self.frequency, mark='start')
 
 
 class TCASRADirection(KeyPointValueNode):

@@ -8,6 +8,27 @@ You can view the differences in tagged versions as follows:
 
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
+=======
+
+v0.42.1
+-------
+ New KPVs
+ - AE-1267 new event speed below minimum clean speed (event to monitor flap retraction schedule)
+ - AE-1950 New Event Spoiler Deployed Insufficient Duration
+ - AE-1961 Simple Autoland KPV + Event - Number of AP Channels engaged at touchdown
+ Improvements:
+ - AE-1905 make precise_timestamp less strict
+ - AE-1910 Preflight checks event triggered when the checks have been performed
+ - AE-1973 TCAS analysis reports too many changes of altitude rate
+ - AE-1983 triggering spurious Flap 5 Including transition events
+ Fixes:
+ - AE-1796 Visualisation underground when Altitude STD is negative
+ - AE-1895 Missing Unstable Approach
+ - AE-1968 Derived speedbrake deployed parameter not reading deployed when speedbrake handle or spoilers are deployed.
+ - AE-2005 undefined errors
+ - AE-2006 fallback_dt timezone issue fix
+ - AE-2011 File Splitting Problem
+ - AE-2045 Segment FlapIncludingTransition Unidentified Error
 
 v0.41.10
 --------

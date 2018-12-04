@@ -22879,9 +22879,8 @@ class TestTCASRAWarningBelowFL100InClimbDuration(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = TCASRAWarningBelowFL100InClimbDuration
-        self.operational_combinations = [('TCAS Resolution Advisory',
-                                          'Altitude STD',
-                                          'Climb')]
+        self.operational_combinations = [('Altitude STD Smoothed',
+                                          'TCAS Resolution Advisory')]
         
     def test_derive(self):
         ra = buildsection('TCAS Resolution Advisory', 5, 8)
@@ -22907,6 +22906,15 @@ class TestTCASRAWarningBelowFL100InClimbDuration(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(ra, alt_std, clb)
         self.assertEqual(len(node), 0)
+    
+    def test_phase_separation(self):
+        testwave = (1.0 - np.cos(np.arange(0, 3.14 * 2, 0.05))) * 5100 + \
+            (1.0 - np.cos(np.arange(0, 3.14 * 12, 0.3))) * 3000
+        alt = P('Altitude STD Smoothed', array = testwave)
+        ra = buildsection('TCAS Resolution Advisory', 2, 124)
+        node = self.node_class()
+        node.derive(alt, ra)
+        self.assertEqual(len(node), 0)        
 
 class TestTCASRAWarningAboveFL100Duration(unittest.TestCase, NodeTest):
 

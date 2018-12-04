@@ -18540,7 +18540,27 @@ class TCASRAWarningDuration(KeyPointValueNode):
         self.create_kpvs_from_slice_durations(tcas_ras, self.frequency,
                                               mark='start')
 
+####################################################################
+## Function to split heights into bands for FDX
+####################################################################
 
+def fl100_phases(alt):
+    _, above_fl100s = slices_above(alt, 10000.0)
+    below_fl100s = slices_not(above_fl100s, begin_at=0, end_at=len(alt))
+    climb_fl100s = []
+    descent_fl100s = []
+    for low in below_fl100s:
+        indexes, peaks = cycle_finder(alt[low], min_step=1000)
+        for i in range(len(indexes)-1):
+            _slice = slice(indexes[i] + low.start, indexes[i+1] + low.start + 1)
+            if peaks[i+1] > peaks[i]:
+                climb_fl100s.append(_slice)
+            else:
+                descent_fl100s.append(_slice)
+    return climb_fl100s, above_fl100s, descent_fl100s
+
+####################################################################
+    
 class TCASRAWarningBelowFL100InClimbDuration(KeyPointValueNode):
     '''
     The duration for which the TCAS RA Warning was active in the climb below FL100.
@@ -18549,19 +18569,16 @@ class TCASRAWarningBelowFL100InClimbDuration(KeyPointValueNode):
     name = 'TCAS RA Warning Below FL100 In Climb Duration'
     units = ut.SECOND
 
-    def derive(self, tcas_ras=S('TCAS Resolution Advisory'),
-               alt_std=P('Altitude STD'),
-               clbs=S('Climb')):
+    def derive(self, alt_std=P('Altitude STD Smoothed'),
+               tcas_ras=S('TCAS Resolution Advisory')):
         
+        # Most common case is to do nothing, so let's do that first.
         if not tcas_ras.get_slices():
             return
-        _, lows = slices_below(alt_std.array, 10000.0)
-        climbs = clbs.get_slices()
-        clb_to_fl100 = slices_and(lows, climbs)
-        # Check that the tcas was entirely within the height band...
+        climb_fl100s, _, _ = fl100_phases(alt_std.array)
         for ra in tcas_ras.get_slices():
-            for clb in clb_to_fl100:
-                if is_slice_within_slice(ra, clb):
+            for climb in climb_fl100s:
+                if is_index_within_slice(ra.start, climb):
                     # ...then make the KPV.
                     self.create_kpvs_from_slice_durations([ra], self.frequency, mark='start')
 
@@ -18574,18 +18591,15 @@ class TCASRAWarningAboveFL100Duration(KeyPointValueNode):
     name = 'TCAS RA Warning Above FL100 Duration'
     units = ut.SECOND
 
-    def derive(self, tcas_ras=S('TCAS Resolution Advisory'),
-               alt_std=P('Altitude STD')):
+    def derive(self, alt_std=P('Altitude STD Smoothed'),
+               tcas_ras=S('TCAS Resolution Advisory')):
         
         if not tcas_ras.get_slices():
             return
-        _, highs = slices_above(alt_std.array, 10000.0)
-        # Any RA which overlaps the height band is included. This ensures that
-        # RA crossing FL100 is accounted once completely, and not split into
-        # two partial events.
+        _, above_fl100s, _ = fl100_phases(alt_std.array)
         for ra in tcas_ras.get_slices():
-            for high in highs:
-                if slices_overlap(ra, high):
+            for high in above_fl100s:
+                if is_index_within_slice(ra.start, high):
                     self.create_kpvs_from_slice_durations([ra], self.frequency, mark='start')
 
 
@@ -18597,19 +18611,15 @@ class TCASRAWarningBelowFL100InDescentDuration(KeyPointValueNode):
     name = 'TCAS RA Warning Below FL100 In Descent Duration'
     units = ut.SECOND
 
-    def derive(self, tcas_ras=S('TCAS Resolution Advisory'),
-               alt_std=P('Altitude STD'),
-               dscs=S('Descent')):
+    def derive(self, alt_std=P('Altitude STD Smoothed'),
+               tcas_ras=S('TCAS Resolution Advisory')):
         
         if not tcas_ras.get_slices():
             return
-        _, lows = slices_below(alt_std.array, 10000.0)
-        descents = dscs.get_slices()
-        dsc_from_fl100 = slices_and(lows, descents)
+        _, _, descent_fl100s = fl100_phases(alt_std.array)
         for ra in tcas_ras.get_slices():
-            # Check that the tcas was entirely within the height band...
-            for dsc in dsc_from_fl100:
-                if is_slice_within_slice(ra, dsc):
+            for descent in descent_fl100s:
+                if is_index_within_slice(ra.start, descent):
                     # ...then make the KPV.
                     self.create_kpvs_from_slice_durations([ra], self.frequency, mark='start')
 

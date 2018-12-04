@@ -222,10 +222,10 @@ class GoAroundAndClimbout(FlightPhaseNode):
 
 class Holding(FlightPhaseNode):
     """
-    Holding is a process which involves multiple turns in a short period 
-    during the descent, normally in the same sense. 
-    
-    We compute the average rate of turn over a long period to reject 
+    Holding is a process which involves multiple turns in a short period
+    during the descent, normally in the same sense.
+
+    We compute the average rate of turn over a long period to reject
     short turns and pass the entire holding period.
 
     Note that this is the only function that should use "Heading Increasing"

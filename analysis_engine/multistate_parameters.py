@@ -1373,26 +1373,15 @@ class FlapForLeverSynthetic(MultistateDerivedParameterNode):
     def derive(self, flap_inc=M('Flap Including Transition'), flap_exc=M('Flap Excluding Transition'),
                model=A('Model'), series=A('Series'), family=A('Family'),):
 
-        try:
-            angles = at.get_conf_angles(model.value, series.value, family.value)
-            use_conf = True
-        except KeyError:
-            angles = at.get_lever_angles(model.value, series.value, family.value)
-            use_conf = False
 
-        # Get the values mapping, airbus requires some hacking:
-        if use_conf:
-            self.values_mapping = at.constants.LEVER_STATES
-        else:
-            self.values_mapping = at.get_lever_map(model.value, series.value, family.value)
+        self.values_mapping = at.get_flap_map(model.value, series.value, family.value)
 
         # Prepare the destination array:
         self.array = MappedArray(np_ma_masked_zeros_like(flap_inc.array),
                                  values_mapping=self.values_mapping)
 
-        # If available Flap Lever Synthetic should follow Surface Including transition on
-        # extension and Surface Excluding Transition on retraction; ref AE-2033
-
+        # Init two empty arrays and identify sections of flap settings for each detected step, for
+        # including and excluding transition variants of the parameter
         sections_inc = []
         sections_exc = []
         for value in self.values_mapping:
@@ -1401,6 +1390,7 @@ class FlapForLeverSynthetic(MultistateDerivedParameterNode):
         sections_inc = sorted(list(itertools.chain.from_iterable(sections_inc)))
         sections_exc = sorted(list(itertools.chain.from_iterable(sections_exc)))
 
+        # use sections to populate inc and exc positions in order
         flap_inc_in_order = []
         flap_exc_in_order = []
         for s in sections_inc:
@@ -1409,6 +1399,8 @@ class FlapForLeverSynthetic(MultistateDerivedParameterNode):
         for s in sections_exc:
             flap_exc_in_order.append(np.ma.average(flap_exc.array[s]))
 
+        # find where we're extending and where retracting, populate self.array with flap_inc on extension and flap_exc
+        # on retraction
         for i in range(0, len(flap_inc_in_order) - 1):
             if (flap_inc_in_order[i] < flap_inc_in_order[i + 1]) or (flap_inc_in_order[i] == np.ma.max(flap_inc.array)):
                 self.array[sections_inc[i]] = flap_inc.array[sections_inc[i]]
@@ -1417,12 +1409,76 @@ class FlapForLeverSynthetic(MultistateDerivedParameterNode):
             if (flap_exc_in_order[i] > flap_exc_in_order[i + 1]) or (flap_exc_in_order[i] == np.ma.max(flap_exc.array)):
                 self.array[sections_exc[i]] = flap_exc.array[sections_exc[i]]
 
+        # fill in the gaps (doesn't matter if we use min or max, gaps should be pretty much non-existent at this point
+        # but just to play it safe, use max)
         for gap in np.ma.clump_masked(self.array):
             before = self.array[max(gap.start - 1, 0)]
             after = self.array[min(gap.stop, len(self.array) - 1)]
             self.array[gap] = max(before, after)
 
-        print('k')
+
+class SlatForLeverSynthetic(MultistateDerivedParameterNode):
+    '''
+    Slat parameter for Flap Lever Synthetic. Uses Slat Including Transition on
+    extension, and Slat Excluding Transition on retraction. ref. AE-2033
+    '''
+    name = 'Slat For Flap Lever Synthetic'
+    units = ut.DEGREE
+    align_frequency = 2  # force higher than most Slat frequencies
+
+
+    @classmethod
+    def can_operate(cls, available):
+
+        return all_of(('Slat Including Transition', 'Slat Excluding Transition', 'Model', 'Series', 'Family'), available)
+
+
+    def derive(self, slat_inc=M('Slat Including Transition'), slat_exc=M('Slat Excluding Transition'),
+               model=A('Model'), series=A('Series'), family=A('Family'),):
+
+
+        self.values_mapping = at.get_slat_map(model.value, series.value, family.value)
+
+        # Prepare the destination array:
+        self.array = MappedArray(np_ma_masked_zeros_like(slat_inc.array),
+                                 values_mapping=self.values_mapping)
+
+        # Init two empty arrays and identify sections of slat settings for each detected step, for
+        # including and excluding transition variants of the parameter
+        sections_inc = []
+        sections_exc = []
+        for value in self.values_mapping:
+            sections_inc.append(runs_of_ones(slat_inc.array == value))
+            sections_exc.append(runs_of_ones(slat_exc.array == value))
+
+        sections_inc = sorted(list(itertools.chain.from_iterable(sections_inc)))
+        sections_exc = sorted(list(itertools.chain.from_iterable(sections_exc)))
+
+        # use sections to populate inc and exc positions in order
+        slat_inc_in_order = []
+        slat_exc_in_order = []
+        for s in sections_inc:
+            slat_inc_in_order.append(np.ma.average(slat_inc.array[s]))
+
+        for s in sections_exc:
+            slat_exc_in_order.append(np.ma.average(slat_exc.array[s]))
+
+        # find where we're extending and where retracting, populate self.array with slat_inc on extension and slat_exc
+        # on retraction
+        for i in range(0, len(slat_inc_in_order) - 1):
+            if (slat_inc_in_order[i] < slat_inc_in_order[i + 1]) or (slat_inc_in_order[i] == np.ma.max(slat_inc.array)):
+                self.array[sections_inc[i]] = slat_inc.array[sections_inc[i]]
+
+        for i in range(0, len(slat_exc_in_order) - 1):
+            if (slat_exc_in_order[i] > slat_exc_in_order[i + 1]) or (slat_exc_in_order[i] == np.ma.max(slat_exc.array)):
+                self.array[sections_exc[i]] = slat_exc.array[sections_exc[i]]
+
+        # fill in the gaps (doesn't matter if we use min or max, gaps should be pretty much non-existent at this point
+        # but just to play it safe, use max)
+        for gap in np.ma.clump_masked(self.array):
+            before = self.array[max(gap.start - 1, 0)]
+            after = self.array[min(gap.stop, len(self.array) - 1)]
+            self.array[gap] = max(before, after)
 
 
 class FlapLeverSynthetic(MultistateDerivedParameterNode):
@@ -1439,7 +1495,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
                     model=A('Model'), series=A('Series'), family=A('Family')):
 
         if not (all_of(('Flap', 'Model', 'Series', 'Family'), available) or \
-                all_of(('Flap Including Transition', 'Flap Excluding Transition', 'Model', 'Series', 'Family'), available)):
+                all_of(('Flap For Lever Synthetic', 'Model', 'Series', 'Family'), available)):
             return False
 
         try:
@@ -1458,7 +1514,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         slat_required = any(slat is not None for slat, flap, flaperon in
                             angles.values())
         if slat_required:
-            can_operate = can_operate and (('Slat' in available) or (('Slat Including Transition', 'Slat Excluding Transition') in available))
+            can_operate = can_operate and any_of(('Slat', 'Slat For Lever Synthetic'), available)
 
         flaperon_required = any(flaperon is not None for slat, flap, flaperon in
                                 angles.values())
@@ -1467,9 +1523,8 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
 
         return can_operate
 
-    def derive(self, flap=M('Flap'), slat_param=M('Slat'), flaperon=M('Flaperon'),
-               flap_inc=M('Flap Including Transition'), flap_exc=M('Flap Excluding Transition'),
-               slat_inc=M('Slat Including Transition'), slat_exc=M('Slat Excluding Transition'),
+    def derive(self, flap=M('Flap'), slat=M('Slat'), flaperon=M('Flaperon'),
+               flap_synth=M('Flap For Flap Lever Synthetic'), slat_synth=M('Slat For Flap Lever Synthetic'),
                model=A('Model'), series=A('Series'), family=A('Family'),
                approach=S('Approach And Landing'), frame=A('Frame'),):
         try:
@@ -1486,67 +1541,25 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
             self.values_mapping = at.get_lever_map(model.value, series.value, family.value)
 
         # Prepare the destination array:
-        self.array = MappedArray(np_ma_masked_zeros_like(flap_param.array),
+        self.array = MappedArray(np_ma_masked_zeros_like(flap.array),
                                  values_mapping=self.values_mapping)
 
-        # If available Flap Lever Synthetic should follow Surface Including transition on
-        # extension and Surface Excluding Transition on retraction; ref AE-2033
+        #flap_param = flap_synth or flap
+        #slat_param = slat_synth or slat
 
-        if flap_inc and flap_exc:
-            sections_inc = []
-            sections_exc = []
-            for value in self.values_mapping:
-                sections_inc.append(runs_of_ones(flap_inc.array == value))
-                sections_exc.append(runs_of_ones(flap_exc.array == value))
-            sections_inc = sorted(list(itertools.chain.from_iterable(sections_inc)))
-            sections_exc = sorted(list(itertools.chain.from_iterable(sections_exc)))
+        flap_param = flap or flap_synth
+        slat_param = slat or slat_synth
 
-
-            flap_inc_in_order = []
-            flap_exc_in_order = []
-            for s in sections_inc:
-                flap_inc_in_order.append(np.ma.average(flap_inc.array[s]))
-
-            for s in sections_exc:
-                flap_exc_in_order.append(np.ma.average(flap_exc.array[s]))
-
-            for i in range(0, len(flap_inc_in_order)-1):
-                if flap_inc_in_order[i] < flap_inc_in_order[i+1]:
-                    self.array[sections_inc[i]] = flap_inc.array[sections_inc[i]]
-
-            for i in range(0, len(flap_exc_in_order)-1):
-                if flap_exc_in_order[i] > flap_exc_in_order[i+1]:
-                    self.array[sections_exc[i]] = flap_exc.array[sections_exc[i]]
-
-            for gap in np.ma.clump_masked(self.array):
-                before = self.array[max(gap.start - 1, 0)]
-                after = self.array[min(gap.stop, len(self.array) - 1)]
-                self.array[gap] = max(before, after)
-
-
-        # get extension slices and append
-        # get retraction slices and append
-        # sort
-        # build array
-        # fill in the gaps?
-
-
-
-        # identify extension slices
-        # identify retraction slices
-        # build new array
-
-        # Update the destination array according to the mappings:
         for (state, (s, f, a)) in six.iteritems(angles):
-            condition = (flap.array == str(f))
+            condition = (flap_param.array == str(f))
             if s is not None:
-                condition &= (slat.array == str(s))
+                condition &= (slat_param.array == str(s))
             if a is not None:
                 condition &= (flaperon.array == str(a))
             if use_conf:
                 state = at.constants.CONF_TO_LEVER[state]
             self.array[condition] = state
-            
+
         frame_name = frame.value if frame else None
         approach_slices = approach.get_slices() if approach else None
         

@@ -2691,6 +2691,7 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
 
     @classmethod
     def can_operate(cls, available):
+
         return 'Spoiler Deployed' in available or \
                all_of(('Spoiler (L) Deployed', 'Spoiler (R) Deployed'), available) or \
                all_of(('Spoiler (L) (1) Deployed', 'Spoiler (R) (1) Deployed'), available) or \
@@ -2749,7 +2750,9 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
                r6=P('Spoiler (R) (6)'),
                r7=P('Spoiler (R) (7)'),
                lout=P('Spoiler (L) Outboard'),
-               rout=P('Spoiler (R) Outboard')):
+               rout=P('Spoiler (R) Outboard'),
+               handle=P('Speedbrake Handle'),
+               family=A('Family')):
 
         left = (ld, l1d, l2d, l3d, l4d, l5d, l6d, l7d, loutd,
                 l, l1, l2, l3, l4, l5, l6, l7, lout)
@@ -2773,31 +2776,37 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
                 array[s] = True
             return array
 
-        combined = [a for a in (is_deployed(p) for p in (dep, spoiler) if p) if a is not None]
+        if family.value == 'B787':
+            speedbrake = np.ma.zeros(len(handle.array), dtype=np.short)
+            stepped_array = step_values(handle.array, [0, 20], hz=handle.hz)
+            speedbrake[stepped_array == 20] = 1
+            self.array = speedbrake
+        else:
+            combined = [a for a in (is_deployed(p) for p in (dep, spoiler) if p) if a is not None]
 
-        for pair in pairs:
-            if not all(pair):
-                continue
-            arrays = [is_deployed(p) for p in pair]
-            if not all(a is not None for a in arrays):
-                continue
-            combined.append(np.ma.vstack(arrays).all(axis=0))
+            for pair in pairs:
+                if not all(pair):
+                    continue
+                arrays = [is_deployed(p) for p in pair]
+                if not all(a is not None for a in arrays):
+                    continue
+                combined.append(np.ma.vstack(arrays).all(axis=0))
 
-        if not combined:
-            self.array = np_ma_zeros_like(
-                next(p.array for p in (dep, spoiler) + left + right if p is not None),
-                dtype=np.short, mask=True)
-            return
+            if not combined:
+                self.array = np_ma_zeros_like(
+                    next(p.array for p in (dep, spoiler) + left + right if p is not None),
+                    dtype=np.short, mask=True)
+                return
 
-        stack = np.ma.vstack(combined)
+            stack = np.ma.vstack(combined)
 
-        array = np_ma_zeros_like(stack[0], dtype=np.short)
-        array = np.ma.where(stack.any(axis=0), 1, array)
+            array = np_ma_zeros_like(stack[0], dtype=np.short)
+            array = np.ma.where(stack.any(axis=0), 1, array)
 
-        # mask indexes with greater than 50% masked values
-        mask = np.ma.where(stack.mask.sum(axis=0).astype(float) / len(stack) * 100 > 50, 1, 0)
-        self.array = array
-        self.array.mask = mask
+            # mask indexes with greater than 50% masked values
+            mask = np.ma.where(stack.mask.sum(axis=0).astype(float) / len(stack) * 100 > 50, 1, 0)
+            self.array = array
+            self.array.mask = mask
 
 
 class SpeedbrakeSelected(MultistateDerivedParameterNode):
@@ -2985,7 +2994,10 @@ class SpeedbrakeSelected(MultistateDerivedParameterNode):
 
         family_name = family.value if family else ''
 
-        if deployed:
+        if family_name == 'B787':
+            self.array = self.b787_speedbrake(handle)
+
+        elif deployed:
             # Families include: A340, ...
 
             # We have a speedbrake deployed discrete. Set initial state to
@@ -3017,9 +3029,6 @@ class SpeedbrakeSelected(MultistateDerivedParameterNode):
                                      'Deployed/Cmd Up', 'Armed/Cmd Dn')
             self.array = np.ma.where((handle.array <= 1.0),
                                      'Stowed', self.array)
-            
-        elif family_name == 'B787':
-            self.array = self.b787_speedbrake(handle)
 
         elif family_name in ('A300', 'A310') and not spdbrk:
             # Have only seen Speedbrake Handle ,not Speedbrake parameter so

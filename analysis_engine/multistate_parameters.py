@@ -2690,7 +2690,9 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
     }
 
     @classmethod
-    def can_operate(cls, available):
+    def can_operate(cls, available, family=A('Family')):
+        if family and family.value == 'B787':
+            return 'Speedbrake Handle' in available
 
         return 'Spoiler Deployed' in available or \
                all_of(('Spoiler (L) Deployed', 'Spoiler (R) Deployed'), available) or \

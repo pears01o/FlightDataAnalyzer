@@ -2778,7 +2778,7 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
                 array[s] = True
             return array
 
-        if family.value == 'B787':
+        if family and family.value == 'B787':
             speedbrake = np.ma.zeros(len(handle.array), dtype=np.short)
             stepped_array = step_values(handle.array, [0, 20], hz=handle.hz)
             speedbrake[stepped_array == 20] = 1

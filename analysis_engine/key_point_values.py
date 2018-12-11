@@ -18552,7 +18552,7 @@ def fl100_phases(alt):
     for low in below_fl100s:
         indexes, peaks = cycle_finder(alt[low], min_step=1000)
         for i in range(len(indexes)-1):
-            _slice = slice(indexes[i] + low.start, indexes[i+1] + low.start + 1)
+            _slice = slice(indexes[i] + low.start, indexes[i+1] + low.start)
             if peaks[i+1] > peaks[i]:
                 climb_fl100s.append(_slice)
             else:
@@ -18579,7 +18579,10 @@ class TCASRAWarningBelowFL100InClimbDuration(KeyPointValueNode):
         for ra in tcas_ras.get_slices():
             for climb in climb_fl100s:
                 if is_index_within_slice(ra.start, climb):
-                    # ...then make the KPV.
+                    # ...then make the KPV. 
+                    # Note that the RA may extend beyond the climb phase duration, but as we 
+                    # create this based on the start edge only, we cannot create duplicate kpvs
+                    # in subsequent phases.
                     self.create_kpvs_from_slice_durations([ra], self.frequency, mark='start')
 
 

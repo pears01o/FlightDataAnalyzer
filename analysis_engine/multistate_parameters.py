@@ -54,6 +54,7 @@ from analysis_engine.library import (
     slices_remove_small_slices,
     smooth_signal,
     step_values,
+    surface_for_synthetic,
     vstack_params_where_state,
 )
 from analysis_engine.settings import (
@@ -1380,41 +1381,7 @@ class FlapForLeverSynthetic(MultistateDerivedParameterNode):
         self.array = MappedArray(np_ma_masked_zeros_like(flap_inc.array),
                                  values_mapping=self.values_mapping)
 
-        # Init two empty arrays and identify sections of flap settings for each detected step, for
-        # including and excluding transition variants of the parameter
-        sections_inc = []
-        sections_exc = []
-        for value in self.values_mapping:
-            sections_inc.append(runs_of_ones(flap_inc.array == value))
-            sections_exc.append(runs_of_ones(flap_exc.array == value))
-        sections_inc = sorted(list(itertools.chain.from_iterable(sections_inc)))
-        sections_exc = sorted(list(itertools.chain.from_iterable(sections_exc)))
-
-        # use sections to populate inc and exc positions in order
-        flap_inc_in_order = []
-        flap_exc_in_order = []
-        for s in sections_inc:
-            flap_inc_in_order.append(np.ma.average(flap_inc.array[s]))
-
-        for s in sections_exc:
-            flap_exc_in_order.append(np.ma.average(flap_exc.array[s]))
-
-        # find where we're extending and where retracting, populate self.array with flap_inc on extension and flap_exc
-        # on retraction
-        for i in range(0, len(flap_inc_in_order) - 1):
-            if (flap_inc_in_order[i] < flap_inc_in_order[i + 1]) or (flap_inc_in_order[i] == np.ma.max(flap_inc.array)):
-                self.array[sections_inc[i]] = flap_inc.array[sections_inc[i]]
-
-        for i in range(0, len(flap_exc_in_order) - 1):
-            if (flap_exc_in_order[i] > flap_exc_in_order[i + 1]) or (flap_exc_in_order[i] == np.ma.max(flap_exc.array)):
-                self.array[sections_exc[i]] = flap_exc.array[sections_exc[i]]
-
-        # fill in the gaps (doesn't matter if we use min or max, gaps should be pretty much non-existent at this point
-        # but just to play it safe, use max)
-        for gap in np.ma.clump_masked(self.array):
-            before = self.array[max(gap.start - 1, 0)]
-            after = self.array[min(gap.stop, len(self.array) - 1)]
-            self.array[gap] = max(before, after)
+        self.array = surface_for_synthetic(flap_inc, flap_exc, self.values_mapping)
 
 
 class SlatForLeverSynthetic(MultistateDerivedParameterNode):
@@ -1443,42 +1410,7 @@ class SlatForLeverSynthetic(MultistateDerivedParameterNode):
         self.array = MappedArray(np_ma_masked_zeros_like(slat_inc.array),
                                  values_mapping=self.values_mapping)
 
-        # Init two empty arrays and identify sections of slat settings for each detected step, for
-        # including and excluding transition variants of the parameter
-        sections_inc = []
-        sections_exc = []
-        for value in self.values_mapping:
-            sections_inc.append(runs_of_ones(slat_inc.array == value))
-            sections_exc.append(runs_of_ones(slat_exc.array == value))
-
-        sections_inc = sorted(list(itertools.chain.from_iterable(sections_inc)))
-        sections_exc = sorted(list(itertools.chain.from_iterable(sections_exc)))
-
-        # use sections to populate inc and exc positions in order
-        slat_inc_in_order = []
-        slat_exc_in_order = []
-        for s in sections_inc:
-            slat_inc_in_order.append(np.ma.average(slat_inc.array[s]))
-
-        for s in sections_exc:
-            slat_exc_in_order.append(np.ma.average(slat_exc.array[s]))
-
-        # find where we're extending and where retracting, populate self.array with slat_inc on extension and slat_exc
-        # on retraction
-        for i in range(0, len(slat_inc_in_order) - 1):
-            if (slat_inc_in_order[i] < slat_inc_in_order[i + 1]) or (slat_inc_in_order[i] == np.ma.max(slat_inc.array)):
-                self.array[sections_inc[i]] = slat_inc.array[sections_inc[i]]
-
-        for i in range(0, len(slat_exc_in_order) - 1):
-            if (slat_exc_in_order[i] > slat_exc_in_order[i + 1]) or (slat_exc_in_order[i] == np.ma.max(slat_exc.array)):
-                self.array[sections_exc[i]] = slat_exc.array[sections_exc[i]]
-
-        # fill in the gaps (doesn't matter if we use min or max, gaps should be pretty much non-existent at this point
-        # but just to play it safe, use max)
-        for gap in np.ma.clump_masked(self.array):
-            before = self.array[max(gap.start - 1, 0)]
-            after = self.array[min(gap.stop, len(self.array) - 1)]
-            self.array[gap] = max(before, after)
+        self.array = surface_for_synthetic(slat_inc, slat_exc, self.values_mapping)
 
 
 class FlapLeverSynthetic(MultistateDerivedParameterNode):
@@ -1522,6 +1454,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
             can_operate = can_operate and 'Flaperon' in available
 
         return can_operate
+
 
     def derive(self, flap=M('Flap'), slat=M('Slat'), flaperon=M('Flaperon'),
                flap_synth=M('Flap For Flap Lever Synthetic'), slat_synth=M('Slat For Flap Lever Synthetic'),

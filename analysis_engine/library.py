@@ -6594,18 +6594,14 @@ def step_local_cusp(array, span):
 
 def including_transition(array, steps, hz=1, mode='include'):
     '''
-    Snaps signal to step values including transition, e.g.:
-          _____
-      ___|/   \|
-    _|/        \|__
-    
+    Snaps signal to step values including transition.
+
     :type array: np.ma.array
     :param steps: Steps to align the signal to.
     :type steps: [int]
     :param threshold: Threshold of difference between two flap settings to apply the next flap setting.
     :type threshold: float
-    
-    threshold = 0.01 makes the system too late and too conservative.
+
     '''
     steps = sorted(steps)
     mid_steps = [steps[0] - 10.0]
@@ -6615,7 +6611,8 @@ def including_transition(array, steps, hz=1, mode='include'):
     mid_steps.append(steps[-1] + 10.0)
 
     change = np.ma.ediff1d(array, to_begin=0.0)
-    
+    threshold = 0.03 if mode == 'include' else 0.2
+
     # first raise the array to the next step if it exceeds the previous step
     # plus a minimal threshold (step as early as possible)
     output = np_ma_masked_zeros_like(array)
@@ -6625,7 +6622,7 @@ def including_transition(array, steps, hz=1, mode='include'):
         bands = slices_and(runs_of_ones(array > mid_1), runs_of_ones(array <= mid_2))
         for band in bands:
             # Find where the data did not change in this band...
-            partial = np.ma.where(np.ma.abs(change[band.start:band.stop]) < 0.03, flap, np.ma.masked) # threshold of 0.03 to account for slight changes/flutter
+            partial = np.ma.where(np.ma.abs(change[band.start:band.stop]) < threshold, flap, np.ma.masked)
             
             if len(partial) == 1:
                 if change[band.start] > 0:
@@ -6664,9 +6661,9 @@ def including_transition(array, steps, hz=1, mode='include'):
     return output
 
 
-def excluding_transition(array, steps, hz=1, time_limit=3):
+def excluding_transition(array, steps, hz=1, time_limit=1):
     '''
-    Snaps signal to step values excluding transition.
+    #TODO fix this: Snaps signal to step values excluding transition.
     '''
 
     # Sort steps, necessary for value snapping below, we don't want it to be random
@@ -6679,8 +6676,8 @@ def excluding_transition(array, steps, hz=1, time_limit=3):
     change = np.ma.ediff1d(array, to_begin=0.0)
 
     # find where the surface angle was not in transition and remove small chunks
-    stationary = runs_of_ones(np.ma.abs(change) < 0.03) # 0.03 seems to work for including_transition, feel free to change it
-    stationary = slices_remove_small_slices(stationary, time_limit=time_limit, hz=hz) # 3s seems reasonable
+    stationary = runs_of_ones(np.ma.abs(change) < 0.15) # 0.03 seems to work for including_transition, feel free to change it
+    stationary = slices_remove_small_slices(stationary, time_limit=time_limit, hz=hz) # 1s seems reasonable
 
     for s in stationary:
         # get the average value of the slice and snap it to the closest value in the steps list
@@ -6693,6 +6690,49 @@ def excluding_transition(array, steps, hz=1, time_limit=3):
         after = output[min(gap.stop, len(output) - 1)]
 
         output[gap] = min(before, after)
+
+    return output
+
+
+def surface_for_synthetic(inc_trans, exc_trans, val_mapping):
+
+    output = MappedArray(np_ma_masked_zeros_like(inc_trans.array),
+                         values_mapping=val_mapping)
+    sections_inc = []
+    sections_exc = []
+    for value in val_mapping:
+        sections_inc.append(runs_of_ones(inc_trans.array == value))
+        sections_exc.append(runs_of_ones(exc_trans.array == value))
+    sections_inc = sorted(list(itertools.chain.from_iterable(sections_inc)))
+    sections_exc = sorted(list(itertools.chain.from_iterable(sections_exc)))
+
+    # use sections to populate inc and exc positions in order
+    inc_in_order = []
+    exc_in_order = []
+    for s in sections_inc:
+        inc_in_order.append(np.ma.average(inc_trans.array[s]))
+
+    for s in sections_exc:
+        exc_in_order.append(np.ma.average(exc_trans.array[s]))
+
+    # find where we're extending and where retracting, populate self.array with flap_inc on extension and flap_exc
+    # on retraction
+    for i in range(0, len(inc_in_order) - 1):
+        if (inc_in_order[i] < inc_in_order[i + 1]) or (inc_in_order[i] == np.ma.max(inc_trans.array)):
+            output[sections_inc[i]] = inc_trans.array[sections_inc[i]]
+
+    for i in range(0, len(exc_in_order) - 1):
+        if (exc_in_order[i] > exc_in_order[i + 1]) or (exc_in_order[i] == np.ma.max(exc_trans.array)):
+            output[sections_exc[i]] = exc_trans.array[sections_exc[i]]
+
+    # populate the last section
+    output[sections_exc[-1:]] = exc_trans.array[sections_exc[-1:]]
+
+    # fill in the gaps
+    for gap in np.ma.clump_masked(output):
+        before = output[max(gap.start - 1, 0)]
+        after = output[min(gap.stop, len(output) - 1)]
+        output[gap] = max(before, after)
 
     return output
 

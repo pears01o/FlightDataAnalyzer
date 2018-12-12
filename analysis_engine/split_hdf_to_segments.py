@@ -1139,7 +1139,7 @@ def split_hdf_to_segments(source, aircraft_info, fallback_dt=None,
     previous_stop_dt = None
     for part, (segment_type, segment_slice, start_padding) in enumerate(segment_tuples, start=1):
         dest = write_segment(
-            source, segment_slice, boundary, part, dest_dir=dest_dir,
+            source, segment_slice, part=part, dest_dir=dest_dir, boundary=boundary,
             submasks=('arinc', 'invalid_states', 'padding', 'saturation'))
 
         # adjust fallback time to account for any padding added at start of segment

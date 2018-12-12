@@ -3137,7 +3137,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         alt_aal=P('Altitude AAL', array=np.ma.concatenate([np.arange(0, 1000, 200), np.ones(1000) * 1000, np.arange(1000, -100, -200)]))
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, None)
-        self.assertEqual(node.get_first().slice, slice(2, 1009))
+        self.assertEqual(node.get_first().slice, slice(5, 1006))
         self.assertEqual(node.get_first().name, 'TCAS Operational')
         
     def test_one_sector(self):
@@ -3147,12 +3147,14 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         alt_aal=P('Altitude AAL', array=np.ma.concatenate([up_down, up_down]))
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, None)
-        self.assertEqual(node.get_first().slice, slice(1013, 2020))
+        self.assertEqual(node.get_first().slice, slice(1016, 2017))
         self.assertEqual(node.get_first().name, 'TCAS Operational')
 
     def test_not_low(self):
+        # Following a change in altitude datum for TCAS operation, this test was "elevated" to show that the
+        # effect was due to altitude. Other tests were changed more simply by resetting the slice limits.
         alt_aal=P('Altitude AAL', array=
-                  np.ma.concatenate([np.arange(0, 1000, 100), np.ones(10) * 1000, np.arange(900, -100, -100)]))
+                  np.ma.concatenate([np.arange(500, 1500, 100), np.ones(10) * 1500, np.arange(1400, 400, -100)]))
         node = self.node_class()
         node.derive(alt_aal, None, None, None, None)
         self.assertEqual(node.get_slices()[0], slice(4, 26))
@@ -3180,7 +3182,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         alt_aal=P('Altitude AAL', array=np.ma.concatenate([np.arange(0, 1000, 200), np.ones(1000) * 1000, np.arange(1000, -100, -200)]))
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, None)
-        self.assertEqual(node.get_slices(), [slice(2, 200, None), slice(220, 250, None), slice(270, 300, None), slice(320, 1009, None)])
+        self.assertEqual(node.get_slices(), [slice(5, 200, None), slice(220, 250, None), slice(270, 300, None), slice(320, 1006, None)])
                 
     def test_not_if_status_wrong(self):
         # Embraer map status zero to Normal Operation
@@ -3191,7 +3193,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
                    values_mapping=self.status_mapping)
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, status, None, None)
-        self.assertEqual(node.get_first().slice.start, 2)
+        self.assertEqual(node.get_first().slice.start, 5)
         
         status = M('TCAS Status', array=np.ma.ones(1000) * 2,
                    values_mapping=self.status_mapping)
@@ -3215,7 +3217,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, status, None, None)
         # The unrecognised status does not mask the TCAS RA...
-        self.assertEqual(node.get_first().slice.start, 2)
+        self.assertEqual(node.get_first().slice.start, 5)
 
     def test_not_if_valid_wrong(self):
         tcas_cc = M('TCAS Combined Control', array=np.ma.concatenate([np.zeros(500), np.ones(10) * 5, np.zeros(490)]),
@@ -3224,7 +3226,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         valid = M('TCAS Valid', array=np.ma.ones(1000), values_mapping={0:'-', 1:'Valid'})
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, valid, None)
-        self.assertEqual(node.get_first().slice.start, 2)
+        self.assertEqual(node.get_first().slice.start, 5)
 
         valid = M('TCAS Valid', array=np.ma.zeros(1000), values_mapping={0:'-', 1:'Valid'})
         node = self.node_class()
@@ -3234,7 +3236,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         valid = M('TCAS Valid', array=np.ma.concatenate([np.ones(490), np.zeros(15), np.ones(495)]), values_mapping={0:'-', 1:'Valid'})
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, valid, None)
-        self.assertEqual(node.get_slices(), [slice(2, 490, None), slice(510, 998, None)])
+        self.assertEqual(node.get_slices(), [slice(5, 490, None), slice(510, 995, None)])
 
     def test_not_if_failure(self):
         tcas_cc = M('TCAS Combined Control', array=np.ma.concatenate([np.zeros(500), np.ones(10) * 5, np.zeros(490)]),
@@ -3243,7 +3245,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         fail = M('TCAS Failure', array=np.ma.zeros(1000), values_mapping={0:'-', 1:'Failed'})
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, fail)
-        self.assertEqual(node.get_first().slice.start, 2)
+        self.assertEqual(node.get_first().slice.start, 5)
 
         fail = M('TCAS Failure', array=np.ma.ones(1000), values_mapping={0:'-', 1:'Failed'})
         node = self.node_class()
@@ -3253,7 +3255,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         fail = M('TCAS Failure', array=np.ma.concatenate([np.zeros(490), np.ones(15), np.zeros(495)]), values_mapping={0:'-', 1:'Failed'})
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, fail)
-        self.assertEqual(node.get_slices(), [slice(2, 490, None), slice(510, 998, None)])
+        self.assertEqual(node.get_slices(), [slice(5, 490, None), slice(510, 995, None)])
 
 
     def test_masked_1(self):

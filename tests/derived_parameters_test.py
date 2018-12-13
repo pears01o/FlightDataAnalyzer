@@ -6570,9 +6570,8 @@ class TestApproachRange(TemporaryFileTest, unittest.TestCase):
         ar.derive(None, glide, None, None, None, hdg, tas, alt, self.approaches)
         result = ar.array
         chunks = np.ma.clump_unmasked(result)
-        self.assertEqual(len(chunks),2)
-        self.assertEqual(chunks,[slice(3198, 3422, None),
-                                 slice(12928, 13440, None)])
+        self.assertEqual(len(chunks),1)
+        self.assertEqual(chunks,[slice(12928, 13440, None)])
 
     def test_range_full_param_set(self):
         with hdf_file(self.test_file_path) as hdf:
@@ -6586,9 +6585,8 @@ class TestApproachRange(TemporaryFileTest, unittest.TestCase):
         ar.derive(gspd, glide, None, None, hdg, None, tas, alt, self.approaches)
         result = ar.array
         chunks = np.ma.clump_unmasked(result)
-        self.assertEqual(len(chunks),2)
-        self.assertEqual(chunks,[slice(3198, 3422, None),
-                                 slice(12928, 13440, None)])
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(chunks,[slice(12928, 13440, None)])
 
 
 class TestZeroFuelWeight(unittest.TestCase, NodeTest):

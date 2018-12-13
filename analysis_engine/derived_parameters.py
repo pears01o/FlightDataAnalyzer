@@ -5178,6 +5178,8 @@ class CoordinatesSmoothed(object):
                     '''
                     # Adjust distance units
                     distance = np.ma.array([value_at_index(app_range.array, low_point)])
+                    if not distance:
+                        continue
                     bearing = np.ma.array([(runway_heading(runway)+180)%360.0])
 
                     # Work out the touchdown or lowest point of go-around.
@@ -7421,6 +7423,7 @@ class ApproachRange(DerivedParameterNode):
                     'Altitude AAL is not between 100-500 ft during an '
                     'approach slice. %s will not be calculated for this '
                     'section.', self.name)
+                app_range[this_app_slice] = np_ma_masked_zeros_like(app_range[this_app_slice])
                 continue
 
             # reg_slice is the slice of data over which we will apply a

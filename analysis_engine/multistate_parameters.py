@@ -1477,9 +1477,6 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         self.array = MappedArray(np_ma_masked_zeros_like(flap.array),
                                  values_mapping=self.values_mapping)
 
-        #flap_param = flap_synth or flap
-        #slat_param = slat_synth or slat
-
         flap_param = flap or flap_synth
         slat_param = slat or slat_synth
 

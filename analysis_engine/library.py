@@ -6663,7 +6663,8 @@ def including_transition(array, steps, hz=1, mode='include'):
 
 def excluding_transition(array, steps, hz=1, time_limit=1):
     '''
-    #TODO fix this: Snaps signal to step values excluding transition.
+    Snaps signal to values excluding transition.
+    Ignores steps while in transition; more info: AE-2033
     '''
 
     # Sort steps, necessary for value snapping below, we don't want it to be random
@@ -6676,8 +6677,8 @@ def excluding_transition(array, steps, hz=1, time_limit=1):
     change = np.ma.ediff1d(array, to_begin=0.0)
 
     # find where the surface angle was not in transition and remove small chunks
-    stationary = runs_of_ones(np.ma.abs(change) < 0.15) # 0.03 seems to work for including_transition, feel free to change it
-    stationary = slices_remove_small_slices(stationary, time_limit=time_limit, hz=hz) # 1s seems reasonable
+    stationary = runs_of_ones(np.ma.abs(change) < 0.15)
+    stationary = slices_remove_small_slices(stationary, time_limit=time_limit, hz=hz)
 
     for s in stationary:
         # get the average value of the slice and snap it to the closest value in the steps list

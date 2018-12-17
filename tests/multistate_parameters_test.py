@@ -1597,7 +1597,7 @@ class TestFlapExcludingTransition(unittest.TestCase, NodeTest):
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
         self.assertEqual(node.frequency, 1)
-        self.assertEqual(node.array.raw.tolist(), [0] * 95 + [40] * 8)
+        self.assertEqual(node.array.raw.tolist(), [0] * 48 + [40] * 4)
 
     def test_derive__flap_1_2(self):
         _am = A('Model', 'B737-448(F)')
@@ -2048,7 +2048,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         series = A('Series', 'B737-300')
         family = A('Family', 'B737 Classic')
         node = self.node_class()
-        node.derive(flap, slat, flaperon, model, series, family)
+        node.derive(flap, slat, flaperon, None, None, model, series, family)
 
         # Check against an expected array of lever detents:
         expected = [0, 0, 5, 2, 1, 0, 0, 10, 15, 25, 30, 40, 0, 0, 0]
@@ -2082,7 +2082,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         series = A('Series', None)
         family = A('Family', 'A330')
         node = self.node_class()
-        node.derive(flap, slat, flaperon, model, series, family)
+        node.derive(flap, slat, flaperon, None, None, model, series, family)
 
         mapping = {x: str(x) for x in sorted(set(expected))}
         self.assertEqual(list(node.array), list(np.repeat(expected, repeat)))
@@ -2132,7 +2132,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         
         approach = buildsections('Approach And Landing', (7,10))
         node = self.node_class()
-        node.derive(flap, slat, None, model, series, family, approach, frame)
+        node.derive(flap, slat, None, None, None, model, series, family, approach, frame)
         
         self.assertEqual(list(node.array), list(np.repeat(expected, repeat)))
         
@@ -2584,7 +2584,7 @@ class TestSlatExcludingTransition(unittest.TestCase, NodeTest):
             family=A('Family', 'B737 Classic'),
         ))
 
-    @patch('analysis_engine.library.at')
+    @patch('analysis_engine.multistate_parameters.at')
     def test_derive(self, at):
         at.get_slat_map.return_value = {s: str(s) for s in (0, 16, 25)}
         _am = A('Model', None)
@@ -2600,7 +2600,7 @@ class TestSlatExcludingTransition(unittest.TestCase, NodeTest):
         self.assertEqual(node.values_mapping, at.get_slat_map.return_value)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
-        self.assertEqual(node.array.raw.tolist(), [0] * 65 + [25] * 8 + [None])
+        self.assertEqual(node.array.raw.tolist(), [0] * 33 + [25] * 4)
 
 
 class TestSlatIncludingTransition(unittest.TestCase, NodeTest):

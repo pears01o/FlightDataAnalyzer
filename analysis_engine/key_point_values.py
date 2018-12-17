@@ -6155,7 +6155,7 @@ class TailRotorPedalOnGroundMax(KeyPointValueNode):
                pedal=P('Tail Rotor Pedal'),):
         
         # Collective below 6%
-        collective_slices = slices_below(collective.array, 6)
+        collective_slices = slices_below(collective.array, 40)
         
         # Nr above 100%
         nr_slices = slices_above(nr.array, 100)

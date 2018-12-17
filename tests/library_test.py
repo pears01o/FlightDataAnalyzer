@@ -1569,6 +1569,23 @@ class TestExcludingTransition(unittest.TestCase):
         self.assertTrue(np.ma.all(flap_inc[69:] == 30))
 
 
+class TestSurfaceForLeverSynthetic(unittest.TestCase):
+    def test_surface(self):
+        value_map = {0: '0', 1: '1', 2: '2', 5: '5', 10: '10', 15: '15', 25: '25', 30: '30', 40: '40'}
+        inc_trans = M('Flap Including Transition',
+                      np.ma.array([0]*4 + [1]*4 + [5]*4 + [15]*4 + [5]*4 + [1]*4 + [0]*4),
+                      values_mapping=value_map)
+
+        exc_trans = M('Flap Excluding Transition',
+                      np.ma.array([0]*12 + [15]*12 + [0]*4),
+                      values_mapping=value_map)
+
+        expected = np.ma.array([0]*4 + [1]*4 + [5]*4 + [15]*12 + [0]*4)
+
+        surface_angle = surface_for_synthetic(inc_trans, exc_trans, value_map)
+        self.assertEqual(surface_angle.raw.tolist(), expected.tolist())
+
+
 class TestCalculateSurfaceAngle(unittest.TestCase):
     flap_map_1 = {0: '0', 15: '15', 30: '30', 45: '45'}
     flap_map_2 = {0: '0', 1: '1', 5: '5', 15: '15', 20: '20', 25: '25', 30: '30'}

@@ -18573,7 +18573,7 @@ class TCASRAWarningBelowFL100InClimbDuration(KeyPointValueNode):
                tcas_ras=S('TCAS Resolution Advisory')):
         
         # Most common case is to do nothing, so let's do that first.
-        if not tcas_ras.get_slices():
+        if not tcas_ras:
             return
         climb_fl100s, _, _ = fl100_phases(alt_std.array)
         for ra in tcas_ras.get_slices():
@@ -18597,7 +18597,7 @@ class TCASRAWarningAboveFL100Duration(KeyPointValueNode):
     def derive(self, alt_std=P('Altitude STD Smoothed'),
                tcas_ras=S('TCAS Resolution Advisory')):
         
-        if not tcas_ras.get_slices():
+        if not tcas_ras:
             return
         _, above_fl100s, _ = fl100_phases(alt_std.array)
         for ra in tcas_ras.get_slices():
@@ -18617,7 +18617,7 @@ class TCASRAWarningBelowFL100InDescentDuration(KeyPointValueNode):
     def derive(self, alt_std=P('Altitude STD Smoothed'),
                tcas_ras=S('TCAS Resolution Advisory')):
         
-        if not tcas_ras.get_slices():
+        if not tcas_ras:
             return
         _, _, descent_fl100s = fl100_phases(alt_std.array)
         for ra in tcas_ras.get_slices():

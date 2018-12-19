@@ -2155,7 +2155,6 @@ class TestMultistateDerivedParameterNode(unittest.TestCase):
         mapping = {0:'zero', 2:'two', 3:'three'}
         array = np.ma.array(list(range(5))+list(range(5)), mask=[1,1,1,0,0,0,0,0,1,1])
         multi_p = MultistateDerivedParameterNode('multi', array, values_mapping=mapping)
-        multi_p.array[0] = 'three'
         # save array to hdf and close
         with hdf_file(self.hdf_path, create=True) as hdf1:
             hdf1['multi'] = multi_p
@@ -2163,8 +2162,7 @@ class TestMultistateDerivedParameterNode(unittest.TestCase):
         # check hdf has mapping and integer values stored
         with hdf_file(self.hdf_path) as hdf:
             saved = hdf['multi']
-            self.assertEqual(list(np.ma.filled(saved.array, 999)),
-                             [  3, 999, 999,   3,   4,   0,   1,   2, 999, 999])
+            self.assertEqual(list(np.ma.filled(saved.array, 999)), [999, 999, 999, 3, 4, 0, 1, 2, 999, 999])
             self.assertEqual(saved.array.data.dtype, np.int)
 
     def test_pickle_load_includes_values_mapping(self):

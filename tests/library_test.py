@@ -16,7 +16,7 @@ import types
 import unittest
 import yaml
 
-from  collections import Counter
+from collections import Counter
 from datetime import datetime
 from math import sqrt
 from mock import patch
@@ -433,9 +433,9 @@ class TestAlign(unittest.TestCase):
 
     def test_align_discrete(self):
         first = P(frequency=1, offset=0.0,
-                  array=np.ma.array([0,0,1,1,0,1,0,1], dtype=float))
+                  array=np.ma.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=float))
         second = M(frequency=1, offset=0.7,
-                   array=np.ma.array([0,0,1,1,0,1,0,1], dtype=float))
+                   array=np.ma.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=float), values_mapping={0: 0, 1: 1})
 
         result = align(second, first)
         np.testing.assert_array_equal(result.data, [0,0,0,1,1,0,1,0])
@@ -444,9 +444,9 @@ class TestAlign(unittest.TestCase):
 
     def test_align_multi_state(self):
         first = P(frequency=1, offset=0.6,
-                  array=np.ma.array([11,12,13,14,15], dtype=float))
+                  array=np.ma.array([11, 12, 13, 14, 15], dtype=float))
         second = M(frequency=1, offset=0.0,
-                   array=np.ma.array([0,1,2,3,4], dtype=int))
+                   array=np.ma.array([0, 1, 2, 3, 4], dtype=int), values_mapping={i: i for i in range(5)})
 
         result = align(second, first)
         # check dtype is int
@@ -457,8 +457,8 @@ class TestAlign(unittest.TestCase):
     def test_align_multi_state__float(self):
         first = P(frequency=1, offset=0.6,
                   array=np.ma.array([11,12,13,14,15], dtype=float))
-        second = M(frequency=1, offset=0.0,
-                   array=np.ma.array([0,1,2,3,4], dtype=float))
+        array = np.ma.array([0, 1, 2, 3, 4], dtype=float)
+        second = M(frequency=1, offset=0.0, array=array, values_mapping={i: i for i in array})
 
         result = align(second, first)
         # check dtype is int
@@ -999,8 +999,8 @@ class TestAlign(unittest.TestCase):
     def test_align_multi_state_5_10(self):
         first = P(frequency=10, offset=0.0,
                   array=np.ma.array([11,12,13,14,15,16,17,18,19,20], dtype=float))
-        second = M(frequency=5, offset=0.0,
-                   array=np.ma.array([1,3,4,5,6], dtype=int))
+        array = np.ma.array([1,3,4,5,6], dtype=int)
+        second = M(frequency=5, offset=0.0, array=array, values_mapping={i: i for i in array})
 
         result = align(second, first)
         # check dtype is int
@@ -1011,8 +1011,8 @@ class TestAlign(unittest.TestCase):
     def test_align_multi_state_10_15(self):
         first = P(frequency=15, offset=0.0,
                   array=np.ma.array([11,12,13,14,15,16,17,18,19,20,21,22,23,24,25], dtype=float))
-        second = M(frequency=10, offset=0.0,
-                   array=np.ma.array([1,3,4,5,6,7,8,9,10,11], dtype=int))
+        array = np.ma.array([1, 3, 4, 5, 6, 7, 8, 9, 10, 11], dtype=int)
+        second = M(frequency=10, offset=0.0, array=array, values_mapping={i: i for i in array})
 
         result = align(second, first)
         # check dtype is int
@@ -1033,7 +1033,8 @@ class TestAlign(unittest.TestCase):
 
     def test_align_multi_state_25_15(self):
         first = P(frequency=15, offset=0.0, array=np.ma.arange(15, dtype=np.int))
-        second = M(frequency=25, offset=0.0, array=np.ma.arange(25, dtype=np.int))
+        second = M(frequency=25, offset=0.0, array=np.ma.arange(25, dtype=np.int),
+                   values_mapping={i: i for i in range(25)})
         result = align(second, first)
         self.assertEqual(result.dtype, int)
         np.testing.assert_array_equal(result.data, [0,2,3,5,7,8,10,12,13,15,17,18,20,22,23])

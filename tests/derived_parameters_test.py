@@ -916,8 +916,8 @@ class TestAltitudeSTDSmoothed(unittest.TestCase):
 
     def test_derive_747_200(self):
         frame = Attribute('Frame', '747-200-xxx')
-        alt_f = P('Altitude STD (Fine)', array=[4000,4999,1000,2000])
-        alt_c = P('Altitude STD', array=[-900,-800,1000,2000])
+        alt_f = P('Altitude STD (Fine)', array=np.array([4000, 4999, 1000, 2000], dtype=np.float))
+        alt_c = P('Altitude STD', array=np.array([-900, -800, 1000, 2000], dtype=np.float))
         node = AltitudeSTDSmoothed()
         node.derive(alt_f, alt_c, None, None, frame)
         self.assertTrue(int(node.array[0]) == 333)

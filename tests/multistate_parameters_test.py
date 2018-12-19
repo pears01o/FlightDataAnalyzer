@@ -7,7 +7,7 @@ import inspect
 from mock import patch
 from numpy.ma.testutils import assert_array_equal
 
-from flightdataaccessor.parameter import MappedArray
+from flightdataaccessor.datatypes.parameter import MappedArray
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.aircrafttables.constants import AVAILABLE_CONF_STATES
 from flightdatautilities import masked_array_testutils as ma_test

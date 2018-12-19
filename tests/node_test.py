@@ -30,7 +30,7 @@ from analysis_engine.node import (
 )
 
 from flightdataaccessor.file import hdf_file
-from flightdataaccessor.parameter import MappedArray
+from flightdataaccessor.datatypes.parameter import MappedArray
 
 test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               'test_data')

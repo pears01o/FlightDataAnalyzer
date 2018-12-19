@@ -13,7 +13,7 @@ from flightdatautilities.aircrafttables.interfaces import VelocitySpeed
 from flightdatautilities.array_operations import load_compressed
 from flightdatautilities.geometry import midpoint
 
-from flightdataaccessor.parameter import MappedArray
+from flightdataaccessor.datatypes.parameter import MappedArray
 
 from analysis_engine.node import (
     A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem,

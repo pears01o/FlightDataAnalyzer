@@ -4179,10 +4179,13 @@ class TestAirspeedSelectedAtLiftoff(unittest.TestCase, NodeTest):
             KeyTimeInstance(name='Climb Start', index=352),
             KeyTimeInstance(name='Climb Start', index=1060),
         ])
+        self.tkof_accel_starts = KTI(name='Takeoff Acceleration Start', items=[
+            KeyTimeInstance(name='Takeoff Acceleration Start', index=209),
+        ])
 
     def test_can_operate(self):
         self.assertEqual(self.node_class().get_operational_combinations(),
-            [('Airspeed Selected', 'Liftoff', 'Climb Start')])
+            [('Airspeed Selected', 'Liftoff', 'Takeoff Acceleration Start', 'Climb Start')])
 
     def test_derive(self):
         '''
@@ -4191,7 +4194,7 @@ class TestAirspeedSelectedAtLiftoff(unittest.TestCase, NodeTest):
         '''
         spd_sel = P(' Airspeed Selected', np.ma.repeat((400, 120, 170, 400, 170), (190, 130, 192, 192, 448)))
         node = self.node_class()
-        node.derive(spd_sel, self.liftoffs, self.climbs)
+        node.derive(spd_sel, self.liftoffs, self.tkof_accel_starts, self.climbs)
         self.assertEqual(len(node), 2)
         self.assertEqual(node[0].index, 269)
         self.assertEqual(node[0].value, 120)
@@ -4211,9 +4214,12 @@ class TestAirspeedSelectedAtLiftoff(unittest.TestCase, NodeTest):
             KeyTimeInstance(name='Climb Start', index=352/64.0),
             KeyTimeInstance(name='Climb Start', index=1060/64.0),
         ])
-        spd_sel = P(' Airspeed Selected', np.ma.repeat((400, 120, 170, 400, 170), (190/64.0, 130/64.0, 192/64.0, 192/64.0, 448/64.0)), frequency=1/64.0)
+        tkof_accel_starts = KTI(name='Takeoff Acceleration Start', items=[
+            KeyTimeInstance(name='Takeoff Acceleration Start', index=209/64.0),
+        ])
+        spd_sel = P('Airspeed Selected', np.ma.repeat((400, 120, 170, 400, 170), (190, 130, 192, 192, 448))[::64], frequency=1/64.0)
         node = self.node_class(frequency=1/64.0)
-        node.derive(spd_sel,liftoffs, climbs)
+        node.derive(spd_sel, liftoffs, tkof_accel_starts, climbs)
         self.assertEqual(len(node), 2)
         self.assertEqual(node[0].index, 269/64.0)
         self.assertEqual(node[0].value, 120)
@@ -4225,10 +4231,10 @@ class TestAirspeedSelectedAtLiftoff(unittest.TestCase, NodeTest):
         Test values were chosen to reflect real data seen and fail if
         incorrect methods are used
         '''
-        spd_sel = P(' Airspeed Selected', np.ma.repeat((400, 120, 170, 400, 170), (190, 130, 192, 192, 448)))
+        spd_sel = P('Airspeed Selected', np.ma.repeat((400, 120, 170, 400, 170), (190, 130, 192, 192, 448)))
         spd_sel.array[267:272] = np.ma.masked
         node = self.node_class()
-        node.derive(spd_sel, self.liftoffs, self.climbs)
+        node.derive(spd_sel, self.liftoffs, self.tkof_accel_starts, self.climbs)
         self.assertEqual(len(node), 2)
         self.assertEqual(node[0].index, 269)
         self.assertEqual(node[0].value, 120)
@@ -4240,11 +4246,11 @@ class TestAirspeedSelectedAtLiftoff(unittest.TestCase, NodeTest):
         Test values were chosen to reflect real data seen and fail if
         incorrect methods are used
         '''
-        spd_sel = P(' Airspeed Selected', np.ma.repeat((400, 120, 170, 400, 170), (190, 130, 192, 192, 448)))
+        spd_sel = P('Airspeed Selected', np.ma.repeat((400, 120, 170, 400, 170), (190, 130, 192, 192, 448)))
         # fully mask first liftoff airspeed selected
         spd_sel.array[0:353] = np.ma.masked
         node = self.node_class()
-        node.derive(spd_sel, self.liftoffs, self.climbs)
+        node.derive(spd_sel, self.liftoffs, self.tkof_accel_starts, self.climbs)
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 860)
         self.assertEqual(node[0].value, 170)
@@ -4262,9 +4268,12 @@ class TestAirspeedSelectedAtLiftoff(unittest.TestCase, NodeTest):
         climbs = KTI(name='Climb Start', items=[
             KeyTimeInstance(name='Climb Start', index=1000),
         ])
+        tkof_accel_start = KTI(name='Takeoff Acceleration Start', items=[
+            KeyTimeInstance(name='Takeoff Acceleration Start', index=450),
+        ])        
         node = self.node_class()
         airspeed_selected = P('Airspeed Selected', np.ma.concatenate((np.ones(400) * 138, np.ones(250) * 110, np.ones(1350) * 140)))
-        node.derive(airspeed_selected, liftoffs, climbs)
+        node.derive(airspeed_selected, liftoffs, tkof_accel_start, climbs)
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 500)
         self.assertEqual(node[0].value, 110)

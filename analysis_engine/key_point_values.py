@@ -87,6 +87,7 @@ from analysis_engine.library import (ambiguous_runway,
                                      np_ma_masked_zeros_like,
                                      np_ma_zeros_like,
                                      peak_curvature,
+                                     prev_unmasked_value,
                                      rate_of_change_array,
                                      runs_of_ones,
                                      runway_deviation,
@@ -2478,28 +2479,33 @@ class AirspeedSelectedAtLiftoff(KeyPointValueNode):
     def derive(self,
                spd_sel=P('Airspeed Selected'),
                liftoffs=KTI('Liftoff'),
+               tkof_accel_starts=KTI('Takeoff Acceleration Start'),
                climb_starts=KTI('Climb Start')):
 
         starts = deepcopy(liftoffs)
+        first_tkof_accel_start = tkof_accel_starts[0].index or 0
         for start in starts:
-            start.index = max(start.index - 5 * 64 * self.hz, 0)
+            start.index = max(start.index - 5 * 64 * self.hz, first_tkof_accel_start)
         phases = slices_from_ktis(starts, climb_starts)
         for phase in phases:
             this_lift = liftoffs.get_last(within_slice=phase)
             index = None
+            value = None
             if this_lift:
                 index = this_lift.index
             if spd_sel.frequency >= 0.125 and index:
-                spd_sel_liftoff = closest_unmasked_value(
-                    spd_sel.array, index, start_index=phase.start,
-                    stop_index=phase.stop)
+                spd_sel_liftoff = prev_unmasked_value(
+                    spd_sel.array, index, start_index=phase.start)
                 value = spd_sel_liftoff.value if spd_sel_liftoff else None
             else:
                 value = most_common_value(spd_sel.array[phase])
+
             if value:
                 self.create_kpv(index, value)
             else:
-                self.warning("%s is entirely masked within %s", spd_sel.__class__.__name__, phase)
+                self.warning("KPV Airspeed Selected At Liftoff is not created. "
+                             "%s is entirely masked within %s", spd_sel.name, phase)
+
 
 ########################################
 # Airspeed: Minus V2

@@ -8953,16 +8953,15 @@ class AirspeedMinusV2(DerivedParameterNode):
         # Determine interesting sections of flight which we want to use for V2.
         # Due to issues with how data is recorded, use five superframes before
         # liftoff until the start of the climb:
-        starts = deepcopy(liftoffs)
         phases = []
-        for start in starts:
-            ground = grounded.get_previous(start.index, use='start')
-            search_start = max(start.index - 5 * 64 * self.hz, 0)
+        for liftoff in liftoffs:
+            ground = grounded.get_previous(liftoff.index, use='start')
+            search_start = max(liftoff.index - 5 * 64 * self.hz, 0)
             # Avoid touchdown at touch and go which should be relative to vref/vapp
             start_index = max(search_start, ground.slice.start + 1 if ground else 0)
-            my_climb_start = climb_starts.get_next(start.index)
+            my_climb_start = climb_starts.get_next(liftoff.index)
             if my_climb_start:
-                stop_index = climb_starts.get_next(start.index).index
+                stop_index = climb_starts.get_next(liftoff.index).index
             else:
                 continue
             phases.append((search_start, start_index, stop_index))

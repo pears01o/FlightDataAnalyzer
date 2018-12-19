@@ -638,7 +638,8 @@ class DerivedParameterNode(Node, FlightDataParameter):
         else:
             kwargs['source'] = 'derived'
 
-        FlightDataParameter.__init__(self, name=name, frequency=frequency, offset=offset, *args, **kwargs)
+        FlightDataParameter.__init__(
+            self, name=name, frequency=frequency, offset=offset, data_type=data_type, *args, **kwargs)
         Node.__init__(self, name=name, frequency=frequency, offset=offset, *args, **kwargs)
 
     def __init__old(self, name='', array=np.ma.array([], dtype=float), frequency=1.0, offset=0.0, data_type=None,
@@ -666,6 +667,19 @@ class DerivedParameterNode(Node, FlightDataParameter):
 
         super(DerivedParameterNode, self).__init__(
             name=name, frequency=frequency, offset=offset, *args, **kwargs)
+
+    def __setstate__(self, state):
+        """Unpickle protocol handler.
+
+        Correctly initialise the array attribute."""
+        if 'array' in state or '_array' in state:
+            array = state.pop('array', None)
+            if array is None:
+                array = state.pop('_array')
+            self.submasks = {}
+            self.array = array
+
+        super(DerivedParameterNode, self).__setstate__(state)
 
     def at(self, secs):
         """
@@ -878,15 +892,15 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
         if array is None:
             array = MappedArray([], values_mapping=values_mapping)
 
-        super(MultistateDerivedParameterNode, self).__init__(
-            name, array, frequency, offset, data_type, *args,
-            **kwargs)
-
         #Q: if no values_mapping set to None?
         if values_mapping:
             self.values_mapping = values_mapping
         elif not hasattr(self, 'values_mapping'):
             self.values_mapping = {}
+
+        super(MultistateDerivedParameterNode, self).__init__(
+            name, array, frequency, offset, data_type, *args,
+            **kwargs)
 
         self.state = {v: k for k, v in six.iteritems(self.values_mapping)}
 
@@ -898,6 +912,27 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
                 "'%s' requires either values_mapping passed into constructor "
                 "or as a class attribute." % self.__class__.__name__)
         return node
+
+    def __setstate__(self, state):
+        """Unpickle protocol handler.
+
+        Correctly initialise the array and values_mapping attributes."""
+        if 'values_mapping' in state:
+            values_mapping = state.pop('values_mapping')
+        else:
+            values_mapping = None
+
+        if 'array' in state or '_array' in state:
+            array = state.pop('array', None)
+            if array is None:
+                array = state.pop('_array')
+            self.submasks = {}
+            self.array = array
+            if values_mapping:
+                self.values_mapping = values_mapping
+                self.array.values_mapping = values_mapping
+
+        super(MultistateDerivedParameterNode, self).__setstate__(state)
 
     def __setattr__(self, name, value):
         '''

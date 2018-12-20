@@ -1444,7 +1444,7 @@ class TestFlap(unittest.TestCase, NodeTest):
         self.assertTrue(self.node_class.can_operate(
             ('HDF Duration', 'Landing', 'Takeoff'), family=A('Family', 'Citation VLJ')))
 
-    @patch('analysis_engine.library.at')
+    @patch('analysis_engine.multistate_parameters.at')
     def test_derive(self, at):
         at.get_flap_map.return_value = {f: str(f) for f in (0, 1, 2, 5, 10, 15, 25, 30, 40)}
         _am = A('Model', 'B737-333')
@@ -1460,35 +1460,10 @@ class TestFlap(unittest.TestCase, NodeTest):
         self.assertEqual(node.values_mapping, at.get_flap_map.return_value)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
-        self.assertEqual(node.array.raw.tolist(), [0] * 11 + [40] * 92 + [None])
+        self.assertEqual(node.array.raw.tolist(), ([0]*6 + [1]*3 + [5]*5 + [10]*5 + [15]*10 + [25]*5 + [30]*14 + [40]*4))
 
-    @patch('analysis_engine.library.at')
-    def test_derive__md82(self, at):
-        at.get_flap_map.return_value = {f: str(f) for f in (0, 13, 20, 25, 30, 40)}
-        _am = A('Model', None)
-        _as = A('Series', None)
-        _af = A('Family', 'DC-9')
-        attributes = (_am, _as, _af)
-        array = np.ma.array(list(range(50)) + list(range(-5, 0)) + [13.1, 1.3, 10, 10])
-        flap = P(name='Flap Angle', array=array, frequency=1)
-        for index in (1, 57, 58):
-            flap.array[index] = np.ma.masked
-        node = self.node_class()
-        node.derive(flap, *attributes)
-        attributes = (a.value for a in attributes)
-        at.get_flap_map.assert_called_once_with(*attributes)
-        self.assertEqual(node.values_mapping, at.get_flap_map.return_value)
-        self.assertEqual(node.units, ut.DEGREE)
-        self.assertIsInstance(node.array, MappedArray)
-        # Note multipliers introduced as output frequency now raised to 4Hz.
-        self.assertEqual(node.array.size, 59*4)
-        self.assertEqual(node.array.raw.tolist(),[0.0]+7*[None]+189*[40]+6*[0]+19*[13]+3*[0]+11*[None])
-        self.assertEqual(node.array.mask.sum(), 18)
-        self.assertTrue(node.array.mask[1*4])
-        self.assertTrue(node.array.mask[57*4])
-        self.assertTrue(node.array.mask[58*4])
 
-    @patch('analysis_engine.library.at')
+    @patch('analysis_engine.multistate_parameters.at')
     #
     # Note: This test is somewhat academic as the Beechcraft does not record
     # Flap Angle, rather has discrete switches for Flap position.
@@ -1509,8 +1484,8 @@ class TestFlap(unittest.TestCase, NodeTest):
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
         ma_test.assert_masked_array_equal(
-            node.array.raw[::4],
-            np.ma.array([0.0, 17.5, 17.5, 17.5, 17.5, 17.5, 17.5, 17.5, 17.5, 35.0, 35.0, 35.0, 35.0]),
+            node.array.raw,
+            np.ma.array([0]*5 + [17.5]*7 + [35])
         )
 
     @patch('analysis_engine.library.at')
@@ -1605,7 +1580,7 @@ class TestFlapExcludingTransition(unittest.TestCase, NodeTest):
             family=A('Family', None),
         ))
 
-    @patch('analysis_engine.library.at')
+    @patch('analysis_engine.multistate_parameters.at')
     def test_derive(self, at):
         at.get_flap_map.return_value = {f: str(f) for f in (0, 1, 2, 5, 10, 15, 25, 30, 40)}
         _am = A('Model', 'B737-333')
@@ -1615,14 +1590,14 @@ class TestFlapExcludingTransition(unittest.TestCase, NodeTest):
         array = np.ma.array([0] * 5 + list(range(42)) + [42] * 5)
         flap = P(name='Flap Angle', array=array, frequency=2)
         node = self.node_class()
-        node.derive(flap, *attributes)
+        node.derive(flap, None, *attributes)
         attributes = (a.value for a in attributes)
         at.get_flap_map.assert_called_once_with(*attributes)
         self.assertEqual(node.values_mapping, at.get_flap_map.return_value)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
-        self.assertEqual(node.frequency, 4)
-        self.assertEqual(node.array.raw.tolist(), [0] * 95 + [40] * 8 + [None])
+        self.assertEqual(node.frequency, 1)
+        self.assertEqual(node.array.raw.tolist(), [0] * 48 + [40] * 4)
 
     def test_derive__flap_1_2(self):
         _am = A('Model', 'B737-448(F)')
@@ -1631,7 +1606,7 @@ class TestFlapExcludingTransition(unittest.TestCase, NodeTest):
     
         flap_angle = load(os.path.join(test_data_path, 'ae-1165-flap_angle.nod'))
         node = self.node_class()
-        node.derive(flap_angle, _am, _as, _af) 
+        node.derive(flap_angle, None, _am, _as, _af)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
         # Should be 4 slices @ flap 1, 4 slices @ flap 2 and 3 slices @ flap 5 
@@ -2073,7 +2048,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         series = A('Series', 'B737-300')
         family = A('Family', 'B737 Classic')
         node = self.node_class()
-        node.derive(flap, slat, flaperon, model, series, family)
+        node.derive(flap, slat, flaperon, None, None, model, series, family)
 
         # Check against an expected array of lever detents:
         expected = [0, 0, 5, 2, 1, 0, 0, 10, 15, 25, 30, 40, 0, 0, 0]
@@ -2107,7 +2082,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         series = A('Series', None)
         family = A('Family', 'A330')
         node = self.node_class()
-        node.derive(flap, slat, flaperon, model, series, family)
+        node.derive(flap, slat, flaperon, None, None, model, series, family)
 
         mapping = {x: str(x) for x in sorted(set(expected))}
         self.assertEqual(list(node.array), list(np.repeat(expected, repeat)))
@@ -2157,7 +2132,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         
         approach = buildsections('Approach And Landing', (7,10))
         node = self.node_class()
-        node.derive(flap, slat, None, model, series, family, approach, frame)
+        node.derive(flap, slat, None, None, None, model, series, family, approach, frame)
         
         self.assertEqual(list(node.array), list(np.repeat(expected, repeat)))
         
@@ -2609,7 +2584,7 @@ class TestSlatExcludingTransition(unittest.TestCase, NodeTest):
             family=A('Family', 'B737 Classic'),
         ))
 
-    @patch('analysis_engine.library.at')
+    @patch('analysis_engine.multistate_parameters.at')
     def test_derive(self, at):
         at.get_slat_map.return_value = {s: str(s) for s in (0, 16, 25)}
         _am = A('Model', None)
@@ -2625,7 +2600,7 @@ class TestSlatExcludingTransition(unittest.TestCase, NodeTest):
         self.assertEqual(node.values_mapping, at.get_slat_map.return_value)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
-        self.assertEqual(node.array.raw.tolist(), [0] * 65 + [25] * 8 + [None])
+        self.assertEqual(node.array.raw.tolist(), [0] * 33 + [25] * 4)
 
 
 class TestSlatIncludingTransition(unittest.TestCase, NodeTest):

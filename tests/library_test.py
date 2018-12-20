@@ -1544,6 +1544,47 @@ class TestIncludingTransition(unittest.TestCase):
         self.assertTrue(np.ma.all(flap_inc[2926:2929] == 25))
         self.assertTrue(np.ma.all(flap_inc[2789:2926] == 30))
 
+    def test_including_transition_26(self):
+        # test flap mode
+        array = np.ma.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10])
+        flap_inc = including_transition(array, self.flap_map_4, hz=self.hz, mode='flap')
+        self.assertTrue(np.ma.all(flap_inc[6:14] == 5))
+        self.assertTrue(np.ma.all(flap_inc[15:17] == 10))
+
+
+class TestExcludingTransition(unittest.TestCase):
+    flap_map_1 = {0: '0', 1: '1', 2: '2', 5: '5', 10: '10', 15: '15', 25: '25', 30: '30', 40: '40'}
+
+    def test_excluding_transition_1(self):
+        array = np.ma.concatenate(([0]*5, np.ma.arange(0, 30, 0.5), [30]*5), axis=0)
+        flap_inc = excluding_transition(array, self.flap_map_1)
+        self.assertTrue(np.ma.all(flap_inc[0:65] == 0))
+        self.assertTrue(np.ma.all(flap_inc[66:] == 30))
+
+    def test_excluding_transition_2(self):
+        array = np.ma.concatenate(([0]*5, np.ma.arange(0, 15, 0.5), [15]*3, np.ma.arange(15, 30, 0.5), [30]*5), axis=0)
+        flap_inc = excluding_transition(array, self.flap_map_1)
+        self.assertTrue(np.ma.all(flap_inc[0:35] == 0))
+        self.assertTrue(np.ma.all(flap_inc[36:68] == 15))
+        self.assertTrue(np.ma.all(flap_inc[69:] == 30))
+
+
+class TestSurfaceForLeverSynthetic(unittest.TestCase):
+    def test_surface(self):
+        value_map = {0: '0', 1: '1', 2: '2', 5: '5', 10: '10', 15: '15', 25: '25', 30: '30', 40: '40'}
+        inc_trans = M('Flap Including Transition',
+                      np.ma.array([0]*4 + [1]*4 + [5]*4 + [15]*4 + [5]*4 + [1]*4 + [0]*4),
+                      values_mapping=value_map)
+
+        exc_trans = M('Flap Excluding Transition',
+                      np.ma.array([0]*12 + [15]*12 + [0]*4),
+                      values_mapping=value_map)
+
+        expected = np.ma.array([0]*4 + [1]*4 + [5]*4 + [15]*12 + [0]*4)
+
+        surface_angle = surface_for_synthetic(inc_trans, exc_trans, value_map)
+        self.assertEqual(surface_angle.raw.tolist(), expected.tolist())
+
 
 class TestCalculateSurfaceAngle(unittest.TestCase):
     flap_map_1 = {0: '0', 15: '15', 30: '30', 45: '45'}

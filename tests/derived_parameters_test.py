@@ -40,7 +40,7 @@ from analysis_engine.settings import GRAVITY_IMPERIAL
 
 from flight_phase_test import buildsection, buildsections
 
-# Use pre-processed version 
+# Use pre-processed version
 from analysis_engine.pre_processing.merge_parameters import (
     LatitudePrepared as LatitudePreparedLatLon,
     LongitudePrepared as LongitudePreparedLatLon,
@@ -1381,7 +1381,7 @@ class TestAltitudeQNH(unittest.TestCase):
 
         expected_alt_qnh = [
             9636, 9663, 9691, 9719, 9746, 9774, 9801, 9828, 9856, 9883,
-            9911, 9938, 9965, 9993, 10020, 10047, 10074, 10102, 10129, 10156, 
+            9911, 9938, 9965, 9993, 10020, 10047, 10074, 10102, 10129, 10156,
             10183, 10210, 10238, 10265, 10292
         ]
         for expected, got in zip (expected_alt_qnh, node.array):
@@ -1668,6 +1668,19 @@ class TestAltitudeRadio(unittest.TestCase):
         for sect in sects[2::2]:
             # landings
             self.assertAlmostEqual(rad.array[sect.stop - 1] / 10., 0, 0)
+
+    def test_altitude_radio_A320_small_jumps(self):
+        # Some small jumps on a few aircraft caused problems.
+        fast = buildsection('Fast', 248.8, 3674.3)
+        radioA = load(os.path.join(
+            test_data_path, 'Altitude_Radio_A_A320_eec5df85279d.nod'))
+
+        rad = AltitudeRadio()
+        rad.derive(radioA, None, None, None, None, None, None, None, None,
+                   fast=fast, family=A('Family', 'A320'))
+
+        self.assertGreater(rad.array[14150], 1300)
+        self.assertLess(rad.array[14150], 1500)
 
     def test_altitude_radio_A330(self):
         fast = buildsection('Fast', 480, 31032)
@@ -2799,7 +2812,7 @@ class TestMGBOilTemp(unittest.TestCase):
         self.assertTrue(self.node_class.can_operate(('MGB Oil Temp (1)',
                                                      'MGB Oil Temp (2)'),
                                                     ac_type=helicopter))
-    
+
         opts = self.node_class.get_operational_combinations(ac_type=helicopter)
         self.assertEquals(len(opts), 3)
 
@@ -2809,10 +2822,10 @@ class TestMGBOilTemp(unittest.TestCase):
 
         oil_temp1 = P('MGB Oil Temp (1)', np.ma.array(t1))
         oil_temp2 = P('MGB Oil Temp (2)', np.ma.array(t2))
-        
+
         mgb_oil_temp = self.node_class()
         mgb_oil_temp.derive(oil_temp1, oil_temp2)
-        
+
         # array size should be double, 100
         self.assertEqual(mgb_oil_temp.array.size, (oil_temp1.array.size*2))
         self.assertEqual(mgb_oil_temp.array.size, (oil_temp2.array.size*2))
@@ -2843,7 +2856,7 @@ class TestMGBOilPress(unittest.TestCase):
         self.assertTrue(self.node_class.can_operate(('MGB Oil Press (1)',
                                                      'MGB Oil Press (2)'),
                                                     ac_type=helicopter))
-    
+
         opts = self.node_class.get_operational_combinations(ac_type=helicopter)
         self.assertEquals(len(opts), 3)
 
@@ -2852,10 +2865,10 @@ class TestMGBOilPress(unittest.TestCase):
         p2 = [26.51]*14 + [26.63] + [26.4]*20 + [26.29] + [26.4]*14
         oil_press1 = P('MGB Oil Press (1)', np.ma.array(p1))
         oil_press2 = P('MGB Oil Press (2)', np.ma.array(p2))
-        
+
         mgb_oil_press = self.node_class()
         mgb_oil_press.derive(oil_press1, oil_press2)
-        
+
         # array size should be double, 100
         self.assertEqual(mgb_oil_press.array.size, (oil_press1.array.size*2))
         self.assertEqual(mgb_oil_press.array.size, (oil_press2.array.size*2))
@@ -3365,9 +3378,9 @@ class TestGroundspeedSigned(unittest.TestCase):
 
     def test_can_operate(self):
         self.assertTrue(GroundspeedSigned.can_operate(['Groundspeed', 'Eng (*) Any Running',
-                                                       'Aircraft Type', 'Precise Positioning', 'Taxiing', 
+                                                       'Aircraft Type', 'Precise Positioning', 'Taxiing',
                                                        'Latitude Prepared', 'Longitude Prepared']))
-        
+
 
     def test_basic(self):
         gspd = P('Groundspeed', np.ma.ones(30))
@@ -3381,7 +3394,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         gs.derive(gspd, running, precision, taxiing, lat, lon)
         assert_equal(gs.array[4], -1.0)
         assert_equal(gs.array[24], 1.0)
-        
+
     def test_early_start(self):
         gspd = P('Groundspeed', np.ma.concatenate((np.ones(15), np.zeros(10), np.arange(15))))
         running = P('Eng (*) Any Running', np.ma.concatenate((np.zeros(20), np.ones(20))))
@@ -3390,7 +3403,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         assert_equal(gs.array[4], -1.0)
         assert_equal(gs.array[22], 0.0)
         assert_equal(gs.array[27], 2.0)
-        
+
     def test_no_pushback(self):
         gspd = P('Groundspeed', np.ma.concatenate((np.ones(15), np.zeros(10), np.arange(15))))
         running = P('Eng (*) Any Running', np.ma.ones(40))
@@ -3459,7 +3472,7 @@ class TestGroundspeedSigned(unittest.TestCase):
         gs = GroundspeedSigned()
         gs.derive(gspd, running, ac_type, precision, taxiing, lat, lon)
         self.assertGreater(np.max(gs.array), 40)
-            
+
 
 class TestGroundspeedAlongTrack(unittest.TestCase):
 
@@ -4345,98 +4358,98 @@ class TestAOA(unittest.TestCase):
 
 
 class TestAccelerationLateralOffsetRemoved(unittest.TestCase):
-    
+
     def setUp(self):
         self.node_class = AccelerationLateralOffsetRemoved
         self.acc_lateral=P('Acceleration Lateral', array=np.ma.concatenate((np.zeros(20), np.ones(20) * 0.5, np.zeros(10))), frequency=1.0)
-    
+
     def test_can_operate(self):
         opts = AccelerationLateralOffsetRemoved.get_operational_combinations()
         self.assertEqual(opts, [('Acceleration Lateral',), ('Acceleration Lateral', 'Acceleration Lateral Offset')])
-    
+
     def test_derive_positive_offset(self):
         self.acc_lat_offset = KPV([KeyPointValue(index=0, value=0.2, name='Acceleration Lateral Offset')])
         acc = AccelerationLateralOffsetRemoved()
         acc.derive(self.acc_lateral, self.acc_lat_offset)
         assert_array_equal(acc.array, self.acc_lateral.array - self.acc_lat_offset[0].value)
-        
+
     def test_derive_negative_offset(self):
         self.acc_lat_offset = KPV([KeyPointValue(index=0, value=-0.2, name='Acceleration Lateral Offset')])
         acc = AccelerationLateralOffsetRemoved()
         acc.derive(self.acc_lateral, self.acc_lat_offset)
-        assert_array_equal(acc.array, self.acc_lateral.array - self.acc_lat_offset[0].value)        
-        
+        assert_array_equal(acc.array, self.acc_lateral.array - self.acc_lat_offset[0].value)
+
     def test_derive_no_offset(self):
         self.acc_lat_offset = KPV([KeyPointValue(index=0, value=0.0, name='Acceleration Lateral Offset')])
         acc = AccelerationLateralOffsetRemoved()
         acc.derive(self.acc_lateral, self.acc_lat_offset)
         assert_array_equal(acc.array, self.acc_lateral.array - self.acc_lat_offset[0].value)
-        
+
 
 class TestAccelerationLongitudinalOffsetRemoved(unittest.TestCase):
-    
+
     def setUp(self):
         self.node_class = AccelerationLongitudinalOffsetRemoved
         self.acc_long=P('Acceleration Longitudinal', array=np.ma.concatenate((np.zeros(20), np.ones(20) * 0.5, np.zeros(10))))
-    
+
     def test_can_operate(self):
         opts = AccelerationLongitudinalOffsetRemoved.get_operational_combinations()
         self.assertEqual(opts, [('Acceleration Longitudinal', 'Acceleration Longitudinal Offset')])
-    
+
     def test_derive_positive_offset(self):
         self.acc_long_offset = KPV([KeyPointValue(index=0, value=0.2, name='Acceleration Longitudinal Offset')])
-        
+
         acc = AccelerationLongitudinalOffsetRemoved()
         acc.derive(self.acc_long, self.acc_long_offset)
         assert_array_equal(acc.array, self.acc_long.array - self.acc_long_offset[0].value)
-        
+
     def test_derive_negative_offset(self):
         self.acc_long_offset = KPV([KeyPointValue(index=0, value=-0.2, name='Acceleration Longitudinal Offset')])
-        
+
         acc = AccelerationLongitudinalOffsetRemoved()
         acc.derive(self.acc_long, self.acc_long_offset)
         assert_array_equal(acc.array, self.acc_long.array - self.acc_long_offset[0].value)
-        
+
     def test_derive_no_offset(self):
         self.acc_long_offset = KPV([KeyPointValue(index=0, value=0.0, name='Acceleration Longitudinal Offset')])
-        
+
         acc = AccelerationLongitudinalOffsetRemoved()
         acc.derive(self.acc_long, self.acc_long_offset)
         assert_array_equal(acc.array, self.acc_long.array - self.acc_long_offset[0].value)
-        
+
 
 class TestAccelerationNormalOffsetRemoved(unittest.TestCase):
-    
+
     def setUp(self):
         self.node_class = AccelerationNormalOffsetRemoved
         self.acc_normal=P('Acceleration Normal', array=np.ma.concatenate((np.ones(20), np.ones(20) * 1.5, np.ones(10))), frequency=1.0)
-    
+
     def test_can_operate(self):
         opts = AccelerationNormalOffsetRemoved.get_operational_combinations()
         self.assertEqual(opts, [('Acceleration Normal',), ('Acceleration Normal', 'Acceleration Normal Offset')])
-    
+
     def test_derive_positive_offset(self):
         self.acc_norm_offset = KPV([KeyPointValue(index=0, value=1.2, name='Acceleration Normal Offset')])
-        
+
         acc = AccelerationNormalOffsetRemoved()
         acc.derive(self.acc_normal, self.acc_norm_offset)
         assert_array_equal(acc.array, self.acc_normal.array - self.acc_norm_offset[0].value + 1.0)
         # could as well be acceleration_normal.array - 0.2
-        
+
     def test_derive_negative_offset(self):
         self.acc_norm_offset = KPV([KeyPointValue(index=0, value=-1.2, name='Acceleration Normal Offset')])
-        
-        acc = AccelerationNormalOffsetRemoved()
-        acc.derive(self.acc_normal, self.acc_norm_offset)
-        assert_array_equal(acc.array, self.acc_normal.array - self.acc_norm_offset[0].value + 1.0)        
-        
-    def test_derive_no_offset(self):
-        self.acc_norm_offset = KPV([KeyPointValue(index=0, value=0.0, name='Acceleration Normal Offset')])
-        
+
         acc = AccelerationNormalOffsetRemoved()
         acc.derive(self.acc_normal, self.acc_norm_offset)
         assert_array_equal(acc.array, self.acc_normal.array - self.acc_norm_offset[0].value + 1.0)
-        
+
+    def test_derive_no_offset(self):
+        self.acc_norm_offset = KPV([KeyPointValue(index=0, value=0.0, name='Acceleration Normal Offset')])
+
+        acc = AccelerationNormalOffsetRemoved()
+        acc.derive(self.acc_normal, self.acc_norm_offset)
+        assert_array_equal(acc.array, self.acc_normal.array - self.acc_norm_offset[0].value + 1.0)
+
 
 class TestAileron(unittest.TestCase):
 
@@ -4498,7 +4511,7 @@ class TestAileronLeft(unittest.TestCase):
         self.assertTrue(('Aileron (L) Potentiometer',) in opts)
         self.assertTrue(('Aileron (L) Inboard',) in opts)
         self.assertTrue(('Aileron (L) Outboard',) in opts)
-                        
+
     def test_synchro_working(self):
         # Includes offset potentiometer test case
         synchro = P('Aileron (L) Synchro', np.ma.array([0.0, 1.0, -1.0, 0.0]))
@@ -4532,7 +4545,7 @@ class TestAileronLeft(unittest.TestCase):
         aileronleft = AileronLeft()
         aileronleft.get_derived([None, None, inboard, outboard])
         assert_array_equal(aileronleft.array, inboard.array)
-        
+
 
 class TestAileronRight(unittest.TestCase):
 
@@ -4542,7 +4555,7 @@ class TestAileronRight(unittest.TestCase):
         self.assertTrue(('Aileron (R) Potentiometer',) in opts)
         self.assertTrue(('Aileron (R) Inboard',) in opts)
         self.assertTrue(('Aileron (R) Outboard',) in opts)
-                        
+
     def test_synchro_working(self):
         # Includes potentiometer close to zero test case
         synchro = P('Aileron (R) Synchro', np.ma.array([0.0, 1.0, -1.0, 0.0]))
@@ -4576,8 +4589,8 @@ class TestAileronRight(unittest.TestCase):
         aileronright = AileronLeft()
         aileronright.get_derived([None, None, inboard, outboard])
         assert_array_equal(aileronright.array, inboard.array)
-        
-                
+
+
 class TestAileronTrim(unittest.TestCase):
     @unittest.skip('Test Not Implemented')
     def test_can_operate(self):
@@ -4640,7 +4653,7 @@ class TestElevatorLeft(unittest.TestCase):
         self.assertTrue(('Elevator (L) Synchro',) in opts)
         self.assertTrue(('Elevator (L) Potentiometer',) in opts)
         self.assertTrue(('Elevator (L) Inboard',) in opts)
-        self.assertTrue(('Elevator (L) Outboard',) in opts)        
+        self.assertTrue(('Elevator (L) Outboard',) in opts)
 
     def test_synchro(self):
         syn=P('Elevator (L) Synchro', np.ma.array(data=[1,2,3,4],
@@ -4683,7 +4696,7 @@ class TestElevatorLeft(unittest.TestCase):
         elevator=ElevatorLeft()
         elevator.derive(pot, syn, None, None)
         assert_array_equal(elevator.array, syn.array)
-    
+
     def test_inboard_and_outboard(self):
         l_in=P('Elevator (L) Inboard', np.ma.array([1,2,3]))
         l_out=P('Elevator (L) Outboard', np.ma.array([5,4,3]))
@@ -4697,14 +4710,14 @@ class TestElevatorLeft(unittest.TestCase):
         elevator=ElevatorLeft()
         elevator.get_derived([None, None, None, l_out])
         assert_array_equal(elevator.array, l_out.array)
-        
+
 class TestElevatorRight(unittest.TestCase):
     def test_can_operate(self):
         opts = ElevatorRight.get_operational_combinations()
         self.assertTrue(('Elevator (R) Synchro',) in opts)
         self.assertTrue(('Elevator (R) Potentiometer',) in opts)
         self.assertTrue(('Elevator (R) Inboard',) in opts)
-        self.assertTrue(('Elevator (R) Outboard',) in opts)  
+        self.assertTrue(('Elevator (R) Outboard',) in opts)
 
     def test_synchro(self):
         syn=P('Elevator (L) Synchro', np.ma.array(data=[1,2,3,4],
@@ -4761,8 +4774,8 @@ class TestElevatorRight(unittest.TestCase):
         elevator=ElevatorRight()
         elevator.get_derived([None, None, None, r_out])
         assert_array_equal(elevator.array, r_out.array)
-        
-        
+
+
 class TestEng_FuelFlow(unittest.TestCase):
     def test_can_operate(self):
         for n in range(1, 5):
@@ -5285,7 +5298,7 @@ class TestFlapAngle(unittest.TestCase, NodeTest):
 
 
 class TestFlapSynchroAsymmetry(unittest.TestCase):
-    # very simple test but it ensures we aren't getting negative 
+    # very simple test but it ensures we aren't getting negative
     # values as that would affect the FlapSynchroAsymmetryMax KPV
     def test_basic(self):
         synchro_l = P('Flap Angle (L) Synchro', [0,1,2,3,4,5,5,5,5,5,5,5,5])
@@ -5450,7 +5463,7 @@ class TestMagneticVariation(unittest.TestCase):
                          -6.437, -6.439, -6.44]), decimal=3)
 
 
-class TestMagneticVariationFromRunway(unittest.TestCase): 
+class TestMagneticVariationFromRunway(unittest.TestCase):
     def test_can_operate(self):
         opts = MagneticVariationFromRunway.get_operational_combinations()
         self.assertEqual(opts,
@@ -5462,7 +5475,7 @@ class TestMagneticVariationFromRunway(unittest.TestCase):
                      )])
 
     def test_derive_both_runways(self):
-        # Updates to the derived parameter. New data from 
+        # Updates to the derived parameter. New data from
         # segment: d9785fefb912dc77b6e936a4c16de96e5fad868c8cc4cff4e568fb1cff8b87a5
         toff_rwy = {'end': {'elevation': 76,
                             'latitude': 28.45938337469715,
@@ -5854,7 +5867,7 @@ class TestSpeedbrake(unittest.TestCase):
         self.assertTrue(Speedbrake.can_operate(('Spoiler (L) (4)', 'Spoiler (R) (4)'),
                                                family=A('Family', 'B737 NG')))
         self.assertTrue(Speedbrake.can_operate(('Spoiler (L) (3)', 'Spoiler (R) (3)'),
-                                                    family=A('Family', 'B737 MAX')))        
+                                                    family=A('Family', 'B737 MAX')))
         self.assertTrue(Speedbrake.can_operate(('Spoiler (L) (3)', 'Spoiler (R) (3)'),
                                                family=A('Family', 'A320')))
         self.assertTrue(Speedbrake.can_operate(('Spoiler (L) (7)', 'Spoiler (R) (7)'),
@@ -5986,8 +5999,8 @@ class TestThrustAsymmetry(unittest.TestCase):
         asym.get_derived((epr_max, epr_min, None, None))
         self.assertEqual(len(asym.array), len(epr_max.array))
         self.assertEqual(asym.array[2], -20)
-        self.assertAlmostEqual(asym.array[-3], -20)        
-        
+        self.assertAlmostEqual(asym.array[-3], -20)
+
     def test_derive_epr_and_n1(self):
         n1_max = P('Eng (*) N1 Max', np.arange(10, 30))
         n1_min = P('Eng (*) N1 Min', np.arange(8, 28))
@@ -6078,51 +6091,51 @@ class TestVerticalSpeedInertial(unittest.TestCase):
         alt_rad = P('Altitude STD Smoothed', ht_values-2.0) #Oleo compression
         fast = buildsection('Fast', 10, len(acc_values)-10)
         ac_type = A(name='Aircraft Type', value = 'aeroplane')
-       
+
         vsi = VerticalSpeedInertial()
         vsi.derive(az, alt_std, alt_rad, fast, ac_type)
-        
+
         expected = vel_values
         np.testing.assert_almost_equal(vsi.array, expected, decimal=-2)
-        
+
     def test_check_go_around(self):
         # We build two cycles with a "touch and go" in between to check that the
         # algorithm does not treat the first as the taxi out for the second, and the
         # second the taxi in for the first.
         time = np.arange(100)
         zero = np.array([0]*50)
-        acc_values = np.concatenate([zero, 
-                                     np.cos(time*np.pi*0.02), 
+        acc_values = np.concatenate([zero,
+                                     np.cos(time*np.pi*0.02),
                                      zero,
-                                     np.cos(time*np.pi*0.02), 
+                                     np.cos(time*np.pi*0.02),
                                      zero                                     ])
-        vel_values = np.concatenate([zero, 
-                                     np.sin(time*np.pi*0.02), 
+        vel_values = np.concatenate([zero,
+                                     np.sin(time*np.pi*0.02),
                                      zero,
-                                     np.sin(time*np.pi*0.02), 
+                                     np.sin(time*np.pi*0.02),
                                      zero                                     ])
-        ht_values = np.concatenate([zero, 
-                                    1.0-np.cos(time*np.pi*0.02), 
+        ht_values = np.concatenate([zero,
+                                    1.0-np.cos(time*np.pi*0.02),
                                     zero,
-                                    1.0-np.cos(time*np.pi*0.02), 
+                                    1.0-np.cos(time*np.pi*0.02),
                                     zero                                    ])
-        
+
         # For a 0-400ft leap over 100 seconds, the scaling is 200ft amplitude and 2*pi/100 for each differentiation.
         amplitude = 200.0
         diff = 2.0 * np.pi / 100.0
         ht_values *= amplitude
         vel_values *= amplitude * diff * 60.0 # fpm
         acc_values *= amplitude * diff**2.0 / GRAVITY_IMPERIAL # g
-        
+
         az = P('Acceleration Vertical', acc_values)
         alt_std = P('Altitude STD Smoothed', ht_values + 30.0) # Pressure offset
         alt_rad = P('Altitude STD Smoothed', ht_values-2.0) #Oleo compression
         fast = buildsection('Fast', 10, len(acc_values)-10)
         ac_type = A(name='Aircraft Type', value = 'aeroplane')
-       
+
         vsi = VerticalSpeedInertial()
         vsi.derive(az, alt_std, alt_rad, fast, ac_type)
-        
+
         # The mean absolute signal should be 269. In the fault case we are checking, it drops
         # to 4, hence 100 is a clear divide between success and failure.
         self.assertGreater(np.ma.average(np.ma.abs(vsi.array)), 100.0)
@@ -7175,8 +7188,8 @@ class TestVrefLookup(unittest.TestCase, NodeTest):
                       'Lever Full': {None: (111, 113, 116, 121, 125, 129, 133, 137, 142)},
                         },
             }
-            
-            
+
+
         class VSCG(VelocitySpeed):
             '''
             Table for aircraft with configuration + cg lookup (A330, A340).
@@ -7194,92 +7207,92 @@ class TestVrefLookup(unittest.TestCase, NodeTest):
                                35: (132, 133, 134, 139, 145, 150, 156, 162, 167, 172, 179),
                                },
                         },
-            }            
-    
-        
+            }
+
+
         def setUp(self):
             self.node_class = VLSLookup
             self.approach = buildsection('Approach And Landing', 2, 15)
             self.airspeed = airspeed = P('Airspeed', np.ma.repeat(200, 16))
-            self.flap_lever = M('Flap Lever', 
-                      np.ma.concatenate((np.zeros(4), np.ones(4) * 3, np.ones(4) * 4, np.ones(4) * 2)), 
+            self.flap_lever = M('Flap Lever',
+                      np.ma.concatenate((np.zeros(4), np.ones(4) * 3, np.ones(4) * 4, np.ones(4) * 2)),
                       values_mapping={0: 'Lever 0', 1: 'Lever 1', 2: 'Lever 2', 3: 'Lever 3', 4: 'Lever Full'})
 
-        @patch('analysis_engine.library.at')   
-        def test_can_operate(self, at):          
-            airbus = {'series': Attribute('Series', 'A320-200'), 
-                       'model': Attribute('Model', 'A320-212'), 
-                 'engine_type': Attribute('Engine Type', 'CFM56-5A3'), 
-                      'family': Attribute('Family', 'A320'), 
+        @patch('analysis_engine.library.at')
+        def test_can_operate(self, at):
+            airbus = {'series': Attribute('Series', 'A320-200'),
+                       'model': Attribute('Model', 'A320-212'),
+                 'engine_type': Attribute('Engine Type', 'CFM56-5A3'),
+                      'family': Attribute('Family', 'A320'),
                'engine_series': Attribute('Engine Series', 'CFM56-5A')}
-            
+
             at.get_vspeed_map.return_value = self.VSNoCG
-            
+
             nodes = ('Airspeed', 'Approach And Landing', 'Gross Weight Smoothed',
                      'Flap Lever', 'Series', 'Model', 'Engine Type', 'Family',
                      'Engine Series',)
 
             self.assertTrue(self.node_class.can_operate(nodes, **airbus))
-            
-            
+
+
         @patch('analysis_engine.library.at')
         def test_derive_no_cg(self, at):
             at.get_vspeed_map.return_value = self.VSNoCG
-            
+
             model = A('Model', 'A320-212')
             series = A('Series', 'A320-200')
             family = A('Family', 'A320')
             engine_type = A('Engine Type', 'CFM56-5A3')
             engine_series = A('Engine Series', 'CFM56-5A')
-            
+
             node = self.node_class()
-            
+
             gw = P('Gross Weight Smoothed', np.ones(16) * 64300)
-            
+
             node.derive(self.flap_lever, None, self.airspeed, gw, self.approach,
                         model, series, family, engine_type, engine_series, None)
-            
+
             expected = np.ma.array([None, None, None, None,
                                    138, 138, 138, 138,
                                    131, 131, 131, 131,
-                                   None, None, None, None], 
+                                   None, None, None, None],
                                    mask = [1, 1, 1, 1,
                                            0, 0, 0, 0,
                                            0, 0, 0, 0,
                                            1, 1, 1, 1,])
-            
+
             ma_test.assert_array_equal(node.array, expected)
-        
+
         @patch('analysis_engine.library.at')
         def test_derive_with_cg(self, at):
             at.get_vspeed_map.return_value = self.VSCG
-            
+
             model = A('Model', 'A340-642X')
             series = A('Series', 'A340-600')
             family = A('Family', 'A340')
             engine_type = A('Engine Type', 'Trent 556A2-61')
             engine_series = A('Engine Series', 'Trent 500')
-            
+
             node = self.node_class()
-            
+
             gw = P('Gross Weight Smoothed', np.ones(16) * 264300)
             cg = P('Center Of Gravity', np.ones(16) * 22.5)
-            
+
             node.derive(self.flap_lever, None, self.airspeed, gw, self.approach,
                         model, series, family, engine_type, engine_series, cg)
-            
+
             expected = np.ma.array([None, None, None, None,
                                    157, 157, 157, 157,
                                    151, 151, 151, 151,
-                                   None, None, None, None], 
+                                   None, None, None, None],
                                    mask = [1, 1, 1, 1,
                                            0, 0, 0, 0,
                                            0, 0, 0, 0,
                                            1, 1, 1, 1,])
-            
+
             ma_test.assert_array_equal(node.array, expected)
-            
-            
+
+
 ########################################
 # Approach Speed (VAPP)
 
@@ -7780,14 +7793,14 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
         expected = np.ma.array(vls.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
-        
+
     def test_derive__vls_lookup(self):
         vls_lookup = P('VLS Lookup', np.ma.repeat(180, 100))
         node = self.node_class()
         node.derive(self.airspeed, None, None, None, None, None, vls_lookup, None, None, None, self.airborne)
         expected = np.ma.array(vls_lookup.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
-        ma_test.assert_masked_array_equal(node.array, expected)        
+        ma_test.assert_masked_array_equal(node.array, expected)
 
     def test_derive__mos(self):
         mos = P('Min Operating Speed', np.ma.repeat(190, 100))
@@ -7822,7 +7835,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
         expected = np.ma.array(mms_fmf.array)
         expected.mask = np.repeat((1, 0, 0, 0, 0, 0, 0, 0, 0, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
-    
+
     def test_derive__min_clean(self):
         min_clean= P('Minimum Clean Lookup', np.ma.repeat(210, 100))
         array = np.ma.repeat((20, 10, 10, 0, 0, 0, 0, 10, 10, 20), 10)
@@ -7832,7 +7845,7 @@ class TestMinimumAirspeed(unittest.TestCase, NodeTest):
         expected = np.ma.array(min_clean.array)
         expected.mask = np.repeat((1, 1, 1, 0, 0, 0, 0, 1, 1, 1), 10)
         ma_test.assert_masked_array_equal(node.array, expected)
-        
+
 
 class TestMinimumCleanLookup(unittest.TestCase):
 
@@ -7850,12 +7863,12 @@ class TestMinimumCleanLookup(unittest.TestCase):
             },
             'vmo': 360,
             'mmo': 0.860,
-        }        
-        
-        
+        }
+
+
     def setUp(self):
         self.node_class = MinimumCleanLookup
-        self.alt = P('Altitude STD Smoothed', 
+        self.alt = P('Altitude STD Smoothed',
                 np.ma.repeat((15000, 20000, 26000, 27000), 10))
         self.airborne = buildsection('Airborne', 5, 35)
         self.air_spd = P('Airspeed', np.ma.repeat((170, 180, 190, 230), 10))
@@ -7867,7 +7880,7 @@ class TestMinimumCleanLookup(unittest.TestCase):
         self.assertFalse(self.node_class.can_operate(self.node_class.get_dependency_names(), A('Family', 'A320')))
 
     @patch('analysis_engine.derived_parameters.at')
-    @patch('analysis_engine.library.at')        
+    @patch('analysis_engine.library.at')
     def test_767(self, at0, at1):
         at0.get_vspeed_map.return_value = self.VS0
         at1.get_fms_map.return_value = {}
@@ -7877,16 +7890,16 @@ class TestMinimumCleanLookup(unittest.TestCase):
         family = A('Family', 'B767')
         eng_type = A('Engine Type', 'CF6-80C2B7F')
         eng_series = A('Engine Series', 'CF6-80C2')
-        
+
         node = self.node_class()
-        node.derive(self.air_spd, gw, self.airborne, model, series, family, 
+        node.derive(self.air_spd, gw, self.airborne, model, series, family,
                     eng_type, eng_series, self.alt)
         expected = np.ma.repeat((217, 228, 271, 279), 10)
         expected.mask = np.array([1]*5 + [0]*30 + [1]*5)
         ma_test.assert_masked_array_equal(node.array, expected)
-        
+
     @patch('analysis_engine.derived_parameters.at')
-    @patch('analysis_engine.library.at')        
+    @patch('analysis_engine.library.at')
     def test_767_cruise(self, at0, at1):
         at0.get_vspeed_map.return_value = self.VS0
         at1.get_fms_map.return_value = {}
@@ -7897,9 +7910,9 @@ class TestMinimumCleanLookup(unittest.TestCase):
         family = A('Family', 'B767')
         eng_type = A('Engine Type', 'CF6-80C2B7F')
         eng_series = A('Engine Series', 'CF6-80C2')
-        
+
         node = self.node_class()
-        node.derive(self.air_spd, gw, self.airborne, model, series, family, 
+        node.derive(self.air_spd, gw, self.airborne, model, series, family,
                     eng_type, eng_series, self.alt, crz)
         expected = np.ma.repeat((217, 228, 271, 279), 10)
         expected.mask = np.array([1]*5 + [0]*30 + [1]*5)
@@ -8093,7 +8106,7 @@ class TestAirspeedMinusAirspeedSelectedFMS(unittest.TestCase):
     def setUp(self):
         self.node_class = AirspeedMinusAirspeedSelectedFMS
         self.airspeed = P('Airspeed', np.ma.repeat(102, 2000))
-        self.air_sel = P('Airspeed Selected (FMS)', 
+        self.air_sel = P('Airspeed Selected (FMS)',
                          np.ma.repeat((90, 120), 1000))
         self.approaches = buildsection('Approach And Landing', 500, 999.5)
         self.assertEqual(self.node_class.name,
@@ -8374,13 +8387,13 @@ class TestAirspeedMinusVLS(unittest.TestCase, NodeTest):
         expected = np.ma.repeat((0, 12, 0, 0), 500)
         expected[expected == 0] = np.ma.masked
         ma_test.assert_masked_array_equal(node.array, expected)
-        
+
     def test_lookup(self):
         node = self.node_class()
         node.derive(self.airspeed, None, self.vls_lookup, self.approaches)
         expected = np.ma.repeat((0, 12, 0, 0), 500)
         expected[expected == 0] = np.ma.masked
-        ma_test.assert_masked_array_equal(node.array, expected)    
+        ma_test.assert_masked_array_equal(node.array, expected)
 
 
 class TestAirspeedMinusVLSFor3Sec(unittest.TestCase, NodeTest):

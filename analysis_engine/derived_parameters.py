@@ -1116,14 +1116,16 @@ class AltitudeRadio(DerivedParameterNode):
                 aligned_fast = fast.get_aligned(source)
                 # look for max jump within longest fast section to ignore
                 # invalid data at beginning or end of segment
-                max_jump = abs(np.ma.ediff1d(source.array.data[aligned_fast.get_longest().slice], to_begin=0.0)).max()
-                if max_jump > 4095:
+                to_scan = source.array.data[aligned_fast.get_longest().slice]
+                max_jump = abs(np.ma.ediff1d(to_scan, to_begin=0.0)).max()
+                half_p2p = np.ma.ptp(to_scan) / 2.0
+                if max_jump > 4095 and max_jump > half_p2p:
                     max_val = 8191
-                elif max_jump > 2047:
+                elif max_jump > 2047 and max_jump > half_p2p:
                     max_val = 4095
-                elif max_jump > 1024: # previously 1023 changed due to flights such as 1b566455f121
+                elif max_jump > 1024 and max_jump > half_p2p: # previously 1023 changed due to flights such as 1b566455f121
                     max_val = 2047
-                elif max_jump > 1023 * .75:
+                elif max_jump > 1023 * .75 and max_jump > half_p2p:
                     max_val = 1023
                 else:
                     max_val = None

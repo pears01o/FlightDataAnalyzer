@@ -3,9 +3,10 @@
 
 from __future__ import print_function
 
-import os
 import logging
 import pytz
+import six
+
 import numpy as np
 
 from datetime import datetime, timedelta
@@ -995,7 +996,7 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
     return timebase, precise_timestamp, timestamp_configuration
 
 
-def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
+def append_segment_info(segment_object, segment_type, segment_slice, part,
                         fallback_dt=None, validation_dt=None, aircraft_info={}):
     """
     Get information about a segment such as type, hash, etc. and return a
@@ -1005,8 +1006,8 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
     i.e. datetime(1970,1,1,1,0). Go-fast dt and Stop dt are relative to this
     point in time.
 
-    :param hdf_segment_path: path to HDF segment to analyse
-    :type hdf_segment_path: string
+    :param segment_object: segment
+    :type segment_object: string or FlightDataFormat object
     :param segment_slice: Slice of this segment relative to original file.
     :type segment_slice: slice
     :param part: Numeric part this segment was in the original data file (1
@@ -1018,8 +1019,13 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
     :returns: Segment named tuple
     :rtype: Segment
     """
+    if isinstance(segment_object, six.string_types):
+        segment_path = segment_object
+    else:
+        segment_path = segment_object.path
+
     # build information about a slice
-    with hdf_file(hdf_segment_path) as hdf:
+    with hdf_file(segment_object) as hdf:
         speed, _, thresholds = _get_speed_parameter(hdf, aircraft_info)
         duration = hdf.duration
         try:
@@ -1055,12 +1061,16 @@ def append_segment_info(hdf_segment_path, segment_type, segment_slice, part,
         go_fast_index = None
         go_fast_datetime = None
         # if not go_fast, create hash from entire file
-        speed_hash = sha_hash_file(hdf_segment_path)
+        if segment_path is not None:
+            speed_hash = sha_hash_file(segment_path)
+        else:
+            speed_hash = ''
+
     segment = Segment(
         segment_slice,
         segment_type,
         part,
-        hdf_segment_path,
+        segment_path,
         speed_hash,
         start_datetime,
         go_fast_datetime,

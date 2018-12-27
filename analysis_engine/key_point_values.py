@@ -20929,3 +20929,27 @@ class EngN2DuringMaximumContinuousPowerForXSecMax(KeyPointValueNode):
                     index, value = max_maintained_value(arrays, samples, eng_n2_max.hz, mcp)
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)
+
+class DHSelectedAt1500FtLVO(KeyPointValueNode):
+    '''
+    The value of DH Selected at 1500ft AAL, used for Low Visibility Operations.
+    '''
+
+    name = 'DH Selected At 1500 Ft LVO'
+    units = ut.FT
+
+    @classmethod
+    def can_operate(cls, available, series=A('Series')):
+        if not series or series.value not in ('Falcon-7X', 'Falcon-8X'):
+            return False
+        return all_of(('Altitude AAL', 'DH Selected'), available)
+
+    def derive(self, alt_aal=P('Altitude AAL'), dh_selected=P('DH Selected'),
+               descents=S('Descent')):
+
+        for descent in descents:
+            alt_aal_array = mask_outside_slices(alt_aal.array, [descent.slice])
+            approach_index = np.ma.argmax(alt_aal_array <= 1500)
+
+            self.create_kpv(approach_index, dh_selected.at(approach_index))
+

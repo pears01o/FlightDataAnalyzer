@@ -8936,12 +8936,13 @@ class AirspeedMinusV2(DerivedParameterNode):
     def can_operate(cls, available):
 
         return (all_of(('Airspeed', 'Liftoff', 'Climb Start', 'Grounded'), available) and
-                any_of(('V2 At Liftoff', 'Airspeed Selected At Liftoff', 'V2 Lookup At Liftoff'), available))
+                any_of(('V2 At Liftoff', 'Airspeed Selected At Takeoff Acceleration Start',
+                        'V2 Lookup At Liftoff'), available))
 
     def derive(self,
                airspeed=P('Airspeed'),
                v2_recorded=KPV('V2 At Liftoff'),
-               airspeed_selected=KPV('Airspeed Selected At Liftoff'),
+               airspeed_selected=KPV('Airspeed Selected At Takeoff Acceleration Start'),
                v2_lookup=KPV('V2 Lookup At Liftoff'),
                liftoffs=KTI('Liftoff'),
                climb_starts=KTI('Climb Start'),

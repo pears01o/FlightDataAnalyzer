@@ -2507,6 +2507,42 @@ class AirspeedSelectedAtLiftoff(KeyPointValueNode):
                              "%s is entirely masked within %s", spd_sel.name, phase)
 
 
+class AirspeedSelectedAtTakeoffAccelerationStart(KeyPointValueNode):
+    '''
+    Selected airspeed at takeoff acceleration start.
+    '''
+
+    units = ut.KT
+
+    def derive(self,
+               spd_sel=P('Airspeed Selected'),
+               tkof_accel_starts=KTI('Takeoff Acceleration Start'),
+               liftoffs=KTI('Liftoff')):
+
+        starts = deepcopy(tkof_accel_starts)
+        for start in starts:
+            start.index = max(start.index - 5 * 64 * self.hz, 0)
+        phases = slices_from_ktis(starts, liftoffs)
+        for phase in phases:
+            this_tkof_accel_start = tkof_accel_starts.get_last(within_slice=phase)
+            index = None
+            value = None
+            if this_tkof_accel_start:
+                index = this_tkof_accel_start.index
+            if spd_sel.frequency >= 0.125 and index:
+                spd_sel_tkof_start = prev_unmasked_value(
+                    spd_sel.array, index, start_index=phase.start)
+                value = spd_sel_tkof_start.value if spd_sel_tkof_start else None
+            else:
+                value = most_common_value(spd_sel.array[phase])
+
+            if value:
+                self.create_kpv(index, value)
+            else:
+                self.warning("KPV Airspeed Selected At Takeoff Acceleration Start is not created. "
+                             "%s is entirely masked within %s", spd_sel.name, phase)
+                
+
 ########################################
 # Airspeed: Minus V2
 

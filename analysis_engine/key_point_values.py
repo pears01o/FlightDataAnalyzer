@@ -4,7 +4,6 @@ from __future__ import print_function
 
 import numpy as np
 import operator
-import os
 import re
 import six
 
@@ -25,7 +24,6 @@ from analysis_engine.settings import (ACCEL_LAT_OFFSET_LIMIT,
                                       CONTROL_FORCE_THRESHOLD,
                                       GRAVITY_IMPERIAL,
                                       GRAVITY_METRIC,
-                                      GROUNDSPEED_FOR_MOBILE,
                                       HOVER_MIN_DURATION,
                                       HYSTERESIS_FPALT,
                                       MIN_HEADING_CHANGE,
@@ -70,7 +68,6 @@ from analysis_engine.library import (ambiguous_runway,
                                      integrate,
                                      is_index_within_slice,
                                      is_index_within_slices,
-                                     is_slice_within_slice,
                                      lookup_table,
                                      nearest_neighbour_mask_repair,
                                      mask_inside_slices,
@@ -110,11 +107,9 @@ from analysis_engine.library import (ambiguous_runway,
                                      slices_overlap,
                                      slices_or,
                                      slices_and,
-                                     slices_overlap_merge,
                                      slices_remove_overlaps,
                                      slices_remove_small_slices,
                                      slices_remove_small_gaps,
-                                     string_array_to_mapped_array,
                                      trim_slices,
                                      level_off_index,
                                      valid_slices_within_array,

@@ -173,6 +173,7 @@ from analysis_engine.key_point_values import (
     AirspeedRelativeFor3Sec500To20FtMin,
     AirspeedRelativeWithConfigurationDuringDescentMin,
     AirspeedSelectedAtLiftoff,
+    AirspeedSelectedAtTakeoffAccelerationStart,
     AirspeedSelectedFMCMinusFlapManoeuvreSpeed1000to5000FtMin,
     AirspeedTopOfDescentTo10000FtMax,
     AirspeedTopOfDescentTo4000FtMax,
@@ -4278,6 +4279,77 @@ class TestAirspeedSelectedAtLiftoff(unittest.TestCase, NodeTest):
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 500)
         self.assertEqual(node[0].value, 110)
+
+
+class TestAirspeedSelectedAtTakeoffAccelerationStart(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = AirspeedSelectedAtTakeoffAccelerationStart
+        self.tkof_accel_starts = KTI(name='Takeoff Acceleration Start', items=[
+            KeyTimeInstance(name='Takeoff Acceleration Start', index=411),
+        ])
+        self.liftoffs = KTI(name='Liftoff', items=[
+            KeyTimeInstance(name='Liftoff', index=438),
+        ])
+        self.spd_sel = P(
+            ' Airspeed Selected',
+            np.ma.concatenate((
+                np.ma.repeat(137, 435),
+                np.linspace(137, 147, 5),
+                np.ma.repeat(147, 100)
+            ))
+        )
+
+    def test_can_operate(self):
+        self.assertEqual(self.node_class().get_operational_combinations(),
+            [('Airspeed Selected', 'Takeoff Acceleration Start', 'Liftoff')])
+
+    def test_derive(self):
+        '''
+        Test values were chosen to reflect real data seen and fail if
+        incorrect methods are used
+        '''
+        node = self.node_class()
+        node.derive(self.spd_sel, self.tkof_accel_starts, self.liftoffs)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 411)
+        self.assertEqual(node[0].value, 137)
+
+    def test_derive__superframe(self):
+        tkof_accel_starts = KTI(name='Takeoff Acceleration Start', items=[
+            KeyTimeInstance(name='Takeoff Acceleration Start', index=411/64.0),
+        ])
+        liftoffs = KTI(name='Liftoff', items=[
+            KeyTimeInstance(name='Liftoff', index=438/64.0),
+        ])
+        spd_sel = P(
+            'Airspeed Selected',
+            np.ma.concatenate((
+                np.ma.repeat(137, 435),
+                np.linspace(137, 147, 5),
+                np.ma.repeat(147, 100)
+            ))[::64],
+            frequency=1/64.0
+        )
+        node = self.node_class(frequency=1/64.0)
+        node.derive(spd_sel, tkof_accel_starts, liftoffs)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 411/64.0)
+        self.assertEqual(node[0].value, 137)
+
+    def test_derive__masked(self):
+        self.spd_sel.array[405:420] = np.ma.masked
+        node = self.node_class()
+        node.derive(self.spd_sel, self.tkof_accel_starts, self.liftoffs, )
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 411)
+        self.assertEqual(node[0].value, 137)
+
+    def test_derive__fully_masked(self):
+        self.spd_sel.array[0:500] = np.ma.masked
+        node = self.node_class()
+        node.derive(self.spd_sel, self.tkof_accel_starts, self.liftoffs)
+        self.assertEqual(len(node), 0)
 
 
 class TestAirspeedMinusV2AtLiftoff(unittest.TestCase, CreateKPVsAtKTIsTest):

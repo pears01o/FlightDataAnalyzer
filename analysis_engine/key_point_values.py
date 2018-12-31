@@ -4,7 +4,6 @@ from __future__ import print_function
 
 import numpy as np
 import operator
-import os
 import re
 import six
 
@@ -25,7 +24,6 @@ from analysis_engine.settings import (ACCEL_LAT_OFFSET_LIMIT,
                                       CONTROL_FORCE_THRESHOLD,
                                       GRAVITY_IMPERIAL,
                                       GRAVITY_METRIC,
-                                      GROUNDSPEED_FOR_MOBILE,
                                       HOVER_MIN_DURATION,
                                       HYSTERESIS_FPALT,
                                       MIN_HEADING_CHANGE,
@@ -70,7 +68,6 @@ from analysis_engine.library import (ambiguous_runway,
                                      integrate,
                                      is_index_within_slice,
                                      is_index_within_slices,
-                                     is_slice_within_slice,
                                      lookup_table,
                                      nearest_neighbour_mask_repair,
                                      mask_inside_slices,
@@ -110,11 +107,9 @@ from analysis_engine.library import (ambiguous_runway,
                                      slices_overlap,
                                      slices_or,
                                      slices_and,
-                                     slices_overlap_merge,
                                      slices_remove_overlaps,
                                      slices_remove_small_slices,
                                      slices_remove_small_gaps,
-                                     string_array_to_mapped_array,
                                      trim_slices,
                                      level_off_index,
                                      valid_slices_within_array,
@@ -2479,31 +2474,63 @@ class AirspeedSelectedAtLiftoff(KeyPointValueNode):
     def derive(self,
                spd_sel=P('Airspeed Selected'),
                liftoffs=KTI('Liftoff'),
-               tkof_accel_starts=KTI('Takeoff Acceleration Start'),
+               accel_starts=KTI('Takeoff Acceleration Start'),
                climb_starts=KTI('Climb Start')):
 
         starts = deepcopy(liftoffs)
-        first_tkof_accel_start = tkof_accel_starts[0].index or 0
+        first_accel_start = accel_starts.get_first().index if accel_starts else 0
         for start in starts:
-            start.index = max(start.index - 5 * 64 * self.hz, first_tkof_accel_start)
+            start.index = max(start.index - 5 * 64 * self.hz, first_accel_start)
         phases = slices_from_ktis(starts, climb_starts)
         for phase in phases:
-            this_lift = liftoffs.get_last(within_slice=phase)
-            index = None
-            value = None
-            if this_lift:
-                index = this_lift.index
-            if spd_sel.frequency >= 0.125 and index:
+            liftoff = liftoffs.get_last(within_slice=phase)
+            if not liftoff:
+                continue
+            if spd_sel.frequency >= 0.125:
                 spd_sel_liftoff = prev_unmasked_value(
-                    spd_sel.array, index, start_index=phase.start)
+                    spd_sel.array, liftoff.index, start_index=phase.start)
                 value = spd_sel_liftoff.value if spd_sel_liftoff else None
             else:
                 value = most_common_value(spd_sel.array[phase])
 
             if value:
-                self.create_kpv(index, value)
+                self.create_kpv(liftoff.index, value)
             else:
                 self.warning("KPV Airspeed Selected At Liftoff is not created. "
+                             "%s is entirely masked within %s", spd_sel.name, phase)
+
+
+class AirspeedSelectedAtTakeoffAccelerationStart(KeyPointValueNode):
+    '''
+    Selected airspeed at takeoff acceleration start.
+    '''
+
+    units = ut.KT
+
+    def derive(self,
+               spd_sel=P('Airspeed Selected'),
+               accel_starts=KTI('Takeoff Acceleration Start'),
+               liftoffs=KTI('Liftoff')):
+
+        starts = deepcopy(accel_starts)
+        for start in starts:
+            start.index = max(start.index - 5 * 64 * self.hz, 0)
+        phases = slices_from_ktis(starts, liftoffs)
+        for phase in phases:
+            accel_start = accel_starts.get_last(within_slice=phase)
+            if not accel_start:
+                continue
+            if spd_sel.frequency >= 0.125:
+                spd_sel_tkof_start = prev_unmasked_value(
+                    spd_sel.array, accel_start.index, start_index=phase.start)
+                value = spd_sel_tkof_start.value if spd_sel_tkof_start else None
+            else:
+                value = most_common_value(spd_sel.array[phase])
+
+            if value:
+                self.create_kpv(accel_start.index, value)
+            else:
+                self.warning("KPV Airspeed Selected At Takeoff Acceleration Start is not created. "
                              "%s is entirely masked within %s", spd_sel.name, phase)
 
 

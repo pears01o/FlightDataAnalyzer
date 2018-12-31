@@ -8153,14 +8153,14 @@ class TestAirspeedMinusV2(unittest.TestCase, NodeTest):
         self.node_class = AirspeedMinusV2
         self.operational_combinations = [
             ('Airspeed', 'V2 At Liftoff', 'Liftoff', 'Climb Start', 'Grounded'),
-            ('Airspeed', 'Airspeed Selected At Liftoff', 'Liftoff', 'Climb Start', 'Grounded'),
-            ('Airspeed', 'V2 At Liftoff', 'Airspeed Selected At Liftoff', 'Liftoff', 'Climb Start', 'Grounded'),
-            ('Airspeed', 'Airspeed Selected At Liftoff', 'V2 Lookup At Liftoff', 'Liftoff', 'Climb Start', 'Grounded'),
-            ('Airspeed', 'V2 At Liftoff', 'Airspeed Selected At Liftoff', 'V2 Lookup At Liftoff', 'Liftoff', 'Climb Start', 'Grounded'),
+            ('Airspeed', 'Airspeed Selected At Takeoff Acceleration Start', 'Liftoff', 'Climb Start', 'Grounded'),
+            ('Airspeed', 'V2 At Liftoff', 'Airspeed Selected At Takeoff Acceleration Start', 'Liftoff', 'Climb Start', 'Grounded'),
+            ('Airspeed', 'Airspeed Selected At Takeoff Acceleration Start', 'V2 Lookup At Liftoff', 'Liftoff', 'Climb Start', 'Grounded'),
+            ('Airspeed', 'V2 At Liftoff', 'Airspeed Selected At Takeoff Acceleration Start', 'V2 Lookup At Liftoff', 'Liftoff', 'Climb Start', 'Grounded'),
         ]
         self.airspeed = P('Airspeed', np.ma.repeat(102, 2000))
         self.v2_record = KPV([KeyPointValue(index=500, value=90, name='V2 At Liftoff')])
-        self.airspeed_selected = KPV([KeyPointValue(index=500, value=110, name='Airspeed Selected At Liftoff')])
+        self.airspeed_selected = KPV([KeyPointValue(index=500, value=110, name='Airspeed Selected At Takeoff Acceleration Start')])
         self.v2_lookup = KPV([KeyPointValue(index=500, value=95, name='V2 Lookup At Liftoff')])
         self.liftoffs = KTI(name='Liftoff', items=[
             KeyTimeInstance(name='Liftoff', index=500),

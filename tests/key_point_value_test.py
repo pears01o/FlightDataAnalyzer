@@ -818,6 +818,7 @@ from analysis_engine.key_point_values import (
     WindSpeedInCriticalAzimuth,
     CruiseGuideIndicatorMax,
     DriftAtTouchdown,
+    KeyVHFInactivityDuration,
 )
 from analysis_engine.key_time_instances import (
     AltitudeWhenDescending,
@@ -25314,6 +25315,24 @@ class TestDHSelectedAt1500FtLVO(unittest.TestCase, NodeTest):
         self.assertEqual(node[0].value, 100.0)
         self.assertEqual(node[1].index, 64)
         self.assertEqual(node[1].value, 0.0)
+
+
+class TestTransmitInactivityDuration(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = TransmitInactivityDuration
+
+    def test_derive(self):
+        transmits = KTI('Transmit')
+        for idx in (5, 9, 10, 30, 33, 34):
+            transmits.create_kti(idx)
+        air = buildsection('Airborne', 4, 36)
+
+        node = self.node_class()
+        node.derive(transmits, air)
+
+        self.assertAlmostEqual(node[0].index, 10)
+        self.assertAlmostEqual(node[0].value, 20)
 
 
 if __name__ == '__main__':

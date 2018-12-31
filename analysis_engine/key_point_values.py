@@ -20957,6 +20957,30 @@ class EngN2DuringMaximumContinuousPowerForXSecMax(KeyPointValueNode):
                     if index is not None and value is not None:
                         self.create_kpv(index, value, durations=duration)
 
+
+class TransmitInactivityDuration(KeyPointValueNode):
+    '''
+    Monitor for PLOC (Prolonged Loss of Communications).
+    Finds the maximum duration of Transmit inactivity during a flight.
+    '''
+    units = ut.SECOND
+
+    def derive(self, transmits=KTI('Transmit'), airs=S('Airborne')):
+        if not airs:
+            return
+
+        inactive_slices = []
+        for air in airs:
+            idxs = {t.index for t in transmits.get(within_slice=air.slice)}
+            idxs.add(air.slice.start)
+            idxs.add(air.slice.stop)
+            idxs = sorted(idxs)
+            inactive_slices.extend(slice(*s) for s in zip(idxs[:-1], idxs[1:]))
+
+        self.create_kpvs_from_slice_durations(
+            [max(inactive_slices, key=lambda s: slice_duration(s, self.hz))], self.hz)
+
+
 class DHSelectedAt1500FtLVO(KeyPointValueNode):
     '''
     The value of DH Selected at 1500ft AAL, used for Low Visibility Operations.
@@ -20979,4 +21003,3 @@ class DHSelectedAt1500FtLVO(KeyPointValueNode):
             approach_index = np.ma.argmax(alt_aal_array <= 1500)
 
             self.create_kpv(approach_index, dh_selected.at(approach_index))
-

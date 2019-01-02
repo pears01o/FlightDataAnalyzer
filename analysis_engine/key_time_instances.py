@@ -192,43 +192,12 @@ class Transmit(KeyTimeInstanceNode):
     Whenever the HF, VHF or Satcom transmits are used, this KTI is triggered.
     '''
 
-    @classmethod
-    def can_operate(cls, available):
-        return any(d in available for d in cls.get_dependency_names())
-
-    def derive(self,
-               hf=M('Key HF'),
-               hf1=M('Key HF (1)'),
-               hf2=M('Key HF (2)'),
-               hf3=M('Key HF (3)'),
-               hf1_capt=M('Key HF (1) (Capt)'),
-               hf2_capt=M('Key HF (2) (Capt)'),
-               hf3_capt=M('Key HF (3) (Capt)'),
-               hf1_fo=M('Key HF (1) (FO)'),
-               hf2_fo=M('Key HF (2) (FO)'),
-               hf3_fo=M('Key HF (3) (FO)'),
-               sc=M('Key Satcom'),
-               sc1=M('Key Satcom (1)'),
-               sc2=M('Key Satcom (2)'),
-               vhf=M('Key VHF'),
-               vhf1=M('Key VHF (1)'),
-               vhf2=M('Key VHF (2)'),
-               vhf3=M('Key VHF (3)'),
-               vhf1_capt=M('Key VHF (1) (Capt)'),
-               vhf2_capt=M('Key VHF (2) (Capt)'),
-               vhf3_capt=M('Key VHF (3) (Capt)'),
-               vhf1_fo=M('Key VHF (1) (FO)'),
-               vhf2_fo=M('Key VHF (2) (FO)'),
-               vhf3_fo=M('Key VHF (3) (FO)')):
-        for p in [hf, hf1, hf2, hf3, hf1_capt, hf2_capt, hf3_capt,
-                  hf1_fo, hf2_fo, hf3_fo, sc, sc1, sc2, vhf, vhf1, vhf2, vhf3,
-                  vhf1_capt, vhf2_capt, vhf3_capt, vhf1_fo, vhf2_fo, vhf3_fo]:
-            if p:
-                self.create_ktis_on_state_change(
-                    'Keyed',
-                    p.array,
-                    change='entering'
-                )
+    def derive(self, transmitting=M('Transmitting')):
+        self.create_ktis_on_state_change(
+            'Transmit',
+            transmitting.array,
+            change='entering'
+        )
 
 
 class ClimbStart(KeyTimeInstanceNode):
@@ -1611,7 +1580,7 @@ class Touchdown(KeyTimeInstanceNode):
                 if peak_az > 0.1:
                     index_az = np.argmax(bump)+period.start
                 else:
-                    # In the absence of a clear touchdown, contact can be 
+                    # In the absence of a clear touchdown, contact can be
                     # indicated by an increase in g of more than 0.075
                     for i in range(0, len(lift)-1):
                         if lift[i] and lift[i+1]:

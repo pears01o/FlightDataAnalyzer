@@ -86,6 +86,7 @@ from analysis_engine.multistate_parameters import (
     PackValvesOpen,
     PilotFlying,
     PitchAlternateLaw,
+    RotorBrakeEngaged,
     RotorsRunning,
     Slat,
     SlatExcludingTransition,
@@ -111,7 +112,7 @@ from analysis_engine.multistate_parameters import (
     TCASFailure,
     TCASRA,
     ThrustReversers,
-    RotorBrakeEngaged,
+    Transmitting,
 )
 
 ##############################################################################
@@ -535,15 +536,15 @@ class TestAPURunning(unittest.TestCase):
         run.derive(None, None, apu_bleed_valve_open, None, None)
         expected = ['-'] + ['Running'] * 2 + ['-'] * 2
         np.testing.assert_array_equal(run.array, expected)
-        
+
     def test_derive_apu_fuel_flow(self):
         apu_fuel_flow = P('APU Fuel Flow',
                         array=np.ma.array([0, 120, 120, 120, 116, 112, 112, 112, 0, 0, 0, 120, 120, 120, 0, 0]))
         run = APURunning()
         run.derive(None, None, None, apu_fuel_flow, None)
         expected = ['-'] + ['Running'] * 7 + ['-'] * 3 + ['Running'] * 3 + ['-'] * 2
-        np.testing.assert_array_equal(run.array, expected)    
-        
+        np.testing.assert_array_equal(run.array, expected)
+
     def test_derive_apu_on(self):
         apu_on = M('APU On',
                    array=np.ma.array([0,0,1,1,1,0,0,0,0,1,1,1,0]),
@@ -734,14 +735,14 @@ class TestConfiguration(unittest.TestCase, NodeTest):
             model=A('Model', None),
             series=A('Series', None),
             family=A('Family', 'A330'),
-        ))         
+        ))
         self.assertFalse(self.node_class.can_operate(
             ('Flap Including Transition', 'Slat Including Transition', 'Model', 'Series', 'Family'),
             manufacturer=A('Manufacturer', 'Airbus'),
             model=A('Model', None),
             series=A('Series', 'A340-500'),
             family=A('Family', None),
-        ))                
+        ))
 
     @patch('analysis_engine.multistate_parameters.at')
     def test_derive(self, at):
@@ -1541,21 +1542,21 @@ class TestFlap(unittest.TestCase, NodeTest):
         _as = A('Series', 'B737-400')
         _fr = A('Frame', '737-i')
         _af = A('Family', 'B737 Classic')
-    
+
         flap_angle = load(os.path.join(test_data_path, 'ae-1165-flap_angle.nod'))
         node = self.node_class()
-        node.derive(flap_angle, _am, _as, _af, _fr, None, None, None, None) 
+        node.derive(flap_angle, _am, _as, _af, _fr, None, None, None, None)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
-        # Should be 4 slices @ flap 1, 4 slices @ flap 2 and 3 slices @ flap 5 
+        # Should be 4 slices @ flap 1, 4 slices @ flap 2 and 3 slices @ flap 5
         flap1slices = runs_of_ones(node.array == 1)
         flap2slices = runs_of_ones(node.array == 2)
         flap5slices = runs_of_ones(node.array == 5)
         self.assertEqual(len(flap1slices),4)
         self.assertEqual(len(flap2slices),4)
         self.assertEqual(len(flap5slices),3)
-        # Interested in flap transition around index 7500 & 7700 
-        # it should go 1 - 2 - 5 (before fix, flap 2 was missed).        
+        # Interested in flap transition around index 7500 & 7700
+        # it should go 1 - 2 - 5 (before fix, flap 2 was missed).
         self.assertTrue(flap1slices[2].stop == flap2slices[2].start)
         self.assertTrue(flap2slices[2].stop == flap5slices[1].start)
 
@@ -1603,20 +1604,20 @@ class TestFlapExcludingTransition(unittest.TestCase, NodeTest):
         _am = A('Model', 'B737-448(F)')
         _as = A('Series', 'B737-400')
         _af = A('Family', 'B737 Classic')
-    
+
         flap_angle = load(os.path.join(test_data_path, 'ae-1165-flap_angle.nod'))
         node = self.node_class()
         node.derive(flap_angle, None, _am, _as, _af)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
-        # Should be 4 slices @ flap 1, 4 slices @ flap 2 and 3 slices @ flap 5 
+        # Should be 4 slices @ flap 1, 4 slices @ flap 2 and 3 slices @ flap 5
         flap1slices = runs_of_ones(node.array == 1)
         flap2slices = runs_of_ones(node.array == 2)
         flap5slices = runs_of_ones(node.array == 5)
         self.assertEqual(len(flap1slices),4)
         self.assertEqual(len(flap2slices),4)
         self.assertEqual(len(flap5slices),3)
-        # Interested in flap transition around index 7500 & 7700 
+        # Interested in flap transition around index 7500 & 7700
         # it should go 1 - 2 - 5 (before fix, flap 2 was missed).
         self.assertTrue(flap1slices[2].stop == flap2slices[2].start)
         self.assertTrue(flap2slices[2].stop == flap5slices[1].start)
@@ -1659,12 +1660,12 @@ class TestFlapIncludingTransition(unittest.TestCase, NodeTest):
         self.assertEqual(node.values_mapping, at.get_flap_map.return_value)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
-        expected = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 5.0, 5.0, 
-                    5.0, 10.0, 10.0, 10.0, 10.0, 10.0, 15.0, 15.0, 
-                    15.0, 15.0, 15.0, 25.0, 25.0, 25.0, 25.0, 25.0, 
-                    25.0, 25.0, 25.0, 25.0, 25.0, 30.0, 30.0, 30.0, 
-                    30.0, 30.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 
-                    40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 
+        expected = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 5.0, 5.0,
+                    5.0, 10.0, 10.0, 10.0, 10.0, 10.0, 15.0, 15.0,
+                    15.0, 15.0, 15.0, 25.0, 25.0, 25.0, 25.0, 25.0,
+                    25.0, 25.0, 25.0, 25.0, 25.0, 30.0, 30.0, 30.0,
+                    30.0, 30.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0,
+                    40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0,
                     40.0, 40.0, 40.0]
         self.assertEqual(node.array.raw.tolist(), expected)
 
@@ -1690,7 +1691,7 @@ class TestFlapIncludingTransition(unittest.TestCase, NodeTest):
         self.assertIsInstance(node.array, MappedArray)
         expected = np.repeat((0, 10, 20, 39), 10)
         self.assertEqual(node.array.raw.tolist(), expected.tolist())
-        
+
     @patch('analysis_engine.multistate_parameters.at')
     def test_derive__single_point(self, at):
         at.get_flap_map.return_value = {0: '0', 10: '10', 20: '20', 39: '39'}
@@ -1712,9 +1713,9 @@ class TestFlapIncludingTransition(unittest.TestCase, NodeTest):
         self.assertEqual(node.values_mapping, at.get_flap_map.return_value)
         self.assertEqual(node.units, ut.DEGREE)
         self.assertIsInstance(node.array, MappedArray)
-        expected = [0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 10.0, 10.0, 0.0, 
-                    0.0, 10.0, 10.0, 10.0, 39.0, 39.0, 39.0, 39.0, 20.0, 
-                    20.0, 20.0, 20.0, 20.0, 39.0, 39.0, 10.0, 0.0, 0.0, 
+        expected = [0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 10.0, 10.0, 0.0,
+                    0.0, 10.0, 10.0, 10.0, 39.0, 39.0, 39.0, 39.0, 20.0,
+                    20.0, 20.0, 20.0, 20.0, 39.0, 39.0, 10.0, 0.0, 0.0,
                     0.0, 0.0, 0.0]
         self.assertEqual(node.array.raw.tolist(), expected)
 
@@ -2109,7 +2110,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
             32:'Lever 5',
             64:'Lever Full',
         }
-        
+
         slat_array = [0, 15, 15, 15, 25, 25, 25, 25, 25, 25, 25, 25]
         flap_array = [0, 5, 10, 20, 20, 20, 20, 20, 20, 20, 20, 20]
         expected = ['Lever 0', 'Lever 1', 'Lever 2', 'Lever 3', 'Lever 4',
@@ -2124,19 +2125,18 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         # Derive the synthetic flap lever:
         flap = M('Flap', flap_array)
         slat = M('Slat', slat_array)
-        
+
         model = A('Model', None)
         series = A('Series', None)
         family = A('Family', 'ERJ-170/175')
         frame = A('Frame', 'E170_EBD_047')
-        
+
         approach = buildsections('Approach And Landing', (7,10))
         node = self.node_class()
         node.derive(flap, slat, None, None, None, model, series, family, approach, frame)
-        
         self.assertEqual(list(node.array), list(np.repeat(expected, repeat)))
-        
-        
+
+
 class TestFlaperon(unittest.TestCase):
     def test_can_operate(self):
         self.assertTrue(Flaperon.can_operate(
@@ -3048,7 +3048,7 @@ class TestSpeedbrakeSelected(unittest.TestCase):
         res = spd_sel.derive_from_armed_and_speedbrake(armed, spdbrk, threshold=10)
         self.assertEqual(list(res),
                         ['Stowed']*5 + ['Armed/Cmd Dn']*5 + ['Deployed/Cmd Up']*20 + ['Stowed']*10)
-        
+
 
     def test_b787_speedbrake(self):
         handle = load(os.path.join(
@@ -3082,7 +3082,7 @@ class TestStableApproach(unittest.TestCase):
             ('Approach Information', 'Descent', 'Gear Down', 'Flap', 'Track Deviation From Runway', 'Vertical Speed', 'ILS Glideslope', 'ILS Localizer', 'Eng (*) EPR Avg For 10 Sec', 'Altitude AAL', 'Vapp'),
             # including Family attribute
             ('Approach Information', 'Descent', 'Gear Down', 'Flap', 'Track Deviation From Runway', 'Vertical Speed', 'ILS Glideslope', 'ILS Localizer', 'Eng (*) EPR Avg For 10 Sec', 'Altitude AAL', 'Vapp', 'Family'),
-            # exc. Track Deviation 
+            # exc. Track Deviation
             ('Approach Information', 'Descent', 'Gear Down', 'Flap', 'Airspeed Relative For 3 Sec', 'Vertical Speed', 'ILS Glideslope', 'ILS Localizer', 'Eng (*) N1 Avg For 10 Sec', 'Altitude AAL', 'Vapp'),
         ]
         for combo in combinations:
@@ -3880,7 +3880,7 @@ class TestRotorBrakeEngaged(unittest.TestCase):
                      values_mapping=self.values_mapping)
 
         np.testing.assert_array_equal(expected.array, node.array)
-        
+
     def test_brk2(self):
         brk1 = None
         brk2 = self.brk2
@@ -4073,7 +4073,7 @@ class TestGearUpInTransit(unittest.TestCase):
         in_trans = M('Gear In Transition', array=np.ma.array([0]*4 + [1]*10 + [0]*31 + [1]*10 + [0]*5),
                      values_mapping={0: '-', 1: 'In Transit'})
         expected = M('Gear Up In Transit', array=np.ma.array([0]*4 + [1]*10 + [0]*46),
-                     values_mapping=self.values_mapping)        
+                     values_mapping=self.values_mapping)
         node = self.node_class()
         node.derive(gear_down, None, None, in_trans, None, None, self.airborne, self.model, self.series, self.family)
 
@@ -4561,7 +4561,7 @@ class TestGearUpSelected(unittest.TestCase):
 
         np.testing.assert_array_equal(node.array, self.expected.array)
         self.assertEqual(node.values_mapping, self.values_mapping)
-        
+
     def test_derive__down_down_in_transit(self):
         down = M('Gear Down', array=np.ma.array([1]*5 + [0]*50 + [1]*5),
                    values_mapping={0: 'Up', 1: 'Down'})
@@ -4613,4 +4613,61 @@ class TestGearInTransit(unittest.TestCase):
 
         np.testing.assert_array_equal(node.array, self.expected.array)
         self.assertEqual(node.values_mapping, self.values_mapping)
+
+
+class TestTransmitting(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = Transmitting
+
+    def test_can_operate(self):
+        # Due to the huge number of optional dependencies, the powerset
+        # generated by get_operational_combinations contains 8388608
+        # combinations and raises a MemoryError.
+        self.assertTrue(self.node_class.can_operate(('Key HF',)))
+        self.assertTrue(self.node_class.can_operate(('Key HF (1)',)))
+        self.assertTrue(self.node_class.can_operate(('Key HF (2)',)))
+        self.assertTrue(self.node_class.can_operate(('Key HF (3)',)))
+        self.assertTrue(self.node_class.can_operate(('Key HF (1) (Capt)',)))
+        self.assertTrue(self.node_class.can_operate(('Key HF (2) (Capt)',)))
+        self.assertTrue(self.node_class.can_operate(('Key HF (3) (Capt)',)))
+        self.assertTrue(self.node_class.can_operate(('Key HF (1) (FO)',)))
+        self.assertTrue(self.node_class.can_operate(('Key HF (2) (FO)',)))
+        self.assertTrue(self.node_class.can_operate(('Key HF (3) (FO)',)))
+        self.assertTrue(self.node_class.can_operate(('Key Satcom',)))
+        self.assertTrue(self.node_class.can_operate(('Key Satcom (1)',)))
+        self.assertTrue(self.node_class.can_operate(('Key Satcom (2)',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF (1)',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF (2)',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF (3)',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF (1) (Capt)',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF (2) (Capt)',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF (3) (Capt)',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF (1) (FO)',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF (2) (FO)',)))
+        self.assertTrue(self.node_class.can_operate(('Key VHF (3) (FO)',)))
+
+    def test_derive_single(self):
+        array = MappedArray([0, 1, 1, 0, 0, 1, 0],
+                            values_mapping={0: '-', 1: 'Keyed'})
+        dependency_names = self.node_class.get_dependency_names()
+        for idx, name in enumerate(dependency_names):
+            node = self.node_class()
+            node.derive(*([None] * idx) + [M(name, array)] + ([None] * (len(dependency_names) - idx - 1)))
+            self.assertEqual(node.array.raw.tolist(), array.raw.tolist())
+
+    def test_derive_multiple(self):
+        node = self.node_class()
+        node.derive(
+            None,
+            M('Key HF (1)', MappedArray([0, 1, 1, 0, 0, 1, 0],
+                                        values_mapping={0: '-', 1: 'Keyed'})),
+            M('Key HF (2)', MappedArray([0, 0, 1, 1, 0, 0, 0],
+                                        values_mapping={0: '-', 1: 'Keyed'})),
+            *[None] * (len(self.node_class.get_dependency_names()) - 3))
+        self.assertEqual(node.array.tolist(),
+                         ['-', 'Transmit', 'Transmit', 'Transmit', '-', 'Transmit', '-'])
+
+
 

@@ -20965,17 +20965,14 @@ class TransmitInactivityDuration(KeyPointValueNode):
     '''
     units = ut.SECOND
 
-    def derive(self, transmits=KTI('Transmit'), airs=S('Airborne')):
+    def derive(self, transmitting=M('Transmitting'), airs=S('Airborne')):
         if not airs:
             return
 
         inactive_slices = []
         for air in airs:
-            idxs = {t.index for t in transmits.get(within_slice=air.slice)}
-            idxs.add(air.slice.start)
-            idxs.add(air.slice.stop)
-            idxs = sorted(idxs)
-            inactive_slices.extend(slice(*s) for s in zip(idxs[:-1], idxs[1:]))
+            inactive_slices.extend(shift_slices(
+                runs_of_ones(transmitting.array[air.slice] != 'Transmit'), air.slice.start))
 
         self.create_kpvs_from_slice_durations(
             [max(inactive_slices, key=lambda s: slice_duration(s, self.hz))], self.hz)

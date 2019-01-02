@@ -25317,22 +25317,25 @@ class TestDHSelectedAt1500FtLVO(unittest.TestCase, NodeTest):
         self.assertEqual(node[1].value, 0.0)
 
 
-class TestTransmitInactivityDuration(unittest.TestCase):
+class TestTransmitInactivityDuration(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = TransmitInactivityDuration
+        self.operational_combinations = [('Transmitting', 'Airborne')]
 
     def test_derive(self):
-        transmits = KTI('Transmit')
-        for idx in (5, 9, 10, 30, 33, 34):
-            transmits.create_kti(idx)
-        air = buildsection('Airborne', 4, 36)
+        transmitting = M('Transmitting', array=MappedArray(
+            [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            values_mapping={0: '-', 1: 'Transmit'},
+        ))
+        airs = buildsection('Airborne', 1, 12)
 
         node = self.node_class()
-        node.derive(transmits, air)
+        node.derive(transmitting, airs)
 
-        self.assertAlmostEqual(node[0].index, 10)
-        self.assertAlmostEqual(node[0].value, 20)
+        self.assertEqual(len(node), 1)
+        self.assertAlmostEqual(node[0].index, 7)
+        self.assertAlmostEqual(node[0].value, 3)
 
 
 if __name__ == '__main__':

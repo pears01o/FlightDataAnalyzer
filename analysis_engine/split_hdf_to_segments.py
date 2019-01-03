@@ -74,7 +74,7 @@ def _segment_type_and_slice(speed_array, speed_frequency,
                             heading_array, heading_frequency,
                             start, stop, eng_arrays,
                             aircraft_info, thresholds, hdf,
-                            vspeed=None, single_seg=False):
+                            vspeed=None):
     """
     Uses the Heading to determine whether the aircraft moved about at all and
     the airspeed to determine if it was a full or partial flight.
@@ -99,9 +99,6 @@ def _segment_type_and_slice(speed_array, speed_frequency,
 
     START_AND_STOP: The airspeed started and ended slow, implying a complete
     flight.
-
-    For Helicopters where the file contains a single segment, the type will be
-    considered to a START_AND_STOP type.
 
     segment_type is one of:
     * 'NO_MOVEMENT' (didn't change heading)
@@ -176,6 +173,27 @@ def _segment_type_and_slice(speed_array, speed_frequency,
         else:
             hdiff = np.ma.abs(np.ma.diff(heading_array)).sum()
             did_move = hdiff > settings.HEADING_CHANGE_TAXI_THRESHOLD
+
+        # Test the collective. If the collective is below the COLLECTIVE_ON_GROUND_THRESHOLD
+        # then the helicopter is likely be on the ground and we can test for slow_start and slow_stop.
+        col = next(iter([hdf.get(name) for name in ('Collective', 'Collective (1)', 'Collective (2)')]))
+        if col:
+            # Use unmasked speed slices as the start/end indices for collective
+            col_start_idx = unmasked_slices[0].start/speed_frequency * col.frequency
+            col_stop_idx = (unmasked_slices[-1].stop-1)/speed_frequency * col.frequency
+            col_window_sample = 120 * col.frequency
+            col_min_sample = 4 * col.frequency
+            col_start_slice = runs_of_ones(
+                col.array[col_start_idx:col_start_idx+col_window_sample] < settings.COLLECTIVE_ON_GROUND_THRESHOLD,
+                min_samples=col_min_sample
+            )
+            col_stop_slice = runs_of_ones(
+                col.array[col_stop_idx-col_window_sample:col_stop_idx] < settings.COLLECTIVE_ON_GROUND_THRESHOLD,
+                min_samples=col_min_sample
+            )
+            slow_start = True if col_start_slice else False
+            slow_stop = True if col_stop_slice else False
+
     else:
         # Check Heading change for fixed wing.
         if eng_arrays is not None:
@@ -189,10 +207,6 @@ def _segment_type_and_slice(speed_array, speed_frequency,
         logger.debug("Aircraft did not move.")
         segment_type = 'NO_MOVEMENT'
         # e.g. hanger tests, esp. if speed changes!
-    elif single_seg and did_move and aircraft_info and aircraft_info['Aircraft Type'] == 'helicopter':
-        logger.debug(
-            "Single segment file for helicopters. Assuming a pre-split file and therefore a flight.")
-        segment_type = 'START_AND_STOP'
     elif slow_start and slow_stop and fast_for_long:
         logger.debug(
             "speed started below threshold, rose above and stopped below.")
@@ -533,7 +547,7 @@ def split_segments(hdf, aircraft_info):
         return [_segment_type_and_slice(
             speed_array, speed.frequency, heading.array,
             heading.frequency, 0, speed_secs, eng_arrays,
-            aircraft_info, thresholds, hdf, vspeed, single_seg=True)]
+            aircraft_info, thresholds, hdf, vspeed)]
 
     # suppress transient changes in speed around 80 kts
     slow_slices = slices_remove_small_slices(np.ma.clump_masked(slow_array), 10, speed.frequency)

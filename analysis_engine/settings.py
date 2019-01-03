@@ -387,6 +387,10 @@ MIN_VALID_FUEL = 0.25
 # a Takeoff Acceleration Start.
 REJECTED_TAKEOFF_THRESHOLD = 0
 
+# Collective value below this threshold is considered to be on ground. Only
+# used for segment type classifiction, as Nr can be high throughout the segment
+COLLECTIVE_ON_GROUND_THRESHOLD = 20.0 # %
+
 '''
 See experimental KTP LandingStopLimitPointPoorBraking et seq.
 # Mu values for good, medium and poor braking action (Boeing definition).

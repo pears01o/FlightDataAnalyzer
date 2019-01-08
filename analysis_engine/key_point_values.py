@@ -6136,7 +6136,7 @@ class TailRotorPedalWhileTaxiingMin(KeyPointValueNode):
 class TailRotorPedalOnGroundMax(KeyPointValueNode):
     '''
     Maximum recorded value, maintained for at least 5s, of Tail Rotor Pedal with:
-     - Collective < 6%
+     - Collective < 30%
      - Nr > 100%
      - In phase Grounded and Stationary
     Uses second window to find the highest (absolute) value maintained for at 
@@ -6154,7 +6154,7 @@ class TailRotorPedalOnGroundMax(KeyPointValueNode):
                stationary=S('Stationary'),
                pedal=P('Tail Rotor Pedal'),):
         
-        # Collective below 6%
+        # Collective below 30%
         collective_slices = slices_below(collective.array, 30)
         
         # Nr above 100%
@@ -6165,9 +6165,12 @@ class TailRotorPedalOnGroundMax(KeyPointValueNode):
         
         # Combine all of the above into a list of slices, remove gaps <10s
         sections = slices_remove_small_gaps(slices_and(on_ground, slices_and(collective_slices[1], nr_slices[1])), time_limit=10, hz=self.hz)
-        
-        # second_window for the 5s time slug
-        self.create_kpvs_within_slices(second_window(pedal.array, pedal.hz, 5), sections, max_abs_value)
+
+        # Mask pedal outside slices for use in second_window
+        pedal_within_slices = mask_outside_slices(pedal.array, sections)
+        window_array = second_window(pedal_within_slices, pedal.hz, 5)
+
+        self.create_kpvs_within_slices(window_array, np.ma.clump_unmasked(window_array), max_abs_value)
 
         
 ##############################################################################

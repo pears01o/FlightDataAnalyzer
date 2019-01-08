@@ -8293,7 +8293,7 @@ class TestTailRotorPedalOnGroundMax(unittest.TestCase):
         
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 34)
-        self.assertAlmostEqual(node[0].value, -8.391, places=3)
+        self.assertAlmostEqual(node[0].value, -8.803, places=3)
         
         
 ##############################################################################

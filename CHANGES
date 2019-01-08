@@ -10,6 +10,13 @@ You can view the differences in tagged versions as follows:
 
 =======
 
+v0.42.2
+-------
+New KPVs:
+- AE-2114 TCAS KPVs separated by flight level
+Improvements:
+- AE-2113 TCAS minimum operating height increased from 360 to 900ft AAL
+
 v0.42.1
 -------
  New KPVs

@@ -1144,10 +1144,11 @@ def split_hdf_to_segments(source, aircraft_info, fallback_dt=None,
     # process each segment (into a new file) having closed original source
     segments = []
     previous_stop_dt = None
+
+    fdf = flightdataaccessor.open(source, cache_param_list=True)
     for part, (segment_type, segment_slice, start_padding) in enumerate(segment_tuples, start=1):
         dest = write_segment(
-            source, segment_slice, part=part, dest_dir=dest_dir, boundary=boundary,
-            submasks=('arinc', 'invalid_states', 'padding', 'saturation'))
+            fdf, segment_slice, part=part, dest_dir=dest_dir, boundary=boundary)
 
         # adjust fallback time to account for any padding added at start of segment
         segment_start_dt = fallback_dt - timedelta(seconds=start_padding)
@@ -1170,6 +1171,7 @@ def split_hdf_to_segments(source, aircraft_info, fallback_dt=None,
         segments.append(segment)
         if draw:
             plot_essential(dest)
+    fdf.close()
 
     if draw:
         # show all figures together

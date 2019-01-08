@@ -20974,8 +20974,9 @@ class TransmitInactivityDuration(KeyPointValueNode):
             inactive_slices.extend(shift_slices(
                 runs_of_ones(transmitting.array[air.slice] != 'Transmit'), air.slice.start))
 
-        self.create_kpvs_from_slice_durations(
-            [max(inactive_slices, key=lambda s: slice_duration(s, self.hz))], self.hz)
+        if inactive_slices:
+            self.create_kpvs_from_slice_durations(
+                [max(inactive_slices, key=lambda s: slice_duration(s, self.hz))], self.hz)
 
 
 class DHSelectedAt1500FtLVO(KeyPointValueNode):

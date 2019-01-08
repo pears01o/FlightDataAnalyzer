@@ -567,7 +567,7 @@ class mocked_hdf(object):
     def __init__(self, path=None):
         pass
 
-    def __call__(self, path):
+    def __call__(self, path, **kwargs):
         self.path = path
         if path == 'slow':
             self.airspeed = np.ma.arange(10, 20).repeat(5)
@@ -621,7 +621,7 @@ class mocked_hdf(object):
 class TestSegmentInfo(unittest.TestCase):
     @mock.patch('analysis_engine.split_hdf_to_segments.logger')
     @mock.patch('analysis_engine.split_hdf_to_segments.sha_hash_file')
-    @mock.patch('analysis_engine.split_hdf_to_segments.hdf_file',
+    @mock.patch('analysis_engine.split_hdf_to_segments.flightdataaccessor.open',
                 new_callable=mocked_hdf)
     def test_timestamps_in_past(self, hdf_file_patch, sha_hash_file_patch, logger_patch):
         # No longer raising exception, using epoch instead with exception logging,
@@ -640,7 +640,7 @@ class TestSegmentInfo(unittest.TestCase):
         self.assertEqual(logger_patch.exception.call_args[0], ('Unable to calculate timebase, using 1970-01-01 00:00:00+0000!',))
 
     @mock.patch('analysis_engine.split_hdf_to_segments.sha_hash_file')
-    @mock.patch('analysis_engine.split_hdf_to_segments.hdf_file',
+    @mock.patch('analysis_engine.split_hdf_to_segments.flightdataaccessor.open',
                 new_callable=mocked_hdf)
     def test_timestamps_in_future_use_fallback_year(self, hdf_file_patch, sha_hash_file_patch):
         # Using fallback time is no longer recommended
@@ -658,7 +658,7 @@ class TestSegmentInfo(unittest.TestCase):
         #                  4, fallback_dt=datetime(2012,12,12,0,0,0))
 
     @mock.patch('analysis_engine.split_hdf_to_segments.sha_hash_file')
-    @mock.patch('analysis_engine.split_hdf_to_segments.hdf_file',
+    @mock.patch('analysis_engine.split_hdf_to_segments.flightdataaccessor.open',
                 new_callable=mocked_hdf)
     def test_append_segment_info(self, hdf_file_patch, sha_hash_file_patch):
         # example where it goes fast
@@ -672,7 +672,7 @@ class TestSegmentInfo(unittest.TestCase):
         self.assertEqual(seg.stop_dt, datetime(2012, 12, 25, 11, 29, 56, tzinfo=pytz.utc))
 
     @mock.patch('analysis_engine.split_hdf_to_segments.sha_hash_file')
-    @mock.patch('analysis_engine.split_hdf_to_segments.hdf_file',
+    @mock.patch('analysis_engine.split_hdf_to_segments.flightdataaccessor.open',
                 new_callable=mocked_hdf)
     def test_append_segment_info_no_gofast(self, hdf_file_patch,
                                            sha_hash_file_patch):
@@ -689,7 +689,7 @@ class TestSegmentInfo(unittest.TestCase):
 
     @mock.patch('analysis_engine.split_hdf_to_segments.logger')
     @mock.patch('analysis_engine.split_hdf_to_segments.sha_hash_file')
-    @mock.patch('analysis_engine.split_hdf_to_segments.hdf_file',
+    @mock.patch('analysis_engine.split_hdf_to_segments.flightdataaccessor.open',
                 new_callable=mocked_hdf)
     def test_invalid_datetimes(self, hdf_file_patch, sha_hash_file_patch, logger_patch):
         # No longer raising exception, using epoch instead

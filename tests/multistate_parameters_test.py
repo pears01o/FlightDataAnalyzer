@@ -2023,7 +2023,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         series = A('Series', 'CRJ900')
         family = A('Family', 'CL-600')
         node = self.node_class()
-        node.derive(flap, slat, flaperon, model, series, family)
+        node.derive(flap, slat, flaperon, None, model, series, family)
 
         # Check against an expected array of lever detents:
         expected = [0, 0, 8, 8, 1, 0, 0, 8, 20, 30, 45, 8, 1, 0, 0]
@@ -2048,7 +2048,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         series = A('Series', 'B737-300')
         family = A('Family', 'B737 Classic')
         node = self.node_class()
-        node.derive(flap, slat, flaperon, None, None, model, series, family)
+        node.derive(flap, slat, flaperon, None, None, None, model, series, family)
 
         # Check against an expected array of lever detents:
         expected = [0, 0, 5, 2, 1, 0, 0, 10, 15, 25, 30, 40, 0, 0, 0]
@@ -2082,7 +2082,7 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         series = A('Series', None)
         family = A('Family', 'A330')
         node = self.node_class()
-        node.derive(flap, slat, flaperon, None, None, model, series, family)
+        node.derive(flap, slat, flaperon, None, None, None, model, series, family)
 
         mapping = {x: str(x) for x in sorted(set(expected))}
         self.assertEqual(list(node.array), list(np.repeat(expected, repeat)))
@@ -2132,10 +2132,29 @@ class TestFlapLeverSynthetic(unittest.TestCase, NodeTest):
         
         approach = buildsections('Approach And Landing', (7,10))
         node = self.node_class()
-        node.derive(flap, slat, None, None, None, model, series, family, approach, frame)
+        node.derive(flap, slat, None, None, None, None, model, series, family, approach, frame)
         
         self.assertEqual(list(node.array), list(np.repeat(expected, repeat)))
-        
+
+    def test_derive_flap_lever(self):
+        # Prepare our generated flap lever array:
+        flap_lever_array = [0.0, 0, 5, 2, 1, 0, 0, 10, 15, 25, 30, 40, 0, 0, 0]
+        flap_lever_array = MappedArray(np.repeat(flap_lever_array, 10),
+                                 values_mapping={f: str(f) for f in (0, 1, 2, 5, 10, 15, 25, 30, 40)})
+
+        flap_lever = M('Flap Lever', flap_lever_array)
+        model = A('Model', 'B737-333')
+        series = A('Series', 'B737-300')
+        family = A('Family', 'B737 Classic')
+        node = self.node_class()
+        node.derive(None, None, None, flap_lever, None, None, model, series, family)
+
+        # Check against an expected array of lever detents:
+        expected = [0, 0, 5, 2, 1, 0, 0, 10, 15, 25, 30, 40, 0, 0, 0]
+        mapping = {x: str(x) for x in sorted(set(expected))}
+        array = MappedArray(np.repeat(expected, 10), values_mapping=mapping)
+        np.testing.assert_array_equal(node.array, array)
+
         
 class TestFlaperon(unittest.TestCase):
     def test_can_operate(self):

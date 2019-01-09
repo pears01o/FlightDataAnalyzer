@@ -1425,6 +1425,9 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
     def can_operate(cls, available,
                     model=A('Model'), series=A('Series'), family=A('Family')):
 
+        if all_of(('Flap Lever', 'Model', 'Series', 'Family'), available):
+            return True
+
         if not (all_of(('Flap', 'Model', 'Series', 'Family'), available) or \
                 all_of(('Flap For Lever Synthetic', 'Model', 'Series', 'Family'), available)):
             return False
@@ -1455,45 +1458,51 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         return can_operate
 
 
-    def derive(self, flap=M('Flap'), slat=M('Slat'), flaperon=M('Flaperon'),
+    def derive(self, flap=M('Flap'), slat=M('Slat'), flaperon=M('Flaperon'), flap_lever=M('Flap Lever'),
                flap_synth=M('Flap For Flap Lever Synthetic'), slat_synth=M('Slat For Flap Lever Synthetic'),
                model=A('Model'), series=A('Series'), family=A('Family'),
                approach=S('Approach And Landing'), frame=A('Frame'),):
-        try:
-            angles = at.get_conf_angles(model.value, series.value, family.value)
-            use_conf = True
-        except KeyError:
-            angles = at.get_lever_angles(model.value, series.value, family.value)
-            use_conf = False
 
-        # Get the values mapping, airbus requires some hacking:
-        if use_conf:
-            self.values_mapping = at.constants.LEVER_STATES
+        # use flap_lever if available, ref AE-2033
+        if flap_lever:
+            self.values_mapping = flap_lever.values_mapping
+            self.array = flap_lever.array
         else:
-            self.values_mapping = at.get_lever_map(model.value, series.value, family.value)
+            try:
+                angles = at.get_conf_angles(model.value, series.value, family.value)
+                use_conf = True
+            except KeyError:
+                angles = at.get_lever_angles(model.value, series.value, family.value)
+                use_conf = False
 
-        # Prepare the destination array:
-        self.array = MappedArray(np_ma_masked_zeros_like(flap.array),
-                                 values_mapping=self.values_mapping)
-
-        flap_param = flap or flap_synth
-        slat_param = slat or slat_synth
-
-        for (state, (s, f, a)) in six.iteritems(angles):
-            condition = (flap_param.array == str(f))
-            if s is not None:
-                condition &= (slat_param.array == str(s))
-            if a is not None:
-                condition &= (flaperon.array == str(a))
+            # Get the values mapping, airbus requires some hacking:
             if use_conf:
-                state = at.constants.CONF_TO_LEVER[state]
-            self.array[condition] = state
+                self.values_mapping = at.constants.LEVER_STATES
+            else:
+                self.values_mapping = at.get_lever_map(model.value, series.value, family.value)
 
-        frame_name = frame.value if frame else None
-        approach_slices = approach.get_slices() if approach else None
-        
-        if frame_name == 'E170_EBD_047' and approach_slices is not None:
-            self.array[approach_slices][self.array[approach_slices] == 16] = 32
+            # Prepare the destination array:
+            self.array = MappedArray(np_ma_masked_zeros_like(flap.array),
+                                     values_mapping=self.values_mapping)
+
+            flap_param = flap or flap_synth
+            slat_param = slat or slat_synth
+
+            for (state, (s, f, a)) in six.iteritems(angles):
+                condition = (flap_param.array == str(f))
+                if s is not None:
+                    condition &= (slat_param.array == str(s))
+                if a is not None:
+                    condition &= (flaperon.array == str(a))
+                if use_conf:
+                    state = at.constants.CONF_TO_LEVER[state]
+                self.array[condition] = state
+
+            frame_name = frame.value if frame else None
+            approach_slices = approach.get_slices() if approach else None
+
+            if frame_name == 'E170_EBD_047' and approach_slices is not None:
+                self.array[approach_slices][self.array[approach_slices] == 16] = 32
             
 
 class Flaperon(MultistateDerivedParameterNode):

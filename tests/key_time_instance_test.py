@@ -1664,10 +1664,10 @@ class TestFirstFlapExtensionWhileAirborne(unittest.TestCase, NodeTest):
             ('Flap Lever (Synthetic)', 'Airborne'),
             ('Flap Lever', 'Flap Lever (Synthetic)', 'Airborne'),
         ]
-        array = np.ma.array((0, 0, 5, 5, 10, 10, 15, 10, 10, 5, 5, 0, 0))
+        array = np.ma.array([0, 0, 5, 5, 10, 10, 15, 10, 10, 5, 5, 0, 0])
         mapping = {int(f): str(f) for f in np.ma.unique(array)}
         self.flap_lever = M(name='Flap Lever', array=array, values_mapping=mapping)
-        array = np.ma.array((1, 1, 1, 5, 10, 10, 15, 10, 10, 5, 5, 1, 1))
+        array = np.ma.array([1, 1, 1, 5, 10, 10, 15, 10, 10, 5, 5, 1, 1])
         mapping = {int(f): 'Lever %s' % i for i, f in enumerate(np.ma.unique(array))}
         self.flap_synth = M(name='Flap Lever (Synthetic)', array=array, values_mapping=mapping)
 
@@ -1689,6 +1689,20 @@ class TestFirstFlapExtensionWhileAirborne(unittest.TestCase, NodeTest):
         self.assertEqual(node, KTI(name=name, items=[
             KeyTimeInstance(index=1.5, name=name),
         ]))
+
+    def test_corrupt_flap_signal(self):
+        
+        array = np.ma.array(data=[0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0],
+                            mask=[0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0])
+        mapping = {int(f): str(f) for f in np.ma.unique(array.data)}
+        self.flap_lever = M(name='Flap Lever', array=array, values_mapping=mapping)
+        airborne = buildsection('Airborne', 1, 12)
+        name = self.node_class.get_name()
+        node = self.node_class()
+        node.derive(self.flap_lever, None, airborne)
+        self.assertEqual(node, KTI(name=name, items=[
+            KeyTimeInstance(index=8.5, name=name),
+        ]))        
 
 
 class TestFlapRetractionWhileAirborne(unittest.TestCase, NodeTest):

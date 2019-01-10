@@ -874,6 +874,9 @@ class FirstFlapExtensionWhileAirborne(KeyTimeInstanceNode):
                 # Skip the case where the airborne slice ends:
                 if clean.stop == air.slice.stop - air.slice.start:
                     continue
+                # Skip the case where the data was corrupt
+                if retracted.mask[clean.stop + air.slice.start + 1]:
+                    continue
                 # Subtract half a sample index as transition between indices:
                 self.create_kti(clean.stop + air.slice.start - 0.5)
 

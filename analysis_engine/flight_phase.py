@@ -1199,13 +1199,14 @@ class InitialClimb(FlightPhaseNode):
                takeoffs=S('Takeoff'),
                climb_starts=KTI('Climb Start'),
                tocs=KTI('Top Of Climb'),
-               alt=P('Altitude STD')):
-        
-        # if max alt is above 1000 ft we don't need to consider the ToC
-        # point in our calculations
-        if alt and np.ma.max(alt.array) > 1000:
+               alt=P('Altitude STD'),
+               ac_type=A('Aircraft Type')):
+
+        # If max alt is above 1000 ft we don't need to consider the ToC
+        # point in our calculations for aeroplanes.
+        if alt and np.ma.max(alt.array) > 1000 and ac_type != helicopter:
             to_scan = [[t.stop_edge, 'takeoff'] for t in takeoffs] + \
-                [[c.index, 'climb'] for c in climb_starts]            
+                [[c.index, 'climb'] for c in climb_starts]
         else:
             to_scan = [[t.stop_edge, 'takeoff'] for t in takeoffs] + \
                 [[c.index, 'climb'] for c in climb_starts]+ \

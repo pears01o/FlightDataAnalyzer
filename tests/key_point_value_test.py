@@ -7283,6 +7283,84 @@ class TestAltitudeRadioDuringAutorotationMin(unittest.TestCase):
         self.assertEqual(node[0].value, 152)
 
 
+class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoption(unittest.TestCase):
+
+    def setUp(self):
+        self.offshore_mapping = {0: 'Onshore', 1: 'Offshore'}
+        self.node_class = AltitudeRadioMinimumBeforeNoseDownAttitudeAdoption
+
+    def test_can_operate(self):
+        expected = [('Offshore', 'Liftoff', 'Hover', 'Nose Down Attitude Adoption',
+                     'Altitude Radio')]
+        opts_h175 = self.node_class.get_operational_combinations(
+                    ac_type=helicopter, family=A('Family', 'H175'))
+
+        opts_aeroplane = self.node_class.get_operational_combinations(ac_type=aeroplane)
+        self.assertEqual(opts_h175, expected)
+        self.assertNotEqual(opts_aeroplane, expected)
+
+    def test_derive(self):
+        node = AltitudeRadioMinimumBeforeNoseDownAttitudeAdoption()
+        offshore_data = np.concatenate([np.zeros(10), np.ones(80),
+                                        np.zeros(10)])
+
+        offshore_array = MappedArray(offshore_data,
+                                     values_mapping=self.offshore_mapping)
+        offshore_multistate = M(name='Offshore', array=offshore_array)
+
+        liftoff = KTI('Liftoff', items=[
+            KeyTimeInstance(15, 'Liftoff'),
+        ])
+
+        hover = buildsection('Hover', 20, 30)
+        nose_down = buildsection('Nose Down Attitude Adoption', 29, 32)
+
+        rad_alt = np.concatenate([np.zeros(13), np.linspace(0, 30, num=7),
+                                  np.linspace(30, 5, num=10),
+                                  np.linspace(5, 1000, num=70)])
+
+        node.derive(offshore_multistate, liftoff, hover, nose_down, P('Altitude Radio', rad_alt))
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 28)
+        self.assertEqual(round(node[0].value, 2), 7.78)
+
+    def test_derive_multiple_liftoffs_and_offshore_clumps(self):
+        node = AltitudeRadioMinimumBeforeNoseDownAttitudeAdoption()
+        offshore_data = np.concatenate([np.zeros(10), np.ones(35),
+                                         np.zeros(3), np.ones(35),
+                                         np.zeros(17)])
+
+        offshore_array = MappedArray(offshore_data,
+                                     values_mapping=self.offshore_mapping)
+        offshore_multistate = M(name='Offshore', array=offshore_array)
+
+        liftoffs = KTI('Liftoff', items=[
+            KeyTimeInstance(15, 'Liftoff'),
+            KeyTimeInstance(50, 'Liftoff'),
+        ])
+
+        hovers = buildsections('Hover', [20, 30], [52, 65])
+        nose_downs = buildsections('Nose Down Attitude Adoption', [29, 32],
+                                                                  [59, 67])
+
+        rad_alt = np.concatenate([np.zeros(13), np.linspace(0, 30, num=7),
+
+                                  np.linspace(30, 5, num=10),
+                                  np.zeros(18), np.linspace(5, 30, num=8),
+                                  np.linspace(5, 1000, num=44)])
+
+        node.derive(offshore_multistate, liftoffs, hovers, nose_downs,
+                    P('Altitude Radio', rad_alt))
+
+        self.assertEqual(len(node), 2)
+
+        self.assertEqual(node[0].index, 28)
+        self.assertEqual(round(node[0].value, 2), 7.78)
+        self.assertEqual(node[1].index, 56)
+        self.assertEqual(round(node[1].value, 2), 5.00)
+
+
 class TestAltitudeRadioAtNoseDownAttitudeInitation(unittest.TestCase,
                                                    NodeTest):
 

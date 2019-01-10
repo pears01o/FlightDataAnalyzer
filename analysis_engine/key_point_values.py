@@ -5345,6 +5345,27 @@ class AltitudeDuringCruiseMin(KeyPointValueNode):
         self.create_kpvs_within_slices(alt_agl.array, cruise, min_value)
 
 
+class AltitudeRadioAtNoseDownAttitudeInitiation(KeyPointValueNode):
+    '''
+    Radio altitude at nose down attitude initiation.
+    '''
+    units = ut.FT
+    align_frequency = 16
+
+    @classmethod
+    def can_operate(cls, available, ac_type=A('Aircraft Type'),
+                    family=A('Family')):
+        return ac_type == helicopter and family and family.value == 'H175'\
+               and all_of(('Altitude Radio', 'Nose Down Attitude Adoption'),
+                   available)
+
+    def derive(self, rad_alt=P('Altitude Radio'),
+               nose_downs=S('Nose Down Attitude Adoption')):
+
+        for nose_down in nose_downs:
+            self.create_kpv(nose_down.slice.start,
+                            rad_alt.array[nose_down.slice.start])
+
 ########################################
 # Altitude: Flap
 
@@ -15681,8 +15702,51 @@ class PitchAboveFL200Min(KeyPointValueNode):
         self.create_kpvs_within_slices(pitch.array,
                                        alt.slices_above(20000), min_value)
 
+
+class PitchNoseDownAttitudeAdoptionDuration(KeyPointValueNode):
+    '''
+    Duration of time it takes for the helicopter to reach -10 degrees
+    pitch (minimum pitch as a fallback) after nose down attitude initiation.
+    '''
+    units = ut.SECOND
+    align_frequency = 16
+
+    @classmethod
+    def can_operate(cls, available, ac_type=A('Aircraft Type'),
+                    family=A('Family')):
+        return ac_type == helicopter and family and family.value == 'H175'\
+               and 'Nose Down Attitude Adoption' in available
+
+    def derive(self,
+               nose_downs=S('Nose Down Attitude Adoption')):
+
+        self.create_kpvs_from_slice_durations(nose_downs,
+                                              nose_downs.hz, mark='end')
+
+class PitchMinimumDuringNoseDownAttitudeAdoption(KeyPointValueNode):
+    '''
+    Minimum pitch during nose down attitude adoption.
+    '''
+    units = ut.DEGREE
+    align_frequency = 16
+
+    @classmethod
+    def can_operate(cls, available, ac_type=A('Aircraft Type'),
+                    family=A('Family')):
+        return ac_type == helicopter and family and family.value == 'H175'\
+               and all_of(('Pitch', 'Nose Down Attitude Adoption'), available)
+
+    def derive(self, pitch=P('Pitch'),
+               nose_downs=S('Nose Down Attitude Adoption')):
+
+        for nose_down in nose_downs:
+            self.create_kpv(nose_down.slice.stop,
+                            pitch.array[nose_down.slice.stop])
+
 ##############################################################################
 # Pitch Rate
+
+
 class PitchRateWhileAirborneMax(KeyPointValueNode):
     '''
     Maximum pitch rate while airborne.

@@ -45,6 +45,7 @@ from analysis_engine.flight_phase import (
     LevelFlight,
     MaximumContinuousPower,
     Mobile,
+    NoseDownAttitudeAdoption,
     OnDeck,
     RejectedTakeoff,
     RotorsTurning,
@@ -2013,6 +2014,64 @@ class TestMobile(unittest.TestCase, NodeTest):
         expected = buildsection('Mobile', 0, 5)
         self.assertEqual(move.get_slices(), expected.get_slices())
 
+class TestNoseDownAttitudeAdoption(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = NoseDownAttitudeAdoption
+        self.climbs = buildsection('Initial Climb', 10, 40)
+        self.operational_combinations = [('Pitch', 'Initial Climb')]
+
+    def test_can_operate(self):
+        expected = [('Pitch', 'Initial Climb',)]
+        opts_h175 = self.node_class.get_operational_combinations(
+                    ac_type=helicopter, family=A('Family', 'H175'))
+
+        opts_aeroplane = self.node_class.get_operational_combinations(
+                         ac_type=aeroplane)
+
+        self.assertEqual(opts_h175, expected)
+        self.assertNotEqual(opts_aeroplane, expected)
+
+    def test_nose_down_basic(self):
+        node = NoseDownAttitudeAdoption()
+        pitch = np.concatenate([np.ones(15) * 2, np.linspace(2, -11, num=15),
+                                np.ones(10) * -11])
+
+        node.derive(P('Pitch', pitch), self.climbs)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0],
+            Section('Nose Down Attitude Adoption', slice(15, 28, None),
+            15, 28))
+
+    def test_nose_down_insufficient_pitch(self):
+        node = NoseDownAttitudeAdoption()
+        pitch = np.concatenate([np.ones(15) * 2, np.linspace(2, -6, num=15),
+                                np.ones(10) * -6])
+
+        node.derive(P('Pitch', pitch), self.climbs)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0],
+            Section('Nose Down Attitude Adoption', slice(15, 29, None),
+            15, 29))
+
+    def test_nose_down_multiple_climbs(self):
+        node = NoseDownAttitudeAdoption()
+        pitch = np.concatenate([np.ones(15) * 2, np.linspace(2, -11, num=15),
+                                np.linspace(-11, 2, num=10),
+                                np.ones(20) * 2, np.linspace(2, -11, num=15),
+                                np.ones(10) * -11])
+        climbs = buildsections('Initial Climb', [10, 40], [60, 85])
+        node.derive(P('Pitch', pitch), climbs)
+
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0],
+            Section('Nose Down Attitude Adoption', slice(15, 28, None),
+            15, 28))
+        self.assertEqual(node[1],
+            Section('Nose Down Attitude Adoption', slice(60, 73, None),
+            60, 73))
 
 class TestLevelFlight(unittest.TestCase, NodeTest):
 

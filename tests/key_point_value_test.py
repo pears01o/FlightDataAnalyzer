@@ -438,6 +438,7 @@ from analysis_engine.key_point_values import (
     FlareDistance20FtToTouchdown,
     FlareDuration20FtToTouchdown,
     FlightControlPreflightCheck,
+    FuelCrossFeedValveStateAtLiftoff,
     ApproachFlightPathAngle1500To1000FtMax,
     ApproachFlightPathAngle1500To1000FtMin,
     ApproachFlightPathAngle1000To500FtMax,
@@ -16817,6 +16818,12 @@ class TestFuelJettisonDuration(unittest.TestCase, CreateKPVsWhereTest):
 
         self.basic_setup()
 
+class TestFuelCrossFeedValveStateAtLiftoff(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_derive(self):
+        pass
 
 ##############################################################################
 # Groundspeed

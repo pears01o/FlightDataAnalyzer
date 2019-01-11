@@ -14063,6 +14063,15 @@ class FuelJettisonDuration(KeyPointValueNode):
 
         self.create_kpvs_where(jet.array == 'Disagree', jet.hz, phase=airborne)
 
+class FuelCrossFeedValveStateAtLiftoff(KeyPointValueNode):
+    '''
+
+    '''
+
+    def derive(self, fuel_valve=P('Fuel Cross Feed Valve'),
+               liftoffs=KTI('Liftoff')):
+
+        self.create_kpvs_at_ktis(fuel_valve.array == 'Disagree', liftoffs)
 
 ##############################################################################
 # Groundspeed

@@ -18685,6 +18685,37 @@ class DualInputByFOMax(KeyPointValueNode):
         )
 
 
+class ControlColumnForceMax(KeyPointValueNode):
+
+    units = ut.DECANEWTON
+
+    @classmethod
+    def can_operate(cls, available):
+
+        return all_of(('Control Column Force (Capt)', 'Control Column Force (FO)',), available)
+
+    def derive(self,
+               force_capt=P('Control Column Force (Capt)'),
+               force_fo=P('Control Column Force (FO)'),
+               taxiing=S('Taxiing'),
+               turns=S('Turning On Ground'), ):
+
+        if taxiing and turns:
+            straights = slices_and([s.slice for s in list(taxiing)],
+                                   slices_not([s.slice for s in list(turns)]), )
+            unmasked_capt = []
+            unmasked_fo = []
+            for straight in straights:
+                unmasked_capt.extend(np.ma.compressed(force_capt.array[straight]))
+                unmasked_fo.extend(np.ma.compressed(force_fo.array[straight]))
+
+            delta_capt = np.sum(unmasked_capt) / float(len(unmasked_capt)) if len(unmasked_capt) > 20 else 0
+            delta_fo = np.sum(unmasked_fo) / float(len(unmasked_fo)) if len(unmasked_fo) > 20 else 0
+
+            capt_offset_removed = force_capt.array - delta_capt
+            fo_offset_removed = force_fo.array - delta_fo
+
+
 ##############################################################################
 
 

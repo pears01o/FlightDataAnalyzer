@@ -16822,27 +16822,50 @@ class TestFuelCrossFeedValveStateAtLiftoff(unittest.TestCase):
 
     def setUp(self):
         self.node_class = FuelCrossFeedValveStateAtLiftoff
+
         self.valve_data=M('Fuel Cross Feed Valve Position',
              array=np.ma.array([0]*5 + [1]*5),
              values_mapping = {0: 'Closed', 1: 'Open'})
 
-        self.liftoff_closed = KTI('Liftoff', items=[KeyTimeInstance(4, 'Liftoff')])
-        self.liftoff_open = KTI('Liftoff', items=[KeyTimeInstance(6, 'Liftoff')])
+        self.valve_data_fallback=M('Fuel Cross Feed Valve',
+             array=np.ma.array([0]*5 + [1]*5),
+             values_mapping = {0: 'Normal', 1: 'Disagree'})
+
+        self.liftoff_closed = KTI('Liftoff',
+                              items=[KeyTimeInstance(4, 'Liftoff')])
+
+        self.liftoff_open = KTI('Liftoff',
+                            items=[KeyTimeInstance(6, 'Liftoff')])
 
     def test_can_operate(self):
-        expected = ('Fuel Cross Feed Valve Position',)
+        expected = [('Fuel Cross Feed Valve Position',),
+                    ('Fuel Cross Feed Valve',)]
         opts = self.node_class.get_operational_combinations()
-        self.assertIn(expected, opts)
+        self.assertTrue(any_of(expected, opts))
 
     def test_derive_closed(self):
         node = FuelCrossFeedValveStateAtLiftoff()
-        node.derive(self.valve_data, self.liftoff_closed)
+        node.derive(self.valve_data, None, self.liftoff_closed)
 
         self.assertEqual(len(node), 0)
 
     def test_derive_open(self):
         node = FuelCrossFeedValveStateAtLiftoff()
-        node.derive(self.valve_data, self.liftoff_open)
+        node.derive(self.valve_data, None, self.liftoff_open)
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 6)
+        self.assertEqual(node[0].value, 1)
+
+    def test_derive_closed_fallback(self):
+        node = FuelCrossFeedValveStateAtLiftoff()
+        node.derive(None, self.valve_data_fallback, self.liftoff_closed)
+
+        self.assertEqual(len(node), 0)
+
+    def test_derive_open_fallback(self):
+        node = FuelCrossFeedValveStateAtLiftoff()
+        node.derive(None, self.valve_data_fallback, self.liftoff_open)
 
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 6)

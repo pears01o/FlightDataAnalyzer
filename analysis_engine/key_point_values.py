@@ -14074,13 +14074,19 @@ class FuelCrossFeedValveStateAtLiftoff(KeyPointValueNode):
 
     @classmethod
     def can_operate(cls, available):
-        return 'Fuel Cross Feed Valve Position' in available
+        return any_of(['Fuel Cross Feed Valve Position',
+                       'Fuel Cross Feed Valve'], available)
 
     def derive(self, fuel_valve=P('Fuel Cross Feed Valve Position'),
+               fuel_valve_fallback=P('Fuel Cross Feed Valve'),
                liftoffs=KTI('Liftoff')):
 
-        self.create_kpvs_at_ktis(fuel_valve.array == 'Open', liftoffs,
-                                 suppress_zeros=True)
+        if fuel_valve:
+            self.create_kpvs_at_ktis(fuel_valve.array == 'Open', liftoffs,
+                                    suppress_zeros=True)
+        else:
+            self.create_kpvs_at_ktis(fuel_valve_fallback.array == 'Disagree',
+                                     liftoffs, suppress_zeros=True)
 
 ##############################################################################
 # Groundspeed

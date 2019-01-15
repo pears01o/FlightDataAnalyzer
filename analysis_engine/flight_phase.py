@@ -847,7 +847,11 @@ class Hover(FlightPhaseNode):
             for low in lows:
                 if np.ma.min(alt_agl.array[shift_slice(low, air.slice.start)]) <= HOVER_MIN_HEIGHT:
                     low_flights.extend([shift_slice(low, air.slice.start)])
-        slows = slices_below(gspd.array, HOVER_GROUNDSPEED_LIMIT)[1]
+
+        repaired_gspd = repair_mask(gspd.array, frequency=gspd.hz,
+                                    repair_duration=8, method='fill_start')
+
+        slows = slices_below(repaired_gspd, HOVER_GROUNDSPEED_LIMIT)[1]
         low_flights = slices_and(low_flights, slows)
         # Remove periods identified already as transitions.
         for low_flight in low_flights:

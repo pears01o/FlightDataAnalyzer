@@ -159,26 +159,27 @@ class APLateralMode(MultistateDerivedParameterNode):
                                      roll_go_around_mode_active,
                                      land_track_active,
                                      heading_mode_active) if p)
-        self.array = np_ma_zeros_like(parameter.array)
+        array = MappedArray(np_ma_zeros_like(parameter.array), values_mapping=self.values_mapping)
 
         if lateral_mode_selected:
-            self.array[lateral_mode_selected.array == 'Runway Mode Active'] = 'RWY'
-            self.array[lateral_mode_selected.array == 'NAV Mode Active'] = 'NAV'
-            self.array[lateral_mode_selected.array == 'ILS Localizer Capture Active'] = 'LOC CAPT',
+            array[lateral_mode_selected.array == 'Runway Mode Active'] = 'RWY'
+            array[lateral_mode_selected.array == 'NAV Mode Active'] = 'NAV'
+            array[lateral_mode_selected.array == 'ILS Localizer Capture Active'] = 'LOC CAPT',
         if runway_mode_active:
-            self.array[runway_mode_active.array == 'Activated'] = 'RWY'
+            array[runway_mode_active.array == 'Activated'] = 'RWY'
         if nav_mode_active:
-            self.array[nav_mode_active.array == 'Activated'] = 'NAV'
+            array[nav_mode_active.array == 'Activated'] = 'NAV'
         if ils_localizer_capture_active:
-            self.array[ils_localizer_capture_active.array == 'Activated'] = 'LOC CAPT'
+            array[ils_localizer_capture_active.array == 'Activated'] = 'LOC CAPT'
         if ils_localizer_track_active:
-            self.array[ils_localizer_track_active.array == 'Activated'] = 'LOC'
+            array[ils_localizer_track_active.array == 'Activated'] = 'LOC'
         if roll_go_around_mode_active:
-            self.array[roll_go_around_mode_active.array == 'Activated'] = 'ROLL OUT'
+            array[roll_go_around_mode_active.array == 'Activated'] = 'ROLL OUT'
         if land_track_active:
-            self.array[land_track_active.array == 'Activated'] = 'LAND'
+            array[land_track_active.array == 'Activated'] = 'LAND'
         if heading_mode_active:
-            self.array[heading_mode_active.array == 'Activated'] = 'HDG'
+            array[heading_mode_active.array == 'Activated'] = 'HDG'
+        self.array = array
 
 
 class APVerticalMode(MultistateDerivedParameterNode):
@@ -240,48 +241,50 @@ class APVerticalMode(MultistateDerivedParameterNode):
                                      expedite_climb_mode,
                                      expedite_descent_mode,
                                      vert_spd_engaged) if p)
-        self.array = np_ma_zeros_like(parameter.array)
+        array = MappedArray(np_ma_zeros_like(parameter.array), values_mapping=self.values_mapping)
 
         if at_active:
-            self.array[at_active.array == 'Activated'] = 'DES'
+            array[at_active.array == 'Activated'] = 'DES'
         if climb_mode_active:
-            self.array[climb_mode_active.array == 'Activated'] = 'CLB'
+            array[climb_mode_active.array == 'Activated'] = 'CLB'
         if vert_spd_engaged:
-            self.array[vert_spd_engaged.array == 'Engaged'] = 'V/S'
+            array[vert_spd_engaged.array == 'Engaged'] = 'V/S'
         if longitudinal_mode_selected:
             states = longitudinal_mode_selected.state.keys()
             if 'Climb Mode Active' in states:
-                self.array[longitudinal_mode_selected.array == 'Climb Mode Active'] = 'CLB'
+                array[longitudinal_mode_selected.array == 'Climb Mode Active'] = 'CLB'
             if 'Descent Mode' in states:
-                self.array[longitudinal_mode_selected.array == 'Descent Mode'] = 'DES'
+                array[longitudinal_mode_selected.array == 'Descent Mode'] = 'DES'
             if 'Altitude' in states:
-                self.array[longitudinal_mode_selected.array == 'Altitude'] = 'ALT CSTR'
+                array[longitudinal_mode_selected.array == 'Altitude'] = 'ALT CSTR'
             if 'Final Descent Mode' in states:
-                self.array[longitudinal_mode_selected.array == 'Final Descent Mode'] = 'FINAL'
+                array[longitudinal_mode_selected.array == 'Final Descent Mode'] = 'FINAL'
             if 'Flare Mode' in states:
-                self.array[longitudinal_mode_selected.array == 'Flare Mode'] = 'FLARE'
+                array[longitudinal_mode_selected.array == 'Flare Mode'] = 'FLARE'
             if 'Land Track Active' in states:
-                self.array[longitudinal_mode_selected.array == 'Land Track Active'] = 'LAND'
+                array[longitudinal_mode_selected.array == 'Land Track Active'] = 'LAND'
             if 'Vertical Speed Engaged' in states:
-                self.array[longitudinal_mode_selected.array == 'Vertical Speed Engaged'] = 'V/S'
+                array[longitudinal_mode_selected.array == 'Vertical Speed Engaged'] = 'V/S'
         if ils_glideslope_capture_active:
-            self.array[ils_glideslope_capture_active.array == 'Activated'] = 'GS CAPT'
+            array[ils_glideslope_capture_active.array == 'Activated'] = 'GS CAPT'
         if ils_glideslope_active:
-            self.array[ils_glideslope_active.array == 'Activated'] = 'GS'
+            array[ils_glideslope_active.array == 'Activated'] = 'GS'
         if flare_mode:
-            self.array[flare_mode.array == 'Engaged'] = 'FLARE'
+            array[flare_mode.array == 'Engaged'] = 'FLARE'
         if open_climb_mode:
-            self.array[open_climb_mode.array == 'Activated'] = 'OP CLB'
+            array[open_climb_mode.array == 'Activated'] = 'OP CLB'
         if open_descent_mode:
-            self.array[open_descent_mode.array == 'Activated'] = 'OP DES'
+            array[open_descent_mode.array == 'Activated'] = 'OP DES'
         if altitude_capture_mode:
-            self.array[altitude_capture_mode.array == 'Activated'] = 'ALT CAPT'
+            array[altitude_capture_mode.array == 'Activated'] = 'ALT CAPT'
         if altitude_mode:
-            self.array[altitude_mode.array == 'Activated'] = 'ALT'
+            array[altitude_mode.array == 'Activated'] = 'ALT'
         if expedite_climb_mode:
-            self.array[expedite_climb_mode.array == 'Activated'] = 'EXPED CLB'
+            array[expedite_climb_mode.array == 'Activated'] = 'EXPED CLB'
         if expedite_descent_mode:
-            self.array[expedite_descent_mode.array == 'Activated'] = 'EXPED DES'
+            array[expedite_descent_mode.array == 'Activated'] = 'EXPED DES'
+
+        self.array = array
 
 
 class APUOn(MultistateDerivedParameterNode):
@@ -386,7 +389,7 @@ class Configuration(MultistateDerivedParameterNode):
         angles = at.get_conf_angles(model.value, series.value, family.value)
 
         # initialize an empty masked array the same length as flap array
-        self.array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
+        array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
                                  values_mapping=self.values_mapping)
 
         for (state, (s, f, a)) in six.iteritems(angles):
@@ -394,11 +397,13 @@ class Configuration(MultistateDerivedParameterNode):
             if s is not None:
                 condition &= (slat.array == s)
 
-            self.array[condition] = state
+            array[condition] = state
 
         nearest_neighbour_mask_repair(self.array, copy=False,
                                       repair_gap_size=(30 * self.hz),
                                       direction='backward')
+
+        self.array = array
 
 
 class ConfigurationExcludingTransition(MultistateDerivedParameterNode):
@@ -452,19 +457,20 @@ class ConfigurationExcludingTransition(MultistateDerivedParameterNode):
         angles = at.get_conf_angles(model.value, series.value, family.value)
 
         # initialize an empty masked array the same length as flap array
-        self.array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short),
-                                 values_mapping=self.values_mapping)
+        array = MappedArray(np_ma_masked_zeros_like(flap.array, dtype=np.short), values_mapping=self.values_mapping)
 
         for (state, (s, f, a)) in six.iteritems(angles):
             condition = (flap.array == f)
             if s is not None:
                 condition &= (slat.array == s)
 
-            self.array[condition] = state
+            array[condition] = state
 
         nearest_neighbour_mask_repair(self.array, copy=False,
                                       repair_gap_size=(30 * self.hz),
                                       direction='backward')
+
+        self.array = array
 
 
 class Daylight(MultistateDerivedParameterNode):
@@ -503,21 +509,23 @@ class Daylight(MultistateDerivedParameterNode):
                start_datetime=A('Start Datetime'),
                duration=A('HDF Duration')):
         # Set default to 'Day'
-        array_len = int(duration.value * self.frequency)
-        self.array = np.ma.ones(array_len)
-        for step in range(array_len):
+        array_len = duration.value * self.frequency
+        array = np.ma.ones(array_len)
+        for step in range(int(array_len)):
             curr_dt = datetime_of_index(start_datetime.value, step, 1)
             lat = latitude.array[step]
             lon = longitude.array[step]
             if lat and lon:
                 if not dateext.is_day(curr_dt, lat, lon):
                     # Replace values with Night
-                    self.array[step] = 0
+                    array[step] = 0
                 else:
                     continue  # leave array as 1
             else:
                 # either is masked or recording 0.0 which is invalid too
-                self.array[step] = np.ma.masked
+                array[step] = np.ma.masked
+
+        self.array = array
 
 
 class DualInput(MultistateDerivedParameterNode):
@@ -1039,17 +1047,20 @@ class Flap(MultistateDerivedParameterNode):
 
         if family_name == 'Citation VLJ' and duration:
             self.values_mapping = {0: '0', 15: '15', 30: '30'}
-            self.array = np.ma.zeros(int(duration * self.frequency))
+            array = np.ma.zeros(int(duration * self.frequency))
             for toff in toffs:
-                self.array[toff.slice] = 15
+                array[toff.slice] = 15
             for land in lands:
-                self.array[land.slice] = 30
+                array[land.slice] = 30
+
+            self.array = array
             return
 
         if family_name == 'C208':
             self.values_mapping = {0: '0', 10: '10', 20: '20', 40: '40'}
-            self.array = np_ma_zeros_like(alt_aal.array)
-            self.array[alt_aal.array < 500.0] = 40
+            array = np_ma_zeros_like(alt_aal.array)
+            array[alt_aal.array < 500.0] = 40
+            self.array = array
             self.frequency, self.offset = alt_aal.frequency, alt_aal.offset
             return
 
@@ -1307,7 +1318,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
             self.values_mapping = at.get_lever_map(model.value, series.value, family.value)
 
         # Prepare the destination array:
-        self.array = MappedArray(np_ma_masked_zeros_like(flap.array),
+        array = MappedArray(np_ma_masked_zeros_like(flap.array),
                                  values_mapping=self.values_mapping)
 
         flap_param = flap or flap_synth
@@ -1321,7 +1332,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
                 condition &= (flaperon.array == str(a))
             if use_conf:
                 state = at.constants.CONF_TO_LEVER[state]
-            self.array[condition] = state
+            array[condition] = state
 
         frame_name = frame.value if frame else None
         approach_slices = approach.get_slices() if approach else None
@@ -1329,8 +1340,10 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         if frame_name == 'E170_EBD_047' and approach_slices is not None:
             # The Lever 4 and 5 share the same flap/slat config.
             # On approaches the config is refferred to as Lever 5
-            self.array[self.array == 32] = 16  # ensure lever 4 before approach mod
-            self.array[tuple(approach_slices)][self.array[tuple(approach_slices)] == 16] = 32
+            array[array == 32] = 16  # ensure lever 4 before approach mod
+            array[tuple(approach_slices)][array[tuple(approach_slices)] == 16] = 32
+
+        self.array = array
 
 
 class Flaperon(MultistateDerivedParameterNode):
@@ -1499,7 +1512,9 @@ class GearDownInTransit(MultistateDerivedParameterNode):
 
 
         gear_sels = gear_ups = gear_downs = runs = []
-        self.array = np_ma_zeros_like(first_valid_parameter(gear_down, gear_up, gear_down_sel, gear_position).array)
+        array = MappedArray(
+            np_ma_zeros_like(first_valid_parameter(gear_down, gear_up, gear_down_sel, gear_position).array),
+            values_mapping=self.values_mapping)
 
         # work out fallback
         extend_duration = 0
@@ -1573,7 +1588,9 @@ class GearDownInTransit(MultistateDerivedParameterNode):
             pass
 
         for run in slices_int(runs):
-            self.array[run.start:run.stop] = 'Extending'
+            array[run.start:run.stop] = 'Extending'
+
+        self.array = array
 
 
 class GearUpInTransit(MultistateDerivedParameterNode):
@@ -1627,7 +1644,9 @@ class GearUpInTransit(MultistateDerivedParameterNode):
                model=A('Model'), series=A('Series'), family=A('Family')):
 
         gear_sels = gear_ups = gear_downs = runs = []
-        self.array = np_ma_zeros_like(first_valid_parameter(gear_down, gear_up, gear_up_sel, gear_position).array)
+        array = MappedArray(
+            np_ma_zeros_like(first_valid_parameter(gear_down, gear_up, gear_up_sel, gear_position).array),
+            values_mapping=self.values_mapping)
 
         # work out fallback
         retract_duration = 0
@@ -1706,7 +1725,9 @@ class GearUpInTransit(MultistateDerivedParameterNode):
             pass
 
         for run in slices_int(runs):
-            self.array[run.start:run.stop] = 'Retracting'
+            array[run.start:run.stop] = 'Retracting'
+
+        self.array = array
 
 
 class GearUp(MultistateDerivedParameterNode):
@@ -1734,13 +1755,15 @@ class GearUp(MultistateDerivedParameterNode):
                gear_pos=M('Gear Position')):
         if gear_sel and gear_transit:
             gear_sel_array = align(gear_sel, gear_transit) if gear_sel.hz != gear_transit.hz else gear_sel.array
-            self.array = (gear_sel_array == 'Up') & ~(gear_transit.array == 'Retracting')
-            _slices = runs_of_ones(self.array == 'Down')
+            array = (gear_sel_array == 'Up') & ~(gear_transit.array == 'Retracting')
+            _slices = runs_of_ones(array == 'Down')
             _slices = slices_remove_small_gaps(_slices, 6, self.hz)
             for _slice in _slices:
-                self.array[_slice] = 'Down'
+                array[_slice] = 'Down'
         else:
-            self.array = gear_pos.array == 'Up'
+            array = gear_pos.array == 'Up'
+
+        self.array = array
 
 
 class GearInTransit(MultistateDerivedParameterNode):
@@ -1810,8 +1833,6 @@ class GearOnGround(MultistateDerivedParameterNode):
 
 
 class GearDownSelected(MultistateDerivedParameterNode):
-
-
     align_frequency = 1
     values_mapping = {
         0: 'Up',
@@ -2298,8 +2319,8 @@ class SlatFullyExtended(MultistateDerivedParameterNode):
 
         # mask indexes with greater than 50% masked values
         mask = np.ma.where(extended_stack.mask.sum(axis=0).astype(float) / len(extended_stack) * 100 > 50, 1, 0)
+        array.mask = mask
         self.array = array
-        self.array.mask = mask
 
 
 class SlatPartExtended(MultistateDerivedParameterNode):
@@ -2333,8 +2354,8 @@ class SlatPartExtended(MultistateDerivedParameterNode):
 
         # mask indexes with greater than 50% masked values
         mask = np.ma.where(extended_stack.mask.sum(axis=0).astype(float) / len(extended_stack) * 100 > 50, 1, 0)
+        array.mask = mask
         self.array = array
-        self.array.mask = mask
 
 
 class SlatInTransit(MultistateDerivedParameterNode):
@@ -2368,8 +2389,8 @@ class SlatInTransit(MultistateDerivedParameterNode):
 
         # mask indexes with greater than 50% masked values
         mask = np.ma.where(transit_stack.mask.sum(axis=0).astype(float) / len(transit_stack) * 100 > 50, 1, 0)
+        array.mask = mask
         self.array = array
-        self.array.mask = mask
 
 
 class SlatRetracted(MultistateDerivedParameterNode):
@@ -2403,8 +2424,8 @@ class SlatRetracted(MultistateDerivedParameterNode):
 
         # mask indexes with greater than 50% masked values
         mask = np.ma.where(retracted_stack.mask.sum(axis=0).astype(float) / len(retracted_stack) * 100 > 50, 1, 0)
+        array.mask = mask
         self.array = array
-        self.array.mask = mask
 
 
 class StickPusher(MultistateDerivedParameterNode):
@@ -2693,8 +2714,8 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
 
             # mask indexes with greater than 50% masked values
             mask = np.ma.where(stack.mask.sum(axis=0).astype(float) / len(stack) * 100 > 50, 1, 0)
+            array.mask = mask
             self.array = array
-            self.array.mask = mask
 
 
 class SpeedbrakeSelected(MultistateDerivedParameterNode):
@@ -2913,10 +2934,9 @@ class SpeedbrakeSelected(MultistateDerivedParameterNode):
                                                  armed=12)
 
         elif family_name == 'B777':
-            self.array = np.ma.where((handle.array >= 30.0),
-                                     'Deployed/Cmd Up', 'Armed/Cmd Dn')
-            self.array = np.ma.where((handle.array <= 1.0),
-                                     'Stowed', self.array)
+            array = np.ma.where((handle.array >= 30.0), 'Deployed/Cmd Up', 'Armed/Cmd Dn')
+            array = np.ma.where((handle.array <= 1.0), 'Stowed', array)
+            self.array = array
 
         elif family_name in ('A300', 'A310') and not spdbrk:
             # Have only seen Speedbrake Handle ,not Speedbrake parameter so
@@ -2928,10 +2948,10 @@ class SpeedbrakeSelected(MultistateDerivedParameterNode):
         elif family_name == 'MD-11':
             self.array = self.derive_from_armed_and_speedbrake(armed, spdbrk, threshold=10.0)
         elif family_name in ('A340', 'A350', 'A380'):
-            self.array = np.ma.where((handle.array < -1.0),
-                         'Armed/Cmd Dn', 'Stowed')
-            self.array = np.ma.where((spdbrk.array > 5.0),
-                                     'Deployed/Cmd Up', self.array)
+            array = np.ma.where((handle.array < -1.0), 'Armed/Cmd Dn', 'Stowed')
+            array = np.ma.where((spdbrk.array > 5.0), 'Deployed/Cmd Up', array)
+            self.array = array
+
         elif family_name == 'A330':
             if armed:
                 array = np.ma.where((armed.array == 'Armed'),
@@ -3129,8 +3149,8 @@ class StableApproachStages(object):
             # Congratulations; whatever remains in this approach is stable!
             self.array[_slice][stable] = 9
 
-        #endfor
-        return
+        # FIXME: "magic" assignment with side effects, use temporary array instead (refactor _stable_* methods)
+        self.array = self.array
 
     def _stable_1_gear_down(self, _slice, gear):
         #== 1. Gear Down ==
@@ -3513,8 +3533,8 @@ class ThrustReversers(MultistateDerivedParameterNode):
 
         # mask indexes with greater than 50% masked values
         mask = np.ma.where(mask_stack.mask.sum(axis=0).astype(float) / len(mask_stack) * 100 > 50, 1, 0)
+        array.mask = mask
         self.array = array
-        self.array.mask = mask
 
 
 class ThrustReversersEffective(MultistateDerivedParameterNode):
@@ -3540,14 +3560,16 @@ class ThrustReversersEffective(MultistateDerivedParameterNode):
             power = eng_n1
             threshold = REVERSE_THRUST_EFFECTIVE_N1
 
-        self.array = np_ma_zeros_like(tr.array)
+        array = np_ma_zeros_like(tr.array)
         high_power = np.ma.masked_less(power.array, threshold)
         high_power_slices = np.ma.clump_unmasked(high_power)
         for landing in landings:
             high_power_landing_slices = slices_and(high_power_slices, [landing.slice])
             effective_slices = clump_multistate(tr.array, 'Deployed', high_power_landing_slices)
             for sl in effective_slices:
-                self.array[sl] = 'Effective'
+                array[sl] = 'Effective'
+
+        self.array = array
 
 
 class TAWSAlert(MultistateDerivedParameterNode):
@@ -3617,10 +3639,12 @@ class TAWSAlert(MultistateDerivedParameterNode):
         )
         res = params_state.any(axis=0)
 
-        self.array = np_ma_masked_zeros_like(params_state[0], dtype=np.short)
+        array = np_ma_masked_zeros_like(params_state[0], dtype=np.short)
         if airs:
             for air in airs:
-                self.array[air.slice] = res[air.slice]
+                array[air.slice] = res[air.slice]
+
+        self.array = array
 
 
 class TAWSDontSink(MultistateDerivedParameterNode):
@@ -3826,6 +3850,6 @@ class Transmitting(MultistateDerivedParameterNode):
             hf1_fo, hf2_fo, hf3_fo, sc, sc1, sc2, vhf, vhf1, vhf2, vhf3,
             vhf1_capt, vhf2_capt, vhf3_capt, vhf1_fo, vhf2_fo, vhf3_fo,
         )))
-        self.array = stacked.any(axis=0)
-        self.array.mask = stacked.mask.any(axis=0)
-
+        array = stacked.any(axis=0)
+        array.mask = stacked.mask.any(axis=0)
+        self.array = array

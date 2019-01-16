@@ -1524,13 +1524,15 @@ class ClimbForFlightPhases(DerivedParameterNode):
 
     def derive(self, alt_std=P('Altitude STD Smoothed'), airs=S('Fast')):
 
-        self.array = np_ma_zeros(len(alt_std.array))
+        array = np_ma_zeros(len(alt_std.array))
         repair_mask(alt_std.array) # Remove small sections of corrupt data
         for air in airs:
             deltas = np.ma.ediff1d(alt_std.array[air.slice], to_begin=0.0)
             ups = np.ma.clump_unmasked(np.ma.masked_less(deltas,0.0))
             for up in ups:
-                self.array[air.slice][up] = np.ma.cumsum(deltas[up])
+                array[air.slice][up] = np.ma.cumsum(deltas[up])
+
+        self.array = array
 
 
 class DescendForFlightPhases(DerivedParameterNode):
@@ -1543,13 +1545,15 @@ class DescendForFlightPhases(DerivedParameterNode):
 
     def derive(self, alt_std=P('Altitude STD Smoothed'), airs=S('Fast')):
 
-        self.array = np_ma_zeros(len(alt_std.array))
+        array = np_ma_zeros(len(alt_std.array))
         repair_mask(alt_std.array) # Remove small sections of corrupt data
         for air in airs:
             deltas = np.ma.ediff1d(alt_std.array[air.slice], to_begin=0.0)
             downs = np.ma.clump_unmasked(np.ma.masked_greater(deltas,0.0))
             for down in downs:
-                self.array[air.slice][down] = np.ma.cumsum(deltas[down])
+                array[air.slice][down] = np.ma.cumsum(deltas[down])
+
+        self.array = array
 
 
 class AOA(DerivedParameterNode):
@@ -1796,16 +1800,18 @@ class DistanceToLanding(DerivedParameterNode):
     units = ut.NM
 
     def derive(self, dist=P('Distance Travelled'), tdwns=KTI('Touchdown')):
-        self.array = np.zeros_like(dist.array)
+        array = np.zeros_like(dist.array)
         if tdwns:
             last_tdwn = 0
             for tdwn in tdwns.get_ordered_by_index():
                 this_tdwn = int(tdwn.index)
-                self.array[last_tdwn:this_tdwn+1] = np.ma.abs(dist.array[last_tdwn:this_tdwn+1] - (value_at_index(dist.array, this_tdwn) or np.ma.masked))
+                array[last_tdwn:this_tdwn+1] = np.ma.abs(dist.array[last_tdwn:this_tdwn+1] - (value_at_index(dist.array, this_tdwn) or np.ma.masked))
                 last_tdwn = this_tdwn+1
-            self.array[last_tdwn:] = np.ma.abs(dist.array[last_tdwn:] - dist.array[this_tdwn])
+            array[last_tdwn:] = np.ma.abs(dist.array[last_tdwn:] - dist.array[this_tdwn])
         else:
-            self.array.mask = True
+            array.mask = True
+
+        self.array = array
 
 
 class DistanceFlown(DerivedParameterNode):
@@ -1818,13 +1824,15 @@ class DistanceFlown(DerivedParameterNode):
 
     def derive(self, tas=P('Airspeed True'), airs=S('Airborne')):
 
-        self.array = np_ma_zeros_like(tas.array)
+        array = np_ma_zeros_like(tas.array)
         if airs.get_first():
             start = airs.get_first().slice.start
             stop = airs.get_last().slice.stop
             _slice = slice(start, stop)
-            self.array[_slice] = integrate(tas.array[_slice], tas.frequency, scale=1.0 / 3600.0)
-            self.array[_slice.stop:] = self.array[_slice.stop-1]
+            array[_slice] = integrate(tas.array[_slice], tas.frequency, scale=1.0 / 3600.0)
+            array[_slice.stop:] = array[_slice.stop-1]
+
+        self.array = array
 
 
 class DistanceTravelled(DerivedParameterNode):
@@ -3659,34 +3667,36 @@ class GrossWeight(DerivedParameterNode):
         duration = hdf_duration.value * self.frequency if hdf_duration else None
 
         if land_weight and duration:
-            self.array = np_ma_zeros(duration)
+            array = np_ma_zeros(duration)
             if (liftoffs and touchdowns and takeoff_weight):
                 liftoff_index = int(liftoffs.get_first().index)
                 touchdown_index = int(touchdowns.get_last().index)
-                self.array[:liftoff_index] = np.ma.masked
-                self.array[touchdown_index:] = np.ma.masked
+                array[:liftoff_index] = np.ma.masked
+                array[touchdown_index:] = np.ma.masked
                 index_difference = touchdown_index+1 - liftoff_index
-                self.array[liftoff_index:touchdown_index+1] = \
+                array[liftoff_index:touchdown_index+1] = \
                     np.linspace(takeoff_weight, land_weight, index_difference)
             else:
-                self.array.fill(land_weight)
+                array.fill(land_weight)
 
         elif takeoff_weight and land_fuel and takeoff_fuel and duration:
-            self.array = np_ma_zeros(duration)
+            array = np_ma_zeros(duration)
             land_weight = takeoff_weight - takeoff_fuel + land_fuel
             if liftoffs and touchdowns:
                 liftoff_index = int(liftoffs.get_first().index)
                 touchdown_index = int(touchdowns.get_last().index)
-                self.array[:liftoff_index] = np.ma.masked
-                self.array[touchdown_index:] = np.ma.masked
+                array[:liftoff_index] = np.ma.masked
+                array[touchdown_index:] = np.ma.masked
                 index_difference = touchdown_index+1 - liftoff_index
-                self.array[liftoff_index:touchdown_index+1] = \
+                array[liftoff_index:touchdown_index+1] = \
                     np.linspace(takeoff_weight, land_weight, index_difference)
             else:
-                self.array.fill(land_weight)
+                array.fill(land_weight)
         else:
             zfw_value = np.bincount(zfw.array.compressed().astype(np.int)).argmax()
-            self.array = fq.array + zfw_value
+            array = fq.array + zfw_value
+
+        self.array = array
 
 
 class ZeroFuelWeight(DerivedParameterNode):
@@ -3789,17 +3799,17 @@ class GrossWeightSmoothed(DerivedParameterNode):
 
             offset = gw_masked[valid_index] - fuel_to_burn[valid_index]
 
-            self.array = fuel_to_burn + offset
-
+            array = fuel_to_burn + offset
             # Test that the resulting array is sensible compared with Gross Weight.
-            where_array = np.ma.where(self.array)[0]
+            where_array = np.ma.where(array)[0]
             test_index = where_array[len(where_array) // 2]
             test_difference = \
-                abs(gw.array[test_index] - self.array[test_index]) > 1000
+                abs(gw.array[test_index] - array[test_index]) > 1000
             if test_difference > 1000: # Q: Is 1000 too large?
                 raise ValueError(
                     "'%s' difference from '%s' at half-way point is greater than "
                     "'%s': '%s'." % self.name, gw.name, 1000, test_difference)
+            self.array = array
         else:
             self.array = gw.array
 
@@ -3876,7 +3886,7 @@ class GroundspeedSigned(DerivedParameterNode):
                lon=P('Longitude Prepared'),
                ):
 
-        self.array = gspd.array
+        array = gspd.array
         # Ignore the pushback, when the aircraft can have a groundspeed
         # recorded, but in effect it's negative.
         no_power = np.ma.clump_masked(np.ma.masked_less(power.array, 1))
@@ -3888,9 +3898,9 @@ class GroundspeedSigned(DerivedParameterNode):
             move_off = index_at_value(gspd.array, 10.0, _slice=slice(pushbacks[0].stop,None))
             end_stationary = index_at_value(gspd.array, 0.0, _slice=slice(move_off, pushbacks[0].stop, -1))
             if end_stationary:
-                self.array[slices_int(pushbacks[0].start, end_stationary)]*=(-1.0)
+                array[slices_int(pushbacks[0].start, end_stationary)]*=(-1.0)
             else:
-                self.array[pushbacks[0]]*=(-1.0)
+                array[pushbacks[0]]*=(-1.0)
 
         if ac_type == aeroplane and precise.value:
             # We will also check the taxi speeds against the groundspeed, as some aircraft overreport
@@ -3898,7 +3908,9 @@ class GroundspeedSigned(DerivedParameterNode):
             for taxi in taxis:
                 tx = taxi.slice
                 gsp = groundspeed_from_position(lat.array[tx], lon.array[tx], lat.frequency)
-                self.array[tx] = np.ma.minimum(gspd.array[tx], gsp)
+                array[tx] = np.ma.minimum(gspd.array[tx], gsp)
+
+        self.array = array
 
 
 class FlapAngle(DerivedParameterNode):
@@ -4139,7 +4151,7 @@ class SlopeToLanding(DerivedParameterNode):
                sat=P('SAT'),
                apps=S('Approach And Landing')):
 
-        self.array = np_ma_masked_zeros_like(alt_aal.array)
+        array = np_ma_masked_zeros_like(alt_aal.array)
         for app in apps:
             if not np.ma.count(alt_aal.array[app.slice]):
                 continue
@@ -4148,7 +4160,9 @@ class SlopeToLanding(DerivedParameterNode):
                            last_valid_sample(sat.array[app.slice]).value)
             # now correct the altitude for temperature deviation.
             alt = alt_dev2alt(alt_aal.array[app.slice], dev)
-            self.array[app.slice] = alt / ut.convert(dist.array[app.slice], ut.NM, ut.FT)
+            array[app.slice] = alt / ut.convert(dist.array[app.slice], ut.NM, ut.FT)
+
+        self.array = array
 
 
 class SlopeAngleToLanding(DerivedParameterNode):
@@ -4214,7 +4228,7 @@ class ApproachFlightPathAngle(DerivedParameterNode):
                sat=P('SAT'),
                apps=S('Approach And Landing')):
         dist = dist_aim or dist_land
-        self.array = np_ma_masked_zeros_like(alt_aal.array)
+        array = np_ma_masked_zeros_like(alt_aal.array)
         for app in apps:
             if not np.ma.count(alt_aal.array[app.slice]):
                 continue
@@ -4249,7 +4263,9 @@ class ApproachFlightPathAngle(DerivedParameterNode):
             slope_to_ldg = alt_cropped / ut.convert(
                 dist.array[app.slice]-dist_adj, ut.NM, ut.FT
             )
-            self.array[app.slice] = np.degrees(np.arctan(slope_to_ldg))
+            array[app.slice] = np.degrees(np.arctan(slope_to_ldg))
+
+        self.array = array
 
 
 '''
@@ -4534,7 +4550,7 @@ class ILSLateralDistance(DerivedParameterNode):
     def derive(self, loc=P('ILS Localizer'), app_rng=P('Approach Range'),
                approaches=App('Approach Information')):
 
-        self.array = np_ma_masked_zeros_like(loc.array)
+        array = np_ma_masked_zeros_like(loc.array)
 
         for approach in approaches:
             runway = approach.approach_runway
@@ -4552,7 +4568,9 @@ class ILSLateralDistance(DerivedParameterNode):
             # Scale for localizer deviation to metres at runway start
             scale = hw / start_2_loc
             s = slices_int(approach.slice)
-            self.array[s] = loc.array[s] * app_rng.array[s] * scale
+            array[s] = loc.array[s] * app_rng.array[s] * scale
+
+        self.array = array
 
 
 class ILSGlideslope(DerivedParameterNode):
@@ -4601,7 +4619,7 @@ class AimingPointRange(DerivedParameterNode):
     def derive(self, app_rng=P('Approach Range'),
                approaches=App('Approach Information'),
                ):
-        self.array = np_ma_masked_zeros_like(app_rng.array)
+        array = np_ma_masked_zeros_like(app_rng.array)
 
         for approach in approaches:
             runway = approach.landing_runway
@@ -4614,7 +4632,9 @@ class AimingPointRange(DerivedParameterNode):
                 extend = runway_length(runway) - ut.convert(1000, ut.FT, ut.METER)
 
             s = slices_int(approach.slice)
-            self.array[s] = ut.convert(app_rng.array[s] - extend, ut.METER, ut.NM)
+            array[s] = ut.convert(app_rng.array[s] - extend, ut.METER, ut.NM)
+
+        self.array = array
 
 
 class CoordinatesSmoothed(object):
@@ -5392,7 +5412,7 @@ class VerticalSpeedInertial(DerivedParameterNode):
             return roc * 60.0
 
         # Make space for the answers
-        self.array = np_ma_masked_zeros_like(alt_std.array)
+        array = np_ma_masked_zeros_like(alt_std.array)
         hz = az.frequency
 
         for speedy in fast:
@@ -5420,9 +5440,11 @@ class VerticalSpeedInertial(DerivedParameterNode):
             # the required parameters are available.
             clumps = np.ma.clump_unmasked(az_masked)
             for clump in clumps:
-                self.array[shift_slice(clump,speedy.slice.start)] = inertial_vertical_speed(
+                array[shift_slice(clump,speedy.slice.start)] = inertial_vertical_speed(
                     alt_std_repair[clump], az.frequency,
                     alt_rad_repair[clump], az_repair[clump])
+
+        self.array = array
 
 
 class VerticalSpeed(DerivedParameterNode):
@@ -5714,9 +5736,10 @@ class HeadingRate(DerivedParameterNode):
 
         # add a little hysteresis to rate of change to smooth out minor changes
         roc = rate_of_change(head, 4 if head.hz > 0.25 else 1 / head.hz * 2)
-        self.array = hysteresis(roc, 0.1)
+        array = hysteresis(roc, 0.1)
         # trouble is that we're loosing the nice 0 values, so force include!
-        self.array[(self.array <= 0.05) & (self.array >= -0.05)] = 0
+        array[(self.array <= 0.05) & (self.array >= -0.05)] = 0
+        self.array = array
 
 
 class Pitch(DerivedParameterNode):
@@ -5968,12 +5991,13 @@ class RollRateAtTouchdownLimit(DerivedParameterNode):
         which again, is slightly below the limit.
         '''
 
-        self.array = np_ma_masked_zeros_like(gw.array)
+        array = np_ma_masked_zeros_like(gw.array)
         range1 = (20000 <= gw.array) & (gw.array < 22000)
-        self.array[range1] = gw.array[range1] * -0.001 + 34
+        array[range1] = gw.array[range1] * -0.001 + 34
         range2 = (22000 <= gw.array) & (gw.array <= 38000)
-        self.array[range2] = gw.array[range2] * -0.000375 + 20.75
-        self.array[(38000 < gw.array) & (gw.array <= 40000)] = 6
+        array[range2] = gw.array[range2] * -0.000375 + 20.75
+        array[(38000 < gw.array) & (gw.array <= 40000)] = 6
+        self.array = array
 
 
 class AccelerationNormalLimitForLandingWeight(DerivedParameterNode):
@@ -5999,13 +6023,14 @@ class AccelerationNormalLimitForLandingWeight(DerivedParameterNode):
     def derive(self,
                gw=P('Gross Weight Smoothed')):
 
-        self.array = np_ma_masked_zeros_like(gw.array)
+        array = np_ma_masked_zeros_like(gw.array)
         range1 = gw.array < 25500
-        self.array[range1] = 2.1
+        array[range1] = 2.1
         range2 = (25500 <= gw.array) & (gw.array <= 33300)
-        self.array[range2] = 2.0
+        array[range2] = 2.0
         range3 = (33300 < gw.array)
-        self.array[range3] = 1.75
+        array[range3] = 1.75
+        self.array = array
 
 
 class AccelerationNormalLowLimitForLandingWeight(DerivedParameterNode):
@@ -6032,15 +6057,16 @@ class AccelerationNormalLowLimitForLandingWeight(DerivedParameterNode):
     def derive(self,
                gw=P('Gross Weight Smoothed')):
 
-        self.array = np_ma_masked_zeros_like(gw.array)
+        array = np_ma_masked_zeros_like(gw.array)
         range1 = gw.array < 25500
         range_slope = (gw.array >= 22500) & (gw.array < 25500)
-        self.array[range1] = 2.2
-        self.array[range_slope] = np.linspace(2.2, 2.0, num=3000)[gw.array.astype(np.int)[range_slope] - 22500]
+        array[range1] = 2.2
+        array[range_slope] = np.linspace(2.2, 2.0, num=3000)[gw.array.astype(np.int)[range_slope] - 22500]
         range2 = (gw.array >= 25500) & (gw.array <= 34000)
-        self.array[range2] = 2.0
+        array[range2] = 2.0
         range3 = gw.array > 34000
-        self.array[range3] = 1.75
+        array[range3] = 1.75
+        self.array = array
 
 
 class AccelerationNormalHighLimitForLandingWeight(DerivedParameterNode):
@@ -6067,15 +6093,16 @@ class AccelerationNormalHighLimitForLandingWeight(DerivedParameterNode):
     def derive(self,
                gw=P('Gross Weight Smoothed')):
 
-        self.array = np_ma_masked_zeros_like(gw.array)
+        array = np_ma_masked_zeros_like(gw.array)
         range1 = gw.array < 25500
         range_slope = (gw.array >= 22500) & (gw.array < 25500)
-        self.array[range1] = 2.42
-        self.array[range_slope] = np.linspace(2.42, 2.2, num=3000)[gw.array.astype(np.int)[range_slope] - 22500]
+        array[range1] = 2.42
+        array[range_slope] = np.linspace(2.42, 2.2, num=3000)[gw.array.astype(np.int)[range_slope] - 22500]
         range2 = (gw.array >= 25500) & (gw.array <= 34000)
-        self.array[range2] = 2.2
+        array[range2] = 2.2
         range3 = gw.array > 34000
-        self.array[range3] = 1.93
+        array[range3] = 1.93
+        self.array = array
 
 
 class AccelerationNormalHighLimitWithFlapsDown(DerivedParameterNode):
@@ -7644,6 +7671,9 @@ class TrackDeviationFromRunway(DerivedParameterNode):
                 _slice = slice(app_start, app.slice.stop)
                 self._track_deviation(track.array, _slice, runway, magnetic)
 
+        # FIXME: "magic" assignment with side effects, use temporary array instead (refactor _track_deviation)
+        self.array = self.array
+
 
 ##############################################################################
 # Velocity Speeds
@@ -7809,7 +7839,7 @@ class V2Lookup(DerivedParameterNode):
                engine_series=A('Engine Series')):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(airspeed.array, np.int)
+        array = np_ma_masked_zeros_like(airspeed.array, np.int)
 
         # Determine interesting sections of flight which we want to use for V2.
         # Due to issues with how data is recorded, use five superframes before
@@ -7837,7 +7867,7 @@ class V2Lookup(DerivedParameterNode):
             detent = (flap_lever or flap_synth).array[int(index)]
 
             try:
-                self.array[slices_int(phase)] = table.v2(detent, weight)
+                array[slices_int(phase)] = table.v2(detent, weight)
             except (KeyError, ValueError) as error:
                 self.warning("Error in '%s': %s", self.name, error)
                 # Where the aircraft takes off with flap settings outside the
@@ -7845,6 +7875,8 @@ class V2Lookup(DerivedParameterNode):
                 # raising an exception, so that the incorrect flap at takeoff
                 # can be detected.
                 continue
+
+        self.array = array
 
 
 ########################################
@@ -7893,12 +7925,12 @@ class Vref(DerivedParameterNode):
                approaches=S('Approach And Landing')):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(airspeed.array, np.int)
+        array = np_ma_masked_zeros_like(airspeed.array, np.int)
 
         # 1. Use value provided in achieved flight record (if available):
         if afr_vref and afr_vref.value >= AIRSPEED_THRESHOLD:
             for approach in approaches:
-                self.array[slices_int(approach.slice)] = round(afr_vref.value)
+                array[slices_int(approach.slice)] = round(afr_vref.value)
             return
 
         # 2. Derive parameter for Embraer 170/190:
@@ -7906,8 +7938,10 @@ class Vref(DerivedParameterNode):
             for approach in approaches:
                 value = most_common_value(v1_vref.array[slices_int(approach.slice)].astype(np.int))
                 if value is not None:
-                    self.array[slices_int(approach.slice)] = value
+                    array[slices_int(approach.slice)] = value
             return
+
+        self.array = array
 
 
 class VrefLookup(DerivedParameterNode):
@@ -7968,7 +8002,7 @@ class VrefLookup(DerivedParameterNode):
                engine_series=A('Engine Series')):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
+        array = np_ma_masked_zeros_like(air_spd.array, np.int)
 
         # Initialise the velocity speed lookup table:
         attrs = (model, series, family, engine_type, engine_series)
@@ -8012,7 +8046,7 @@ class VrefLookup(DerivedParameterNode):
                 detent = max_detent
 
             try:
-                self.array[phase] = table.vref(detent, weight)
+                array[phase] = table.vref(detent, weight)
             except (KeyError, ValueError) as error:
                 self.warning("Error in '%s': %s", self.name, error)
                 # Where the aircraft takes off with flap settings outside the
@@ -8020,6 +8054,8 @@ class VrefLookup(DerivedParameterNode):
                 # raising an exception, so that the incorrect flap at landing
                 # can be detected.
                 continue
+
+        self.array = array
 
 
 ########################################
@@ -8068,12 +8104,12 @@ class Vapp(DerivedParameterNode):
                approaches=S('Approach And Landing')):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(airspeed.array, np.int)
+        array = np_ma_masked_zeros_like(airspeed.array, np.int)
 
         # 1. Use value provided in achieved flight record (if available):
         if afr_vapp and afr_vapp.value >= AIRSPEED_THRESHOLD:
             for approach in approaches:
-                self.array[slices_int(approach.slice)] = round(afr_vapp.value)
+                array[slices_int(approach.slice)] = round(afr_vapp.value)
             return
 
         # 2. Derive parameter for Embraer 170/190:
@@ -8081,8 +8117,10 @@ class Vapp(DerivedParameterNode):
             for approach in approaches:
                 value = most_common_value(vr_vapp.array[slices_int(approach.slice)].astype(np.int))
                 if value is not None:
-                    self.array[slices_int(approach.slice)] = value
+                    array[slices_int(approach.slice)] = value
             return
+
+        self.array = array
 
 
 class VappLookup(DerivedParameterNode):
@@ -8143,7 +8181,7 @@ class VappLookup(DerivedParameterNode):
                engine_series=A('Engine Series')):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
+        array = np_ma_masked_zeros_like(air_spd.array, np.int)
 
         # Initialise the velocity speed lookup table:
         attrs = (model, series, family, engine_type, engine_series)
@@ -8187,7 +8225,7 @@ class VappLookup(DerivedParameterNode):
                 detent = max_detent
 
             try:
-                self.array[phase] = table.vapp(detent, weight)
+                array[phase] = table.vapp(detent, weight)
             except (KeyError, ValueError) as error:
                 self.warning("Error in '%s': %s", self.name, error)
                 # Where the aircraft takes off with flap settings outside the
@@ -8195,6 +8233,8 @@ class VappLookup(DerivedParameterNode):
                 # raising an exception, so that the incorrect flap at landing
                 # can be detected.
                 continue
+
+            self.array = array
 
 
 ########################################
@@ -8254,7 +8294,7 @@ class VLSLookup(DerivedParameterNode):
                center_of_gravity=P('Center Of Gravity'),):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
+        array = np_ma_masked_zeros_like(air_spd.array, np.int)
 
         # Initialise the velocity speed lookup table:
         attrs = (model, series, family, engine_type, engine_series)
@@ -8285,10 +8325,12 @@ class VLSLookup(DerivedParameterNode):
 
             try:
                 for state in (parameter.array.values_mapping[r] for r in np.ma.unique(parameter.array.raw.compressed())):
-                    self.array[parameter.array == state] = table.vls(state, weight, cg)
+                    array[parameter.array == state] = table.vls(state, weight, cg)
             except (KeyError, ValueError) as error:
                 self.warning("Error in '%s': %s", self.name, error)
                 continue
+
+        self.array = array
 
 
 ########################################
@@ -8445,21 +8487,20 @@ class MinimumAirspeed(DerivedParameterNode):
             self.array = np_ma_masked_zeros_like(airspeed.array)
             return
         else:
-            self.array = parameter.array
+            array = parameter.array
 
         # Handle where minimum manoeuvre speed is for clean configuration only:
         if parameter in (mms_fmc, min_clean):
             flap = flap_lever or flap_synth
-            self.array[flap.array != '0'] = np.ma.masked
+            array[flap.array != '0'] = np.ma.masked
 
         # No matter what parameter we've used, we still want to use 'Minimum
         # Clean Lookup' if available for clean config.
         if min_clean:
             flap = flap_lever or flap_synth
-            self.array[flap.array == '0'] = min_clean.array[flap.array == '0']
-
+            array[flap.array == '0'] = min_clean.array[flap.array == '0']
         # We want to mask out grounded sections of flight:
-        self.array = mask_outside_slices(self.array, airborne.get_slices())
+        self.array = mask_outside_slices(array, airborne.get_slices())
 
 
 class MinimumCleanLookup(DerivedParameterNode):
@@ -8487,7 +8528,7 @@ class MinimumCleanLookup(DerivedParameterNode):
                crz=S('Cruise'),):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(air_spd.array, np.int)
+        array = np_ma_masked_zeros_like(air_spd.array, np.int)
 
         # Initialise the velocity speed lookup table:
         attrs = (model, series, family, engine_type, engine_series)
@@ -8500,9 +8541,9 @@ class MinimumCleanLookup(DerivedParameterNode):
         detent = '30'
 
         for phase in phases:
-            self.array[slices_int(phase)] = table.vref(detent, gw.array[slices_int(phase)])
+            array[slices_int(phase)] = table.vref(detent, gw.array[slices_int(phase)])
             # Add 80kts to the whole array to get Vref30+80kts
-            self.array[slices_int(phase)] += 80
+            array[slices_int(phase)] += 80
 
         # above_FL250 includes S('Cruise') slices above FL247 in order to avoid
         # creating 'spikes' when the cruising altitude is FL250
@@ -8511,7 +8552,9 @@ class MinimumCleanLookup(DerivedParameterNode):
 
         # Add 20kts to get Vref30+100kts above FL250
         for section in above_FL250:
-            self.array[section] += 20
+            array[section] += 20
+
+        self.array = array
 
 
 ########################################
@@ -8580,7 +8623,7 @@ class FlapManoeuvreSpeed(DerivedParameterNode):
         flap = flap_lever or flap_synth
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(airspeed.array)
+        array = np_ma_masked_zeros_like(airspeed.array)
 
         # Initialise the velocity speed lookup table:
         attrs = (model, series, family, engine_type, engine_series)
@@ -8599,7 +8642,7 @@ class FlapManoeuvreSpeed(DerivedParameterNode):
                 for weight, speed in reversed(fms):
                     condition = runs_of_ones(gw.array <= weight)
                     for s in slices_and(slices, condition):
-                        self.array[s] = speed
+                        array[s] = speed
             elif isinstance(fms[0], six.string_types):
                 setting, offset = fms
                 vref_recorded = locals().get('vref_%s' % setting)
@@ -8611,7 +8654,7 @@ class FlapManoeuvreSpeed(DerivedParameterNode):
                         continue  # If the slice is all masked, skip...
                     else:
                         vref = table.vref(setting, gw.array[s])
-                    self.array[s] = vref + offset
+                    array[s] = vref + offset
             else:
                 raise TypeError('Encountered invalid table.')
 
@@ -8619,7 +8662,8 @@ class FlapManoeuvreSpeed(DerivedParameterNode):
         # airborne and where the aircraft is above 20000ft as, for the majority
         # of aircraft, flaps should not be extended above that limit.
         phases = slices_and(alt_std.slices_below(20000), alt_std.slices_above(50))
-        self.array = mask_outside_slices(self.array, phases)
+
+        self.array = mask_outside_slices(array, phases)
 
 
 ##############################################################################
@@ -8660,11 +8704,13 @@ class AirspeedMinusAirspeedSelectedFMS(DerivedParameterNode):
                fms=P('Airspeed Selected (FMS)'),
                approaches=S('Approach And Landing')):
         # Prepare a zored, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(airspeed.array)
+        array = np_ma_masked_zeros_like(airspeed.array)
 
         for approach in approaches:
             phase = slices_int(approach.slice)
-            self.array[phase] = airspeed.array[phase] - fms.array[phase]
+            array[phase] = airspeed.array[phase] - fms.array[phase]
+
+        self.array = array
 
 
 class AirspeedMinusAirspeedSelectedFMSFor3Sec(DerivedParameterNode):
@@ -8720,7 +8766,7 @@ class AirspeedMinusV2(DerivedParameterNode):
                grounded=S('Grounded')):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(airspeed.array)
+        array = np_ma_masked_zeros_like(airspeed.array)
 
         # Determine interesting sections of flight which we want to use for V2.
         # Due to issues with how data is recorded, use five superframes before
@@ -8746,7 +8792,9 @@ class AirspeedMinusV2(DerivedParameterNode):
             my_v2 = v2.get_last(within_slice=slice(search_start, stop_index+1))
             if my_v2 is not None and my_v2.value is not None:
                 phase = slices_int(start_index, stop_index+1)
-                self.array[phase] = airspeed.array[phase] - my_v2.value
+                array[phase] = airspeed.array[phase] - my_v2.value
+
+        self.array = array
 
 
 class AirspeedMinusV2For3Sec(DerivedParameterNode):
@@ -8799,7 +8847,7 @@ class AirspeedMinusVref(DerivedParameterNode):
                approaches=S('Approach And Landing')):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(airspeed.array)
+        array = np_ma_masked_zeros_like(airspeed.array)
 
         phases = slices_int(approaches.get_slices())
 
@@ -8811,7 +8859,9 @@ class AirspeedMinusVref(DerivedParameterNode):
         for phase in phases:
             value = most_common_value(vref.array[phase].astype(np.int))
             if value is not None:
-                self.array[phase] = airspeed.array[phase] - value
+                array[phase] = airspeed.array[phase] - value
+
+        self.array = array
 
 
 class AirspeedMinusVrefFor3Sec(DerivedParameterNode):
@@ -8864,7 +8914,7 @@ class AirspeedMinusVapp(DerivedParameterNode):
                approaches=S('Approach And Landing')):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(airspeed.array)
+        array = np_ma_masked_zeros_like(airspeed.array)
 
         phases = slices_int(approaches.get_slices())
 
@@ -8877,13 +8927,15 @@ class AirspeedMinusVapp(DerivedParameterNode):
             if vapp.name == 'Vapp':
                 # we have the recorded or value provided in derived parameter
                 # from AFR field, so we can use the entire array
-                self.array[phase] = airspeed.array[phase] - vapp.array[phase]
+                array[phase] = airspeed.array[phase] - vapp.array[phase]
             else:
                 # we have the lookup parameter
                 value = most_common_value(vapp.array[phase].astype(np.int))
                 if value is None:
                     continue
-                self.array[phase] = airspeed.array[phase] - value
+                array[phase] = airspeed.array[phase] - value
+
+        self.array = array
 
 
 class AirspeedMinusVappFor3Sec(DerivedParameterNode):
@@ -8928,7 +8980,7 @@ class AirspeedMinusVLS(DerivedParameterNode):
                approaches=S('Approach And Landing')):
 
         # Prepare a zeroed, masked array based on the airspeed:
-        self.array = np_ma_masked_zeros_like(airspeed.array)
+        array = np_ma_masked_zeros_like(airspeed.array)
 
         # Determine the sections of flight where data must be valid:
         phases = slices_int(approaches.get_slices())
@@ -8940,7 +8992,9 @@ class AirspeedMinusVLS(DerivedParameterNode):
             return
 
         for phase in phases:
-            self.array[phase] = airspeed.array[phase] - vls.array[phase]
+            array[phase] = airspeed.array[phase] - vls.array[phase]
+
+        self.array = array
 
 
 class AirspeedMinusVLSFor3Sec(DerivedParameterNode):

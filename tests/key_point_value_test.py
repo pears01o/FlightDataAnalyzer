@@ -7291,12 +7291,15 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
         self.node_class = AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore
 
     def test_can_operate(self):
-        expected = [('Offshore', 'Altitude When Climbing', 'Hover', 'Nose Down Attitude Adoption',
-                     'Altitude Radio')]
+        expected = [('Offshore', 'Liftoff', 'Hover',
+                     'Nose Down Attitude Adoption', 'Altitude Radio',
+                     'Altitude AGL For Flight Phases')]
+
         opts_h175 = self.node_class.get_operational_combinations(
                     ac_type=helicopter, family=A('Family', 'H175'))
 
         opts_aeroplane = self.node_class.get_operational_combinations(ac_type=aeroplane)
+
         self.assertEqual(opts_h175, expected)
         self.assertNotEqual(opts_aeroplane, expected)
 
@@ -7309,8 +7312,8 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
                                      values_mapping=self.offshore_mapping)
         offshore_multistate = M(name='Offshore', array=offshore_array)
 
-        ten_ft_climbing = KTI('10 Ft Climbing', items=[
-            KeyTimeInstance(15, '10 Ft Climbing'),
+        liftoff = KTI('Liftoff', items=[
+            KeyTimeInstance(15, 'Liftoff'),
         ])
 
         hover = buildsection('Hover', 20, 30)
@@ -7320,11 +7323,17 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
                                   np.linspace(30, 5, num=10),
                                   np.linspace(5, 1000, num=70)])
 
-        node.derive(offshore_multistate, ten_ft_climbing, hover, nose_down, P('Altitude Radio', rad_alt))
+        alt_agl = np.concatenate([np.zeros(13), np.linspace(0, 25, num=7),
+                                  np.linspace(25, 3, num=10),
+                                  np.linspace(3, 1000, num=70)])
+
+        node.derive(offshore_multistate, liftoff, hover, nose_down,
+                    P('Altitude Radio', rad_alt),
+                    P('Altitude AGL For Flight Phases', alt_agl))
 
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 28)
-        self.assertEqual(round(node[0].value, 2), 7.78)
+        self.assertEqual(node[0].index, 29)
+        self.assertEqual(round(node[0].value, 2), 5)
 
     def test_derive_multiple_liftoffs_and_offshore_clumps(self):
         node = AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore()
@@ -7336,9 +7345,9 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
                                      values_mapping=self.offshore_mapping)
         offshore_multistate = M(name='Offshore', array=offshore_array)
 
-        liftoffs = KTI('10 Ft Climbing', items=[
-            KeyTimeInstance(15, '10 Ft Climbing'),
-            KeyTimeInstance(50, '10 Ft Climbing'),
+        liftoffs = KTI('Liftoff', items=[
+            KeyTimeInstance(15, 'Liftoff'),
+            KeyTimeInstance(50, 'Liftoff'),
         ])
 
         hovers = buildsections('Hover', [20, 30], [52, 65])
@@ -7346,20 +7355,25 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
                                                                   [59, 67])
 
         rad_alt = np.concatenate([np.zeros(13), np.linspace(0, 30, num=7),
-
                                   np.linspace(30, 5, num=10),
                                   np.zeros(18), np.linspace(5, 30, num=8),
                                   np.linspace(5, 1000, num=44)])
 
+        alt_agl = np.concatenate([np.zeros(13), np.linspace(0, 25, num=7),
+                                  np.linspace(25, 3, num=10),
+                                  np.zeros(18), np.linspace(3, 24, num=8),
+                                  np.linspace(5, 1000, num=44)])
+
         node.derive(offshore_multistate, liftoffs, hovers, nose_downs,
-                    P('Altitude Radio', rad_alt))
+                    P('Altitude Radio', rad_alt),
+                    P('Altitude AGL For Flight Phases', alt_agl))
 
         self.assertEqual(len(node), 2)
 
-        self.assertEqual(node[0].index, 28)
-        self.assertEqual(round(node[0].value, 2), 7.78)
-        self.assertEqual(node[1].index, 56)
-        self.assertEqual(round(node[1].value, 2), 5.00)
+        self.assertEqual(node[0].index, 29)
+        self.assertEqual(round(node[0].value, 2), 5)
+        self.assertEqual(node[1].index, 57)
+        self.assertEqual(round(node[1].value, 2), 28.14)
 
 
 class TestAltitudeRadioAtNoseDownAttitudeInitation(unittest.TestCase,

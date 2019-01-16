@@ -5353,59 +5353,71 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
 
     This KPV measures the minimum RadAlt during the descent to <= 3ft RadAlt.
     '''
-    from analysis_engine.key_time_instances import AltitudeWhenClimbing
-
     units = ut.FT
 
     @classmethod
     def can_operate(cls, available, ac_type=A('Aircraft Type'),
                     family=A('Family')):
         return ac_type == helicopter and family and family.value == 'H175' \
-            and all_of(('Altitude Radio', 'Offshore', 'Altitude When Climbing',
-                        'Hover', 'Nose Down Attitude Adoption'), available)
+        and all_of(('Altitude Radio', 'Offshore', 'Liftoff', 'Hover',
+                    'Nose Down Attitude Adoption',
+                    'Altitude AGL For Flight Phases'), available)
 
-    def derive(self, offshores=M('Offshore'),
-               alt_climbings=KTI('Altitude When Climbing'), hovers=S('Hover'),
-               nose_downs=S('Nose Down Attitude Adoption'),
-               rad_alt=P('Altitude Radio')):
+    def derive(self, offshores=M('Offshore'), liftoffs=KTI('Liftoff'),
+               hovers=S('Hover'), nose_downs=S('Nose Down Attitude Adoption'),
+               rad_alt=P('Altitude Radio'),
+               alt_agl=P('Altitude AGL For Flight Phases')):
 
-
-        ten_ft_climbings = [c for c in alt_climbings
-                            if c.name == '10 Ft Climbing']
 
         clumped_offshores = clump_multistate(offshores.array, 'Offshore')
-        masked_alt = mask_outside_slices(rad_alt.array, clumped_offshores +
+        masked_alt_agl = mask_outside_slices(alt_agl.array, clumped_offshores +
                                          hovers.get_slices())
 
         for clump in clumped_offshores:
 
-            climbs_in_clump, nose_downs_in_clump = [], []
+            liftoffs_in_clump, nose_downs_in_clump = [], []
 
-            for climb in ten_ft_climbings:
-                if is_index_within_slice(climb.index, clump):
-                    climbs_in_clump.append(climb)
+            for liftoff in liftoffs:
+                if is_index_within_slice(liftoff.index, clump):
+                    liftoffs_in_clump.append(liftoff.index)
 
             for nose_down in nose_downs:
                 if is_index_within_slice(nose_down.slice.start, clump):
-                    nose_downs_in_clump.append(nose_down.slice)
+                    nose_downs_in_clump.append(nose_down.slice.start)
 
-            # Might need a rework for edge cases and missing climbs/nose downs
-            if len(climbs_in_clump) == 0 or len(nose_downs_in_clump) == 0 or\
-               len(climbs_in_clump) != len(nose_downs_in_clump):
+            if len(liftoffs_in_clump) == 0 or len(nose_downs_in_clump) == 0 or\
+               len(liftoffs_in_clump) != len(nose_downs_in_clump):
+               # Might need a rework due to edge cases
                 continue
 
             rad_alt_slices = []
 
-            for idx, climb in enumerate(climbs_in_clump):
-                rad_alt_slices.append(slice(climbs_in_clump[idx].index,
-                                            nose_downs_in_clump[idx].start))
+            for idx, liftoff in enumerate(liftoffs_in_clump):
+                rad_alt_slices.append(slice(liftoffs_in_clump[idx],
+                                            nose_downs_in_clump[idx]))
 
             for _slice in rad_alt_slices:
-                min_rad_alt_idx = np.ma.argmin(mask_outside_slices(masked_alt,
-                                                                  [_slice]))
+                diffs = np.ma.ediff1d(mask_outside_slices(masked_alt_agl,
+                                                          [_slice]))
+                min_rad_alt_idx = None
+
+                # Reversed view of non-masked diffs as we are searching
+                # backwards from the start of the nose down phase to the
+                # liftoff KTI
+                for idx, d in enumerate(diffs[diffs.mask == False][::-1]):
+
+                    if d < 0:
+                        min_rad_alt_idx = _slice.stop - idx
+                        break
+
+                # Fallback to minimum of entire slice instead of local minimum
+                if not min_rad_alt_idx:
+                    min_rad_alt_idx = np.ma.argmin(
+                                      mask_outside_slices(alt_agl,
+                                                          [_slice]))
 
                 self.create_kpv(min_rad_alt_idx,
-                                masked_alt.data[min_rad_alt_idx])
+                                rad_alt.array[min_rad_alt_idx])
 
 
 class AltitudeRadioAtNoseDownAttitudeInitiation(KeyPointValueNode):

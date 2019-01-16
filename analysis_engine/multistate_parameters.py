@@ -3233,7 +3233,7 @@ class StableApproachStages(object):
 
     def derive_stable_approach(self, apps, phases, gear, flap, tdev, aspd_rel,
                                aspd_minus_sel, vspd, gdev, ldev, eng_n1,
-                               eng_epr, alt, vapp, family):
+                               eng_epr, alt, vapp, family, model):
 
         # create an empty fully masked array
         self.array = np.ma.zeros(len(alt.array), dtype=np.short)
@@ -3247,7 +3247,20 @@ class StableApproachStages(object):
             phase = phases.get_last(within_slice=approach.slice, within_use='any')
             # use Combined descent phase slice as it contains the data from
             # top of descent to touchdown (approach starts and finishes later)
-            approach.slice = phase.slice
+
+            # Only one aircraft prone to generating erroneous phases due to
+            # weather monitoring behaviour has this model number.
+            # This ensures that a lack of a descent phase within an approach
+            # does not cause a fatal error for that aircraft.
+            if model and model.value == 'BAE 146-301':
+                try:
+                    approach.slice = phase.slice
+                except AttributeError:
+                    logger.warning('Unable to derive stable approach, '
+                                   'no descent phase found within approach.')
+                    pass
+            else:
+                approach.slice = phase.slice
 
             # FIXME: approaches shorter than 10 samples will not work due to
             # the use of moving_average with a width of 10 samples.
@@ -3490,10 +3503,11 @@ class StableApproach(MultistateDerivedParameterNode,
                eng_epr=P('Eng (*) EPR Avg For 10 Sec'),
                alt=P('Altitude AAL'),
                vapp=P('Vapp'),
-               family=A('Family')):
+               family=A('Family'),
+               model=A('Model')):
         self.derive_stable_approach(apps, phases, gear, flap, tdev, aspd_rel,
                                     aspd_minus_sel, vspd, gdev, ldev, eng_n1,
-                                    eng_epr, alt, vapp, family)
+                                    eng_epr, alt, vapp, family, model)
 
 
 class StableApproachExcludingEngThrust(MultistateDerivedParameterNode,
@@ -3518,10 +3532,11 @@ class StableApproachExcludingEngThrust(MultistateDerivedParameterNode,
                gdev=P('ILS Glideslope'),
                ldev=P('ILS Localizer'),
                alt=P('Altitude AAL'),
-               vapp=P('Vapp')):
+               vapp=P('Vapp'),
+               model=A('Model')):
         self.derive_stable_approach(apps, phases, gear, flap, tdev, aspd_rel,
                                     aspd_minus_sel, vspd, gdev, ldev, None,
-                                    None, alt, vapp, None)
+                                    None, alt, vapp, None, model)
 
 
 

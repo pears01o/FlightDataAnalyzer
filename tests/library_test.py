@@ -4853,7 +4853,24 @@ class TestOverflowCorrection(unittest.TestCase):
             ### landings
             ##self.assertAlmostEqual(resB[sect.stop - 1] / 10., 0, 0)
 
-
+    def test_overflow_correction_variable(self):
+        fast=buildsections('Fast', [1,20])
+        rad_alt=P('Altitude Radio', np.ma.array(data=[0, 1, 2, 3, 2052, 2053, 2054, 2055, -2040, -2039, -2038, 2059, 2060, 2061, 14, 15],
+                                                mask=[0]*16))
+        result=overflow_correction(rad_alt)
+        expected=np.ma.array(range(16))
+        ma_test.assert_masked_array_equal(result, expected)
+        result=overflow_correction(rad_alt, fast)
+        ma_test.assert_masked_array_equal(result, expected - 1)
+        
+    def test_overflow_correction_precision(self):
+        rad_alt=P('Altitude Radio', np.ma.array(data=range(2040,2048) + range(-2048,-2040),
+                                                mask=[0]*16))
+        result=overflow_correction(rad_alt, max_val=4096)
+        expected=np.ma.array(range(2040,2056))
+        ma_test.assert_masked_array_equal(result, expected)
+        
+        
 class TestPeakCurvature(unittest.TestCase):
     # Also known as the "Truck and Trailer" algorithm, this detects the peak
     # curvature point in an array.

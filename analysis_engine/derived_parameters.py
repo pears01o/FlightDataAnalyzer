@@ -975,13 +975,13 @@ class AltitudeAGL(DerivedParameterNode):
 
         # When was the helicopter on the ground?
         gear_on_grounds = np.ma.clump_masked(np.ma.masked_equal(gog.array, 1))
-        # Find and eliminate short spikes (15 seconds) as these are most likely errors.
-        short_spikes = slices_find_small_slices(gear_on_grounds, time_limit=15, hz=gog.hz)
-        for slice in short_spikes:
-            gog.array[slice.start:slice.stop] = 0
+        # Find and eliminate short spikes (20 seconds) as these are most likely errors.
+        short_spikes = slices_find_small_slices(gear_on_grounds, time_limit=20, hz=gog.hz)
+        for _slice in short_spikes:
+            gog.array[_slice.start:_slice.stop] = 0
         
-        # Remove slices shorter than 15 seconds as these are most likely created in error.
-        gear_on_grounds = slices_remove_small_slices(gear_on_grounds, time_limit=15, hz=gog.hz)
+        # Remove slices shorter than 20 seconds as these are most likely created in error.
+        gear_on_grounds = slices_remove_small_slices(gear_on_grounds, time_limit=20, hz=gog.hz)
         # Compute the half period which we will need.
         hp = int(alt_rad.frequency*ALTITUDE_AGL_SMOOTHING)/2
         # We force altitude AGL to be zero when the gear shows 'Ground' state

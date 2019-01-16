@@ -4795,10 +4795,10 @@ class TestOverflowCorrection(unittest.TestCase):
                         Section('Fast', slice(5859, 11520), 5859, 11520)])
         radioA = load(os.path.join(
             test_data_path, 'A320_Altitude_Radio_A_overflow.nod'))
-        resA = overflow_correction(radioA, fast, max_val=4095)
+        resA = overflow_correction(radioA, fast, max_val=4096)
         sects = np.ma.clump_unmasked(resA)
         self.assertEqual(len(sects), 5)
-        self.assertEqual(resA.max(), 8191)
+        self.assertEqual(resA.max(), 8193)
         self.assertEqual(resA.min(), -1)
         ##for sect in sects[0::2]:
             ### takeoffs
@@ -4809,10 +4809,10 @@ class TestOverflowCorrection(unittest.TestCase):
 
         radioB = load(os.path.join(
             test_data_path, 'A320_Altitude_Radio_B_overflow.nod'))
-        resB = overflow_correction(radioB, max_val=4095)
+        resB = overflow_correction(radioB, max_val=4096)
         sects = np.ma.clump_unmasked(resB)
         self.assertEqual(len(sects), 5)
-        self.assertEqual(resB.max(), 5917)
+        self.assertEqual(resB.max(), 5918)
         self.assertEqual(resB.min(), -2)
         ##for sect in sects[0::2]:
             ### takeoffs
@@ -4825,11 +4825,11 @@ class TestOverflowCorrection(unittest.TestCase):
         fast = S(items=[Section('Fast', slice(2000, 6500), 2000, 6500)])
         radioA = load(os.path.join(
             test_data_path, 'A340_Altitude_Radio_A_overflow.nod'))
-        resA = overflow_correction(radioA, fast, max_val=4095)
+        resA = overflow_correction(radioA, fast, max_val=4096)
         sects = np.ma.clump_unmasked(resA)
         # 1 section for climb, one for descent
         self.assertEqual(len(sects), 2)
-        self.assertEqual(resA.max(), 7852)
+        self.assertEqual(resA.max(), 7853)
         self.assertEqual(resA.min(), -2)
         ##for sect in sects[0::2]:
             ### takeoffs
@@ -4840,11 +4840,11 @@ class TestOverflowCorrection(unittest.TestCase):
 
         radioB = load(os.path.join(
             test_data_path, 'A340_Altitude_Radio_B_overflow.nod'))
-        resB = overflow_correction(radioB, fast, max_val=4095)
+        resB = overflow_correction(radioB, fast, max_val=4096)
         sects = np.ma.clump_unmasked(resB)
         # 1 section for climb, one for descent
         self.assertEqual(len(sects), 2)
-        self.assertEqual(resB.max(), 7841)
+        self.assertEqual(resB.max(), 7842)
         self.assertEqual(resB.min(), -2)
         ##for sect in sects[0::2]:
             ### takeoffs

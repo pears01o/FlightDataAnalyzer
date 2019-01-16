@@ -963,6 +963,16 @@ class AltitudeAGL(DerivedParameterNode):
             self.array = alt_aal.array
             return
 
+        # Find any spikes in Alt Rad of 90 second and mask it out of the
+        # calculations
+        alt_rad_spikes = slices_find_small_slices(
+            np.ma.clump_unmasked(alt_rad.array),
+            time_limit=90,
+            hz=alt_rad.hz
+        )
+        for _slice in alt_rad_spikes:
+            alt_rad.array[_slice] = np.ma.masked
+
         # When was the helicopter on the ground?
         gear_on_grounds = np.ma.clump_masked(np.ma.masked_equal(gog.array, 1))
         # Find and eliminate short spikes (15 seconds) as these are most likely errors.

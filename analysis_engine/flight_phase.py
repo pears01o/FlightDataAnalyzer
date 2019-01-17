@@ -16,6 +16,7 @@ from analysis_engine.library import (
     bearing_and_distance,
     cycle_finder,
     find_low_alts,
+    find_nearest_slice,
     filter_slices_duration,
     first_order_washout,
     first_valid_sample,
@@ -2027,7 +2028,21 @@ class GoAround5MinRating(FlightPhaseNode):
     the start of takeoff. Also applies in the case of a go-around.
     '''
     align_frequency = 1
-    
+
+    def get_metrics(self, angle):
+        window_sizes = [2,4,8,16,32]
+        metrics = np.ma.ones(len(angle)) * 1000000
+        for l in window_sizes:
+            maxy = filters.maximum_filter1d(angle, l)
+            miny = filters.minimum_filter1d(angle, l)
+            m = (maxy - miny) / l
+            metrics = np.minimum(metrics, m)
+
+        metrics = medfilt(metrics,3)
+        metrics = 200.0 * metrics
+
+        return metrics
+
     def derive(self, gas=KTI('Go Around'),
                eng_np=P('Eng (*) Np Avg'),
                duration=A('HDF Duration'),
@@ -2036,23 +2051,31 @@ class GoAround5MinRating(FlightPhaseNode):
         five_minutes = 300 * self.frequency
         #define max index to prevent out of bounds exception
         max_idx = duration.value * self.frequency
-        
+
         if eng_type and eng_type.value == 'PROP':
             # smoothen the signal
             filter_median_window = 11 # 11 to get one median per section in window
             enp_filt = medfilt(eng_np.array, filter_median_window)
             enp_filt = np.ma.array(enp_filt)
-            
+
             #generate RoC array and find 'flat' slices
-            g = np.ma.abs(np.ma.ediff1d(enp_filt))
-            enp_filt.mask = g > 1/self.hz # 1% of change per second is enough to notice thrust reduction
+            g = self.get_metrics(enp_filt)
+            enp_filt.mask = g > 40
             flat_slices = np.ma.clump_unmasked(enp_filt)
-            
+
             for ga in gas:
+                ga_flat_slices = [s for s in flat_slices if s.stop > ga.index]
                 rating_end = ga_slice_avg = None
-                for flat in flat_slices:
-                    if is_index_within_slice(ga.index, flat):
+
+                if not is_index_within_slices(ga.index, ga_flat_slices):
+                    ga_slice_avg = np.ma.average(
+                                   enp_filt[find_nearest_slice(ga.index,
+                                                               ga_flat_slices)])
+                for flat in ga_flat_slices:
+                    if ga_slice_avg is None and \
+                       is_index_within_slice(ga.index, flat):
                         ga_slice_avg = np.ma.average(enp_filt[flat])
+
                     elif ga_slice_avg is not None:
                         flat_avg = np.ma.average(enp_filt[flat])
                         if abs(ga_slice_avg - flat_avg) >= 5:
@@ -2060,6 +2083,7 @@ class GoAround5MinRating(FlightPhaseNode):
                             break
                     else:
                         continue
+
                 if rating_end is None:
                     rating_end = ga.index + (five_minutes)
                 self.create_phase(slice(ga.index, min(rating_end, max_idx)))
@@ -2067,6 +2091,7 @@ class GoAround5MinRating(FlightPhaseNode):
             for ga in gas:
                 startpoint = ga.index
                 endpoint = ga.index + 300
+
                 if startpoint < endpoint:
                     self.create_phase(slice(startpoint, endpoint))
 

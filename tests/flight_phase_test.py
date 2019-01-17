@@ -2896,7 +2896,7 @@ class TestGoAround5MinRating(unittest.TestCase):
         self.prop = A('Engine Propulsion', value='PROP')
         self.ga = KTI('Go Around', items=[KeyTimeInstance(index=50)])
         self.duration = A('HDF Duration', value=360)
-    
+
     def test_derive_prop(self):
         array = np.ma.array([70]*40 + [75, 80, 85, 90, 95] + [100]*120 + [95, 90, 85, 80] + [75]*191)
         eng_np = P('Eng (*) Np Avg', array=array)
@@ -2905,7 +2905,7 @@ class TestGoAround5MinRating(unittest.TestCase):
                     eng_type=self.prop)
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].slice.start, 50)
-        self.assertEqual(node[0].slice.stop, 169)
+        self.assertEqual(node[0].slice.stop, 170)
 
     def test_derive_jet(self):
         array = np.ma.array([70]*40 + [75, 80, 85, 90, 95] + [100]*120 + [95, 90, 85, 80] + [75]*191)

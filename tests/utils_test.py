@@ -16,7 +16,7 @@ from analysis_engine.utils import (
 
 class TestTrimmer(unittest.TestCase):
 
-    @patch('analysis_engine.utils.hdf_file')
+    @patch('analysis_engine.utils.fda.open')
     @patch('analysis_engine.utils.get_derived_nodes')
     @patch('analysis_engine.utils.strip_hdf')
     @patch('analysis_engine.settings.NODE_MODULES')

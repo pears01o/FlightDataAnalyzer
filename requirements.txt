@@ -1,6 +1,5 @@
 flightdatautilities
 geomag>=0.9
-hdfaccess
 matplotlib
 networkx>=1.7
 numpy>=1.9.1

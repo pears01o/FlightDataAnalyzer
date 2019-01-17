@@ -11,7 +11,8 @@ import six
 
 from copy import copy
 
-from flightdataaccessor.file import hdf_file
+import flightdataaccessor as fda
+
 from flightdatautilities import units as ut
 from flightdatautilities.print_table import indent
 
@@ -173,7 +174,7 @@ def track_to_kml(hdf_path, kti_list, kpv_list, approach_list,
     '''
     one_hz = Parameter()
     kml = simplekml.Kml()
-    with hdf_file(hdf_path) as hdf:
+    with fda.open(hdf_path) as hdf:
         # Latitude param, Longitude param, track name, colour
         coord_params = (
             {'lat': 'Latitude Smoothed',
@@ -359,7 +360,7 @@ def plot_essential(hdf_path):
     fig = plt.figure() ##figsize=(10,8))
     plt.title(os.path.basename(hdf_path))
     
-    with hdf_file(hdf_path) as hdf:
+    with fda.open(hdf_path) as hdf:
         ax1 = fig.add_subplot(4,1,1)
         #ax1.set_title('Frame Counter')
         ax1.plot(hdf['Frame Counter'].array, 'k--')
@@ -377,7 +378,7 @@ def plot_flight(hdf_path, kti_list, kpv_list, phase_list, aircraft_info):
     fig = plt.figure() ##figsize=(10,8))
     plt.title(os.path.basename(hdf_path))
     
-    with hdf_file(hdf_path) as hdf:
+    with fda.open(hdf_path) as hdf:
         #---------- Axis 1 ----------
         ax1 = fig.add_subplot(4,1,1)
         alt_data = hdf['Altitude STD'].array
@@ -527,7 +528,7 @@ def csv_flight_details(hdf_path, kti_list, kpv_list, phase_list,
         rows.append(end)
     
     # Append values of useful parameters at this time
-    with hdf_file(hdf_path) as hdf:
+    with fda.open(hdf_path) as hdf:
         for param in params:
             # Create DerivedParameterNode to utilise the .at() method
             if param not in hdf:

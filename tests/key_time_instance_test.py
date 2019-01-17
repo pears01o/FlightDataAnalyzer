@@ -5,7 +5,7 @@ import unittest
 
 from flightdatautilities.array_operations import load_compressed
 
-from hdfaccess.parameter import MappedArray
+from flightdataaccessor import MappedArray
 
 from analysis_engine.node import (
     A, M, P, S, KTI, aeroplane, ApproachItem, helicopter,

@@ -11,7 +11,7 @@ from copy import deepcopy
 from math import ceil, copysign
 from operator import itemgetter
 
-from hdfaccess.parameter import NO_MAPPING
+import flightdataaccessor as fda
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.geometry import midpoint, great_circle_distance__haversine
 
@@ -5201,7 +5201,7 @@ class AltitudeAtFlapExtensionWithGearDownSelected(KeyPointValueNode):
                     # with the old value, giving a transient indication of
                     # both flap readings. This is a crude fix to avoid this
                     # type of error condition.
-                    if flap.array[index] != NO_MAPPING:
+                    if flap.array[index] != fda.MappedArray.NO_MAPPING:
                         self.create_kpv(index, value, flap=flap.array[index+i])
                         break
 

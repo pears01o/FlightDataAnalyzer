@@ -5738,7 +5738,7 @@ class HeadingRate(DerivedParameterNode):
         roc = rate_of_change(head, 4 if head.hz > 0.25 else 1 / head.hz * 2)
         array = hysteresis(roc, 0.1)
         # trouble is that we're loosing the nice 0 values, so force include!
-        array[(self.array <= 0.05) & (self.array >= -0.05)] = 0
+        array[(array <= 0.05) & (array >= -0.05)] = 0
         self.array = array
 
 
@@ -7931,6 +7931,7 @@ class Vref(DerivedParameterNode):
         if afr_vref and afr_vref.value >= AIRSPEED_THRESHOLD:
             for approach in approaches:
                 array[slices_int(approach.slice)] = round(afr_vref.value)
+            self.array = array
             return
 
         # 2. Derive parameter for Embraer 170/190:
@@ -7939,6 +7940,7 @@ class Vref(DerivedParameterNode):
                 value = most_common_value(v1_vref.array[slices_int(approach.slice)].astype(np.int))
                 if value is not None:
                     array[slices_int(approach.slice)] = value
+            self.array = array
             return
 
         self.array = array
@@ -8110,6 +8112,7 @@ class Vapp(DerivedParameterNode):
         if afr_vapp and afr_vapp.value >= AIRSPEED_THRESHOLD:
             for approach in approaches:
                 array[slices_int(approach.slice)] = round(afr_vapp.value)
+            self.array = array
             return
 
         # 2. Derive parameter for Embraer 170/190:
@@ -8118,6 +8121,7 @@ class Vapp(DerivedParameterNode):
                 value = most_common_value(vr_vapp.array[slices_int(approach.slice)].astype(np.int))
                 if value is not None:
                     array[slices_int(approach.slice)] = value
+            self.array = array
             return
 
         self.array = array
@@ -8197,6 +8201,7 @@ class VappLookup(DerivedParameterNode):
             except ValueError:
                 self.warning("'%s' will be fully masked because '%s' array "
                              "could not be repaired.", self.name, gw.name)
+                self.array = array
                 return
 
         # Determine the maximum detent in advance to avoid multiple lookups:
@@ -8234,7 +8239,7 @@ class VappLookup(DerivedParameterNode):
                 # can be detected.
                 continue
 
-            self.array = array
+        self.array = array
 
 
 ########################################
@@ -8786,6 +8791,7 @@ class AirspeedMinusV2(DerivedParameterNode):
 
         v2 = v2_recorded or airspeed_selected or v2_lookup
         if not v2:
+            self.array = array
             return
 
         for search_start, start_index, stop_index in phases:
@@ -8854,6 +8860,7 @@ class AirspeedMinusVref(DerivedParameterNode):
         vref = first_valid_parameter(vref_recorded, vref_lookup, phases=phases)
 
         if vref is None:
+            self.array = array
             return
 
         for phase in phases:
@@ -8921,6 +8928,7 @@ class AirspeedMinusVapp(DerivedParameterNode):
         vapp = first_valid_parameter(vapp_recorded, vapp_lookup, phases=phases)
 
         if vapp is None:
+            self.array = array
             return
 
         for phase in phases:

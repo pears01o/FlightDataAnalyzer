@@ -29,8 +29,7 @@ from analysis_engine.node import (
     _calculate_offset,
 )
 
-from flightdataaccessor.file import hdf_file
-from flightdataaccessor.datatypes.parameter import MappedArray
+import flightdataaccessor as fda
 
 test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               'test_data')
@@ -1412,7 +1411,7 @@ class TestKeyPointValueNode(unittest.TestCase):
         array[5:8] = 1.0
         array[11:17] = 1.0
         mapping = {0: 'Down', 1: 'Up'}
-        param = P('Disc', MappedArray(array, values_mapping=mapping))
+        param = P('Disc', fda.MappedArray(array, values_mapping=mapping))
         knode.create_kpvs_where(param.array == 'Up', param.hz)
         self.assertEqual(list(knode),
                          [KeyPointValue(index=5, value=3, name='Kpv'),
@@ -1424,7 +1423,7 @@ class TestKeyPointValueNode(unittest.TestCase):
         array[:8] = 1.0
         array[11:17] = 1.0
         mapping = {0: 'Down', 1: 'Up'}
-        param = P('Disc', MappedArray(array, values_mapping=mapping))
+        param = P('Disc', fda.MappedArray(array, values_mapping=mapping))
         knode.create_kpvs_where(param.array == 'Up', param.hz, exclude_leading_edge=True)
         self.assertEqual(list(knode),
                          [KeyPointValue(index=11, value=6, name='Kpv')])
@@ -1435,7 +1434,7 @@ class TestKeyPointValueNode(unittest.TestCase):
         array[5:8] = 1.0  # shorter than 3 secs duration - ignored.
         array[11:17] = 1.0
         mapping = {0: 'Down', 1: 'Up'}
-        param = P('Disc', MappedArray(array, values_mapping=mapping),
+        param = P('Disc', fda.MappedArray(array, values_mapping=mapping),
                   frequency=2.0)
         knode.create_kpvs_where(param.array == 'Up', param.hz,
                                       min_duration=3)
@@ -1448,7 +1447,7 @@ class TestKeyPointValueNode(unittest.TestCase):
         array[5:8] = 1.0
         array[11:17] = 1.0
         mapping = {0: 'Down', 1: 'Up'}
-        param = P('Disc', MappedArray(array, values_mapping=mapping))
+        param = P('Disc', fda.MappedArray(array, values_mapping=mapping))
         # find second using a slice
         knode.create_kpvs_where(param.array == 'Up', param.hz,
             phase=slice(10,None))
@@ -1461,7 +1460,7 @@ class TestKeyPointValueNode(unittest.TestCase):
         array[5:8] = 1.0
         array[11:17] = 1.0
         mapping = {0: 'Down', 1: 'Up'}
-        param = P('Disc', MappedArray(array, values_mapping=mapping))
+        param = P('Disc', fda.MappedArray(array, values_mapping=mapping))
         # do not create any kpvs as no slices to scan through
         knode.create_kpvs_where(param.array == 'Up', param.hz,
             phase=[])
@@ -1475,7 +1474,7 @@ class TestKeyPointValueNode(unittest.TestCase):
         array[5:8] = 1.0
         array[11:17] = 1.0
         mapping = {0: 'Down', 1: 'Up'}
-        param = P('Disc', MappedArray(array, values_mapping=mapping))
+        param = P('Disc', fda.MappedArray(array, values_mapping=mapping))
         # do not create any kpvs as no slices to scan through
         knode.create_kpvs_where(param.array == 'Up', param.hz,
             phase=[slice(16, 16)])
@@ -1487,7 +1486,7 @@ class TestKeyPointValueNode(unittest.TestCase):
         array[5:8] = 1.0
         array[11:17] = 1.0
         mapping = {0: 'Down', 1: 'Up'}
-        param = P('Disc', MappedArray(array, values_mapping=mapping))
+        param = P('Disc', fda.MappedArray(array, values_mapping=mapping))
         # find second using a list of slices
         knode.create_kpvs_where(param.array == 'Up', param.hz,
             phase=slice(10,None))
@@ -1501,7 +1500,7 @@ class TestKeyPointValueNode(unittest.TestCase):
         array[5:8] = 1.0
         array[11:17] = 1.0
         mapping = {0: 'Down', 1: 'Up'}
-        param = P('Disc', MappedArray(array, values_mapping=mapping))
+        param = P('Disc', fda.MappedArray(array, values_mapping=mapping))
         # find second using a Section
         knode.create_kpvs_where(param.array != 'Up', param.hz,
             phase=Section('', slice(10,None), 10, None))
@@ -1515,7 +1514,7 @@ class TestKeyPointValueNode(unittest.TestCase):
         array[5:8] = 1.0
         array[11:17] = 1.0
         mapping = {0: 'Down', 1: 'Up'}
-        param = P('Disc', MappedArray(array, values_mapping=mapping))
+        param = P('Disc', fda.MappedArray(array, values_mapping=mapping))
         # find second using a SectionNode (and without frequency param)
         knode.create_kpvs_where(param.array == 'Up',
             phase=SectionNode(items=[
@@ -1745,7 +1744,7 @@ class TestKeyTimeInstanceNode(unittest.TestCase):
     def test_create_ktis_on_state_change_borders_entering(self):
         # The KTIs should not be created on borders of the data (start and end)
         kti = self.kti
-        test_param = MappedArray([1, 1, 0, 0, 0, 0, 1],
+        test_param = fda.MappedArray([1, 1, 0, 0, 0, 0, 1],
                                  values_mapping={0: 'Off', 1: 'On'})
         kti.create_ktis_on_state_change('On', test_param,
                                         change='entering')
@@ -1754,7 +1753,7 @@ class TestKeyTimeInstanceNode(unittest.TestCase):
     def test_create_ktis_on_state_change_borders_leaving(self):
         # The KTIs should not be created on borders of the data (start and end)
         kti = self.kti
-        test_param = MappedArray([1, 1, 0, 0, 0, 0, 1],
+        test_param = fda.MappedArray([1, 1, 0, 0, 0, 0, 1],
                                  values_mapping={0: 'Off', 1: 'On'})
         kti.create_ktis_on_state_change('On', test_param,
                                         change='leaving')
@@ -1762,7 +1761,7 @@ class TestKeyTimeInstanceNode(unittest.TestCase):
 
     def test_create_ktis_on_state_change_entering(self):
         kti = self.kti
-        test_param = MappedArray([0, 1, 1, 0, 0, 0, 0, 1, 0],
+        test_param = fda.MappedArray([0, 1, 1, 0, 0, 0, 0, 1, 0],
                                  values_mapping={0: 'Off', 1: 'On'})
         kti.create_ktis_on_state_change('On', test_param, change='entering')
         self.assertEqual(kti, [KeyTimeInstance(index=0.5, name='Kti'),
@@ -1770,7 +1769,7 @@ class TestKeyTimeInstanceNode(unittest.TestCase):
 
     def test_create_ktis_on_state_change_entering_with_mask(self):
         kti = self.kti
-        test_param = MappedArray([0, 1, 1, 1, 0, 0, 0, 1, 0],
+        test_param = fda.MappedArray([0, 1, 1, 1, 0, 0, 0, 1, 0],
                             mask=[0, 0, 1, 0, 0, 0, 0, 0, 0],
                                  values_mapping={0: 'Off', 1: 'On'})
         kti.create_ktis_on_state_change('On', test_param, change='entering')
@@ -1783,7 +1782,7 @@ class TestKeyTimeInstanceNode(unittest.TestCase):
         triggering KPV's
         '''
         kti = self.kti
-        test_param = MappedArray([0]*400+[1]*600+[0]*50,
+        test_param = fda.MappedArray([0]*400+[1]*600+[0]*50,
                                  values_mapping={0: 'Off', 1: 'On'})
         test_param[50:60] = np.ma.masked # small masked period
         test_param[460:604] = np.ma.masked # large masked period
@@ -1798,7 +1797,7 @@ class TestKeyTimeInstanceNode(unittest.TestCase):
         Entirely masked data must not trigger, as there can be no state change.
         '''
         kti = self.kti
-        test_param = MappedArray(data=[0]*4+[1]*6+[0]*5,
+        test_param = fda.MappedArray(data=[0]*4+[1]*6+[0]*5,
                                  mask=[1]*15,
                                  values_mapping={0: 'Off', 1: 'On'})
         self.assertRaises(ValueError, kti.create_ktis_on_state_change,
@@ -1806,7 +1805,7 @@ class TestKeyTimeInstanceNode(unittest.TestCase):
 
     def test_create_ktis_on_state_change_leaving(self):
         kti = self.kti
-        test_param = MappedArray([0, 1, 1, 0, 0, 0, 0, 1, 0],
+        test_param = fda.MappedArray([0, 1, 1, 0, 0, 0, 0, 1, 0],
                                  values_mapping={0: 'Off', 1: 'On'})
         kti.create_ktis_on_state_change('On', test_param, change='leaving')
         self.assertEqual(kti, [KeyTimeInstance(index=2.5, name='Kti'),
@@ -1814,7 +1813,7 @@ class TestKeyTimeInstanceNode(unittest.TestCase):
 
     def test_create_ktis_on_state_change_entering_and_leaving(self):
         kti = self.kti
-        test_param = MappedArray([0, 1, 1, 0, 0, 0, 0, 1, 0],
+        test_param = fda.MappedArray([0, 1, 1, 0, 0, 0, 0, 1, 0],
                                  values_mapping={0: 'Off', 1: 'On'})
         kti.create_ktis_on_state_change('On', test_param,
                                         change='entering_and_leaving')
@@ -2099,7 +2098,7 @@ class TestMultistateDerivedParameterNode(unittest.TestCase):
         self.assertEqual(p.array.raw[0], 1)
 
         # init with MappedArray
-        array = MappedArray([1, 2, 3], values_mapping=values_mapping)
+        array = fda.MappedArray([1, 2, 3], values_mapping=values_mapping)
         p = M('Test Node', array, values_mapping=values_mapping)
         self.assertEqual(p.array[0], 'one')
         self.assertEqual(p.array.raw[0], 1)
@@ -2179,11 +2178,11 @@ class TestMultistateDerivedParameterNode(unittest.TestCase):
         array = np.ma.array(list(range(5))+list(range(5)), mask=[1,1,1,0,0,0,0,0,1,1])
         multi_p = MultistateDerivedParameterNode('multi', array, values_mapping=mapping)
         # save array to hdf and close
-        with hdf_file(self.hdf_path, create=True) as hdf1:
+        with fda.open(self.hdf_path, mode='x') as hdf1:
             hdf1['multi'] = multi_p
 
         # check hdf has mapping and integer values stored
-        with hdf_file(self.hdf_path) as hdf:
+        with fda.open(self.hdf_path) as hdf:
             saved = hdf['multi']
             self.assertEqual(list(np.ma.filled(saved.array, 999)), [999, 999, 999, 3, 4, 0, 1, 2, 999, 999])
             self.assertEqual(saved.array.data.dtype, np.int)

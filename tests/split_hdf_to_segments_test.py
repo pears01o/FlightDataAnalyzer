@@ -8,6 +8,8 @@ import unittest
 
 from datetime import datetime
 
+import flightdataaccessor as fda
+
 from analysis_engine.split_hdf_to_segments import (
     _calculate_start_datetime,
     _get_normalised_split_params,
@@ -21,8 +23,6 @@ from analysis_engine.split_hdf_to_segments import (
     PRECISE
 )
 from analysis_engine.node import M, P, Parameter
-
-from flightdataaccessor.file import hdf_file
 
 from flightdatautilities.array_operations import load_compressed
 from flightdatautilities.filesystem_tools import copy_file
@@ -381,7 +381,7 @@ class TestSplitSegments(unittest.TestCase):
                      "Test file not present")
     def test_split_segments_737_3C(self):
         '''Splits on both DFC Jump and Engine parameters.'''
-        hdf = hdf_file(os.path.join(test_data_path, "1_7295949_737-3C.hdf5"))
+        hdf = fda.open(os.path.join(test_data_path, "1_7295949_737-3C.hdf5"))
         segment_tuples = split_segments(hdf, {})
         self.assertEqual(segment_tuples,
                          [('START_AND_STOP', slice(0, 3168.0, None)),
@@ -395,7 +395,8 @@ class TestSplitSegments(unittest.TestCase):
         '''Splits on both DFC Jump and Engine parameters.'''
         hdf_path = os.path.join(test_data_path, "split_segments_1.hdf5")
         temp_path = copy_file(hdf_path)
-        hdf = hdf_file(temp_path)
+        hdf = fda.open(temp_path)
+
         segment_tuples = split_segments(hdf, {})
         self.assertEqual(segment_tuples,
                          [('START_AND_STOP', slice(0, 9952.0, None), 0),
@@ -408,7 +409,7 @@ class TestSplitSegments(unittest.TestCase):
         '''Splits on both DFC Jump and Engine parameters.'''
         hdf_path = os.path.join(test_data_path, "split_segments_2.hdf5")
         temp_path = copy_file(hdf_path)
-        hdf = hdf_file(temp_path)
+        hdf = fda.open(temp_path)
 
         segment_tuples = split_segments(hdf, {})
         self.assertEqual(segment_tuples,
@@ -424,7 +425,7 @@ class TestSplitSegments(unittest.TestCase):
         '''Splits on both Engine and Heading parameters.'''
         hdf_path = os.path.join(test_data_path, "split_segments_3.hdf5")
         temp_path = copy_file(hdf_path)
-        hdf = hdf_file(temp_path)
+        hdf = fda.open(temp_path)
 
         segment_tuples = split_segments(hdf, {})
 
@@ -462,7 +463,7 @@ class TestSplitSegments(unittest.TestCase):
                                                      "4_3377853_146-301.hdf5")),
                      "Test file not present")
     def test_split_segments_146_300(self):
-        hdf = hdf_file(os.path.join(test_data_path, "4_3377853_146-301.hdf5"))
+        hdf = fda.open(os.path.join(test_data_path, "4_3377853_146-301.hdf5"))
         segment_tuples = split_segments(hdf, {})
         self.assertEqual(segment_tuples,
                          [('START_AND_STOP', slice(0, 24801.0, None)),
@@ -490,7 +491,7 @@ class TestSplitSegments(unittest.TestCase):
 
         hdf_path = os.path.join(test_data_path, "split_segments_multiple_types.hdf5")
         temp_path = copy_file(hdf_path)
-        hdf = hdf_file(temp_path)
+        hdf = fda.open(temp_path)
         self.maxDiff = None
         segment_tuples = split_segments(hdf, {})
         self.assertEqual(len(segment_tuples), 16, msg="Unexpected number of segments detected")
@@ -527,7 +528,7 @@ class TestSplitSegments(unittest.TestCase):
         eng_min_slices slices (Between indices 11959.5 to 12336.5).
         Ideally the segment split should be halfway between this, at 12148.0.
         '''
-        hdf = hdf_file(os.path.join(test_data_path, "rto_split_segment.hdf5"))
+        hdf = fda.open(os.path.join(test_data_path, "rto_split_segment.hdf5"))
         segment_tuples = split_segments(hdf, {})
         split_idx = 12148.0
         self.assertEqual(

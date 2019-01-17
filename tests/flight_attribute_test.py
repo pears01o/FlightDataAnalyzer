@@ -268,12 +268,12 @@ class TestDeterminePilot(unittest.TestCase):
     def get_params(self, hdf_path, _slice, phase_name):
         import shutil
         import tempfile
-        from flightdataaccessor.file import hdf_file
+        import flightdataaccessor as fda
 
         with tempfile.NamedTemporaryFile() as temp_file:
             shutil.copy(hdf_path, temp_file.name)
 
-            with hdf_file(hdf_path) as hdf:
+            with fda.open(hdf_path) as hdf:
                 pitch_capt = hdf.get('Pitch (Capt)')
                 pitch_fo = hdf.get('Pitch (FO)')
                 roll_capt = hdf.get('Roll (Capt)')

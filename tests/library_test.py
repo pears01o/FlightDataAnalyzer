@@ -31,6 +31,8 @@ from flightdatautilities import units as ut
 from flightdatautilities.array_operations import load_compressed
 import flightdatautilities.masked_array_testutils as ma_test
 
+from flightdataaccessor import MappedArray
+
 from analysis_engine.library import *
 from analysis_engine.node import (A, P, S, load, M, KTI, KeyTimeInstance, Section)
 

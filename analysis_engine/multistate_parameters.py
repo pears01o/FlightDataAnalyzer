@@ -11,7 +11,7 @@ from pprint import pformat
 
 from flightdatautilities import aircrafttables as at, dateext, units as ut
 
-from flightdataaccessor.datatypes.parameter import MappedArray
+from flightdataaccessor import MappedArray
 
 from analysis_engine.node import (
     A, M, P, S, helicopter, MultistateDerivedParameterNode
@@ -1220,11 +1220,6 @@ class FlapForLeverSynthetic(MultistateDerivedParameterNode):
 
 
         self.values_mapping = at.get_flap_map(model.value, series.value, family.value)
-
-        # Prepare the destination array:
-        self.array = MappedArray(np_ma_masked_zeros_like(flap_inc.array),
-                                 values_mapping=self.values_mapping)
-
         self.array = surface_for_synthetic(flap_inc, flap_exc, self.values_mapping)
 
 
@@ -1249,11 +1244,6 @@ class SlatForLeverSynthetic(MultistateDerivedParameterNode):
 
 
         self.values_mapping = at.get_slat_map(model.value, series.value, family.value)
-
-        # Prepare the destination array:
-        self.array = MappedArray(np_ma_masked_zeros_like(slat_inc.array),
-                                 values_mapping=self.values_mapping)
-
         self.array = surface_for_synthetic(slat_inc, slat_exc, self.values_mapping)
 
 
@@ -1755,7 +1745,7 @@ class GearUp(MultistateDerivedParameterNode):
                gear_pos=M('Gear Position')):
         if gear_sel and gear_transit:
             gear_sel_array = align(gear_sel, gear_transit) if gear_sel.hz != gear_transit.hz else gear_sel.array
-            array = (gear_sel_array == 'Up') & ~(gear_transit.array == 'Retracting')
+            array = MappedArray((gear_sel_array == 'Up') & ~(gear_transit.array == 'Retracting'), values_mapping=self.values_mapping)
             _slices = runs_of_ones(array == 'Down')
             _slices = slices_remove_small_gaps(_slices, 6, self.hz)
             for _slice in _slices:
@@ -3560,7 +3550,7 @@ class ThrustReversersEffective(MultistateDerivedParameterNode):
             power = eng_n1
             threshold = REVERSE_THRUST_EFFECTIVE_N1
 
-        array = np_ma_zeros_like(tr.array)
+        array = MappedArray(np_ma_zeros_like(tr.array), values_mapping=self.values_mapping)
         high_power = np.ma.masked_less(power.array, threshold)
         high_power_slices = np.ma.clump_unmasked(high_power)
         for landing in landings:

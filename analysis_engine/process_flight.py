@@ -11,9 +11,9 @@ import sys
 from datetime import datetime, timedelta
 from networkx.readwrite import json_graph
 
-from flightdatautilities.filesystem_tools import copy_file
+import flightdataaccessor as fda
 
-from flightdataaccessor.file import hdf_file
+from flightdatautilities.filesystem_tools import copy_file
 
 from analysis_engine import hooks, settings, __version__
 from analysis_engine.dependency_graph import dependency_order
@@ -101,7 +101,7 @@ def derive_parameters(hdf, node_mgr, process_order, params=None, force=False):
 
     :param hdf: Data file accessor used to get and save parameter data and
         attributes
-    :type hdf: hdf_file
+    :type hdf: flightdataaccessor.FlightDataFormat
     :param node_mgr: Used to determine the type of node in the process_order
     :type node_mgr: NodeManager
     :param process_order: Parameter / Node class names in the required order to
@@ -611,8 +611,7 @@ def process_flight(segment_info, tail_number, aircraft_info={}, achieved_flight_
     for node_name in requested_subset:
         initial.pop(node_name, None)
 
-    # open HDF for reading
-    with hdf_file(hdf_path) as hdf:
+    with fda.open(hdf_path, mode='a') as hdf:
         hdf.start_datetime = segment_info['Start Datetime']
         hook = hooks.PRE_FLIGHT_ANALYSIS
         if hook:
@@ -838,7 +837,7 @@ def main():
     # Derive parameters to new HDF
     hdf_copy = copy_file(args.file, postfix='_process')
     if args.strip:
-        with hdf_file(hdf_copy) as hdf:
+        with fda.open(hdf_copy, mode='a') as hdf:
             hdf.delete_params(hdf.derived_keys())
     
     if args.initial:

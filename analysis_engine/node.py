@@ -18,6 +18,8 @@ from functools import total_ordering
 from itertools import product
 from operator import attrgetter
 
+import flightdataaccessor as fda
+
 from analysis_engine.library import (
     align,
     align_slices,
@@ -42,8 +44,6 @@ from analysis_engine.library import (
 )
 from analysis_engine.recordtype import recordtype
 from analysis_engine.settings import NODE_CACHE_OFFSET_DP
-
-from flightdataaccessor.datatypes.parameter import MappedArray, Parameter as FlightDataParameter
 
 
 logger = logging.getLogger(name=__name__)
@@ -87,19 +87,19 @@ def load(path):
     :returns: Node loaded from file.
     :rtype: Node
     '''
-    ##def _load(file):
-        ##try:
-            ##return cPickle.load(file)
-        ##except UnicodeDecodeError: # python 3
-            ##return cPickle.load(file, encoding='latin1')
+    # def _load(file):
+    #     try:
+    #         return cPickle.load(file)
+    #     except UnicodeDecodeError: # python 3
+    #         return cPickle.load(file, encoding='latin1')
 
     with gzip.open(path) as gzip_file:
         try:
             return loads(gzip_file.read())
         except (IOError, OSError):
             pass
-    with open(path, 'rb') as file: # pickle self, excluding array
-        return loads(file.read()) # _load(file)
+    with open(path, 'rb') as file:  # pickle self, excluding array
+        return loads(file.read())  # _load(file)
 
 
 def loads(bytes):
@@ -111,9 +111,9 @@ def loads(bytes):
     :returns: Node loaded from string.
     :rtype: Node
     '''
-    try: # python 2
+    try:  # python 2
         return cPickle.loads(bytes)
-    except UnicodeDecodeError: # python 3
+    except UnicodeDecodeError:  # python 3
         return cPickle.loads(bytes, encoding='latin1')
 
 
@@ -129,6 +129,7 @@ def dumps(node):
     Dump a node to a string.
     '''
     return node.dumps()
+
 
 save = dump
 
@@ -609,7 +610,7 @@ def can_operate(cls, available, actype=A('Aircraft Type')):
         logger.warning(*args, **kwargs)
 
 
-class DerivedParameterNode(Node, FlightDataParameter):
+class DerivedParameterNode(Node, fda.Parameter):
     """
     Base class for DerivedParameters which overide def derive() method.
 
@@ -623,7 +624,10 @@ class DerivedParameterNode(Node, FlightDataParameter):
 
     units = None
     data_type = 'Derived'
+
+    # XXX: do we need this any more?
     lfl = False
+    source = 'derived'
 
     def __init__(self, name='', array=np.ma.array([], dtype=float),
                  frequency=1.0, offset=0.0, data_type=None, lfl=False, *args, **kwargs):
@@ -638,8 +642,12 @@ class DerivedParameterNode(Node, FlightDataParameter):
         else:
             kwargs['source'] = 'derived'
 
-        FlightDataParameter.__init__(
-            self, name=name, frequency=frequency, offset=offset, data_type=data_type, *args, **kwargs)
+        if data_type:
+            self.data_type = data_type
+
+        fda.Parameter.__init__(
+            self, name=name, frequency=frequency, offset=offset, data_type=self.data_type, unit=self.units,
+            *args, **kwargs)
         Node.__init__(self, name=name, frequency=frequency, offset=offset, *args, **kwargs)
 
     def __init__old(self, name='', array=np.ma.array([], dtype=float), frequency=1.0, offset=0.0, data_type=None,
@@ -890,7 +898,7 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
                  offset=0.0, data_type=None, values_mapping={}, *args, **kwargs):
 
         if array is None:
-            array = MappedArray([], values_mapping=values_mapping)
+            array = fda.MappedArray([], values_mapping=values_mapping)
 
         #Q: if no values_mapping set to None?
         if values_mapping:
@@ -922,15 +930,8 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
         else:
             values_mapping = None
 
-        if 'array' in state or '_array' in state:
-            array = state.pop('array', None)
-            if array is None:
-                array = state.pop('_array')
-            self.submasks = {}
-            self.array = array
-            if values_mapping:
-                self.values_mapping = values_mapping
-                self.array.values_mapping = values_mapping
+        if values_mapping:
+            self.values_mapping = values_mapping
 
         super(MultistateDerivedParameterNode, self).__setstate__(state)
 
@@ -959,7 +960,7 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
                 self.array.values_mapping = value
             return object.__setattr__(self, name, value)
         # setting 'self.array'
-        if isinstance(value, MappedArray):
+        if isinstance(value, fda.MappedArray):
             # see which values_mapping has been set
             if getattr(self, 'values_mapping', '') and getattr(value, 'values_mapping', ''):
                 if self.values_mapping == value.values_mapping:
@@ -990,13 +991,13 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
             if value.dtype.type in (np.str_, np.string_, np.object_):
                 # Array contains strings, convert to ints with mapping.
                 value = multistate_string_to_integer(value, self.values_mapping)
-            value = MappedArray(value, values_mapping=self.values_mapping)
+            value = fda.MappedArray(value, values_mapping=self.values_mapping)
         elif isinstance(value, Iterable):
             # assume a list of mapped values
             reversed_mapping = {v: k for k, v in self.values_mapping.items()}
             #Q: change "int" to "float"
             data = [int(reversed_mapping[v]) for v in value]
-            value = MappedArray(data, values_mapping=self.values_mapping)
+            value = fda.MappedArray(data, values_mapping=self.values_mapping)
         else:
             raise ValueError('Invalid argument type assigned to array: %s'
                              % type(value))
@@ -1015,7 +1016,7 @@ def derived_param_from_hdf(hdf_parameter, cache=None):
     :type hdf_parameter: Parameter from an HDF file
     :rtype: DerivedParameterNode or MultistateDerivedParameterNode
     '''
-    if isinstance(hdf_parameter.array, MappedArray):
+    if isinstance(hdf_parameter.array, fda.MappedArray):
         result = MultistateDerivedParameterNode(
             name=hdf_parameter.name, array=hdf_parameter.array,
             frequency=hdf_parameter.frequency, offset=hdf_parameter.offset,
@@ -2038,7 +2039,7 @@ class KeyPointValueNode(FormattedNameNode):
                 break
             index -= duration
         if 'mode' in kwargs and kwargs['mode'] == 'compass':
-            value = value%360.0
+            value = value % 360.0
             kwargs.pop('mode')
         self.create_kpv(index, value, **kwargs)
 
@@ -2211,7 +2212,7 @@ class KeyPointValueNode(FormattedNameNode):
         for _slice in slices_int(slices):
             start = _slice.start or 0
             if _slice.stop is not None and _slice.stop == _slice.start:
-                continue # e.g. if section is aligned to lower frequency
+                continue  # e.g. if section is aligned to lower frequency
             # NOTE: TypeError: 'bool' object is not subscriptable:
             #     If condition is False check Values Mapping has correct
             #     state being checked against in condition.
@@ -2690,6 +2691,7 @@ KTI = KeyTimeInstanceNode
 
 aeroplane = A('Aircraft Type', 'aeroplane')
 helicopter = A('Aircraft Type', 'helicopter')
+
 
 @classmethod
 def aeroplane_only(cls, available, ac_type=A('Aircraft Type')):

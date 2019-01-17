@@ -11,7 +11,7 @@ import zipfile
 from collections import defaultdict
 from inspect import getargspec, isclass, ismodule
 
-from flightdataaccessor.file import hdf_file
+import flightdataaccessor as fda
 from flightdataaccessor.utils import strip_hdf
 
 from flightdatautilities import api
@@ -215,7 +215,7 @@ def derived_trimmer(hdf_path, node_names, dest):
     :rtype: [str]
     '''
     params = []
-    with hdf_file(hdf_path) as hdf:
+    with fda.open(hdf_path) as hdf:
         derived_nodes = get_derived_nodes(settings.NODE_MODULES)
         node_mgr = NodeManager(
             {}, hdf.duration, hdf.valid_param_names(), [], [],

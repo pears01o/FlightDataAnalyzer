@@ -4,9 +4,9 @@ import unittest
 
 from mock import Mock, patch
 
-from flightdatautilities import units as ut
+import flightdataaccessor as fda
 
-from hdfaccess.parameter import MappedArray
+from flightdatautilities import units as ut
 
 from analysis_engine.node import (
     A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem,
@@ -1225,8 +1225,7 @@ class TestAltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore(unittest.TestCa
         offshore_data = np.concatenate([np.zeros(10), np.ones(80),
                                         np.zeros(10)])
 
-        offshore_array = MappedArray(offshore_data,
-                                     values_mapping=self.offshore_mapping)
+        offshore_array = fda.MappedArray(offshore_data, values_mapping=self.offshore_mapping)
         offshore_multistate = M(name='Offshore', array=offshore_array)
 
         liftoff = KTI('Liftoff', items=[
@@ -1258,8 +1257,7 @@ class TestAltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore(unittest.TestCa
                                          np.zeros(3), np.ones(35),
                                          np.zeros(17)])
 
-        offshore_array = MappedArray(offshore_data,
-                                     values_mapping=self.offshore_mapping)
+        offshore_array = fda.MappedArray(offshore_data, values_mapping=self.offshore_mapping)
         offshore_multistate = M(name='Offshore', array=offshore_array)
 
         liftoffs = KTI('Liftoff', items=[
@@ -1297,8 +1295,7 @@ class TestAltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore(unittest.TestCa
         offshore_data = np.concatenate([np.zeros(10), np.ones(80),
                                         np.zeros(10)])
 
-        offshore_array = MappedArray(offshore_data,
-                                     values_mapping=self.offshore_mapping)
+        offshore_array = fda.MappedArray(offshore_data, values_mapping=self.offshore_mapping)
         offshore_multistate = M(name='Offshore', array=offshore_array)
 
         liftoff = KTI('Liftoff', items=[

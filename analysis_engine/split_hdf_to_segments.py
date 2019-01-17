@@ -1145,7 +1145,7 @@ def split_hdf_to_segments(source, aircraft_info, fallback_dt=None,
     segments = []
     previous_stop_dt = None
 
-    fdf = flightdataaccessor.open(source, cache_param_list=True)
+    fdf = flightdataaccessor.open(source)
     for part, (segment_type, segment_slice, start_padding) in enumerate(segment_tuples, start=1):
         dest = write_segment(
             fdf, segment_slice, part=part, dest_dir=dest_dir, boundary=boundary)

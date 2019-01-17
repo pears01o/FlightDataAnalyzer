@@ -24,7 +24,7 @@ from scipy.ndimage import filters
 from scipy.signal import medfilt
 from six.moves import filterfalse, zip_longest
 
-from flightdataaccessor.datatypes.parameter import MappedArray
+import flightdataaccessor as fda
 
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.geometry import cross_track_distance, great_circle_distance__haversine
@@ -370,7 +370,7 @@ def align_args(slave_array, slave_frequency, slave_offset, master_frequency, mas
         # established aligning process
         slave_array = string_array_to_mapped_array(slave_array)
 
-    if isinstance(slave_array, MappedArray):  # Multi-state array.
+    if isinstance(slave_array, fda.MappedArray):  # Multi-state array.
         # force disable interpolate!
         mappings = slave_array.values_mapping
         slave_array = slave_array.raw
@@ -499,9 +499,9 @@ def align_args(slave_array, slave_frequency, slave_offset, master_frequency, mas
             # ends of the array.
             slave_aligned[i::wm] = a*slave_array[h::ws] + b*slave_array[h1::ws]
 
-    if isinstance(original_array, MappedArray) or original_array.dtype.type is np.string_:
+    if isinstance(original_array, fda.MappedArray) or original_array.dtype.type is np.string_:
         # return back to mapped array
-        mapped_array = MappedArray(np.ma.zeros(len(slave_aligned)).astype(_dtype), values_mapping=mappings)
+        mapped_array = fda.MappedArray(np.ma.zeros(len(slave_aligned)).astype(_dtype), values_mapping=mappings)
         mapped_array[:] = slave_aligned[:]
         slave_aligned = mapped_array
 
@@ -557,7 +557,7 @@ def string_array_to_mapped_array(array):
     compressed = array.compressed()
     values, counts = np.unique(compressed, return_counts=True)
     mappings = {k: v for k, v in zip(range(len(values)+1), [''] + list(values))}
-    mapped_array = MappedArray(np.ma.zeros(len(array)).astype('int'), values_mapping=mappings)
+    mapped_array = fda.MappedArray(np.ma.zeros(len(array)).astype('int'), values_mapping=mappings)
     mapped_array[:] = array[:]
 
     return mapped_array
@@ -5077,7 +5077,7 @@ def nearest_neighbour_mask_repair(array, copy=True, repair_gap_size=None, direct
         array[stop+1:] = array[stop]
 
     neighbours = next_neighbour()
-    if isinstance(array, MappedArray):
+    if isinstance(array, fda.MappedArray):
         a_copy = array.raw.copy()
     else:
         a_copy = array.copy()
@@ -6796,8 +6796,7 @@ def excluding_transition(array, steps, hz=1, time_limit=1):
 
 def surface_for_synthetic(inc_trans, exc_trans, values_mapping):
 
-    output = MappedArray(np_ma_masked_zeros_like(inc_trans.array),
-                         values_mapping=values_mapping)
+    output = fda.MappedArray(np_ma_masked_zeros_like(inc_trans.array), values_mapping=values_mapping)
     sections_inc = sorted(itertools.chain.from_iterable(runs_of_ones(inc_trans.array == v) for v in values_mapping))
     sections_exc = sorted(itertools.chain.from_iterable(runs_of_ones(exc_trans.array == v) for v in values_mapping))
 

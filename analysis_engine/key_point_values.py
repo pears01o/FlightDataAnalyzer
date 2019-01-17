@@ -5385,16 +5385,17 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
                 if is_index_within_slice(nose_down.slice.start, clump):
                     nose_downs_in_clump.append(nose_down.slice.start)
 
-            if len(liftoffs_in_clump) == 0 or len(nose_downs_in_clump) == 0 or\
-               len(liftoffs_in_clump) != len(nose_downs_in_clump):
-               # Might need a rework due to edge cases
+            if len(liftoffs_in_clump) == 0 or len(nose_downs_in_clump) == 0:
                 continue
 
             rad_alt_slices = []
 
             for idx, liftoff in enumerate(liftoffs_in_clump):
-                rad_alt_slices.append(slice(liftoffs_in_clump[idx],
-                                            nose_downs_in_clump[idx]))
+                try:
+                    rad_alt_slices.append(slice(liftoffs_in_clump[idx],
+                                                nose_downs_in_clump[idx]))
+                except IndexError:
+                    continue
 
             for _slice in rad_alt_slices:
                 diffs = np.ma.ediff1d(mask_outside_slices(masked_alt_aal,

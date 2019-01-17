@@ -7293,7 +7293,7 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
     def test_can_operate(self):
         expected = [('Offshore', 'Liftoff', 'Hover',
                      'Nose Down Attitude Adoption', 'Altitude Radio',
-                     'Altitude AGL For Flight Phases')]
+                     'Altitude AAL For Flight Phases')]
 
         opts_h175 = self.node_class.get_operational_combinations(
                     ac_type=helicopter, family=A('Family', 'H175'))
@@ -7323,13 +7323,13 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
                                   np.linspace(30, 5, num=10),
                                   np.linspace(5, 1000, num=70)])
 
-        alt_agl = np.concatenate([np.zeros(13), np.linspace(0, 25, num=7),
+        alt_aal = np.concatenate([np.zeros(13), np.linspace(0, 25, num=7),
                                   np.linspace(25, 3, num=10),
                                   np.linspace(3, 1000, num=70)])
 
         node.derive(offshore_multistate, liftoff, hover, nose_down,
                     P('Altitude Radio', rad_alt),
-                    P('Altitude AGL For Flight Phases', alt_agl))
+                    P('Altitude AAL For Flight Phases', alt_aal))
 
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 29)
@@ -7359,14 +7359,14 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
                                   np.zeros(18), np.linspace(5, 30, num=8),
                                   np.linspace(5, 1000, num=44)])
 
-        alt_agl = np.concatenate([np.zeros(13), np.linspace(0, 25, num=7),
+        alt_aal = np.concatenate([np.zeros(13), np.linspace(0, 25, num=7),
                                   np.linspace(25, 3, num=10),
                                   np.zeros(18), np.linspace(3, 24, num=8),
                                   np.linspace(5, 1000, num=44)])
 
         node.derive(offshore_multistate, liftoffs, hovers, nose_downs,
                     P('Altitude Radio', rad_alt),
-                    P('Altitude AGL For Flight Phases', alt_agl))
+                    P('Altitude AAL For Flight Phases', alt_aal))
 
         self.assertEqual(len(node), 2)
 

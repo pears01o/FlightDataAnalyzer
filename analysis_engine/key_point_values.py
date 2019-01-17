@@ -5361,16 +5361,16 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
         return ac_type == helicopter and family and family.value == 'H175' \
         and all_of(('Altitude Radio', 'Offshore', 'Liftoff', 'Hover',
                     'Nose Down Attitude Adoption',
-                    'Altitude AGL For Flight Phases'), available)
+                    'Altitude AAL For Flight Phases'), available)
 
     def derive(self, offshores=M('Offshore'), liftoffs=KTI('Liftoff'),
                hovers=S('Hover'), nose_downs=S('Nose Down Attitude Adoption'),
                rad_alt=P('Altitude Radio'),
-               alt_agl=P('Altitude AGL For Flight Phases')):
+               alt_aal=P('Altitude AAL For Flight Phases')):
 
 
         clumped_offshores = clump_multistate(offshores.array, 'Offshore')
-        masked_alt_agl = mask_outside_slices(alt_agl.array, clumped_offshores +
+        masked_alt_aal = mask_outside_slices(alt_aal.array, clumped_offshores +
                                          hovers.get_slices())
 
         for clump in clumped_offshores:
@@ -5397,23 +5397,20 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
                                             nose_downs_in_clump[idx]))
 
             for _slice in rad_alt_slices:
-                diffs = np.ma.ediff1d(mask_outside_slices(masked_alt_agl,
-                                                          [_slice]))
+                diffs = np.ma.ediff1d(mask_outside_slices(masked_alt_aal,
+                                                          [_slice])[::-1])
                 min_rad_alt_idx = None
 
-                # Reversed view of non-masked diffs as we are searching
-                # backwards from the start of the nose down phase to the
-                # liftoff KTI
-                for idx, d in enumerate(diffs[diffs.mask == False][::-1]):
+                for idx, d in enumerate(diffs[diffs.mask == False]):
 
-                    if d < 0:
-                        min_rad_alt_idx = _slice.stop - idx
+                    if d > 0:
+                        min_rad_alt_idx = _slice.stop - idx - 1
                         break
 
                 # Fallback to minimum of entire slice instead of local minimum
                 if not min_rad_alt_idx:
                     min_rad_alt_idx = np.ma.argmin(
-                                      mask_outside_slices(alt_agl,
+                                      mask_outside_slices(alt_aal,
                                                           [_slice]))
 
                 self.create_kpv(min_rad_alt_idx,

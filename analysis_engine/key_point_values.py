@@ -5345,7 +5345,7 @@ class AltitudeDuringCruiseMin(KeyPointValueNode):
         self.create_kpvs_within_slices(alt_agl.array, cruise, min_value)
 
 
-class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNode):
+class AltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNode):
     '''
     ABO liftoff procedure demands that H175 helicopters lift into a hover
     (10-20ft RadAlt), turn into wind if necessary, descend to <= 3ft RadAlt
@@ -5375,17 +5375,13 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
 
         for clump in clumped_offshores:
 
-            liftoffs_in_clump, nose_downs_in_clump = [], []
+            liftoffs_in_clump = [l.index for l in liftoffs if \
+                                 is_index_within_slice(l.index, clump)]
 
-            for liftoff in liftoffs:
-                if is_index_within_slice(liftoff.index, clump):
-                    liftoffs_in_clump.append(liftoff.index)
+            nose_downs_in_clump = [n.slice.start for n in nose_downs if \
+                                   is_index_within_slice(n.slice.start, clump)]
 
-            for nose_down in nose_downs:
-                if is_index_within_slice(nose_down.slice.start, clump):
-                    nose_downs_in_clump.append(nose_down.slice.start)
-
-            if len(liftoffs_in_clump) == 0 or len(nose_downs_in_clump) == 0:
+            if not liftoffs_in_clump or not nose_downs_in_clump:
                 continue
 
             rad_alt_slices = []
@@ -5398,24 +5394,19 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
                     continue
 
             for _slice in rad_alt_slices:
-                # Reversed diffs - as we are checking backwards from the start
-                # of the nose down phase in order to find the first positive
-                # diff
-                diffs = np.ma.ediff1d(mask_outside_slices(masked_alt_aal,
-                                                          [_slice])[::-1])
-                min_rad_alt_idx = None
+                # Diffs of reversed altitude - as we are checking backwards
+                # from the start of the nose down phase in order to find the
+                # first positive diff
+                diffs = np.ma.ediff1d(masked_alt_aal[_slice][::-1])
 
-                for idx, d in enumerate(diffs[diffs.mask == False]):
-
-                    if d > 0:
-                        min_rad_alt_idx = _slice.stop - idx - 1
-                        break
-
-                # Fallback to minimum of entire slice instead of local minimum
-                # in case of no positive diff values
-                if not min_rad_alt_idx:
+                try:
+                    min_rad_alt_idx = _slice.stop - \
+                                      np.ma.where(diffs > 0)[0][0] - 1
+                except IndexError:
+                    # Fallback to minimum of entire slice instead of local
+                    # minimum in case of no positive diff values
                     min_rad_alt_idx = np.ma.argmin(
-                                      mask_outside_slices(alt_aal,
+                                      mask_outside_slices(alt_aal.array,
                                                           [_slice]))
 
                 self.create_kpv(min_rad_alt_idx,

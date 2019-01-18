@@ -110,6 +110,8 @@ from analysis_engine.derived_parameters import (
     ControlColumnForce,
     ControlWheel,
     ControlWheelForce,
+    ControlColumnForceAtControlWheelCapt,
+    ControlColumnForceAtControlWheelFO,
     CoordinatesSmoothed,
     DescendForFlightPhases,
     DistanceFlown,
@@ -2221,6 +2223,46 @@ class TestControlWheelForce(unittest.TestCase):
             ControlWheelForce('Control Wheel Force (FO)', np.ma.arange(10)))
         np.testing.assert_array_almost_equal(ccf.array, np.ma.arange(0, 20, 2))
 
+
+class TestControlColumnForceAtControlWheelCapt(unittest.TestCase):
+    def setUp(self):
+        self.node_class = ControlColumnForceAtControlWheelCapt
+
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(('Control Column Force (Capt)', 'Control Column (Capt)',),
+                                                    family=A('Family', 'ATR-72')))
+
+    def test_derive(self):
+        cc_force_array = np.linspace(0, 100, 10)
+        cc_force = P('Control Column Force (Capt)', (cc_force_array*np.sin(cc_force_array)))
+        cc_angle_array = np.linspace(0, 25, 10)
+        cc_angle = P('Control Column Force (Capt)', (cc_angle_array*np.sin(cc_angle_array)))
+
+        node = self.node_class()
+        node.derive(cc_force, cc_angle)
+        self.assertEqual(node.name, 'Control Column Force At Control Wheel (Capt)')
+        assert_array_almost_equal(node.array, [0, -4.05, -1.86, 11.42, 7.15, -16.79, -15.17, 19.45, 26.01, -18.59],
+                                  decimal=2)
+
+
+class TestControlColumnForceAtControlWheelFO(unittest.TestCase):
+    def setUp(self):
+        self.node_class = ControlColumnForceAtControlWheelFO
+
+    def test_can_operate(self):
+        self.assertTrue(self.node_class.can_operate(('Control Column Force (FO)', 'Control Column (FO)',),
+                                                    family=A('Family', 'ATR-72')))
+
+    def test_derive(self):
+        cc_force_array = np.linspace(0, 100, 10)
+        cc_force = P('Control Column Force (FO)', (cc_force_array*np.sin(cc_force_array)))
+        cc_angle_array = np.linspace(0, 25, 10)
+        cc_angle = P('Control Column Force (FO)', (cc_angle_array*np.sin(cc_angle_array)))
+        node = self.node_class()
+        node.derive(cc_force, cc_angle)
+        self.assertEqual(node.name, 'Control Column Force At Control Wheel (FO)')
+        assert_array_almost_equal(node.array, [0, -4.05, -1.86, 11.42, 7.15, -16.79, -15.17, 19.45, 26.01, -18.59],
+                                  decimal=2)
 
 
 class TestDescendForFlightPhases(unittest.TestCase):

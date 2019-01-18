@@ -18690,6 +18690,9 @@ class ControlColumnDualInputOppositeDirectionForceMax(KeyPointValueNode):
     AE-2115 ATR 72 specific KPV, created in accordance with ATRs specification to monitor for opposite dual input on
     the elevator axis as it might lead to pitch disconnect events.
 
+    The parameter uses Control Column Force At Control Wheel parameters, which are derived in accordance with ATR's
+    guidelines.
+
     ATR's criteria:
     - remove offset
     - effort has to be greater than 20N
@@ -18698,37 +18701,37 @@ class ControlColumnDualInputOppositeDirectionForceMax(KeyPointValueNode):
 
     We only look for opposite direction dual input.
     '''
-    
+
     units = ut.DECANEWTON
 
     @classmethod
     def can_operate(cls, available, family=A('Family')):
         is_atr = family and family.value in ('ATR-72')
-        return all_of(('Control Column Force (Capt)', 'Control Column Force (FO)'), available) and is_atr
+        return all_of(('Control Column Force At Control Wheel (Capt)', 'Control Column Force At Control Wheel (FO)'), available) and is_atr
 
     def derive(self,
-               force_capt=P('Control Column Force (Capt)'),
-               force_fo=P('Control Column Force (FO)'),
+               force_capt=P('Control Column Force At Control Wheel (Capt)'),
+               force_fo=P('Control Column Force At Control Wheel (FO)'),
                taxiing=S('Taxiing'),
                turns=S('Turning On Ground'), ):
 
         # find offset during taxi in straight line
         if taxiing and turns:
-            straights = slices_and([s.slice for s in list(taxiing)],
-                                   slices_not([s.slice for s in list(turns)]), )
+            straights = slices_and([s.slice for s in taxiing],
+                                   slices_not([s.slice for s in turns]), )
             unmasked_capt = []
             unmasked_fo = []
             for straight in straights:
                 unmasked_capt.extend(np.ma.compressed(force_capt.array[straight]))
                 unmasked_fo.extend(np.ma.compressed(force_fo.array[straight]))
 
-            delta_capt = np.sum(unmasked_capt) / float(len(unmasked_capt)) if len(unmasked_capt) > 20 else 0
-            delta_fo = np.sum(unmasked_fo) / float(len(unmasked_fo)) if len(unmasked_fo) > 20 else 0
+            delta_capt = np.ma.average(unmasked_capt) if len(unmasked_capt) > 20 else 0
+            delta_fo = np.ma.average(unmasked_fo) if len(unmasked_fo) > 20 else 0
         # if unable just assume that there's no offset
         else:
             delta_capt = delta_fo = 0
 
-        # remove affset
+        # remove offset
         capt_offset_removed = force_capt.array - delta_capt
         fo_offset_removed = force_fo.array - delta_fo
 

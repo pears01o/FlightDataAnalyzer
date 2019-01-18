@@ -1670,6 +1670,42 @@ class ControlColumnForce(DerivedParameterNode):
         self.array = np.ma.vstack([force_capt.array, force_fo.array]).sum(axis=0)
 
 
+class ControlColumnForceAtControlWheelCapt(DerivedParameterNode):
+    '''
+    ATR-72 specific parameter
+    '''
+    units = ut.DECANEWTON
+    name = 'Control Column Force At Control Wheel (Capt)'
+
+    @classmethod
+    def can_operate(cls, available, family=A('Family')):
+        is_atr = family and family.value in ('ATR-72')
+        return all_of(('Control Column Force (Capt)', 'Control Column (Capt)'), available) and is_atr
+
+    def derive(self, cc_force=P('Control Column Force (Capt)'),
+                     cc_angle=P('Control Column (Capt)'),):
+        # This is a formula to calculate the force at the control wheel, provided by ATR, ref AE-2115.
+        self.array = (cc_force.array/816) * (0.0013 * np.ma.power(cc_angle.array, 3) - 0.0394 * np.ma.power(cc_angle.array, 2) - 0.1077 * cc_angle.array + 299.85)
+
+
+class ControlColumnForceAtControlWheelFO(DerivedParameterNode):
+    '''
+    ATR-72 specific parameter
+    '''
+    units = ut.DECANEWTON
+    name = 'Control Column Force At Control Wheel (FO)'
+
+    @classmethod
+    def can_operate(cls, available, family=A('Family')):
+        is_atr = family and family.value in ('ATR-72')
+        return all_of(('Control Column Force (FO)', 'Control Column (FO)'), available) and is_atr
+
+    def derive(self, cc_force=P('Control Column Force (FO)'),
+                     cc_angle=P('Control Column (FO)'),):
+        # This is a formula to calculate the force at the control wheel, provided by ATR, ref AE-2115.
+        self.array = (cc_force.array/816) * (0.0013 * np.ma.power(cc_angle.array, 3) - 0.0394 * np.ma.power(cc_angle.array, 2) - 0.1077 * cc_angle.array + 299.85)
+
+
 class ControlWheel(DerivedParameterNode):
     '''
     The position of the control wheel blended from the position of the captain

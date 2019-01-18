@@ -7332,8 +7332,8 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
                     P('Altitude AAL For Flight Phases', alt_aal))
 
         self.assertEqual(len(node), 1)
-        self.assertEqual(node[0].index, 29)
-        self.assertEqual(round(node[0].value, 2), 5)
+        self.assertEqual(node[0].index, 28)
+        self.assertEqual(round(node[0].value, 2), 7.78)
 
     def test_derive_multiple_liftoffs_and_offshore_clumps(self):
         node = AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore()
@@ -7370,10 +7370,10 @@ class TestAltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(unittest.Te
 
         self.assertEqual(len(node), 2)
 
-        self.assertEqual(node[0].index, 29)
-        self.assertEqual(round(node[0].value, 2), 5)
-        self.assertEqual(node[1].index, 57)
-        self.assertEqual(round(node[1].value, 2), 28.14)
+        self.assertEqual(node[0].index, 28)
+        self.assertEqual(round(node[0].value, 2), 7.78)
+        self.assertEqual(node[1].index, 56)
+        self.assertEqual(round(node[1].value, 2), 5)
 
 
 class TestAltitudeRadioAtNoseDownAttitudeInitation(unittest.TestCase,

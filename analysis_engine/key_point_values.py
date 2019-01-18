@@ -5359,7 +5359,7 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
     def can_operate(cls, available, ac_type=A('Aircraft Type'),
                     family=A('Family')):
         return ac_type == helicopter and family and family.value == 'H175' \
-        and all_of(('Altitude Radio', 'Offshore', 'Liftoff', 'Hover',
+           and all_of(('Altitude Radio', 'Offshore', 'Liftoff', 'Hover',
                     'Nose Down Attitude Adoption',
                     'Altitude AAL For Flight Phases'), available)
 
@@ -5371,7 +5371,7 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
 
         clumped_offshores = clump_multistate(offshores.array, 'Offshore')
         masked_alt_aal = mask_outside_slices(alt_aal.array, clumped_offshores +
-                                         hovers.get_slices())
+                                             hovers.get_slices())
 
         for clump in clumped_offshores:
 
@@ -5398,6 +5398,9 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
                     continue
 
             for _slice in rad_alt_slices:
+                # Reversed diffs - as we are checking backwards from the start
+                # of the nose down phase in order to find the first positive
+                # diff
                 diffs = np.ma.ediff1d(mask_outside_slices(masked_alt_aal,
                                                           [_slice])[::-1])
                 min_rad_alt_idx = None
@@ -5409,6 +5412,7 @@ class AltitudeRadioMinimumBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNo
                         break
 
                 # Fallback to minimum of entire slice instead of local minimum
+                # in case of no positive diff values
                 if not min_rad_alt_idx:
                     min_rad_alt_idx = np.ma.argmin(
                                       mask_outside_slices(alt_aal,

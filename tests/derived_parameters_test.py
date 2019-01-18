@@ -108,6 +108,7 @@ from analysis_engine.derived_parameters import (
     AltitudeSTDSmoothed,
     AltitudeTail,
     ApproachRange,
+    BaroCorrection,
     BrakePressure,
     Brake_TempAvg,
     Brake_TempMax,
@@ -1351,6 +1352,66 @@ class TestAltitudeForFlightPhases(unittest.TestCase):
                              mask = False)
         np.testing.assert_array_almost_equal(alt_4_ph.array, answer)
         '''
+
+class TestBaroCorrection(unittest.TestCase):
+    def test_can_operate(self):
+        opts = BaroCorrection.get_operational_combinations()
+        self.assertTrue(
+            BaroCorrection.can_operate(('Altitude Baro (1)', 'Altitude STD',))
+        )
+        self.assertTrue(
+            BaroCorrection.can_operate(('Altitude Baro', 'Altitude STD',))
+        )
+        self.assertTrue(
+            BaroCorrection.can_operate(('Baro Correction (Capt)', 'Baro Correction (FO)',))
+        )
+
+    def test_derive_from_baro(self):
+        baro_cpt = P('Baro Correction (Capt)', [998, 998, 1013, 1013, 1013],
+                     frequency=1/64.0, offset=10.0)
+
+        baro_fo = P('Baro Correction (FO)',       [998, 998, 1013, 1013, 1013],
+                    frequency=1/64.0, offset=42.0)
+        baro = BaroCorrection()
+        res = baro.get_derived((None, None, baro_cpt, baro_fo, None))
+        self.assertEqual(baro.hz, 2 / 64.0)
+        self.assertEqual(baro.offset, 10.0)
+        expected = np.ma.array([998.0, 998.0, 998.0, 1005.5, 1009.25, 1009.25,
+                                1013.0, 1013.0, 1013.0, 0.0])
+        expected[-1] = np.ma.masked
+        assert_array_equal(baro.array, expected)
+
+    def test_derive_from_alt_baro(self):
+        alt_diff = 28 * 15
+        alt_baro = P('Altitude Baro (1)', [1000 - alt_diff] * 2 + [1000] * 3,
+                     frequency=1/64.0, offset=10.0)
+
+        alt_std = P('Altitude STD', [1000] * 5 * 64,
+                    frequency=1.0, offset=0.0)
+        baro = BaroCorrection()
+        res = baro.get_derived((alt_baro, None, None, None, alt_std))
+        self.assertEqual(baro.hz, 1 / 64.0)
+        self.assertEqual(baro.offset, 10.0)
+        assert_array_equal(
+            baro.array,
+            [998, 998, 1013, 1013, 1013]
+        )
+
+    def test_derive_from_alt_baro_solo(self):
+        alt_diff = 28 * 15
+        alt_baro = P('Altitude Baro', [1000 - alt_diff] * 2 + [1000] * 3,
+                     frequency=1/64.0, offset=10.0)
+
+        alt_std = P('Altitude STD', [1000] * 5 * 64,
+                    frequency=1.0, offset=0.0)
+        baro = BaroCorrection()
+        res = baro.get_derived((None, alt_baro, None, None, alt_std))
+        self.assertEqual(baro.hz, 1 / 64.0)
+        self.assertEqual(baro.offset, 10.0)
+        assert_array_equal(
+            baro.array,
+            [998, 998, 1013, 1013, 1013]
+        )
 
 
 class TestAltitudeQNH(unittest.TestCase):

@@ -65,6 +65,7 @@ from analysis_engine.library import (air_track,
                                      max_value,
                                      mb2ft,
                                      merge_masks,
+                                     merge_two_parameters,
                                      most_common_value,
                                      moving_average,
                                      nearest_neighbour_mask_repair,
@@ -1266,19 +1267,38 @@ class AltitudeSTDSmoothed(DerivedParameterNode):
 
 
 class BaroCorrection(DerivedParameterNode):
+    '''This computes the Baro correction by either merging
+    Baro Correction (Capt) and (FO) or by using the difference
+    between Altitude Baro and Altitude STD.
+    '''
 
     units = ut.MILLIBAR
 
     @classmethod
     def can_operate(cls, available):
-        return any_of(cls.get_dependency_names(), available)
+        baro_corr = all_of(('Baro Correction (Capt)', 'Baro Correction (FO)'), available)
+        alt_baro_first = all_of(('Altitude STD', 'Altitude Baro (1)'), available)
+        alt_baro_solo = all_of(('Altitude STD', 'Altitude Baro'), available)
+        return baro_corr or alt_baro_first or alt_baro_solo
 
     def derive(self,
-               altb_1=P('Altitude Baro (1)'),
+               alt_baro=P('Altitude Baro (1)'),
+               alt_baro_solo=P('Altitude Baro'),
+               baro_cpt=P('Baro Correction (Capt)'),
+               baro_fo=P('Baro Correction (FO)'),
                alt_std=P('Altitude STD')):
 
-        baro = alt2press(alt_std.array - altb_1.array)
-        self.array = np.ma.round(hysteresis(baro, 1))
+        if alt_baro is None and alt_baro_solo:
+            alt_baro = alt_baro_solo
+
+        if baro_cpt and baro_fo:
+            self.array, self.frequency, self.offset = \
+                blend_two_parameters(baro_cpt, baro_fo)
+        else:
+            baro = alt2press(alt_std.array - alt_baro.array)
+            # Some Altitude Baro have poor precision (16 ft)
+            # Remove noise by using hysteresis and round result
+            self.array = np.ma.round(hysteresis(baro, 1))
 
 
 class AltitudeQNH(DerivedParameterNode):

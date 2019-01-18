@@ -1265,6 +1265,22 @@ class AltitudeSTDSmoothed(DerivedParameterNode):
         self.array = moving_average(moving_average(self.array))
 
 
+class BaroCorrection(DerivedParameterNode):
+
+    units = ut.MILLIBAR
+
+    @classmethod
+    def can_operate(cls, available):
+        return any_of(cls.get_dependency_names(), available)
+
+    def derive(self,
+               altb_1=P('Altitude Baro (1)'),
+               alt_std=P('Altitude STD')):
+
+        baro = alt2press(alt_std.array - altb_1.array)
+        self.array = np.ma.round(hysteresis(baro, 1))
+
+
 class AltitudeQNH(DerivedParameterNode):
     '''
     This computes the displayed pressure altitude for aircraft where the datum pressure

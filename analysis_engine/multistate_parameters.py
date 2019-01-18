@@ -2836,6 +2836,8 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
                     logger.warning("State '%s' not found in param '%s'", state, param.name)
                     return None
                 matching = param.array == state
+            elif family and family.value == 'MD-11':
+                matching = param.array >= 15
             else:
                 matching = param.array >= 10
 

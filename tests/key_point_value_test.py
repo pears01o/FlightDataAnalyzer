@@ -627,6 +627,8 @@ from analysis_engine.key_point_values import (
     PitchRate35ToClimbAccelerationStartMax,
     PitchRateWhileAirborneMax,
     PitchTakeoffMax,
+    QNHDifferenceAtGoAround,
+    QNHDifferenceAtThreshold,
     RateOfClimb35To1000FtMin,
     RateOfClimb35ToClimbAccelerationStartMin,
     RateOfClimbBelow10000FtMax,
@@ -827,10 +829,10 @@ from analysis_engine.key_time_instances import (
     AltitudeWhenDescending,
     AltitudeBeforeLevelFlightWhenClimbing,
     AltitudeBeforeLevelFlightWhenDescending,
-    EngStart,
-    EngStop,
     DistanceFromThreshold,
     DistanceToTouchdown,
+    EngStart,
+    EngStop,
     SecsToTouchdown,
 )
 from analysis_engine.library import (max_abs_value, max_value, min_value)
@@ -8414,6 +8416,85 @@ class TestHeightSelectedOnApproachMin(unittest.TestCase):
         node = self.node_class()
         node.derive(alt_mcp, apps)
         self.assertEqual(node[0].value, 0) # 150-350 = -200
+
+
+##############################################################################
+# QNH errors on Approach
+
+
+class TestQNHDifferenceAtThreshold(unittest.TestCase):
+    def setUp(self):
+        self.node_class = QNHDifferenceAtThreshold
+
+    def test_derive_single_app(self):
+        alt_qnh = P(name='Altitude QNH',
+                    array=np.ma.array([200, 180, 160, 160, 160]))
+        alt_viz = P('Altitude Visualization with Ground Offset',
+                    array=np.ma.array([260, 240, 220, 220, 220]))
+        dist_ktis = DistanceFromThreshold(items=[
+            KeyTimeInstance(3, '0 NM From Threshold'),
+        ])
+
+        node = self.node_class()
+        node.derive(alt_qnh, alt_viz, dist_ktis)
+        # 60 ft below is roughly 2 mBar difference
+        self.assertAlmostEqual(node[0].value, -2, delta=0.2)
+
+    def test_derive_multiple_app(self):
+        alt_qnh = P(name='Altitude QNH',
+                    array=np.ma.array([200, 180, 300, 200, 200]))
+        alt_viz = P('Altitude Visualization with Ground Offset',
+                    array=np.ma.array([260, 240, 360, 205, 205]))
+        dist_ktis = DistanceFromThreshold(items=[
+            KeyTimeInstance(1, '0 NM From Threshold'),
+            KeyTimeInstance(3, '0 NM From Threshold'),
+        ])
+
+        node = self.node_class()
+        node.derive(alt_qnh, alt_viz, dist_ktis)
+        self.assertEqual(len(node), 2)
+        # 60 ft below is roughly 2 mBar difference
+        self.assertAlmostEqual(node[0].value, -2, delta=0.2)
+        # Second approach had only 5 ft diff. Almost 0 mBar difference
+        self.assertAlmostEqual(node[1].value, 0, delta=0.2)
+
+
+class TestQNHDifferenceAtGoAround(unittest.TestCase):
+    def setUp(self):
+        self.node_class = QNHDifferenceAtGoAround
+
+    def test_derive_single_app(self):
+        alt_qnh = P(name='Altitude QNH',
+                    array=np.ma.array([200, 180, 160, 180, 200]))
+        alt_viz = P('Altitude Visualization with Ground Offset',
+                    array=np.ma.array([260, 240, 220, 240, 260]))
+        ga_kpvs = KPV(name='Altitude During Go Around Min', items=[
+            KeyPointValue(name='Altitude During Go Around Min', index=3, value=100),
+        ])
+
+        node = self.node_class()
+        node.derive(alt_qnh, alt_viz, ga_kpvs)
+        # 60 ft below is roughly 2 mBar difference
+        self.assertAlmostEqual(node[0].value, -2, delta=0.2)
+
+    def test_derive_multiple_app(self):
+        alt_qnh = P(name='Altitude QNH',
+                    array=np.ma.array([200, 180, 160, 200, 180, 160, 200]))
+        alt_viz = P('Altitude Visualization with Ground Offset',
+                    array=np.ma.array([260, 240, 220, 260, 185, 165, 205]))
+        ga_kpvs = KPV(name='Altitude During Go Around Min', items=[
+            KeyPointValue(name='Altitude During Go Around Min', index=2, value=160),
+            KeyPointValue(name='Altitude During Go Around Min', index=5, value=160),
+        ])
+
+        node = self.node_class()
+        node.derive(alt_qnh, alt_viz, ga_kpvs)
+        self.assertEqual(len(node), 2)
+        # 60 ft below is roughly 2 mBar difference
+        self.assertAlmostEqual(node[0].value, -2, delta=0.2)
+        # Second approach had only 5 ft diff. Almost 0 mBar difference
+        self.assertAlmostEqual(node[1].value, 0, delta=0.2)
+
 
 ##############################################################################
 # Collective

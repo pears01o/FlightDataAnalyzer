@@ -7137,7 +7137,7 @@ class TestControlWheelForceMax(unittest.TestCase, NodeTest):
                     name='Control Wheel Force Max')]))
 
 
-class TestControlColumnDualInputOppositeDirectionForceMax(unittest.TestCase, NodeTest):
+class TestControlColumnDualInputOppositeDirectionForceMax(unittest.TestCase):
     def setUp(self):
         self.node_class = ControlColumnDualInputOppositeDirectionForceMax
 

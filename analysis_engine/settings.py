@@ -490,7 +490,7 @@ HOVER_TAXI_MIN_DURATION = 5 # sec
 
 # Transition altitude between Altitude Rad and Altitude STD for Altitude AAL
 ALTITUDE_AGL_SMOOTHING = 10 # Seconds for smoothing period.
-ALTITUDE_AGL_TRANS_ALT = 5000.0 # ft
+ALTITUDE_AGL_TRANS_ALT = 2000.0 # ft
 
 # Cycle size; the climb needed to end one approach and initiate the next
 APPROACH_AND_LANDING_CYCLE_SIZE = 200

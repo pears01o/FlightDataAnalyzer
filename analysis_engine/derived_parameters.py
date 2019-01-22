@@ -963,16 +963,6 @@ class AltitudeAGL(DerivedParameterNode):
             self.array = alt_aal.array
             return
 
-        # Find any spikes in Alt Rad of 90 second and mask it out of the
-        # calculations
-        alt_rad_spikes = slices_find_small_slices(
-            np.ma.clump_unmasked(alt_rad.array),
-            time_limit=90,
-            hz=alt_rad.hz
-        )
-        for _slice in alt_rad_spikes:
-            alt_rad.array[_slice] = np.ma.masked
-
         # When was the helicopter on the ground?
         gear_on_grounds = np.ma.clump_masked(np.ma.masked_equal(gog.array, 1))
         # Find and eliminate short spikes (20 seconds) as these are most likely errors.
@@ -985,7 +975,7 @@ class AltitudeAGL(DerivedParameterNode):
         # Compute the half period which we will need.
         hp = int(alt_rad.frequency*ALTITUDE_AGL_SMOOTHING)/2
         # We force altitude AGL to be zero when the gear shows 'Ground' state
-        alt_rad_repaired = repair_mask(alt_rad.array, frequency=alt_rad.frequency, repair_duration=20.0, extrapolate=True)
+        repair_mask(alt_rad.array, frequency=alt_rad.frequency, repair_duration=20.0, extrapolate=True)
         alt_agl = moving_average(np.maximum(alt_rad.array, 0.0) * (1 - gog.array.data), window=hp*2+1, weightings=None)
 
         # Refine the baro estimates
@@ -1019,6 +1009,7 @@ class AltitudeAGL(DerivedParameterNode):
         '''
 
         self.array = alt_agl
+
 
 class AltitudeAGLForFlightPhases(DerivedParameterNode):
     '''

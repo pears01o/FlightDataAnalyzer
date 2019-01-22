@@ -1281,7 +1281,8 @@ class TestAltitudeAGL(unittest.TestCase):
         gog = M(name='Gear On Ground', array=np.ma.array([1]*5+[0]*90+[1]*5), values_mapping={0:'Air', 1:'Ground'})
         alt_aal = AltitudeAGL()
         alt_aal.derive(alt_rad, None, alt_baro, gog)
-        self.assertLess(abs(np.max(alt_aal.array)-8000), 300)
+        # if the setting.ALTITUDE_AGL_TRANS_ALT is change the expected result will be affected.
+        self.assertLess(abs(np.max(alt_aal.array)-8000), 350)
 
     def test_negative(self):
         alt_rad = P(name='Altitude Radio', array=np.ma.array([-1, 0, 0, 0, -1]))

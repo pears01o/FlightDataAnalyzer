@@ -1282,10 +1282,10 @@ class BaroCorrection(DerivedParameterNode):
         return baro_corr or alt_baro_first or alt_baro_solo
 
     def derive(self,
-               alt_baro=P('Altitude Baro (1)'),
-               alt_baro_solo=P('Altitude Baro'),
                baro_cpt=P('Baro Correction (Capt)'),
                baro_fo=P('Baro Correction (FO)'),
+               alt_baro=P('Altitude Baro (1)'),
+               alt_baro_solo=P('Altitude Baro'),
                alt_std=P('Altitude STD')):
 
         if alt_baro is None and alt_baro_solo:

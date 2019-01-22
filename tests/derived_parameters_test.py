@@ -1373,9 +1373,28 @@ class TestBaroCorrection(unittest.TestCase):
         baro_fo = P('Baro Correction (FO)',       [998, 998, 1013, 1013, 1013],
                     frequency=1/64.0, offset=42.0)
         baro = BaroCorrection()
-        res = baro.get_derived((None, None, baro_cpt, baro_fo, None))
+        res = baro.get_derived((baro_cpt, baro_fo, None, None, None))
         self.assertEqual(baro.hz, 2 / 64.0)
         self.assertEqual(baro.offset, 10.0)
+        expected = np.ma.array([998.0, 998.0, 998.0, 1005.5, 1009.25, 1009.25,
+                                1013.0, 1013.0, 1013.0, 0.0])
+        expected[-1] = np.ma.masked
+        assert_array_equal(baro.array, expected)
+
+    def test_derive_from_baro_with_alt_baro_available(self):
+        baro_cpt = P('Baro Correction (Capt)', [998, 998, 1013, 1013, 1013],
+                     frequency=1/4.0, offset=1.0)
+
+        baro_fo = P('Baro Correction (FO)',       [998, 998, 1013, 1013, 1013],
+                    frequency=1/4.0, offset=3.0)
+        alt_baro = P('Altitude Baro (1)', [1000, 1000],
+                     frequency=1/64.0, offset=1.0)
+        alt_std = P('Altitude STD', [1000] * 5 * 4,
+                    frequency=1.0, offset=0.0)
+        baro = BaroCorrection()
+        res = baro.get_derived((baro_cpt, baro_fo, alt_baro, None, alt_std))
+        self.assertEqual(baro.hz, 2 / 4.0)
+        self.assertEqual(baro.offset, 1.0)
         expected = np.ma.array([998.0, 998.0, 998.0, 1005.5, 1009.25, 1009.25,
                                 1013.0, 1013.0, 1013.0, 0.0])
         expected[-1] = np.ma.masked
@@ -1389,7 +1408,7 @@ class TestBaroCorrection(unittest.TestCase):
         alt_std = P('Altitude STD', [1000] * 5 * 64,
                     frequency=1.0, offset=0.0)
         baro = BaroCorrection()
-        res = baro.get_derived((alt_baro, None, None, None, alt_std))
+        res = baro.get_derived((None, None, alt_baro, None, alt_std))
         self.assertEqual(baro.hz, 1 / 64.0)
         self.assertEqual(baro.offset, 10.0)
         assert_array_equal(
@@ -1405,7 +1424,7 @@ class TestBaroCorrection(unittest.TestCase):
         alt_std = P('Altitude STD', [1000] * 5 * 64,
                     frequency=1.0, offset=0.0)
         baro = BaroCorrection()
-        res = baro.get_derived((None, alt_baro, None, None, alt_std))
+        res = baro.get_derived((None, None, None, alt_baro, alt_std))
         self.assertEqual(baro.hz, 1 / 64.0)
         self.assertEqual(baro.offset, 10.0)
         assert_array_equal(

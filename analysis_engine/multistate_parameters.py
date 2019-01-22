@@ -29,7 +29,6 @@ from analysis_engine.library import (
     calculate_slat,
     clump_multistate,
     datetime_of_index,
-    excluding_transition,
     find_edges_on_state_change,
     including_transition,
     index_at_value,
@@ -53,7 +52,6 @@ from analysis_engine.library import (
     slices_remove_small_slices,
     smooth_signal,
     step_values,
-    surface_for_synthetic,
     vstack_params_where_state,
 )
 from analysis_engine.settings import (
@@ -1223,11 +1221,8 @@ class Flap(MultistateDerivedParameterNode):
             _slices = runs_of_ones(np.logical_and(flap.array>=0.9, flap.array<=2.1))
             for s in _slices:
                 flap.array[s] = smooth_signal(flap.array[s], window_len=5, window='flat')
-
-        self.values_mapping = at.get_flap_map(model.value, series.value, family.value)
-        self.frequency = flap.hz
-        self.offset = flap.offset
-        self.array = including_transition(flap.array, self.values_mapping, hz=self.hz, mode='flap')
+        self.values_mapping, self.array, self.frequency, self.offset = calculate_flap(
+            'lever', flap, model, series, family)
 
 
 class FlapLever(MultistateDerivedParameterNode):
@@ -1318,9 +1313,13 @@ class FlapIncludingTransition(MultistateDerivedParameterNode):
 
 class FlapExcludingTransition(MultistateDerivedParameterNode):
     '''
-    Value will only match the flap angle once
-    the transition has stopped (at least 3s by default).
+    Specifically designed to cater for maintenance monitoring, this assumes
+    that when moving the higher of the start and endpoints of the movement
+    apply. This increases the chance of needing a flap overspeed inspection,
+    but provides a more cautious interpretation of the maintenance
+    requirements.
     '''
+
     units = ut.DEGREE
 
     @classmethod
@@ -1328,7 +1327,7 @@ class FlapExcludingTransition(MultistateDerivedParameterNode):
                     model=A('Model'), series=A('Series'), family=A('Family')):
 
         if not all_of(('Flap Angle', 'Model', 'Series', 'Family'), available):
-            return all_of(('Flap', 'Model', 'Series', 'Family'), available)
+            return False
 
         try:
             at.get_flap_map(model.value, series.value, family.value)
@@ -1339,77 +1338,15 @@ class FlapExcludingTransition(MultistateDerivedParameterNode):
 
         return True
 
-    def derive(self, flap_angle=P('Flap Angle'), flap=M('Flap'),
+    def derive(self, flap_angle=P('Flap Angle'),
                model=A('Model'), series=A('Series'), family=A('Family')):
-        self.values_mapping = at.get_flap_map(model.value, series.value, family.value)
-        if flap_angle:
-            self.array = excluding_transition(flap_angle.array, self.values_mapping, hz=self.hz)
-        else:
-            # if we do not have flap angle use flap, use states as values
-            # will vary between frames
-            array = MappedArray(np_ma_masked_zeros_like(flap.array),
-                                values_mapping=self.values_mapping)
-            for value, state in six.iteritems(self.values_mapping):
-                array[flap.array == state] = state
-            self.array = array
-
-
-class FlapForLeverSynthetic(MultistateDerivedParameterNode):
-    '''
-    Flap parameter for Flap Lever Synthetic. Uses Flap Including Transition on
-    extension, and Flap Excluding Transition on retraction. ref. AE-2033
-    '''
-    name = 'Flap For Flap Lever Synthetic'
-    units = ut.DEGREE
-    align_frequency = 2  # force higher than most Flap frequencies
-
-
-    @classmethod
-    def can_operate(cls, available,
-                    model=A('Model'), series=A('Series'), family=A('Family')):
-
-        return all_of(('Flap Including Transition', 'Flap Excluding Transition', 'Model', 'Series', 'Family'), available)
-
-    def derive(self, flap_inc=M('Flap Including Transition'), flap_exc=M('Flap Excluding Transition'),
-               model=A('Model'), series=A('Series'), family=A('Family'),):
-
-
-        self.values_mapping = at.get_flap_map(model.value, series.value, family.value)
-
-        # Prepare the destination array:
-        self.array = MappedArray(np_ma_masked_zeros_like(flap_inc.array),
-                                 values_mapping=self.values_mapping)
-
-        self.array = surface_for_synthetic(flap_inc, flap_exc, self.values_mapping)
-
-
-class SlatForLeverSynthetic(MultistateDerivedParameterNode):
-    '''
-    Slat parameter for Flap Lever Synthetic. Uses Slat Including Transition on
-    extension, and Slat Excluding Transition on retraction. ref. AE-2033
-    '''
-    name = 'Slat For Flap Lever Synthetic'
-    units = ut.DEGREE
-    align_frequency = 2  # force higher than most Slat frequencies
-
-
-    @classmethod
-    def can_operate(cls, available):
-
-        return all_of(('Slat Including Transition', 'Slat Excluding Transition', 'Model', 'Series', 'Family'), available)
-
-
-    def derive(self, slat_inc=M('Slat Including Transition'), slat_exc=M('Slat Excluding Transition'),
-               model=A('Model'), series=A('Series'), family=A('Family'),):
-
-
-        self.values_mapping = at.get_slat_map(model.value, series.value, family.value)
-
-        # Prepare the destination array:
-        self.array = MappedArray(np_ma_masked_zeros_like(slat_inc.array),
-                                 values_mapping=self.values_mapping)
-
-        self.array = surface_for_synthetic(slat_inc, slat_exc, self.values_mapping)
+        family_name = family.value if family else None
+        if "B737" in family_name:
+            _slices = runs_of_ones(np.logical_and(flap_angle.array>=0.9, flap_angle.array<=2.1))
+            for s in _slices:
+                flap_angle.array[s] = smooth_signal(flap_angle.array[s], window_len=5, window='flat')
+        self.values_mapping, self.array, self.frequency, self.offset = calculate_flap(
+            'excluding', flap_angle, model, series, family)
 
 
 class FlapLeverSynthetic(MultistateDerivedParameterNode):
@@ -1425,8 +1362,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
     def can_operate(cls, available,
                     model=A('Model'), series=A('Series'), family=A('Family')):
 
-        if not (all_of(('Flap', 'Model', 'Series', 'Family'), available) or \
-                all_of(('Flap For Lever Synthetic', 'Model', 'Series', 'Family'), available)):
+        if not all_of(('Flap', 'Model', 'Series', 'Family'), available):
             return False
 
         try:
@@ -1445,7 +1381,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         slat_required = any(slat is not None for slat, flap, flaperon in
                             angles.values())
         if slat_required:
-            can_operate = can_operate and any_of(('Slat', 'Slat For Lever Synthetic'), available)
+            can_operate = can_operate and 'Slat' in available
 
         flaperon_required = any(flaperon is not None for slat, flap, flaperon in
                                 angles.values())
@@ -1454,9 +1390,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
 
         return can_operate
 
-
     def derive(self, flap=M('Flap'), slat=M('Slat'), flaperon=M('Flaperon'),
-               flap_synth=M('Flap For Flap Lever Synthetic'), slat_synth=M('Slat For Flap Lever Synthetic'),
                model=A('Model'), series=A('Series'), family=A('Family'),
                approach=S('Approach And Landing'), frame=A('Frame'),):
         try:
@@ -1476,19 +1410,17 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         self.array = MappedArray(np_ma_masked_zeros_like(flap.array),
                                  values_mapping=self.values_mapping)
 
-        flap_param = flap or flap_synth
-        slat_param = slat or slat_synth
-
+        # Update the destination array according to the mappings:
         for (state, (s, f, a)) in six.iteritems(angles):
-            condition = (flap_param.array == str(f))
+            condition = (flap.array == str(f))
             if s is not None:
-                condition &= (slat_param.array == str(s))
+                condition &= (slat.array == str(s))
             if a is not None:
                 condition &= (flaperon.array == str(a))
             if use_conf:
                 state = at.constants.CONF_TO_LEVER[state]
             self.array[condition] = state
-
+            
         frame_name = frame.value if frame else None
         approach_slices = approach.get_slices() if approach else None
 
@@ -2406,10 +2338,13 @@ class SlatExcludingTransition(MultistateDerivedParameterNode):
     def derive(self, slat=P('Slat Angle'),
                model=A('Model'), series=A('Series'), family=A('Family')):
 
-        self.values_mapping = at.get_slat_map(model.value, series.value, family.value)
-        self.frequency = slat.hz
-        self.offset = slat.offset
-        self.array = excluding_transition(slat.array, self.values_mapping, hz=self.hz)
+        self.values_mapping, self.array, self.frequency, self.offset = calculate_slat(
+            'excluding',
+            slat,
+            model,
+            series,
+            family,
+        )
 
 
 class SlatIncludingTransition(MultistateDerivedParameterNode):

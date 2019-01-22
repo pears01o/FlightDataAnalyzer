@@ -627,8 +627,7 @@ from analysis_engine.key_point_values import (
     PitchRate35ToClimbAccelerationStartMax,
     PitchRateWhileAirborneMax,
     PitchTakeoffMax,
-    QNHDifferenceAtGoAround,
-    QNHDifferenceAtThreshold,
+    QNHDifferenceDuringApproach,
     RateOfClimb35To1000FtMin,
     RateOfClimb35ToClimbAccelerationStartMin,
     RateOfClimbBelow10000FtMax,
@@ -8422,78 +8421,52 @@ class TestHeightSelectedOnApproachMin(unittest.TestCase):
 # QNH errors on Approach
 
 
-class TestQNHDifferenceAtThreshold(unittest.TestCase):
+class TestQNHDifferenceDuringApproach(unittest.TestCase):
     def setUp(self):
-        self.node_class = QNHDifferenceAtThreshold
+        self.node_class = QNHDifferenceDuringApproach
 
     def test_derive_single_app(self):
         alt_qnh = P(name='Altitude QNH',
-                    array=np.ma.array([200, 180, 160, 160, 160]))
+                    array=np.ma.array([210, 180, 160, 140, 120, 100]))
         alt_viz = P('Altitude Visualization with Ground Offset',
-                    array=np.ma.array([260, 240, 220, 220, 220]))
-        dist_ktis = DistanceFromThreshold(items=[
-            KeyTimeInstance(3, '0 NM From Threshold'),
-        ])
+                    array=np.ma.array([270, 240, 220, 200, 180, 160]))
+        alt_all = P('Altitude AAL',
+                    array=np.ma.array([110, 80, 60, 40, 20, 0]))
+        apps = App('Approach Information',
+                   items=[ApproachItem('LANDING', slice(0, 6))])
 
         node = self.node_class()
-        node.derive(alt_qnh, alt_viz, dist_ktis)
+        node.derive(alt_qnh, alt_viz, alt_all, apps)
         # 60 ft below is roughly 2 mBar difference
         self.assertAlmostEqual(node[0].value, -2, delta=0.2)
+        self.assertAlmostEqual(node[0].index, 1/3., delta=0.01)
 
     def test_derive_multiple_app(self):
         alt_qnh = P(name='Altitude QNH',
-                    array=np.ma.array([200, 180, 300, 200, 200]))
+                    array=np.ma.array([
+                        400, 380, 350, 320, 330, 350,    # Go around
+                        275, 245, 225, 205, 185, 165]))  #  Landing
         alt_viz = P('Altitude Visualization with Ground Offset',
-                    array=np.ma.array([260, 240, 360, 205, 205]))
-        dist_ktis = DistanceFromThreshold(items=[
-            KeyTimeInstance(1, '0 NM From Threshold'),
-            KeyTimeInstance(3, '0 NM From Threshold'),
-        ])
+                    array=np.ma.array([
+                        460, 440, 410, 380, 390, 410,    # Go around
+                        270, 240, 220, 200, 180, 160]))  # Landing
+        alt_aal = P('Altitude AAL',
+                    array=np.ma.array([
+                        300, 280, 250, 220, 230, 250,  # Go around
+                        110, 80, 60, 40, 20, 0]))      # Landing   
+        apps = App('Approach Information',
+                   items=[ApproachItem('GO-AROUND', slice(0, 5)),
+                          ApproachItem('LANDING', slice(6, 12))])
 
         node = self.node_class()
-        node.derive(alt_qnh, alt_viz, dist_ktis)
+        node.derive(alt_qnh, alt_viz, alt_aal, apps)
         self.assertEqual(len(node), 2)
         # 60 ft below is roughly 2 mBar difference
         self.assertAlmostEqual(node[0].value, -2, delta=0.2)
+        self.assertEqual(node[0].index, 3)
         # Second approach had only 5 ft diff. Almost 0 mBar difference
         self.assertAlmostEqual(node[1].value, 0, delta=0.2)
-
-
-class TestQNHDifferenceAtGoAround(unittest.TestCase):
-    def setUp(self):
-        self.node_class = QNHDifferenceAtGoAround
-
-    def test_derive_single_app(self):
-        alt_qnh = P(name='Altitude QNH',
-                    array=np.ma.array([200, 180, 160, 180, 200]))
-        alt_viz = P('Altitude Visualization with Ground Offset',
-                    array=np.ma.array([260, 240, 220, 240, 260]))
-        ga_kpvs = KPV(name='Altitude During Go Around Min', items=[
-            KeyPointValue(name='Altitude During Go Around Min', index=3, value=100),
-        ])
-
-        node = self.node_class()
-        node.derive(alt_qnh, alt_viz, ga_kpvs)
-        # 60 ft below is roughly 2 mBar difference
-        self.assertAlmostEqual(node[0].value, -2, delta=0.2)
-
-    def test_derive_multiple_app(self):
-        alt_qnh = P(name='Altitude QNH',
-                    array=np.ma.array([200, 180, 160, 200, 180, 160, 200]))
-        alt_viz = P('Altitude Visualization with Ground Offset',
-                    array=np.ma.array([260, 240, 220, 260, 185, 165, 205]))
-        ga_kpvs = KPV(name='Altitude During Go Around Min', items=[
-            KeyPointValue(name='Altitude During Go Around Min', index=2, value=160),
-            KeyPointValue(name='Altitude During Go Around Min', index=5, value=160),
-        ])
-
-        node = self.node_class()
-        node.derive(alt_qnh, alt_viz, ga_kpvs)
-        self.assertEqual(len(node), 2)
-        # 60 ft below is roughly 2 mBar difference
-        self.assertAlmostEqual(node[0].value, -2, delta=0.2)
-        # Second approach had only 5 ft diff. Almost 0 mBar difference
-        self.assertAlmostEqual(node[1].value, 0, delta=0.2)
+        self.assertAlmostEqual(node[1].index, 6 + 1/3., delta=0.01)
 
 
 ##############################################################################

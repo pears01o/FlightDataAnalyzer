@@ -6204,61 +6204,41 @@ class HeightSelectedOnApproachMin(KeyPointValueNode):
 # QNH difference during Approach
 
 
-class QNHDifferenceAtThreshold(KeyPointValueNode):
+class QNHDifferenceDuringApproach(KeyPointValueNode):
     '''
     This KPV calculates the QNH difference between actual QNH and expected
-    QNH when crossing the runway threshold. Actual QNH is the QNH set by the
-    pilots. Expected QNH is the QNH required to read the runway elevation
-    on the ground.
+    QNH during approach when crossing 100 ft AAL in descent or at the minimum
+    altitude reached (due to go around) whichever is greater. 100 ft altitude
+    will avoid any ground effect which induces a dip in Altitude STD during
+    flare. Actual QNH is the QNH set by the pilots. Expected QNH is the QNH 
+    required to read the runway elevation on the ground.
 
     Altitude Visualization With Ground Offset provides the expected QNH altitude.
 
     Wrong QNH are particularly dangerous during non-precision approaches, as
     they are the sole reference to the aircraft vertical profile.
     '''
-
+    
+    name = 'QNH Difference During Approach'
     units = ut.MILLIBAR
 
     def derive(self, alt_qnh=P('Altitude QNH'),
                alt_viz=P('Altitude Visualization With Ground Offset'),
-               dist_ktis=KTI('Distance From Threshold')):
+               alt_aal=P('Altitude AAL'),
+               apps=App('Approach Information')):
 
         QNH_REF = alt2press(0)
-        thresholds = dist_ktis.get_ordered_by_index(name='0 NM From Threshold')
-        for threshold in thresholds:
-            alt_qnh_thr = value_at_index(alt_qnh.array, threshold.index)
-            alt_viz_thr = value_at_index(alt_viz.array, threshold.index)
-            diff = alt_qnh_thr - alt_viz_thr
+        for app in apps:
+            index = index_at_value(alt_aal.array, 100,
+                                   slice(app.slice.stop, app.slice.start, -1),
+                                   endpoint='closing')
+            if index is None:
+                continue
+            alt_qnh_lo = alt_qnh.array[index]
+            alt_viz_lo = alt_viz.array[index]
+            diff = alt_qnh_lo - alt_viz_lo
             qnh_error = QNH_REF - alt2press(diff)
-            self.create_kpv(threshold.index, qnh_error)
-
-
-class QNHDifferenceAtGoAround(KeyPointValueNode):
-    '''
-    This KPV calculates the QNH difference between actual QNH and expected
-    QNH at the Go Around minimum altitude. Actual QNH is the QNH set by the
-    pilots. Expected QNH is the QNH required to read the runway elevation
-    on the ground.
-
-    Altitude Visualization With Ground Offset provides the expected QNH altitude.
-
-    Wrong QNH are particularly dangerous during non-precision approaches, as
-    they are the sole reference to the aircraft vertical profile.
-    '''
-
-    units = ut.MILLIBAR
-
-    def derive(self, alt_qnh=P('Altitude QNH'),
-               alt_viz=P('Altitude Visualization With Ground Offset'),
-               ga_kpvs=KPV('Altitude During Go Around Min')):
-
-        QNH_REF = alt2press(0)
-        for ga_kpv in ga_kpvs:
-            alt_qnh_thr = value_at_index(alt_qnh.array, ga_kpv.index)
-            alt_viz_thr = value_at_index(alt_viz.array, ga_kpv.index)
-            diff = alt_qnh_thr - alt_viz_thr
-            qnh_error = QNH_REF - alt2press(diff)
-            self.create_kpv(ga_kpv.index, qnh_error)
+            self.create_kpv(index, qnh_error)
 
 
 ##############################################################################

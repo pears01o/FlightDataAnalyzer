@@ -9,6 +9,24 @@ You can view the differences in tagged versions as follows:
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
 =======
+v0.43.1
+-------
+ New KPVs:
+ - AE-2085 New helideck takeoff procedure KPVs
+ - AE-2126 DH Selected At 1500 Ft LVO for Falcon-7X & 8X only
+ - AE-2114 TCAS RA KPVs split into multiple flight levels
+ Improvements:
+ - AE-2157 Speedbrake Deployed custom threshold for MD-11
+ - AE-2092 Stable Approach logic changed specifically for BAE 146-301
+ - AE-2152 Hover repairs Groundspeed where data quality is low
+ - AE-2116 Helicopter segment type identification improved to incorporate Collective
+ - AE-2121 Airspeed Minus V2 improved to select most appropriate V2 source
+ - AE-2113 TCAS minimum operating height increased from 360 to 900ft AAL
+ Fixes:
+ - AE-2117 Altitude AAL At First Flap Extension Whilst Airborne ignores masked Flap
+ - AE-2140 Top Of Climbs are not ignored if Altitude STD > 1000ft for helicopters
+ - AE-2105 Altitude Radio handles power of two data jumps
+ - AE-2074 Don't apply smoothing if Go Around occured above 500ft Radio and there's no Localizer
 
 v0.42.1
 -------

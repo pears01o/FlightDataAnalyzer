@@ -6218,7 +6218,7 @@ class QNHDifferenceDuringApproach(KeyPointValueNode):
     Wrong QNH are particularly dangerous during non-precision approaches, as
     they are the sole reference to the aircraft vertical profile.
     '''
-    
+
     name = 'QNH Difference During Approach'
     units = ut.MILLIBAR
 

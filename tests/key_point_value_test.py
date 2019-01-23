@@ -205,6 +205,7 @@ from analysis_engine.key_point_values import (
     AltitudeAtATEngagedSelection,
     #AltitudeAtCabinPressureLowWarningDuration,
     AltitudeAtClimbThrustDerateDeselectedDuringClimbBelow33000Ft,
+    AltitudeAtClimbThrustDerateSelection,
     AltitudeAtFirstAPEngagedAfterLiftoff,
     AltitudeAtFirstFlapChangeAfterLiftoff,
     AltitudeAtFirstFlapExtensionAfterLiftoff,
@@ -7905,6 +7906,24 @@ class TestAltitudeAtClimbThrustDerateDeselectedDuringClimbBelow33000Ft(unittest.
         node.derive(alt_aal, climb_thrust_derate, climbs)
         self.assertEqual(node, [
             KeyPointValue(5, 20000.0, 'Altitude At Climb Thrust Derate Deselected During Climb Below 33000 Ft')])
+
+class TestAltitudeAtClimbThrustDerateSelection(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = AltitudeAtClimbThrustDerateSelection
+        self.operational_combinations = [('Altitude AAL', 'Takeoff Mode (TMC) Operation', 'Airborne')]
+
+    def test_derive(self):
+        alt_aal_array = np.ma.arange(0, 10000, 2)
+        alt_aal = P('Altitude AAL', array=alt_aal_array)
+        tmc_array = np.ma.array([1]*3000 + [0]*2000)
+        mapping = {0: '-', 1: 'Operational'}
+        tmc = M(name='Takeoff Mode (TMC) Operation', array=tmc_array, values_mapping=mapping)
+        airborne = buildsections('Airborne', [1000,5000])
+        node = self.node_class()
+        node.derive(alt_aal, tmc, airborne)
+        self.assertEqual(node[0].value, 6000)
+        self.assertEqual(node[0].index, 3000)
 
 
 ########################################

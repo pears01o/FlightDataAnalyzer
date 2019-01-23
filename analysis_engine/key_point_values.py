@@ -5777,6 +5777,27 @@ class AltitudeAtClimbThrustDerateDeselectedDuringClimbBelow33000Ft(KeyPointValue
                 self.create_kpv(derate_deselected.index, alt_aal_value)
 
 
+class AltitudeAtClimbThrustDerateSelection(KeyPointValueNode):
+    '''
+    Based on the Takeoff Mode TMC parameter which changes to '-' as soon as VNAV, or other speed management mode is
+    engaged. We can't look at a reduction of N1/EPR as usually the reduction is only by 1-3%, sometimes it will be
+    the same, and in other cases we might even see an increase - rare scenario when TO-2 and CLB are selected.
+
+    Uses Altitude AAL
+    '''
+
+    units = ut.FT
+
+    def derive(self, alt_aal=P('Altitude AAL'),
+               tmc=M('Takeoff Mode (TMC) Operation'),
+               airborne=S('Airborne'),):
+
+        sections = slices_and(runs_of_ones(tmc.array == '-'), airborne.get_slices())
+
+        for s in sections:
+            self.create_kpv(s.start, alt_aal.array[s.start])
+
+
 ########################################
 # Altitude: Gear
 

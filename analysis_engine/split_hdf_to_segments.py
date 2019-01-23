@@ -187,12 +187,12 @@ def _segment_type_and_slice(speed_array, speed_frequency,
                 # With some of the pre-split data, the collective appears to be padded
                 # starting and finishing inside the speed_array.
                 # Use unmasked speed slices as the start/end indices for collective window
-                col_start_idx = unmasked_slices[0].start/speed_frequency * col.frequency
-                col_stop_idx = (unmasked_slices[-1].stop-1)/speed_frequency * col.frequency
+                col_start_idx = int(unmasked_slices[0].start/speed_frequency * col.frequency)
+                col_stop_idx = int((unmasked_slices[-1].stop-1)/speed_frequency * col.frequency)
             else:
                 col_start_idx = start * col.frequency
                 col_stop_idx = stop * col.frequency
-            col_window_sample = 120 * col.frequency
+            col_window_sample = int(120 * col.frequency)
             col_min_sample = 4 * col.frequency
             col_start_slice = runs_of_ones(
                 col.array[col_start_idx:col_start_idx+col_window_sample] < settings.COLLECTIVE_ON_GROUND_THRESHOLD,

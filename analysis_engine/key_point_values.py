@@ -2490,7 +2490,7 @@ class AirspeedSelectedAtLiftoff(KeyPointValueNode):
                 continue
             if spd_sel.frequency >= 0.125:
                 spd_sel_liftoff = prev_unmasked_value(
-                    spd_sel.array, liftoff.index, start_index=phase.start)
+                    spd_sel.array, liftoff.index, start_index=int(phase.start))
                 value = spd_sel_liftoff.value if spd_sel_liftoff else None
             else:
                 value = most_common_value(spd_sel.array[slices_int(phase)])
@@ -2523,10 +2523,10 @@ class AirspeedSelectedAtTakeoffAccelerationStart(KeyPointValueNode):
                 continue
             if spd_sel.frequency >= 0.125:
                 spd_sel_tkof_start = prev_unmasked_value(
-                    spd_sel.array, accel_start.index, start_index=phase.start)
+                    spd_sel.array, accel_start.index, start_index=int(phase.start))
                 value = spd_sel_tkof_start.value if spd_sel_tkof_start else None
             else:
-                value = most_common_value(spd_sel.array[phase])
+                value = most_common_value(spd_sel.array[slices_int(phase)])
 
             if value:
                 self.create_kpv(accel_start.index, value)

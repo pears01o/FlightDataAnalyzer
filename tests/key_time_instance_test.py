@@ -82,8 +82,7 @@ from analysis_engine.key_time_instances import (
     Transmit,
 )
 
-from derived_parameters_test import NodeTest
-from flight_phase_test import buildsection, buildsections
+from analysis_engine.test_utils import buildsection, buildsections
 
 debug = sys.gettrace() is not None
 

@@ -22322,7 +22322,7 @@ class TestEngStartTimeMax(unittest.TestCase):
 
     def test_early_cut(self):
         eng_start = P('Eng (1) N2',
-                      np.ma.array([60, 30]+[0]*5+range(0, 60, 5)+[60]*3),
+                      np.ma.array([60, 30]+[0]*5+list(range(0, 60, 5))+[60]*3),
                       frequency=0.5)
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)

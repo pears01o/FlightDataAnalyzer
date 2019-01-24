@@ -6227,7 +6227,7 @@ class QNHDifferenceDuringApproach(KeyPointValueNode):
                alt_aal=P('Altitude AAL'),
                apps=App('Approach Information')):
 
-        QNH_REF = alt2press(0)
+        qnh_ref = alt2press(0)
         for app in apps:
             index = index_at_value(alt_aal.array, 100,
                                    slice(app.slice.stop, app.slice.start, -1),
@@ -6237,7 +6237,7 @@ class QNHDifferenceDuringApproach(KeyPointValueNode):
             alt_qnh_lo = alt_qnh.array[index]
             alt_viz_lo = alt_viz.array[index]
             diff = alt_qnh_lo - alt_viz_lo
-            qnh_error = QNH_REF - alt2press(diff)
+            qnh_error = qnh_ref - alt2press(diff)
             self.create_kpv(index, qnh_error)
 
 

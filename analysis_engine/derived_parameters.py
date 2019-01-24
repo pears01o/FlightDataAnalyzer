@@ -1288,8 +1288,7 @@ class BaroCorrection(DerivedParameterNode):
                alt_baro_solo=P('Altitude Baro'),
                alt_std=P('Altitude STD')):
 
-        if alt_baro is None and alt_baro_solo:
-            alt_baro = alt_baro_solo
+        alt_baro = alt_baro_solo or alt_baro
 
         if baro_cpt and baro_fo:
             self.array, self.frequency, self.offset = \

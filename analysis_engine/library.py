@@ -5332,10 +5332,28 @@ def overflow_correction(param, fast=None, max_val=8191):
 
     # remove small masks (up to 10 samples) which may be related to the
     # overflow.
+    array = overflow_correction_array(array, hz)
+
+    if not fast and np.ma.min(array[sl]) < -delta:
+        # FIXME: fallback postprocessing: compensate for the descent
+        # starting at the overflown value
+        array[sl] += max_val
+        
+    if fast:
+        pin_to_ground(array, good_slices, fast.get_slices())
+
+    # reapply the original mask as it may contain genuine spikes unrelated to
+    # the overflow
+    array.mask = old_mask
+    return array
+
+def overflow_correction_array(array, hz=1):
+    '''
+    Overflow correction based on power of two jumps only.
+    '''
+
     old_mask = array.mask.copy()
-    good_slices = slices_remove_small_gaps(
-        np.ma.clump_unmasked(array), time_limit=25.0,
-        hz=hz)
+    good_slices = slices_remove_small_gaps(np.ma.clump_unmasked(array), hz=hz)
 
     for sl in good_slices:
         array.mask[sl] = False
@@ -5356,11 +5374,27 @@ def overflow_correction(param, fast=None, max_val=8191):
 
     if fast:
         pin_to_ground(array, good_slices, fast.get_slices())
+        # Any jumps of 2048 or larger will be corrected to the nearest power of two.
+        steps = np.ma.where(abs_jump > 2**10.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
+        biggest_step_up = np.ma.max(steps)
+        biggest_step_down = np.ma.min(steps)
+        # Don't fix things that don't need fixing
+        if biggest_step_up == 0 and biggest_step_down == 0:
+            continue
 
-    # reapply the original mask as it may contain genuine spikes unrelated to
-    # the overflow
-    array.mask = old_mask
-    return array
+        # Repair small masks which may be related to the overflow.
+        for jump_idx in np.ma.where(steps)[0]:
+            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False
+        # Compute and apply the correction
+        array[sl] += np.ma.cumsum(steps)
+        
+        # Simple check to make sure the data is not badly offset following this adjustment
+        if biggest_step_up and np.min(array[sl]) > biggest_step_up / 2:
+            array[sl] -= biggest_step_up
+        elif biggest_step_down and np.min(array[sl]) < biggest_step_down / 2:
+            array[sl] -= biggest_step_down
+
+    return np.ma.array(data=array.data, mask=old_mask)
 
 
 def peak_curvature(array, _slice=slice(None), curve_sense='Concave',

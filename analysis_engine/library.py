@@ -3657,7 +3657,7 @@ def slices_overlap(first_slice, second_slice):
            ((first_slice.stop is None) or ((second_slice.start or 0) < first_slice.stop))
 
 
-def slices_overlap_merge(first_list, second_list, extend_stop=0):
+def slices_overlap_merge(first_list, second_list, extend_start=0, extend_stop=0):
     '''
     Where slices from the second list overlap the first, the first slice is
     extended to the limit of the second list slice.
@@ -3667,6 +3667,8 @@ def slices_overlap_merge(first_list, second_list, extend_stop=0):
     :type first_list: List of slices
     :param second_list: Second list of slices
     :type second_list: List of slices
+    :param extend_start: Increment at start of the resulting slices_above
+    :type extend_stop: Integer
     :param extend_stop: Increment at stop end of the resulting slices_above
     :type extend_stop: Integer
     '''
@@ -3677,14 +3679,15 @@ def slices_overlap_merge(first_list, second_list, extend_stop=0):
         for second_slice in second_list:
             if slices_overlap(first_slice, second_slice):
                 overlap = True
-                result_list.append(slice(min(first_slice.start, second_slice.start),
+                result_list.append(slice(max(min(first_slice.start, second_slice.start) - extend_start, 0),
                                          max(first_slice.stop, second_slice.stop) + extend_stop))
                 break
         if not overlap:
-            if extend_stop:
-                result_list.append(slice(first_slice.start, first_slice.stop + extend_stop))
-            else:
+            if not extend_start and not extend_stop:
                 result_list.append(first_slice)
+            else:
+                result_list.append(slice(first_slice.start - extend_start,
+                                         first_slice.stop + extend_stop))
 
     return result_list
 
@@ -4680,7 +4683,13 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     # this list of lists of slices needs to be flattened. Don't ask me what
     # this does, go to http://stackoverflow.com/questions/952914 for an
     # explanation !
-    any_valid = slices_or([item for sublist in p_valid_slices for item in sublist])
+    # any_valid = slices_or([item for sublist in p_valid_slices for item in sublist])
+    
+    all_masks = np.array([p.array.mask[::p.frequency/min_ip_freq] for p in params])
+    num_valid = len(params) - np.sum(all_masks, axis=0)
+
+    bad = num_valid < len(params) - 1
+    any_valid = np.ma.clump_unmasked(np.ma.array(data=[0]*len(bad), mask=bad))
 
     if any_valid is None:
         # No useful chunks of data to process, so give up now.
@@ -5327,10 +5336,28 @@ def overflow_correction(param, fast=None, max_val=8191):
 
         return array
 
+    array = overflow_correction_array(array, hz)
+
+    if not fast and np.ma.min(array[sl]) < -delta:
+        # FIXME: fallback postprocessing: compensate for the descent
+        # starting at the overflown value
+        array[sl] += max_val
+        
+    if fast:
+        pin_to_ground(array, good_slices, fast.get_slices())
+
+    # reapply the original mask as it may contain genuine spikes unrelated to
+    # the overflow
+    array.mask = old_mask
+    return array
+
+def overflow_correction_array(array, hz=1):
+    '''
+    Overflow correction based on power of two jumps only.
+    '''
+
     old_mask = array.mask.copy()
-    good_slices = slices_remove_small_gaps(
-        np.ma.clump_unmasked(array), time_limit=25.0,
-        hz=hz)
+    good_slices = slices_remove_small_gaps(np.ma.clump_unmasked(array), hz=hz)
 
     for sl in good_slices:
         array.mask[sl] = False
@@ -5339,25 +5366,25 @@ def overflow_correction(param, fast=None, max_val=8191):
         jump_sign = -jump / abs_jump
         # Any jumps of 2048 or larger will be corrected to the nearest power of two.
         steps = np.ma.where(abs_jump > 2**10.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
+        biggest_step_up = np.ma.max(steps)
+        biggest_step_down = np.ma.min(steps)
+        # Don't fix things that don't need fixing
+        if biggest_step_up == 0 and biggest_step_down == 0:
+            continue
 
         # Repair small masks which may be related to the overflow.
         for jump_idx in np.ma.where(steps)[0]:
-            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False 
-        correction = np.ma.cumsum(steps)
-        array[sl] += correction
+            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False
+        # Compute and apply the correction
+        array[sl] += np.ma.cumsum(steps)
+        
+        # Simple check to make sure the data is not badly offset following this adjustment
+        if biggest_step_up and np.min(array[sl]) > biggest_step_up / 2:
+            array[sl] -= biggest_step_up
+        elif biggest_step_down and np.min(array[sl]) < biggest_step_down / 2:
+            array[sl] -= biggest_step_down
 
-        if not fast and np.ma.min(array[sl]) < -delta:
-            # FIXME: fallback postprocessing: compensate for the descent
-            # starting at the overflown value
-            array[sl] += max_val
-
-    if fast:
-        pin_to_ground(array, good_slices, fast.get_slices())
-
-    # reapply the original mask as it may contain genuine spikes unrelated to
-    # the overflow
-    array.mask = old_mask
-    return array
+    return np.ma.array(data=array.data, mask=old_mask)
 
 
 def peak_curvature(array, _slice=slice(None), curve_sense='Concave',

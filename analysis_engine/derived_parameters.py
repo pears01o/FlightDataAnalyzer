@@ -835,7 +835,10 @@ class AltitudeAAL(DerivedParameterNode):
                                                         next_dip['highest_ground'])
 
             for dip in dips:
-                alt_rad_section = alt_rad.array[dip['slice']] if alt_rad else None
+                if alt_rad and np.ma.count(alt_rad.array[dip['slice']]):
+                    alt_rad_section = repair_mask(alt_rad.array[dip['slice']])
+                else:
+                    alt_rad_section = None
 
                 if (dip['type']=='land') and (alt_rad_section is None) and \
                    (dip['slice'].stop<dip['slice'].start) and pitch:
@@ -1071,7 +1074,7 @@ class AltitudeRadio(DerivedParameterNode):
 
     @classmethod
     def can_operate(cls, available, family=A('Family')):
-        airbus = family and family.value in ('A300', 'A310', 'A319', 'A320', 'A321', 'A330', 'A340')
+        airbus = family and family.value in ('A300', 'A310', 'A319', 'A320', 'A321', 'A330', 'A340', 'A350')
         fast = 'Fast' in available if airbus else True
         alt_rads = [n for n in cls.get_dependency_names() if n.startswith('Altitude Radio')]
         return fast and any_of(alt_rads, available)
@@ -1098,7 +1101,8 @@ class AltitudeRadio(DerivedParameterNode):
         self.offset = 0.0
         self.frequency = 4.0
 
-        if family and family.value in ('A300', 'A310', 'A318', 'A319', 'A320', 'A321', 'A330', 'A340'):
+        """
+        if family and family.value in ('A300', 'A310', 'A318', 'A319', 'A320', 'A321', 'A330', 'A340', 'A350'):
             # The Altitude Radio, Altitude Radio (*) in Airbus frames should
             # not contain "Overflow Correction = True". The below procedure
             # works a lot more effective, especially in case of ARINC pattern
@@ -1122,7 +1126,8 @@ class AltitudeRadio(DerivedParameterNode):
                     source.array = overflow_correction(source, aligned_fast)
                 osources.append(source)
             sources = osources
-
+        """
+        
         self.array = blend_parameters(sources,
                                       offset=self.offset,
                                       frequency=self.frequency,
@@ -4402,7 +4407,8 @@ class SlopeToLanding(DerivedParameterNode):
             if not np.ma.count(alt_aal.array[app.slice]):
                 continue
             # What's the temperature deviation from ISA at landing?
-            dev = from_isa(alt_aal.array[app.slice][-1], sat.array[app.slice][-1])
+            dev = from_isa(last_valid_sample(alt_aal.array[app.slice]).value,
+                           last_valid_sample(sat.array[app.slice]).value)
             # now correct the altitude for temperature deviation.
             alt = alt_dev2alt(alt_aal.array[app.slice], dev)
             self.array[app.slice] = alt / ut.convert(dist.array[app.slice], ut.NM, ut.FT)

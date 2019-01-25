@@ -25,12 +25,12 @@ from analysis_engine.node import derived_param_from_hdf, Parameter
 
 import matplotlib
 
-try:
-    import wx
-except ImportError:
-    matplotlib.use('Agg')
-else:
-    matplotlib.use('WXAgg')
+#try:
+    #import wx
+#except ImportError:
+    #matplotlib.use('Agg')
+#else:
+    #matplotlib.use('WXAgg')
 
 import matplotlib.pyplot as plt
 

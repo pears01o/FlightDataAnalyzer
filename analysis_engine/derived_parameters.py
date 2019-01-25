@@ -835,7 +835,10 @@ class AltitudeAAL(DerivedParameterNode):
                                                         next_dip['highest_ground'])
 
             for dip in dips:
-                alt_rad_section = alt_rad.array[dip['slice']] if alt_rad else None
+                if alt_rad and np.ma.count(alt_rad.array[dip['slice']]):
+                    alt_rad_section = repair_mask(alt_rad.array[dip['slice']])
+                else:
+                    alt_rad_section = None
 
                 if (dip['type']=='land') and (alt_rad_section is None) and \
                    (dip['slice'].stop<dip['slice'].start) and pitch:

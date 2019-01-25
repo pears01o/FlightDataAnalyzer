@@ -764,6 +764,7 @@ class FlightType(FlightAttributeNode):
         FERRY = 'FERRY'
         POSITIONING = 'POSITIONING'
         LINE_TRAINING = 'LINE_TRAINING'
+        EMS = 'EMS'
 
     @classmethod
     def can_operate(cls, available):
@@ -819,7 +820,8 @@ class FlightType(FlightAttributeNode):
                             types.LINE_TRAINING,
                             types.POSITIONING,
                             types.TEST,
-                            types.TRAINING}:
+                            types.TRAINING,
+                            types.EMS}:
                 flight_type = afr_type
             else:
                 # TODO: Raise exception if AFR flight type was one of the below?

@@ -18,3 +18,4 @@ The following flight types may be derived by the 'FDR Flight Type' attribute.
  * TOUCHDOWN_BEFORE_LIFTOFF - A touchdown has been detected before liftoff, therefore the data may contain incomplete flights.
  * ENGINE_RUN_UP - Engines are turned on, and then off again with no flight.
  * GROUND_RUN - The aircraft remained on the ground.
+ * EMS - A flight used for Emergency Medical Services.

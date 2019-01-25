@@ -4683,7 +4683,13 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     # this list of lists of slices needs to be flattened. Don't ask me what
     # this does, go to http://stackoverflow.com/questions/952914 for an
     # explanation !
-    any_valid = slices_or([item for sublist in p_valid_slices for item in sublist])
+    # any_valid = slices_or([item for sublist in p_valid_slices for item in sublist])
+    
+    all_masks = np.array([p.array.mask[::p.frequency/min_ip_freq] for p in params])
+    num_valid = len(params) - np.sum(all_masks, axis=0)
+
+    bad = num_valid < len(params) - 1
+    any_valid = np.ma.clump_unmasked(np.ma.array(data=[0]*len(bad), mask=bad))
 
     if any_valid is None:
         # No useful chunks of data to process, so give up now.

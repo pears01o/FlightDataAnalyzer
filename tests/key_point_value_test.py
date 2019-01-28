@@ -1889,10 +1889,9 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
     def setUp(self):
         self.node_class = AccelerationNormalAtTouchdown
         self.operational_combinations = [
-            ('Acceleration Normal Offset Removed', 'Touchdown', 'Touch And Go', 'Bounced Landing'),
-            ('Acceleration Normal Offset Removed', 'Touchdown', 'Bounced Landing'),
-            ('Acceleration Normal Offset Removed', 'Touchdown', 'Touch And Go'),
-            ('Acceleration Normal Offset Removed', 'Touchdown'),
+            ('Acceleration Normal Offset Removed', 'Touchdown', 'Landing', 'Landing Roll', 'Touch And Go'),
+            ('Acceleration Normal Offset Removed', 'Touchdown', 'Landing', 'Landing Roll', 'Touch And Go'),
+            ('Acceleration Normal Offset Removed', 'Touchdown', 'Landing', 'Landing Roll'),
         ]
 
     @patch('analysis_engine.key_point_values.bump')
@@ -1903,11 +1902,15 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
             KeyTimeInstance(3, 'Touchdown'),
             KeyTimeInstance(1, 'Touchdown'),
         ])
+        ldgs = S('Landing')
+        ldgs.create_sections([slice(3, 5, None), slice(1, 3, None)])
+        ldg_rolls = S('Landing Roll')
+        ldg_rolls.create_sections([slice(3, 5, None), slice(1, 3, None)])
         node = AccelerationNormalAtTouchdown()
-        node.derive(acc_norm, touchdowns, None)
+        node.derive(acc_norm, touchdowns, ldgs, ldg_rolls, None)
         bump.assert_has_calls([
-            call(acc_norm, touchdowns[0].index),
-            call(acc_norm, touchdowns[1].index),
+            call(acc_norm, touchdowns[0].index, end=5),
+            call(acc_norm, touchdowns[1].index, end=3),
         ])
         self.assertEqual(node, [
             KeyPointValue(3, 4.0, 'Acceleration Normal At Touchdown', slice(None, None)),
@@ -1920,27 +1923,19 @@ class TestAccelerationNormalAtTouchdown(unittest.TestCase, NodeTest):
         acc_norm = Mock()
         touchdowns = KTI('Touchdown', items=[KeyTimeInstance(3, 'Touchdown')])
         touch_and_go = KTI('Touch And Go', items=[KeyTimeInstance(1, 'Touch And Go')])
+        ldgs = S('Landing')
+        ldgs.create_section(slice(3, 6, None))
+        ldg_rolls = S('Landing Roll')
+        ldg_rolls.create_section(slice(4, 5, None))
         node = AccelerationNormalAtTouchdown()
-        node.derive(acc_norm, touchdowns,touch_and_go)
+        node.derive(acc_norm, touchdowns, ldgs, ldg_rolls, touch_and_go)
         bump.assert_has_calls([
-            call(acc_norm, touchdowns[0].index),
+            call(acc_norm, touchdowns[0].index, end=5),
             call(acc_norm, touch_and_go[0].index),
         ])
         self.assertEqual(node, [
             KeyPointValue(3, 4.0, 'Acceleration Normal At Touchdown', slice(None, None)),
             KeyPointValue(1, 2.0, 'Acceleration Normal At Touchdown', slice(None, None)),
-        ])
-
-    def test_derive_bounced_landing(self):
-        acc_norm = P('Acceleration Normal', array=np.ma.arange(10) / 10.0 + 1.0)
-        touchdowns = KTI('Touchdown', items=[KeyTimeInstance(3, 'Touchdown')])
-        bounces = buildsection('Bounced Landing', 4, 6)
-        node = AccelerationNormalAtTouchdown()
-        node.derive(acc_norm, touchdowns, None, bounces)
-        # Bounce adds 3 to the 3 and 6 indices giving...
-        self.assertEqual(node, [
-            KeyPointValue(6, 1.6, 'Acceleration Normal At Touchdown', slice(None, None)),
-            KeyPointValue(9, 1.9, 'Acceleration Normal At Touchdown', slice(None, None)),
         ])
 
 

@@ -662,23 +662,30 @@ def braking_action(gspd, landing, mu):
     return limit_point, mu[limit_point]
 """
 
-def bump(acc, index):
+def bump(acc, index, start=None, end=None):
     """
     This scans an acceleration array for a short period either side of the
     moment of interest. Too wide and we risk monitoring flares and
     post-liftoff motion. Too short and we may miss a local peak.
 
+    Optionally one can provide a start index and/or end index. Defaults
+    is to monitor for 3 seconds before and after `index`.
+
     :param acc: An acceleration parameter
     :type acc: A Parameter object
     :param index: A Key Time Instance or simple Index
+    :type index: int or float
+    :param start: A Key Time Instance or simple Index
+    :type index: int or float
+    :param end: A Key Time Instance or simple Index
     :type index: int or float
 
     :returns: The peak acceleration within +/- 3 seconds of the KTI
     :type: Acceleration, from the acc.array.
     """
     dt = BUMP_HALF_WIDTH # Half width of range to scan across for peak acceleration.
-    from_index = max(ceil(index - dt * acc.hz), 0)
-    to_index = min(int(index + dt * acc.hz)+1, len(acc.array))
+    from_index = start if start is not None else max(ceil(index - dt * acc.hz), 0)
+    to_index = end if end is not None else min(int(index + dt * acc.hz)+1, len(acc.array))
     bump_accel = acc.array[from_index:to_index]
 
     # Taking the absoulte value makes no difference for normal acceleration

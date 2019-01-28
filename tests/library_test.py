@@ -1264,15 +1264,30 @@ class TestBlendNonequispacedSensors(unittest.TestCase):
 
 class TestBump(unittest.TestCase):
 
+    def setUp(self):
+        self.accel = P('Test',
+                       np.ma.array([2,0,0,0,1,0,0,0,0,0,0,0,0,3,0,0],
+                                   dtype=float),
+                       frequency=2.0,
+                       offset=0.0)
+
     def test_bump(self):
         instant = 6.5
-        accel = P('Test',
-                  np.ma.array([2,0,0,0,1,0,0,0,0,0,0,0,0,3],
-                              dtype=float),
-                  frequency=2.0,
-                  offset=0.0)
-        self.assertEqual(bump(accel, instant)[0], 4.0)
-        self.assertEqual(bump(accel, instant)[1], 1.0)
+
+        self.assertEqual(bump(self.accel, instant)[0], 4.0)
+        self.assertEqual(bump(self.accel, instant)[1], 1.0)
+
+    def test_bump_start(self):
+        instant = 6.5
+
+        self.assertEqual(bump(self.accel, instant, start=0)[0], 0.0)
+        self.assertEqual(bump(self.accel, instant, start=0)[1], 2.0)
+
+    def test_bump_end(self):
+        instant = 6.5
+
+        self.assertEqual(bump(self.accel, instant, end=14.5)[0], 13.0)
+        self.assertEqual(bump(self.accel, instant, end=14.5)[1], 3.0)
 
 
 class TestIncludingTransition(unittest.TestCase):

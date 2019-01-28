@@ -4242,12 +4242,40 @@ class TestBlendParameters(unittest.TestCase):
 
         self.params = (p_alt_a, p_alt_b, p_alt_c)
 
-    def test_blend_parameters_assertion_errors(self):
+    def test_blend_parameters_errors(self):
         p1 = P(array=[0,0,0,1.0,2], frequency=1, offset=0.9)
         p2 = P(array=[1,2,3,4.0,5], frequency=1, offset=0.4)
         self.assertRaises(AssertionError, blend_parameters, (p1, p2), frequency=0.0)
         self.assertRaises(AssertionError, blend_parameters, (None, None))
         self.assertRaises(AssertionError, blend_parameters, (p1, p2), mode='silly')
+        self.assertRaises(ValueError, blend_parameters, (p1, p2), mode='cubic', validity='silly')
+
+    def test_cubic_validities(self):
+        p1 = P('Altitude Radio (A)', array=np.ma.array([1.0]*10, mask=[0]*10))
+        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10, mask=[1]*10))
+        p3 = P('Altitude Radio (C)', array=np.ma.array([4.0]*10, mask=[1]*10))
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
+        self.assertAlmostEqual(result[5], 1.0)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
+        self.assertEqual(result[5].mask, True)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
+        self.assertEqual(result[5].mask, True)
+
+        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10, mask=[0]*10))
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
+        self.assertAlmostEqual(result[5], 1.5)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
+        self.assertAlmostEqual(result[5], 1.5)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
+        self.assertEqual(result[5].mask, True)
+
+        p3 = P('Altitude Radio (C)', array=np.ma.array([3.0]*10, mask=[0]*10))
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
+        self.assertAlmostEqual(result[5], 2.0)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
+        self.assertAlmostEqual(result[5], 2.0)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
+        self.assertAlmostEqual(result[5], 2.0)
 
     def test_blend_linear_params_complex_example(self):
         result = blend_parameters(self.params, offset=0.0, frequency=2.0)

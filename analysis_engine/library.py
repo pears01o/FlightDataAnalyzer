@@ -4621,7 +4621,7 @@ def blend_two_parameters(param_one, param_two, mode=None):
     return array, frequency, offset
 
 
-def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear'):
+def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear', validity='all_but_one'):
     '''
     This most general form of the blend options allows for multiple sources
     to be blended together even though the spacing, validity and even sample
@@ -4638,6 +4638,8 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     :type small_slice_duration: float
     :param mode: type of interpolation to use - default 'linear' or 'cubic'. Anything else raises exception.
     :type mode: str
+    :param validity: requirements for validity in the data - from ['all', 'all_but_one', 'any_one']
+    :type validity: str
     '''
 
     assert frequency > 0.0
@@ -4679,16 +4681,18 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         # collation.
         p_valid_slices.append(slices_multiply(nts, min_ip_freq / param.frequency))
 
-    # To find the valid ranges I need to 'or' the slices at a high level, hence
-    # this list of lists of slices needs to be flattened. Don't ask me what
-    # this does, go to http://stackoverflow.com/questions/952914 for an
-    # explanation !
-    # any_valid = slices_or([item for sublist in p_valid_slices for item in sublist])
-    
-    all_masks = np.array([p.array.mask[::p.frequency/min_ip_freq] for p in params])
+    all_masks = np.array([np.ma.getmaskarray(p.array)[::p.frequency/min_ip_freq] for p in params])
     num_valid = len(params) - np.sum(all_masks, axis=0)
 
-    bad = num_valid < len(params) - 1
+    if validity == 'all':
+        bad = num_valid < len(params)
+    elif validity == 'all_but_one':
+        bad = num_valid < len(params) - 1
+    elif validity == 'any_one':
+        bad = num_valid == 0
+    else:
+        raise ValueError('Unrecognised validity mode in blend_parameters')
+    
     any_valid = np.ma.clump_unmasked(np.ma.array(data=[0]*len(bad), mask=bad))
 
     if any_valid is None:

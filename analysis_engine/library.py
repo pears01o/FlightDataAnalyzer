@@ -5366,20 +5366,7 @@ def overflow_correction_array(array, hz=1):
         jump = np.ma.ediff1d(array[sl], to_begin=0.0)
         abs_jump = np.ma.abs(jump)
         jump_sign = -jump / abs_jump
-        steps = np.ma.where(abs_jump > delta, max_val * jump_sign, 0)
-        for jump_idx in np.ma.where(steps)[0]:
-            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False 
-        correction = np.ma.cumsum(steps)
 
-        array[sl] += correction
-
-        if not fast and np.ma.min(array[sl]) < -delta:
-            # FIXME: fallback postprocessing: compensate for the descent
-            # starting at the overflown value
-            array[sl] += max_val
-
-    if fast:
-        pin_to_ground(array, good_slices, fast.get_slices())
         # Any jumps of 2048 or larger will be corrected to the nearest power of two.
         steps = np.ma.where(abs_jump > 2**10.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
         biggest_step_up = np.ma.max(steps)

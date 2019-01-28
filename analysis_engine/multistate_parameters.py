@@ -1420,7 +1420,7 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
             if use_conf:
                 state = at.constants.CONF_TO_LEVER[state]
             self.array[condition] = state
-            
+
         frame_name = frame.value if frame else None
         approach_slices = approach.get_slices() if approach else None
 
@@ -2764,12 +2764,14 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
         state = 'Deployed'
 
         def is_deployed(param):
+            if not param:
+                return
             array = np_ma_zeros_like(
                 param.array, dtype=np.bool, mask=param.array.mask)
             if state in param.name:
                 if state not in param.array.state:
                     logger.warning("State '%s' not found in param '%s'", state, param.name)
-                    return None
+                    return
                 matching = param.array == state
             elif family and family.value == 'MD-11':
                 matching = param.array >= 15
@@ -2786,15 +2788,11 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
             speedbrake[stepped_array == 20] = 1
             self.array = speedbrake
         else:
-            combined = [a for a in (is_deployed(p) for p in (dep, spoiler) if p) if a is not None]
-
-            for pair in pairs:
-                if not all(pair):
-                    continue
-                arrays = [is_deployed(p) for p in pair]
-                if not all(a is not None for a in arrays):
-                    continue
-                combined.append(np.ma.vstack(arrays).all(axis=0))
+            combined = [a for a in (is_deployed(p) for p in (dep, spoiler)) if a is not None]
+            combined.extend(
+                np.ma.vstack(arrays).all(axis=0) for arrays in
+                ([is_deployed(p) for p in pair] for pair in pairs)
+                if all(a is not None for a in arrays))
 
             if not combined:
                 self.array = np_ma_zeros_like(

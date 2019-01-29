@@ -48,7 +48,9 @@ from analysis_engine.library import (
     second_window,
     slice_duration,
     slices_and,
+    slices_and_not,
     slices_from_to,
+    slices_overlap,
     slices_remove_small_gaps,
     slices_remove_small_slices,
     smooth_signal,
@@ -1660,7 +1662,6 @@ class GearDownInTransit(MultistateDerivedParameterNode):
                airborne=S('Airborne'),
                model=A('Model'), series=A('Series'), family=A('Family')):
 
-
         gear_sels = gear_ups = gear_downs = runs = []
         self.array = np_ma_zeros_like(first_valid_parameter(gear_down, gear_up, gear_down_sel, gear_position).array)
 
@@ -1683,45 +1684,35 @@ class GearDownInTransit(MultistateDerivedParameterNode):
 
         # create slices indicating Gear Extending
         if gear_position:
-            downs = find_edges_on_state_change('Down', gear_position.array, phase=airborne)
-            transits = find_edges_on_state_change('In Transit', gear_position.array, phase=airborne)
-            for stop in downs:
-                start = max(x for x in transits if x < stop)
-                runs.append(slice(math.ceil(start), stop+1))
-        elif gear_down and gear_up:
-            for start, stop in zip(gear_ups, gear_downs):
-                runs.append(slice(start, stop+1))
+            transits = runs_of_ones(nearest_neighbour_mask_repair(gear_position.array) == 'In Transit')
+            runs = [transit for transit in transits if gear_position.array[transit.start-1] == 'Up']
+
         elif gear_down and (gear_in_transit or gear_red):
             param, state = (gear_in_transit, 'In Transit') if gear_in_transit else (gear_red, 'Warning')
-            transits = find_edges_on_state_change(state, nearest_neighbour_mask_repair(param.array), phase=airborne)
-            for stop in gear_downs:
-                start = max([x for x in transits if x < stop] or (None,))
-                if start is not None:
-                    _slice = slice(math.ceil(start), stop+1)
-                    if family and family.value == 'B737 Classic' and fallback and slice_duration(_slice, self.frequency) > fallback:
-                        _slice = slice(math.ceil(stop-fallback), stop+1)
-                    runs.append(_slice)
-        elif gear_down and gear_down_sel:
-            for stop in gear_downs:
-                start = max([x for x in gear_sels if x < stop] or (None,))
-                if start is not None:
-                    runs.append(slice(math.ceil(start), stop+1))
-        elif gear_down and fallback:
-            for stop in gear_downs:
-                runs.append(slice(math.ceil(stop-fallback), stop+1))
-        elif gear_up and (gear_in_transit or gear_red):
-            param, state = (gear_in_transit, 'In Transit') if gear_in_transit else (gear_red, 'Warning')
-            transits = find_edges_on_state_change(state, nearest_neighbour_mask_repair(param.array), change='leaving', phase=airborne)
-            for start in gear_ups:
-                stop = min([x for x in transits if x > start] or (None,))
-                if stop is not None:
-                    _slice = slice(math.ceil(start), stop+1)
-                    if family and family.value == 'B737 Classic' and fallback and slice_duration(_slice, self.frequency) > fallback:
-                        _slice = slice(math.ceil(start), start+fallback+1)
-                    runs.append(_slice)
-        elif gear_up and fallback:
-            for start in gear_ups:
-                runs.append(slice(math.ceil(start), start+fallback+1))
+            transits = runs_of_ones(nearest_neighbour_mask_repair(param.array) == state)
+            # Filter out the transits from Down to Up states. We remove transits slices
+            # which overlap with the moment Gear Down goes from Down to Up.
+            gear_ups = find_edges_on_state_change('Up', nearest_neighbour_mask_repair(gear_down.array), phase=airborne)
+            # Find transits within a reasonable range
+            duration = fallback or 20 * self.frequency
+            for gear_up in gear_ups:
+                gear_moving_up = slice(
+                    max(gear_up - duration, 0),
+                    min(gear_up + duration, len(self.array))
+                )
+                transits = [
+                    transit for transit in transits
+                    if not slices_overlap(transit, gear_moving_up)
+                ]
+            gear_down_slices = runs_of_ones(nearest_neighbour_mask_repair(gear_down.array) == 'Down')
+            runs = slices_and_not(transits, gear_down_slices)
+
+            if family and family.value == 'B737 Classic' and fallback:
+                for idx, run in enumerate(runs):
+                    if slice_duration(run, self.frequency) > fallback:
+                        stop = run.stop
+                        runs[idx] = slice(math.ceil(stop-fallback), stop)
+
         elif gear_down_sel and (gear_in_transit or gear_red):
             param, state = (gear_in_transit, 'In Transit') if gear_in_transit else (gear_red, 'Warning')
             transits = find_edges_on_state_change(state, nearest_neighbour_mask_repair(param.array), change='leaving', phase=airborne)
@@ -1729,9 +1720,53 @@ class GearDownInTransit(MultistateDerivedParameterNode):
                 stop = min([x for x in transits if x > start] or (None,))
                 if stop is not None:
                     runs.append(slice(math.ceil(start), stop+1))
+
+        elif gear_up and (gear_in_transit or gear_red):
+            param, state = (gear_in_transit, 'In Transit') if gear_in_transit else (gear_red, 'Warning')
+            transits = runs_of_ones(nearest_neighbour_mask_repair(param.array) == state)
+            # Filter out the transits from Down to Up state. We remove transits slices
+            # which overlap with the moment Gear Up goes from Down to Up.
+            gear_ups = find_edges_on_state_change('Up', nearest_neighbour_mask_repair(gear_up.array), phase=airborne)
+            # Find transits within a reasonable range
+            duration = fallback or 20 * self.frequency
+            for gear_up_edge in gear_ups:
+                gear_moving_up = slice(
+                    max(gear_up_edge - duration, 0),
+                    min(gear_up_edge + duration, len(self.array))
+                )
+                transits = [
+                    transit for transit in transits
+                    if not slices_overlap(transit, gear_moving_up)
+                ]
+            runs = transits
+
+            if family and family.value == 'B737 Classic' and fallback:
+                for idx, run in enumerate(runs):
+                    if slice_duration(run, self.frequency) > fallback:
+                        stop = run.stop
+                        runs[idx] = slice(math.ceil(stop-fallback), stop)
+
+        elif gear_down and gear_down_sel:
+            runs = runs_of_ones(nearest_neighbour_mask_repair(gear_down_sel.array) == 'Down')
+            gear_downs = runs_of_ones(nearest_neighbour_mask_repair(gear_down.array) == 'Down')
+            runs = slices_and_not(runs, gear_downs)
+
+        elif gear_down and gear_up:
+            for start, stop in zip(gear_ups, gear_downs):
+                runs.append(slice(start, stop+1))
+
+        elif gear_down and fallback:
+            for stop in gear_downs:
+                runs.append(slice(math.ceil(stop-fallback), stop+1))
+
+        elif gear_up and fallback:
+            for start in gear_ups:
+                runs.append(slice(math.ceil(start), start+fallback+1))
+
         elif gear_down_sel and fallback:
             for start in gear_sels:
                 runs.append(slice(math.ceil(start), start+fallback+1))
+
         else:
             pass
 

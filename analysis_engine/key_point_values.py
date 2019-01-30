@@ -18719,15 +18719,11 @@ class ControlColumnDualInputOppositeDirectionForceMax(KeyPointValueNode):
         if taxiing and turns:
             straights = slices_and([s.slice for s in taxiing],
                                    slices_not([s.slice for s in turns]), )
-            unmasked_capt = []
-            unmasked_fo = []
-            for straight in straights:
-                unmasked_capt.extend(np.ma.compressed(force_capt.array[straight]))
-                unmasked_fo.extend(np.ma.compressed(force_fo.array[straight]))
-
+            unmasked_capt = np.ma.compressed(np.ma.concatenate([force_capt.array[s] for s in straights]))
+            unmasked_fo = np.ma.compressed(np.ma.concatenate([force_fo.array[s] for s in straights]))
             delta_capt = np.ma.average(unmasked_capt) if len(unmasked_capt) > 20 else 0
             delta_fo = np.ma.average(unmasked_fo) if len(unmasked_fo) > 20 else 0
-        # if unable just assume that there's no offset
+            # if unable just assume that there's no offset
         else:
             delta_capt = delta_fo = 0
 

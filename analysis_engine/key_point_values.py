@@ -779,7 +779,6 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
                ldgs=S('Landing'),
                ldg_rolls=S('Landing Roll'),
                touch_and_gos=KTI('Touch And Go')):
-        tdwns = touchdowns
         touch_and_gos = touch_and_gos or []
 
         for ldg in ldgs:
@@ -791,8 +790,9 @@ class AccelerationNormalAtTouchdown(KeyPointValueNode):
                            if is_slice_within_slice(ldg_roll.slice, ldg.slice))
             self.create_kpv(*bump(acc_norm, tdwn.index, end=ldg_roll.slice.stop))
 
-        for touch_and_go in touch_and_gos:
-            self.create_kpv(*bump(acc_norm, touch_and_go.index))
+        if touch_and_gos:
+            for touch_and_go in touch_and_gos:
+                self.create_kpv(*bump(acc_norm, touch_and_go.index))
 
 
 class AccelerationNormalAboveWeightLimitAtTouchdown(KeyPointValueNode):

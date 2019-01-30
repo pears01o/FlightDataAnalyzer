@@ -18760,6 +18760,14 @@ class ControlColumnDualInputOppositeDirectionForceMax(KeyPointValueNode):
                 self.create_kpv(index, max_diff_in_section)
 
 
+class PitchDisconnectDuration(KeyPointValueNode):
+
+    unit = ut.SECOND
+
+    def derive(self, pitch_disconnect=M('Pitch Disconnect'),):
+        self.create_kpvs_from_slice_durations(runs_of_ones(pitch_disconnect.array == 'Disconnect'), self.hz)
+
+
 ##############################################################################
 
 

@@ -71,6 +71,7 @@ from analysis_engine.multistate_parameters import (
     PackValvesOpen,
     PilotFlying,
     PitchAlternateLaw,
+    PitchDisconnect,
     Slat,
     SlatExcludingTransition,
     SlatFullyExtended,
@@ -2309,6 +2310,31 @@ class TestPitchAlternateLaw(unittest.TestCase, NodeTest):
         )
         node = self.node_class()
         node.derive(alt_law1, alt_law2)
+        np.testing.assert_array_equal(node.array, [0, 0, 1, 1, 1, 1])
+
+
+class TestPitchDisconnect(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = PitchDisconnect
+
+    def test_derive_basic(self):
+        pitch_disc_1 = M(
+            name='Pitch Disconnect (1)',
+            array=np.ma.array([0, 0, 0, 1, 1, 1]),
+            values_mapping={0: '-', 1: 'Disconnect'},
+            frequency=1,
+            offset=0.1,
+        )
+        pitch_disc_2 = M(
+            name='Pitch Disconnect (2)',
+            array=np.ma.array([0, 0, 1, 1, 0, 0]),
+            values_mapping={0: '-', 1: 'Disconnect'},
+            frequency=1,
+            offset=0.1,
+        )
+        node = self.node_class()
+        node.derive(pitch_disc_1, pitch_disc_2)
         np.testing.assert_array_equal(node.array, [0, 0, 1, 1, 1, 1])
 
 

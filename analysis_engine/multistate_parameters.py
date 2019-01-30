@@ -2165,6 +2165,23 @@ class PitchAlternateLaw(MultistateDerivedParameterNode):
         ).any(axis=0)
 
 
+class PitchDisconnect(MultistateDerivedParameterNode):
+    '''
+    Combine Pitch Disconnect Parameters from sources (1) and (2).
+    '''
+    values_mapping = {
+        0: '-',
+        1: 'Disconnect',
+    }
+
+    def derive(self, pitch_1=M('Pitch Disconnect (1)'),
+                     pitch_2=M('Pitch Disconnect (2)'),):
+        self.array = vstack_params_where_state(
+            (pitch_1, 'Disconnect'),
+            (pitch_2, 'Disconnect'),
+        ).any(axis=0)
+
+
 class Slat(MultistateDerivedParameterNode):
     '''
     Steps raw slat angle into detents.

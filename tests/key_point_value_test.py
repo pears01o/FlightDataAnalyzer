@@ -553,6 +553,7 @@ from analysis_engine.key_point_values import (
     PitchAtLiftoff,
     PitchAtTouchdown,
     PitchCyclesDuringFinalApproach,
+    PitchDisconnectDuration,
     PitchDuringGoAroundMax,
     Pitch500To50FtMin,
     PitchMinimumDuringNoseDownAttitudeAdoption,
@@ -15773,6 +15774,25 @@ class TestPitchCyclesDuringFinalApproach(unittest.TestCase, NodeTest):
     @unittest.skip('Test Not Implemented')
     def test_derive(self):
         self.assertTrue(False, msg='Test not implemented.')
+
+
+class TestPitchDisconnectDuration(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = PitchDisconnectDuration
+
+    def test_derive(self):
+        pitch_disc = M(
+            name='Pitch Disconnect',
+            array=np.ma.array([0, 0, 0, 1, 1, 1]),
+            values_mapping={0: '-', 1: 'Disconnect'},
+            frequency=1,
+            offset=0.1,
+        )
+        node = self.node_class()
+        node.derive(pitch_disc)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].value, 3)
 
 
 class TestPitchDuringGoAroundMax(unittest.TestCase, CreateKPVsWithinSlicesTest):

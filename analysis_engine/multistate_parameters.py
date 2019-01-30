@@ -3248,19 +3248,21 @@ class StableApproachStages(object):
             # use Combined descent phase slice as it contains the data from
             # top of descent to touchdown (approach starts and finishes later)
 
-            # Only one aircraft prone to generating erroneous phases due to
-            # weather monitoring behaviour has this model number.
-            # This ensures that a lack of a descent phase within an approach
-            # does not cause a fatal error for that aircraft.
-            if model and model.value == 'BAE 146-301':
-                try:
-                    approach.slice = phase.slice
-                except AttributeError:
-                    logger.warning('Unable to derive stable approach, '
-                                   'no descent phase found within approach.')
-                    pass
-            else:
+            # The following comment assumes that only one aircraft type has this issue, though
+            # it appears to occur on multiple.
+            ## Only one aircraft prone to generating erroneous phases due to
+            ## weather monitoring behaviour has this model number.
+            ## This ensures that a lack of a descent phase within an approach
+            ## does not cause a fatal error for that aircraft.
+            #if model and model.value == 'BAE 146-301':
+            try:
                 approach.slice = phase.slice
+            except AttributeError:
+                logger.warning('Unable to derive stable approach, '
+                               'no descent phase found within approach.')
+                pass
+            #else:
+                #approach.slice = phase.slice
 
             # FIXME: approaches shorter than 10 samples will not work due to
             # the use of moving_average with a width of 10 samples.

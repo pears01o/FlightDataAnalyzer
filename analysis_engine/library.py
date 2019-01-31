@@ -4621,7 +4621,7 @@ def blend_two_parameters(param_one, param_two, mode=None):
     return array, frequency, offset
 
 
-def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear', validity='all_but_one'):
+def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear', validity='any_one'):
     '''
     This most general form of the blend options allows for multiple sources
     to be blended together even though the spacing, validity and even sample

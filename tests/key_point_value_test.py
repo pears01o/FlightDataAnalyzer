@@ -5180,8 +5180,11 @@ class TestAirspeedWithConfigurationMax(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(air_spd, conf, fast)
         self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=2, value=2, name='Airspeed With Configuration 1 Max'),
             KeyPointValue(index=10, value=10, name='Airspeed With Configuration 1 Max'),
+            KeyPointValue(index=4, value=4, name='Airspeed With Configuration 1+F Max'),
             KeyPointValue(index=9, value=9, name='Airspeed With Configuration 1+F Max'),
+            KeyPointValue(index=5, value=5, name='Airspeed With Configuration 2 Max'),
             KeyPointValue(index=8, value=8, name='Airspeed With Configuration 2 Max'),
             KeyPointValue(index=6, value=6, name='Airspeed With Configuration 3 Max'),
         ]))
@@ -5244,15 +5247,18 @@ class TestAirspeedRelativeWithConfigurationDuringDescentMin(unittest.TestCase, N
         array = np.ma.array((0, 1, 1, 2, 2, 4, 6, 4, 4, 2, 1, 0, 0, 0, 0, 0))
         array = np.ma.concatenate((array, array[::-1]))
         conf = M(name='Configuration', array=array, values_mapping=self.mapping)
-        array = np.ma.concatenate((np.arange(16), np.arange(16, -1, -1)))
+        array = np.ma.concatenate((np.arange(16), np.arange(16, 0, -1)))
         air_spd = P(name='Airspeed', array=array)
         descent = buildsection('Descent To Flare', 16, 30)
         name = self.node_class.get_name()
         node = self.node_class()
         node.derive(air_spd, conf, descent)
         self.assertEqual(node, KPV(name=name, items=[
+            KeyPointValue(index=21, value=11, name='Airspeed Relative With Configuration 1 During Descent Min'),
             KeyPointValue(index=30, value=2, name='Airspeed Relative With Configuration 1 During Descent Min'),
+            KeyPointValue(index=22, value=10, name='Airspeed Relative With Configuration 1+F During Descent Min'),
             KeyPointValue(index=28, value=4, name='Airspeed Relative With Configuration 1+F During Descent Min'),
+            KeyPointValue(index=24, value=8, name='Airspeed Relative With Configuration 2 During Descent Min'),
             KeyPointValue(index=26, value=6, name='Airspeed Relative With Configuration 2 During Descent Min'),
             KeyPointValue(index=25, value=7, name='Airspeed Relative With Configuration 3 During Descent Min'),
         ]))
@@ -5615,6 +5621,7 @@ class TestAirspeedWithFlapAndSlatExtendedMax(unittest.TestCase, NodeTest):
         self.assertEqual(node.get_ordered_by_index(), [
             KeyPointValue(index=9.0, value=500.0, name='Airspeed With Flap Excluding Transition 0 And Slat Extended Max'),
             KeyPointValue(index=11.0, value=110.0, name='Airspeed With Flap Including Transition 0 And Slat Extended Max'),
+            KeyPointValue(index=19.0, value=190.0, name='Airspeed With Flap Excluding Transition 0 And Slat Extended Max'),
         ])
 
 
@@ -5677,6 +5684,8 @@ class TestAirspeedWithFlapDuringClimbMax(unittest.TestCase, NodeTest):
         self.assertEqual(node.get_ordered_by_index(), [
             KeyPointValue(index=2.0, value=20.0, name='Airspeed With Flap Including Transition 5 During Climb Max'),
             KeyPointValue(index=2.0, value=20.0, name='Airspeed With Flap Excluding Transition 5 During Climb Max'),
+            KeyPointValue(index=3.0, value=30.0, name='Airspeed With Flap Excluding Transition 10 During Climb Max'),
+            KeyPointValue(index=4.0, value=40.0, name='Airspeed With Flap Excluding Transition 15 During Climb Max'),
             KeyPointValue(index=5.0, value=50.0, name='Airspeed With Flap Including Transition 10 During Climb Max'),
             KeyPointValue(index=6.0, value=60.0, name='Airspeed With Flap Excluding Transition 30 During Climb Max'),
             KeyPointValue(index=7.0, value=70.0, name='Airspeed With Flap Excluding Transition 15 During Climb Max'),
@@ -5728,7 +5737,9 @@ class TestAirspeedWithFlapDuringDescentMax(unittest.TestCase, NodeTest):
             KeyPointValue(index=3.0, value=70.0, name='Airspeed With Flap Excluding Transition 10 During Descent Max'),
             KeyPointValue(index=4.0, value=60.0, name='Airspeed With Flap Excluding Transition 15 During Descent Max'),
             KeyPointValue(index=5.0, value=50.0, name='Airspeed With Flap Excluding Transition 30 During Descent Max'),
-            KeyPointValue(index=6.0, value=40.0, name='Airspeed With Flap Including Transition 15 During Descent Max'),])
+            KeyPointValue(index=6.0, value=40.0, name='Airspeed With Flap Including Transition 15 During Descent Max'),
+            KeyPointValue(index=7.0, value=30.0, name='Airspeed With Flap Excluding Transition 15 During Descent Max'),
+            KeyPointValue(index=8.0, value=20.0, name='Airspeed With Flap Excluding Transition 10 During Descent Max'),])
 
 
 class TestAirspeedWithFlapDuringDescentMin(unittest.TestCase, NodeTest):

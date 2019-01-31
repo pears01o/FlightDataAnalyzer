@@ -172,6 +172,9 @@ class FlapOrConfigurationMaxOrMin(object):
                 scope_array.mask[a:b] = False
 
         data = []
+        # We need to repair the conflap otherwise we would create multiple
+        # KPV for the same duration that the flap was selected.
+        repair_mask(conflap.array, method='fill_start')
 
         for detent in conflap.values_mapping.values():
 
@@ -186,16 +189,17 @@ class FlapOrConfigurationMaxOrMin(object):
             if scope:
                 array.mask = np.ma.mask_or(array.mask, scope_array.mask)
 
-            # TODO: Check logical or is sensible for all values. (Probably fine
-            #       as airspeed will always be higher than max flap setting!)
-            index, value = function(array)
+            for flap_section in np.ma.clump_unmasked(array):
+                # TODO: Check logical or is sensible for all values. (Probably fine
+                #       as airspeed will always be higher than max flap setting!)
+                index, value = function(array[flap_section])
 
-            # Check we have a result to record. Note that most flap settings
-            # will not be used in the climb, hence this is normal operation.
-            if not index or not value:
-                continue
+                # Check we have a result to record. Note that most flap settings
+                # will not be used in the climb, hence this is normal operation.
+                if index is None or not value:
+                    continue
 
-            data.append((index, value, detent))
+                data.append((flap_section.start + index, value, detent))
 
         return data
 

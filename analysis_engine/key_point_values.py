@@ -5345,6 +5345,74 @@ class AltitudeDuringCruiseMin(KeyPointValueNode):
         self.create_kpvs_within_slices(alt_agl.array, cruise, min_value)
 
 
+class AltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore(KeyPointValueNode):
+    '''
+    ABO liftoff procedure demands that H175 helicopters lift into a hover
+    (10-20ft RadAlt), turn into wind if necessary, descend to <= 3ft RadAlt
+    and then apply takeoff power (later steps are disregarded).
+
+    This KPV measures the minimum RadAlt during the descent to <= 3ft RadAlt.
+    '''
+    units = ut.FT
+
+    @classmethod
+    def can_operate(cls, available, ac_type=A('Aircraft Type'),
+                    family=A('Family')):
+        return ac_type == helicopter and family and family.value == 'H175' \
+           and all_of(('Altitude Radio', 'Offshore', 'Liftoff', 'Hover',
+                    'Nose Down Attitude Adoption',
+                    'Altitude AAL For Flight Phases'), available)
+
+    def derive(self, offshores=M('Offshore'), liftoffs=KTI('Liftoff'),
+               hovers=S('Hover'), nose_downs=S('Nose Down Attitude Adoption'),
+               rad_alt=P('Altitude Radio'),
+               alt_aal=P('Altitude AAL For Flight Phases')):
+
+
+        clumped_offshores = clump_multistate(offshores.array, 'Offshore')
+        masked_alt_aal = mask_outside_slices(alt_aal.array, clumped_offshores +
+                                             hovers.get_slices())
+
+        for clump in clumped_offshores:
+
+            liftoffs_in_clump = [l.index for l in liftoffs if \
+                                 is_index_within_slice(l.index, clump)]
+
+            nose_downs_in_clump = [n.slice.start for n in nose_downs if \
+                                   is_index_within_slice(n.slice.start, clump)]
+
+            if not liftoffs_in_clump or not nose_downs_in_clump:
+                continue
+
+            rad_alt_slices = []
+
+            for idx, liftoff in enumerate(liftoffs_in_clump):
+                try:
+                    rad_alt_slices.append(slice(liftoffs_in_clump[idx],
+                                                nose_downs_in_clump[idx]))
+                except IndexError:
+                    continue
+
+            for _slice in rad_alt_slices:
+                # Diffs of reversed altitude - as we are checking backwards
+                # from the start of the nose down phase in order to find the
+                # first positive diff
+                diffs = np.ma.ediff1d(masked_alt_aal[_slice][::-1])
+
+                try:
+                    min_rad_alt_idx = _slice.stop - \
+                                      np.ma.where(diffs > 0)[0][0] - 1
+                except IndexError:
+                    # Fallback to minimum of entire slice instead of local
+                    # minimum in case of no positive diff values
+                    min_rad_alt_idx = np.ma.argmin(
+                                      mask_outside_slices(alt_aal.array,
+                                                          [_slice]))
+
+                self.create_kpv(min_rad_alt_idx,
+                                rad_alt.array[min_rad_alt_idx])
+
+
 class AltitudeRadioAtNoseDownAttitudeInitiation(KeyPointValueNode):
     '''
     Radio altitude at nose down attitude initiation.

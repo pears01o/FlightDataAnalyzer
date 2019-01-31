@@ -1455,7 +1455,7 @@ class NoseDownAttitudeAdoption(FlightPhaseNode):
     @classmethod
     def can_operate(cls, available, ac_type=A('Aircraft Type'),
                     family=A('Family')):
-        return ac_type == helicopter and family and family.value == 'H175'\
+        return ac_type == helicopter and family and family.value == 'H175' \
                and all_of(('Pitch', 'Initial Climb'), available)
 
     def derive(self, pitch=P('Pitch'), climbs=S('Initial Climb')):

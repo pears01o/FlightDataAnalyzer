@@ -5272,127 +5272,137 @@ def offset_select(mode, param_list):
     raise ValueError ("offset_select called with unrecognised mode")
 
 
-def overflow_correction(param, fast=None, max_val=8191):
+def overflow_correction(array, fast=None, hz=1):
     '''
-    Overflow Correction postprocessing procedure. Tested on Altitude Radio
-    signals where only 12 bits are used for a signal that can reach over 8000.
-
-    This function fixes the wrong values resulting from too narrow bit
-    range. The value range is extended using an algorithm similar to binary
-    overflow: we detect value changes bigger than 75% and modify the result
-    ranges.
-
-    We attempt to cater for noisy signal as well, trying to get rid of narrow
-    spikes before applying the correction.
-
-    :param param: Parameter object
-    :type param: Node
-    :param hz: Frequency of array (used for repairing gaps)
-    :type hz: float
-    :param fast: flight phases to be used to indicate points in time where the
-        value should be zero. Should be used only with altitude radio
-        parameters.
+    Overflow Correction postprocessing procedure. Used only on Altitude Radio
+    signals
+    
+    :param array: array of radio altimeter data
+    :type array: Numpy array
+    :param fast: flight phases
     :type fast: Section
-    :param max_val: Saturation value of parameter (hint: expects Unsigned
-        params)
+    :param max_val: Saturation value of parameter
     :type max_val: integer
     '''
-    array = param.array
-    hz = param.hz
-    delta = max_val * 0.75
-
-    def pin_to_ground(array, good_slices, fast_slices):
-        '''
-        Fix the altitude within given slice based on takeoff and landing
-        information.
-
-        We assume that at takeoff and landing the altitude radio is zero, so we
-        can postprocess the array accordingly.
-        '''
-        corrections = [{'slice': sl, 'correction': None} for sl in good_slices]
-
-        # pass 1: detect the corrections based on fast slices
-        for d in corrections:
-            sl = d['slice']
-            for f in fast_slices:
-                if is_index_within_slice(f.start, sl):
-                    # go_fast starts in the slice
-                    d['correction'] = array[f.start]
-                    break
-                elif is_index_within_slice(f.stop, sl):
-                    # go_fast stops in the slice
-                    d['correction'] = array[f.stop]
-                    break
-
-        # pass 2: apply the corrections using known values and masking the ones
-        # which have no correction
-        # FIXME: we probably should reuse the corrections from previous valid
-        # ones, as the range should not have changed between masked segments.
-        for d in corrections:
-            sl = d['slice']
-            correction = d['correction']
-            if correction == 0:
-                continue
-            elif correction is None:
-                array.mask[sl] = True
-            else:
-                array[sl] -= correction
-
-        return array
-
-    # remove small masks (up to 10 samples) which may be related to the
-    # overflow.
-    array = overflow_correction_array(array, hz)
-
-    if not fast and np.ma.min(array[sl]) < -delta:
-        # FIXME: fallback postprocessing: compensate for the descent
-        # starting at the overflown value
-        array[sl] += max_val
-        
+    good_slices = slices_remove_small_gaps(np.ma.clump_unmasked(array),
+                                           time_limit=30,
+                                           hz=hz)
+    for good_slice in good_slices:
+        array[good_slice] = overflow_correction_array(array[good_slice])
     if fast:
-        pin_to_ground(array, good_slices, fast.get_slices())
-
-    # reapply the original mask as it may contain genuine spikes unrelated to
-    # the overflow
-    array.mask = old_mask
+        array = pin_to_ground(array, good_slices, fast.get_slices())
     return array
 
-def overflow_correction_array(array, hz=1):
+
+def overflow_correction_array(array):
     '''
     Overflow correction based on power of two jumps only.
     '''
 
-    old_mask = array.mask.copy()
-    good_slices = slices_remove_small_gaps(np.ma.clump_unmasked(array), hz=hz)
+    old_mask = np.ma.getmaskarray(array)
+    array.mask = False
+    jump = np.ma.ediff1d(array, to_begin=0.0)
+    abs_jump = np.ma.abs(jump)
+    jump_sign = -jump / abs_jump
 
-    for sl in good_slices:
-        array.mask[sl] = False
-        jump = np.ma.ediff1d(array[sl], to_begin=0.0)
-        abs_jump = np.ma.abs(jump)
-        jump_sign = -jump / abs_jump
-
-        # Any jumps of 2048 or larger will be corrected to the nearest power of two.
-        steps = np.ma.where(abs_jump > 2**10.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
-        biggest_step_up = np.ma.max(steps)
-        biggest_step_down = np.ma.min(steps)
-        # Don't fix things that don't need fixing
-        if biggest_step_up == 0 and biggest_step_down == 0:
-            continue
-
+    # Any jumps of 2048 or larger will be corrected to the nearest power of two.
+    steps = np.ma.where(abs_jump > 2**10.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
+    biggest_step_up = np.ma.max(steps)
+    biggest_step_down = np.ma.min(steps)
+    # Only fix things that need fixing
+    if biggest_step_up or biggest_step_down:
         # Repair small masks which may be related to the overflow.
         for jump_idx in np.ma.where(steps)[0]:
-            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False
+            array.mask[jump_idx - 2: jump_idx + 2] = False
         # Compute and apply the correction
-        array[sl] += np.ma.cumsum(steps)
+        array += np.ma.cumsum(steps)
         
         # Simple check to make sure the data is not badly offset following this adjustment
-        if biggest_step_up and np.min(array[sl]) > biggest_step_up / 2:
-            array[sl] -= biggest_step_up
-        elif biggest_step_down and np.min(array[sl]) < biggest_step_down / 2:
-            array[sl] -= biggest_step_down
+        if biggest_step_up and np.min(array) > biggest_step_up / 2:
+            array -= biggest_step_up
+        elif biggest_step_down and np.min(array) < biggest_step_down / 2:
+            array -= biggest_step_down
 
-    return np.ma.array(data=array.data, mask=old_mask)
+    return array
 
+
+def pin_to_ground(array, good_slices, fast_slices):
+    '''
+    Fix the altitude within given slice based on takeoff and landing
+    information.
+
+    We assume that at takeoff and landing the altitude radio is zero, so we
+    can postprocess the array accordingly.
+    '''
+
+    def nearest_power_of_two(x):
+        power = np.rint(np.ma.log2(abs(x)))
+        if power > 8:
+            return 2**power * np.sign(x)
+        else:
+            return 0.0
+
+    corrections = [{'slice': sl, 'correction': None} for sl in good_slices]
+
+    # pass 1: detect the corrections based on fast slices
+    for d in corrections:
+        sl = d['slice']
+        for f in fast_slices:
+            if is_index_within_slice(f.start, sl):
+                # go_fast starts in the slice
+                d['correction'] = nearest_power_of_two(array[f.start])
+                break
+            elif is_index_within_slice(f.stop, sl):
+                # go_fast stops in the slice
+                d['correction'] = nearest_power_of_two(array[f.stop])
+                break
+
+
+    # pass 1.5: Extend the corrections from previous valid ones, as the 
+    # range will probably not have changed between masked segments
+    while [d for d in corrections if d['correction'] == None]:
+        for n, d in enumerate(corrections):
+            # Work out the closest useful correction to apply
+            d['next'] = None
+            if d['correction'] == None:
+                if n > 0:
+                    pre = corrections[n-1]['correction']
+                else:
+                    pre = None
+                if n < len(corrections) - 1:
+                    post = corrections[n+1]['correction']
+                else:
+                    post = None
+                if pre and post:
+                    before = corrections[n]['slice'].start - corrections[n-1]['slice'].stop
+                    after = corrections[n+1]['slice'].start - corrections[n]['slice'].stop
+                    if before < after:
+                        d['next'] = pre
+                    else:
+                        d['next'] = post
+                elif pre != None:
+                    d['next'] = pre
+                elif post != None:
+                    d['next'] = post
+            else:
+                d['next'] = d['correction']
+        # Having completed a scan, copy the results across
+        for d in corrections:
+            d['correction'] = d['next']
+    
+    # pass 2: apply the corrections using known values and masking the ones
+    # which have no correction
+    for d in corrections:
+        sl = d['slice']
+        correction = d['correction']
+        if correction == 0:
+            continue
+        elif correction is None:
+            array.mask[sl] = True
+        else:
+            array[sl] -= correction
+
+    return array
 
 def peak_curvature(array, _slice=slice(None), curve_sense='Concave',
                    gap = TRUCK_OR_TRAILER_INTERVAL,

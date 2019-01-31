@@ -4823,11 +4823,11 @@ class TestOverflowCorrection(unittest.TestCase):
                         Section('Fast', slice(5859, 11520), 5859, 11520)])
         radioA = load(os.path.join(
             test_data_path, 'A320_Altitude_Radio_A_overflow.nod'))
-        resA = overflow_correction(radioA, fast, max_val=4095)
+        resA = overflow_correction(radioA.array, fast)
         sects = np.ma.clump_unmasked(resA)
-        self.assertEqual(len(sects), 5)
-        self.assertEqual(resA.max(), 8191)
-        self.assertEqual(resA.min(), -1)
+        self.assertEqual(len(sects), 4)
+        self.assertEqual(resA.max(), 8192)
+        self.assertEqual(resA.min(), -2)
         ##for sect in sects[0::2]:
             ### takeoffs
             ##self.assertAlmostEqual(resA[sect.start] / 10., 0, 0)
@@ -4837,10 +4837,10 @@ class TestOverflowCorrection(unittest.TestCase):
 
         radioB = load(os.path.join(
             test_data_path, 'A320_Altitude_Radio_B_overflow.nod'))
-        resB = overflow_correction(radioB, max_val=4095)
+        resB = overflow_correction(radioB.array)
         sects = np.ma.clump_unmasked(resB)
-        self.assertEqual(len(sects), 5)
-        self.assertEqual(resB.max(), 5917)
+        self.assertEqual(len(sects), 4)
+        self.assertEqual(resB.max(), 5918)
         self.assertEqual(resB.min(), -2)
         ##for sect in sects[0::2]:
             ### takeoffs
@@ -4853,12 +4853,12 @@ class TestOverflowCorrection(unittest.TestCase):
         fast = S(items=[Section('Fast', slice(2000, 6500), 2000, 6500)])
         radioA = load(os.path.join(
             test_data_path, 'A340_Altitude_Radio_A_overflow.nod'))
-        resA = overflow_correction(radioA, fast, max_val=4095)
+        resA = overflow_correction(radioA.array, fast)
         sects = np.ma.clump_unmasked(resA)
         # 1 section for climb, one for descent
         self.assertEqual(len(sects), 2)
-        self.assertEqual(resA.max(), 7852)
-        self.assertEqual(resA.min(), -2)
+        self.assertEqual(resA.max(), 7855)
+        self.assertEqual(resA.min(), 0)
         ##for sect in sects[0::2]:
             ### takeoffs
             ##self.assertAlmostEqual(resA[sect.start] / 10., 0, 0)
@@ -4868,12 +4868,12 @@ class TestOverflowCorrection(unittest.TestCase):
 
         radioB = load(os.path.join(
             test_data_path, 'A340_Altitude_Radio_B_overflow.nod'))
-        resB = overflow_correction(radioB, fast, max_val=4095)
+        resB = overflow_correction(radioB.array, fast)
         sects = np.ma.clump_unmasked(resB)
         # 1 section for climb, one for descent
         self.assertEqual(len(sects), 2)
-        self.assertEqual(resB.max(), 7841)
-        self.assertEqual(resB.min(), -2)
+        self.assertEqual(resB.max(), 7844)
+        self.assertEqual(resB.min(), 0)
         ##for sect in sects[0::2]:
             ### takeoffs
             ##self.assertAlmostEqual(resB[sect.start] / 10., 0, 0)
@@ -4881,7 +4881,34 @@ class TestOverflowCorrection(unittest.TestCase):
             ### landings
             ##self.assertAlmostEqual(resB[sect.stop - 1] / 10., 0, 0)
 
-
+class TestPinToGround(unittest.TestCase):
+    '''
+    Revised version of pin to ground which only corrects power of two errors, not 
+    small values which are best resolved by Altitude Radio Offset Removed.
+    '''
+    def setUp(self):
+        self.fast_slices = [slice(3, 15)]
+        self.good_slices = [slice(1, 13)]
+        
+    def test_basic(self):
+        array = np.ma.array(data = [4100]*5 + range(4100, 5100, 100),
+                            mask = [1] + [0]*12 + [1]*2)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices)
+        self.assertEqual(result[2], 4)
+        
+    def test_negative(self):
+        array = np.ma.array(data = [-4100]*5 + range(-4100, -3000, 100),
+                            mask = [1] + [0]*12 + [1]*3)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices)
+        self.assertEqual(result[2], -4)
+        
+    def test_small_powers(self):
+        array = np.ma.array(data = [4]*5 + range(5, 15),
+                            mask = [1] + [0]*12 + [1]*2)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices)
+        self.assertEqual(result[2], 4)
+        
+        
 class TestPeakCurvature(unittest.TestCase):
     # Also known as the "Truck and Trailer" algorithm, this detects the peak
     # curvature point in an array.

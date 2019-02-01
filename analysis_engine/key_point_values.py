@@ -69,6 +69,7 @@ from analysis_engine.library import (ambiguous_runway,
                                      integrate,
                                      is_index_within_slice,
                                      is_index_within_slices,
+                                     is_slice_within_slice,
                                      lookup_table,
                                      nearest_neighbour_mask_repair,
                                      mask_inside_slices,
@@ -19990,11 +19991,17 @@ class TurbulenceDuringFlightMax(KeyPointValueNode):
 
     def derive(self,
                turbulence=P('Turbulence'),
-               airborne=S('Airborne')):
+               airborne=S('Airborne'),
+               apps=S('Approach')):
+
         for air in airborne.get_slices():
-            # Restrict airborne a little to ensure doesn't trigger at touchdown
+            # Restrict airborne from 5 sec after airborne to the end of the
+            # last approach (50 Ft Descending) to ensure we don't capture
+            # liftoff, flare or touchdown
+            last_app = [app for app in apps.get_slices()
+                        if is_slice_within_slice(app, air)][-1]
             self.create_kpvs_within_slices(
-                turbulence.array, [slice(air.start + 5, air.stop - 5)], max_value)
+                turbulence.array, [slice(air.start + 5, last_app.stop)], max_value)
 
 
 ##############################################################################

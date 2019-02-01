@@ -1072,6 +1072,11 @@ class AltitudeRadio(DerivedParameterNode):
     align = False
     units = ut.FT
 
+    @classmethod
+    def can_operate(cls, available):
+        alt_rads = [n for n in cls.get_dependency_names() if n.startswith('Altitude Radio')]
+        return 'Fast' in available and any_of(alt_rads, available)
+    
     def derive(self,
                source_A=P('Altitude Radio (A)'),
                source_B=P('Altitude Radio (B)'),

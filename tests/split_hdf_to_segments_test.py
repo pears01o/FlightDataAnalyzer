@@ -32,6 +32,10 @@ test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 this_year = datetime.now().year
 
 
+def load_array(filename):
+    return load_compressed(os.path.join(test_data_path, filename))
+
+
 class MockHDF(dict):
     def __init__(self, data={}, duration=1):
         self.update(data)
@@ -59,11 +63,11 @@ class TestDateTimeFunctions(unittest.TestCase):
         hdf = mocked_hdf()('slow')
         dt = datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc)
         # test no change
-        new_dt = calculate_fallback_dt(hdf, datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), 
+        new_dt = calculate_fallback_dt(hdf, datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc),
                                        datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), True)
         self.assertEqual(new_dt, dt)
         # test 50 seconds (duration) earlier as relative to end
-        new_dt = calculate_fallback_dt(hdf, datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), 
+        new_dt = calculate_fallback_dt(hdf, datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc),
                                        datetime(2012, 12, 12, 12, 13, 2, tzinfo=pytz.utc), False)
         expected_dt = datetime(2012, 12, 12, 12, 12, 12, tzinfo=pytz.utc)
         self.assertEqual(new_dt, expected_dt)
@@ -526,12 +530,9 @@ class TestSplitSegments(unittest.TestCase):
         hdf.reliable_frame_counter = False
 
         arrays = {
-            'Eng (1) N1': load_compressed(os.path.join(
-                test_data_path, 'split_segments_eng_1_n1_slowslice.npz')),
-            'Eng (2) N1': load_compressed(os.path.join(
-                test_data_path, 'split_segments_eng_2_n1_slowslice.npz')),
-            'Groundspeed': load_compressed(os.path.join(
-                test_data_path, 'split_segments_groundspeed_slowslice.npz'))
+            'Eng (1) N1': load_array('split_segments_eng_1_n1_slowslice.npz'),
+            'Eng (2) N1': load_array('split_segments_eng_2_n1_slowslice.npz'),
+            'Groundspeed': load_array('split_segments_groundspeed_slowslice.npz'),
         }
 
         def hdf_getitem(self, key, **kwargs):
@@ -556,8 +557,7 @@ class mocked_hdf(object):
         if path == 'slow':
             self.airspeed = np.ma.arange(10, 20).repeat(5)
         else:
-            self.airspeed = np.ma.array(
-                load_compressed(os.path.join(test_data_path, 'airspeed_sample.npz')))
+            self.airspeed = np.ma.array(load_array('airspeed_sample.npz'))
         self.duration = len(self.airspeed)
         return self
 
@@ -818,19 +818,19 @@ class TestSegmentInfo(unittest.TestCase):
 
 
 class TestSegmentTypeAndSlice(unittest.TestCase):
-    
+
     def test_segment_type_and_slice_1(self):
         # Unmasked fast Airspeed at the beginning of the data which is difficult
         # to validate should be ignored in segment type identification.
-        speed_array = load_compressed(os.path.join(test_data_path, 'segment_type_and_slice_1_speed.npz'))
-        heading_array = load_compressed(os.path.join(test_data_path, 'segment_type_and_slice_1_heading.npz'))
-        eng_arrays = load_compressed(os.path.join(test_data_path, 'segment_type_and_slice_1_eng_arrays.npz'))
+        speed_array = load_array('segment_type_and_slice_1_speed.npz')
+        heading_array = load_array('segment_type_and_slice_1_heading.npz')
+        eng_arrays = load_array('segment_type_and_slice_1_eng_arrays.npz')
         aircraft_info = {'Aircraft Type': 'aeroplane'}
         thresholds = {'hash_min_samples': 64, 'speed_threshold': 80, 'min_split_duration': 100, 'min_duration': 180}
         hdf = mock.Mock()
         hdf.superframe_present = False
         segment_type, segment, array_start_secs = _segment_type_and_slice(
-            speed_array, 1, heading_array, 1, 0, 11824, eng_arrays, 
+            speed_array, 1, heading_array, 1, 0, 11824, eng_arrays,
             aircraft_info, thresholds, hdf)
         self.assertEqual(segment_type, 'START_AND_STOP')
         self.assertEqual(segment, slice(0, 11824))
@@ -838,21 +838,41 @@ class TestSegmentTypeAndSlice(unittest.TestCase):
 
     def test_segment_type_and_slice_2(self):
         # Gear on Ground is used instead of Eng (1) Nr
-        speed_array = load_compressed(os.path.join(test_data_path, 'segment_type_and_slice_2_speed.npz'))
-        heading_array = load_compressed(os.path.join(test_data_path, 'segment_type_and_slice_2_heading.npz'))
-        eng_arrays = load_compressed(os.path.join(test_data_path, 'segment_type_and_slice_2_eng_arrays.npz'))
+        speed_array = load_array('segment_type_and_slice_2_speed.npz')
+        heading_array = load_array('segment_type_and_slice_2_heading.npz')
+        eng_arrays = load_array('segment_type_and_slice_2_eng_arrays.npz')
         aircraft_info = {'Aircraft Type': 'helicopter'}
         thresholds = {'hash_min_samples': 64, 'speed_threshold': 90, 'min_split_duration': 100, 'min_duration': 180}
         def get(key):
-            array = load_compressed(os.path.join(
-                test_data_path, 'segment_type_and_slice_2_gog.npz'))
-            return Parameter('Gear on Ground', array=array)
+            if key == 'Gear On Ground':
+                return Parameter('Gear on Ground', array=load_array('segment_type_and_slice_2_gog.npz'))
         hdf = mock.MagicMock()
         hdf.get.side_effect = get
         hdf.superframe_present = False
         segment_type, segment, array_start_secs = _segment_type_and_slice(
-            speed_array, 1, heading_array, 1, 0, 5736, eng_arrays, 
+            speed_array, 1, heading_array, 1, 0, 5736, eng_arrays,
             aircraft_info, thresholds, hdf)
         self.assertEqual(segment_type, 'START_AND_STOP')
         self.assertEqual(segment, slice(0, 5736))
         self.assertEqual(array_start_secs, 0)
+
+    def test_segment_type_and_slice_3(self):
+        # Gear on Ground is used instead of Eng (1) Nr
+        speed_array = load_array('segment_type_and_slice_3_speed.npz')
+        heading_array = load_array('segment_type_and_slice_3_heading.npz')
+        eng_arrays = load_array('segment_type_and_slice_3_eng_arrays.npz')
+        aircraft_info = {'Aircraft Type': 'helicopter'}
+        thresholds = {'hash_min_samples': 64, 'speed_threshold': 90, 'min_split_duration': 100, 'min_duration': 180}
+        def get(key):
+            if key == 'Collective':
+                return Parameter(key, array=load_array('segment_type_and_slice_3_collective.npz'), frequency=8.)
+        hdf = mock.MagicMock()
+        hdf.get.side_effect = get
+        hdf.superframe_present = False
+        segment_type, segment, array_start_secs = _segment_type_and_slice(
+            speed_array, 1, heading_array, 2, 0, 5560, eng_arrays,
+            aircraft_info, thresholds, hdf)
+        self.assertEqual(segment_type, 'START_AND_STOP')
+        self.assertEqual(segment, slice(0, 5560))
+        self.assertEqual(array_start_secs, 0)
+

@@ -117,7 +117,6 @@ def _segment_type_and_slice(speed_array, speed_frequency,
     heading_stop = stop * heading_frequency
     heading_array = heading_array[heading_start:heading_stop]
 
-
     # remove small gaps between valid data, e.g. brief data spikes
     unmasked_slices = slices_remove_small_gaps(
         np.ma.clump_unmasked(speed_array), 2, speed_frequency)
@@ -148,7 +147,7 @@ def _segment_type_and_slice(speed_array, speed_frequency,
     # Find out if the aircraft moved
     if aircraft_info and aircraft_info['Aircraft Type'] == 'helicopter':
         # if any gear params use them
-        gog = next(iter([hdf.get(name) for name in ('Gear On Ground', 'Gear (R) On Ground', 'Gear (L) On Ground')]))
+        gog = next((p for p in (hdf.get(n) for n in ('Gear On Ground', 'Gear (R) On Ground', 'Gear (L) On Ground')) if p), None)
         if gog:
             gog_start_idx = start * gog.frequency
             gog_stop_idx = stop * gog.frequency
@@ -176,25 +175,41 @@ def _segment_type_and_slice(speed_array, speed_frequency,
 
         # Test the collective. If the collective is below the COLLECTIVE_ON_GROUND_THRESHOLD
         # then the helicopter is likely be on the ground and we can test for slow_start and slow_stop.
-        col = next(iter([hdf.get(name) for name in ('Collective', 'Collective (1)', 'Collective (2)')]))
+        col = next((p for p in (hdf.get(n) for n in ('Collective', 'Collective (1)', 'Collective (2)')) if p), None)
         if col:
-            if unmasked_slices:
+            col_window_sample = 120 * col.frequency
+            col_min_sample = 4 * col.frequency
+            speedy = np.ma.where(speed_array[speed_start:speed_stop] > thresholds['speed_threshold'])[0]
+            if len(speedy):
+                col_start = (speed_start + speedy[0]) * (col.frequency / speed_frequency)
+                col_stop = (speed_start + speedy[-1]) * (col.frequency / speed_frequency)
+                try:  # shift start backwards to earlier low Collective value
+                    col_start = col_start - col_window_sample + \
+                        np.ma.where(col.array[col_start - col_window_sample:col_start])[0][0]
+                except IndexError:
+                    pass
+                try: # shift stop forwards to later low Collective value
+                    col_stop = col_stop + \
+                        np.ma.where(col.array[col_stop:col_stop + col_window_sample])[0][0]
+                except IndexError:
+                    pass
+            elif unmasked_slices:
                 # With some of the pre-split data, the collective appears to be padded
                 # starting and finishing inside the speed_array.
                 # Use unmasked speed slices as the start/end indices for collective window
-                col_start_idx = unmasked_slices[0].start/speed_frequency * col.frequency
-                col_stop_idx = (unmasked_slices[-1].stop-1)/speed_frequency * col.frequency
+                col_start = unmasked_slices[0].start * (col.frequency / speed_frequency)
+                col_stop = (unmasked_slices[-1].stop - 1) * (col.frequency / speed_frequency)
             else:
-                col_start_idx = start * col.frequency
-                col_stop_idx = stop * col.frequency
-            col_window_sample = 120 * col.frequency
-            col_min_sample = 4 * col.frequency
+                col_start = start * col.frequency
+                col_stop = stop * col.frequency
+
+
             col_start_slice = runs_of_ones(
-                col.array[col_start_idx:col_start_idx+col_window_sample] < settings.COLLECTIVE_ON_GROUND_THRESHOLD,
+                col.array[col_start:col_start+col_window_sample] < settings.COLLECTIVE_ON_GROUND_THRESHOLD,
                 min_samples=col_min_sample
             )
             col_stop_slice = runs_of_ones(
-                col.array[col_stop_idx-col_window_sample:col_stop_idx] < settings.COLLECTIVE_ON_GROUND_THRESHOLD,
+                col.array[col_stop-col_window_sample:col_stop] < settings.COLLECTIVE_ON_GROUND_THRESHOLD,
                 min_samples=col_min_sample
             )
             slow_start = True if col_start_slice else False
@@ -557,12 +572,12 @@ def split_segments(hdf, aircraft_info):
 
     # suppress transient changes in speed around 80 kts
     slow_slices = slices_remove_small_slices(np.ma.clump_masked(slow_array), 10, speed.frequency)
-    
+
     # Skip dropouts in HDF5 files (first identified on H175 helicopter)
     frame_count = hdf.get('FDRS Frame Counter')
     if frame_count:
         drops = np.ma.clump_masked(np.ma.where(frame_count.array == 0.0, np.ma.masked, 1.0)) # 1.0 is any value that's not masked
-        dropouts = slices_multiply(slices_remove_small_gaps(drops, hz=frame_count.frequency), 
+        dropouts = slices_multiply(slices_remove_small_gaps(drops, hz=frame_count.frequency),
                                    speed.frequency / frame_count.frequency)
         slow_slices = slices_and_not(slow_slices, dropouts)
 
@@ -807,7 +822,7 @@ def get_dt_arrays(hdf, fallback_dt, validation_dt):
                 dt_arrays.append(array)
                 dt_parameter_origin[name]=PRECISE # parameter is good
                 continue
-            
+
         if fallback_dt:
             precise = False
             array = [getattr(dt, name.lower()) for dt in fallback_dts]
@@ -904,13 +919,13 @@ def _calculate_start_datetime(hdf, fallback_dt, validation_dt):
                 fallback_dt.tzinfo.utcoffset(fallback_dt) is None):
             # Assume fallback_dt is UTC
             fallback_dt = fallback_dt.replace(tzinfo=pytz.utc)
-        
+
         # Even if fallback_dt is UTC, there's a chance that the timezone was
         # wrong, so if we're still in the future, let's see if it's less than
         # 12 hours, and if it is, try to fix it
         if fallback_dt >= now and (fallback_dt - now).seconds/3600 < 12:
             fallback_dt -= fallback_dt - now
-        
+
         assert fallback_dt <= now, (
             "Fallback time '%s' in the future is not allowed. Current time "
             "is '%s'." % (fallback_dt, now))

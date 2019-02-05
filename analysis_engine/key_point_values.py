@@ -19995,13 +19995,21 @@ class TurbulenceDuringFlightMax(KeyPointValueNode):
                apps=S('Approach')):
 
         for air in airborne.get_slices():
-            # Restrict airborne from 5 sec after airborne to the end of the
+            # Restrict Airborne from 5 sec after airborne to the end of the
             # last approach (50 Ft Descending) to ensure we don't capture
             # liftoff, flare or touchdown
-            last_app = [app for app in apps.get_slices()
-                        if is_slice_within_slice(app, air)][-1]
+            this_airborne_app = [app for app in apps.get_slices()
+                                 if is_slice_within_slice(app, air)]
+            if this_airborne_app:
+                last_app = this_airborne_app[-1]
+                stop = last_app.stop
+            else:
+                # No Approach in this Airborne section
+                # Probably missing the end of this flight...
+                stop = air.stop
+
             self.create_kpvs_within_slices(
-                turbulence.array, [slice(air.start + 5, last_app.stop)], max_value)
+                turbulence.array, [slice(air.start + 5, stop)], max_value)
 
 
 ##############################################################################

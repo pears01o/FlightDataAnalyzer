@@ -24302,6 +24302,21 @@ class TestTurbulenceDuringFlightMax(unittest.TestCase, NodeTest):
         self.assertEqual(node[1].index, 27)
         self.assertEqual(node[1].value, 3)
 
+    def test_derive_missing_approach(self):
+        array = np.ma.arange(30)
+        turb = P('Turbulence', array=array)
+        # Missing app for second Airborne section
+        apps = buildsections('Approach', [10, 13], [15, 18])
+        node = self.node_class()
+
+        node.derive(turb, self.airborne, apps)
+
+        self.assertEqual(len(node), 2)
+        self.assertEqual(node[0].index, 17)
+        self.assertEqual(node[0].value, 17)
+        self.assertEqual(node[1].index, 29)
+        self.assertEqual(node[1].value, 29)
+
 
 ##############################################################################
 # Wind

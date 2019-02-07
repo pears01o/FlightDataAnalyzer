@@ -5295,10 +5295,15 @@ def offset_select(mode, param_list):
     raise ValueError ("offset_select called with unrecognised mode")
 
 
-def overflow_correction(array, fast=None, hz=1):
+def overflow_correction(array, fast=None, hz=1, fid='test_'):
     '''
     Overflow Correction postprocessing procedure. Used only on Altitude Radio
-    signals
+    signals.
+
+    When called from data validation, the fast slice is not established whereas
+    when called from derived parameters we are able to fix the data to ground
+    levels at the beginning and end of flight. Hence the two alternative uses
+    for this routine.
     
     :param array: array of radio altimeter data
     :type array: Numpy array
@@ -5308,43 +5313,60 @@ def overflow_correction(array, fast=None, hz=1):
     :type max_val: integer
     '''
     good_slices = slices_remove_small_gaps(np.ma.clump_unmasked(array),
-                                           time_limit=30,
-                                           hz=hz)
-    for good_slice in good_slices:
-        array[good_slice] = overflow_correction_array(array[good_slice])
+                                           time_limit=10,
+                                           hz=hz)    
     if fast:
-        array = pin_to_ground(array, good_slices, fast.get_slices())
+        array = pin_to_ground(array, good_slices, fast.get_slices(), hz, fid=fid)
+    else:
+        for good_slice in good_slices:
+            array[good_slice] = overflow_correction_array(array[good_slice])
+            
     return array
 
 
-def overflow_correction_array(array):
+def overflow_correction_array(array, delta=None):
     '''
     Overflow correction based on power of two jumps only.
     '''
-
-    old_mask = np.ma.getmaskarray(array)
     array.mask = False
     jump = np.ma.ediff1d(array, to_begin=0.0)
     abs_jump = np.ma.abs(jump)
     jump_sign = -jump / abs_jump
 
-    # Any jumps of 2048 or larger will be corrected to the nearest power of two.
-    steps = np.ma.where(abs_jump > 2**10.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
+    # We look for large jumps
+    if delta:
+        # In parameter conversion we know the overflow jump, delta, that we are trying to correct
+        steps = np.ma.where(abs_jump > delta * 0.75, np.rint(abs_jump / delta) * delta * jump_sign, 0)
+    else:
+        # In validation we can look for smaller, but still significant, jumps which are below the
+        # size of the ARINC 429 NCD signal.
+        steps = np.ma.where(abs_jump > 2**9.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
+            
     biggest_step_up = np.ma.max(steps)
     biggest_step_down = np.ma.min(steps)
     # Only fix things that need fixing
     if biggest_step_up or biggest_step_down:
-        # Repair small masks which may be related to the overflow.
-        for jump_idx in np.ma.where(steps)[0]:
-            array.mask[jump_idx - 2: jump_idx + 2] = False
+        # If the data before the first jump or after the last jump is constant, mask this out
+        # and skip that step.
+        steplist = np.ma.nonzero(steps)[0].tolist()
+        if not jump[:steplist[0]].any():
+            array.mask[:steplist[0]] = True
+            steps[steplist[0]] = 0.0
+        if not jump[steplist[-1] + 1:].any():
+            array.mask[steplist[-1]:] = True
+            steps[steplist[-1]] = 0.0
         # Compute and apply the correction
         array += np.ma.cumsum(steps)
-        
-        # Simple check to make sure the data is not badly offset following this adjustment
-        if biggest_step_up and np.min(array) > biggest_step_up / 2:
-            array -= biggest_step_up
-        elif biggest_step_down and np.min(array) < biggest_step_down / 2:
-            array -= biggest_step_down
+     
+
+    
+    # Simple check to make sure the lowest value is close to zero
+    # following this adjustment.
+    min_rad_alt = 20
+    if np.min(array) < min_rad_alt:
+        delta = 1024.0 * int(np.min(array) / 1024)
+        if delta:
+            array -= delta
 
     return array
 

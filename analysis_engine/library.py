@@ -5371,21 +5371,24 @@ def overflow_correction_array(array, delta=None):
     return array
 
 
-def pin_to_ground(array, good_slices, fast_slices):
+def pin_to_ground(array, good_slices, fast_slices, hz=1.0, delta=1024.0, fid='test'):
     '''
     Fix the altitude within given slice based on takeoff and landing
     information.
 
-    We assume that at takeoff and landing the altitude radio is zero, so we
-    can postprocess the array accordingly.
+    We assume that at takeoff and landing the altitude radio is close 
+    to zero, so we can postprocess the array accordingly.
     '''
-
-    def nearest_power_of_two(x):
-        power = np.rint(np.ma.log2(abs(x)))
-        if power > 8:
-            return 2**power * np.sign(x)
+    def nearest_step(x):
+        multiple = np.rint(abs(x) / float(delta))
+        if multiple:
+            return multiple * delta * np.sign(x)
         else:
             return 0.0
+
+    def todo(d):
+        return [d for d in corrections if d['correction'] == None]
+
 
     corrections = [{'slice': sl, 'correction': None} for sl in good_slices]
 
@@ -5395,16 +5398,40 @@ def pin_to_ground(array, good_slices, fast_slices):
         for f in fast_slices:
             if is_index_within_slice(f.start, sl):
                 # go_fast starts in the slice
-                d['correction'] = nearest_power_of_two(array[f.start])
+                d['correction'] = nearest_step(array[f.start])
                 break
             elif is_index_within_slice(f.stop, sl):
                 # go_fast stops in the slice
-                d['correction'] = nearest_power_of_two(array[f.stop])
+                d['correction'] = nearest_step(array[f.stop])
                 break
+            elif is_index_within_slice(sl.start, f):
                 # For in-flight slices, be ready to suppress short bursts
                 if slice_duration(sl, hz) < ALTITUDE_RADIO_OVERFLY_SUPPRESSION:
                     d['correction'] = 'suppress'
+        # Bring data outside the fast phase down to zero
+        if d['slice'].stop < fast_slices[0].start:
+            d['correction'] = nearest_step(np.ma.average(array[d['slice']]))
+        if d['slice'].start > fast_slices[-1].stop:
+            d['correction'] = nearest_step(np.ma.average(array[d['slice']]))
+            
 
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=[14, 10])
+    plt.plot(array.data, linewidth = 1, color='b')
+    plt.plot(array, linewidth=2, color='r')
+    for n, d in enumerate(corrections):
+        text = ' ' + str(d['slice'].start) + ' > ' \
+            + str(d['slice'].stop) + ' = ' \
+            + str(d['correction']) + ' & ' \
+            + str(int(rms_noise(array[d['slice']]) or 0))
+        plt.text(0, n*1000 + 300, text)
+    plt.title(fid, fontsize='x-small')
+    plt.savefig('C:\\Temp\\alt_plots\\' + fid)
+    plt.clf()
+    plt.close()
+
+    # Remove suppressed segments
+    corrections =  [d for d in corrections if d['correction'] != 'suppress']
 
     # pass 1.5: Extend the corrections from previous valid ones, as the 
     # range will probably not have changed between masked segments
@@ -5447,15 +5474,18 @@ def pin_to_ground(array, good_slices, fast_slices):
     
     # pass 2: apply the corrections using known values and masking the ones
     # which have no correction
+    
+    array.mask = True
     for d in corrections:
         if d['correction'] == 'suppress':
             continue
         sl = d['slice']
+        array.mask[sl] = False
         correction = d['correction']
-        if correction == 0:
+        if correction == 0.0:
             continue
         elif correction is None:
-            array.mask[sl] = True
+            raise ValueError('pin_to_gound failed to compute usecorrections')
         else:
             array[sl] -= correction
 

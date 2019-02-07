@@ -4890,32 +4890,60 @@ class TestOverflowCorrection(unittest.TestCase):
 
 class TestPinToGround(unittest.TestCase):
     '''
-    Revised version of pin to ground which only corrects power of two errors, not 
-    small values which are best resolved by Altitude Radio Offset Removed.
+    Revised version of pin to ground which only corrects multiples of the 
+    overflow threshold, not small values which are best resolved by 
+    Altitude Radio Offset Removed.
     '''
     def setUp(self):
         self.fast_slices = [slice(3, 15)]
         self.good_slices = [slice(1, 13)]
+        self.hz = 1.0
         
     def test_basic(self):
         array = np.ma.array(data = [4100]*5 + range(4100, 5100, 100),
                             mask = [1] + [0]*12 + [1]*2)
-        result = pin_to_ground(array, self.good_slices, self.fast_slices)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
         self.assertEqual(result[2], 4)
         
     def test_negative(self):
         array = np.ma.array(data = [-4100]*5 + range(-4100, -3000, 100),
                             mask = [1] + [0]*12 + [1]*3)
-        result = pin_to_ground(array, self.good_slices, self.fast_slices)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
         self.assertEqual(result[2], -4)
         
     def test_small_powers(self):
         array = np.ma.array(data = [4]*5 + range(5, 15),
                             mask = [1] + [0]*12 + [1]*2)
-        result = pin_to_ground(array, self.good_slices, self.fast_slices)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
         self.assertEqual(result[2], 4)
+    
+    def test_short_slice_masked(self):
+        array = np.ma.array(data = [4]*5 + range(5, 15))
+        result = pin_to_ground(array, [slice(10, 13)], self.fast_slices, self.hz)
+        self.assertEqual(result[11].mask, True)
         
-        
+    def test_spreading_corrections(self):
+        '''
+        This checks that corrections of 1024 and 2048 ft are propagated forwards
+        and backwards, and that the "middle" value is taken from the closest in time.
+        '''
+        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10)
+        my_fast_slices = [slice(12, 52)]
+        my_good_slices = [slice(1,5), slice(10,15), slice(20,24), slice(31,35), slice(40,45), slice(50,55), slice(60,65)]
+        result = pin_to_ground(array, my_good_slices, my_fast_slices, hz=0.1, delta=1024)
+        self.assertEqual(list(result[2::10]), [0, -24, 976, 1952, 952, -48, -24])
+
+    def test_avoid_infinite_loop(self):
+        '''
+        An error in coding led to an infinite loop condition which this test detects
+        by making all the slices so short they are suppressed.
+        '''
+        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10)
+        my_fast_slices = [slice(12, 52)]
+        my_good_slices = [slice(20,24), slice(31,35), slice(40,45)]
+        result = pin_to_ground(array, my_good_slices, my_fast_slices, hz=1.0, delta=1024)
+        self.assertEqual(list(result[2::10]), [0, -24, 976, 1952, 952, -48, -24])
+
 class TestPeakCurvature(unittest.TestCase):
     # Also known as the "Truck and Trailer" algorithm, this detects the peak
     # curvature point in an array.

@@ -35,6 +35,7 @@ from analysis_engine.library import (
     slices_below,
     slices_between,
     slices_from_to,
+    slices_int,
     slices_remove_small_gaps,
     value_at_index,
     value_at_time,
@@ -929,7 +930,7 @@ class MultistateDerivedParameterNode(DerivedParameterNode):
                     #int_array = value.astype(int)
                 #except ValueError:
                     ## could not convert, therefore likely to be strings inside
-            if value.dtype.type in (np.string_, np.object_):
+            if value.dtype.type in (np.str_, np.string_, np.object_):
                 # Array contains strings, convert to ints with mapping.
                 value = multistate_string_to_integer(value, self.values_mapping)
             value = MappedArray(value, values_mapping=self.values_mapping)
@@ -1987,7 +1988,7 @@ class KeyPointValueNode(FormattedNameNode):
         if not all(s.step in (1, None) for s in slices):
             raise ValueError('Slices must have a step of 1 in '
                              'create_kpv_from_slices.')
-        arrays = [array[s] for s in slices]
+        arrays = [array[s] for s in slices_int(slices)]
         # Trap for empty arrays or no slices to scan.
         if not arrays:
             return
@@ -2004,7 +2005,7 @@ class KeyPointValueNode(FormattedNameNode):
                 index += start
                 break
             index -= duration
-        if kwargs.has_key('mode') and kwargs['mode'] == 'compass':
+        if 'mode' in kwargs and kwargs['mode'] == 'compass':
             value = value%360.0
             kwargs.pop('mode')
         self.create_kpv(index, value, **kwargs)
@@ -2175,7 +2176,7 @@ class KeyPointValueNode(FormattedNameNode):
             # Handle slices and phases with slice attributes
             slices = [getattr(p, 'slice', p) for p in phase]
 
-        for _slice in slices:
+        for _slice in slices_int(slices):
             start = _slice.start or 0
             if _slice.stop is not None and _slice.stop == _slice.start:
                 continue # e.g. if section is aligned to lower frequency
@@ -2480,7 +2481,7 @@ class NodeManager(object):
         :rtype: list of str
         """
         return sorted(list(set(['HDF Duration']
-                               + self.hdf_keys
+                               + list(self.hdf_keys)
                                + list(self.derived_nodes.keys())
                                + list(self.aircraft_info.keys())
                                + list(self.achieved_flight_record.keys())
@@ -2615,6 +2616,12 @@ class Attribute(object):
         '''
         '''
         if self.name == other.name:
+            # https://stackoverflow.com/a/29916765 to mimic python 2 behaivor
+            if isinstance(self.value, dict) and isinstance(other.value, dict):
+                a, b = self.value, other.value
+                return (len(a) < len(b) or
+                        (len(a) == len(b) and
+                         sorted(a.items()) < sorted(b.items())))
             return self.value < other.value
         else:
             return self.name < other.name

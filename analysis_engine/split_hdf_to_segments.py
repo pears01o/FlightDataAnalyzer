@@ -24,8 +24,10 @@ from analysis_engine.library import (align,
                                      normalise,
                                      repair_mask,
                                      rate_of_change,
+                                     py2round,
                                      runs_of_ones,
                                      slices_and_not,
+                                     slices_int,
                                      slices_multiply,
                                      slices_of_runs,
                                      slices_remove_small_gaps,
@@ -109,12 +111,12 @@ def _segment_type_and_slice(speed_array, speed_frequency,
     * 'MID_FLIGHT'
     """
 
-    speed_start = start * speed_frequency
-    speed_stop = stop * speed_frequency
+    speed_start = int(start * speed_frequency)
+    speed_stop = int(stop * speed_frequency)
     speed_array = speed_array[speed_start:speed_stop]
 
-    heading_start = start * heading_frequency
-    heading_stop = stop * heading_frequency
+    heading_start = int(start * heading_frequency)
+    heading_stop = int(stop * heading_frequency)
     heading_array = heading_array[heading_start:heading_stop]
 
     # remove small gaps between valid data, e.g. brief data spikes
@@ -149,9 +151,9 @@ def _segment_type_and_slice(speed_array, speed_frequency,
         # if any gear params use them
         gog = next((p for p in (hdf.get(n) for n in ('Gear On Ground', 'Gear (R) On Ground', 'Gear (L) On Ground')) if p), None)
         if gog:
-            gog_start_idx = start * gog.frequency
-            gog_stop_idx = stop * gog.frequency
-            gog_window_samples = 120 * gog.frequency
+            gog_start_idx = int(start * gog.frequency)
+            gog_stop_idx = int(stop * gog.frequency)
+            gog_window_samples = int(120 * gog.frequency)
             gog_min_samples = 4 * gog.frequency
             gog_start_slices = sorted(slices_of_runs(
                 gog.array[gog_start_idx:gog_start_idx + gog_window_samples],
@@ -164,7 +166,10 @@ def _segment_type_and_slice(speed_array, speed_frequency,
                 # 90+% at beginning or end of segment.
                 slow_start = (gog.array[gog_start_slices[0].start] == 'Ground')
                 slow_stop = (gog.array[gog_stop_slices[-1].stop - 1] == 'Ground')
-            temp = np.ma.array(gog.array[gog_start_idx:gog_stop_idx].data, mask=gog.array[gog_start_idx:gog_stop_idx].mask)
+            temp = np.ma.array(
+                gog.array[gog_start_idx:gog_stop_idx].data,
+                mask=gog.array[gog_start_idx:gog_stop_idx].mask
+            )
             gog_test = np.ma.masked_less(temp, 1.0)
             # We have seeen 12-second spurious gog='Air' signals during rotor rundown. Hence increased limit.
             did_move = slices_remove_small_slices(np.ma.clump_masked(gog_test),
@@ -197,12 +202,11 @@ def _segment_type_and_slice(speed_array, speed_frequency,
                 # With some of the pre-split data, the collective appears to be padded
                 # starting and finishing inside the speed_array.
                 # Use unmasked speed slices as the start/end indices for collective window
-                col_start = unmasked_slices[0].start * (col.frequency / speed_frequency)
-                col_stop = (unmasked_slices[-1].stop - 1) * (col.frequency / speed_frequency)
+                col_start = int(unmasked_slices[0].start * (col.frequency / speed_frequency))
+                col_stop = int(unmasked_slices[-1].stop - 1) * (col.frequency / speed_frequency))
             else:
                 col_start = start * col.frequency
                 col_stop = stop * col.frequency
-
 
             col_start_slice = runs_of_ones(
                 col.array[col_start:col_start+col_window_sample] < settings.COLLECTIVE_ON_GROUND_THRESHOLD,
@@ -391,15 +395,15 @@ def _split_on_eng_params(slice_start_secs, slice_stop_secs, split_params_min,
         return split_index, split_value
 
     eng_min_slices = runs_of_ones(
-        split_params_min[split_params_slice] == split_value
+        split_params_min[slices_int(split_params_slice)] == split_value
     )
 
     if not eng_min_slices:
-        return round(split_index / split_params_frequency), split_value
+        return py2round(split_index / split_params_frequency), split_value
 
     split_index = eng_min_slices[0].start + \
-        ((eng_min_slices[0].stop - eng_min_slices[0].start) / 2) + slice_start
-    return round(split_index / split_params_frequency), split_value
+        ((eng_min_slices[0].stop - eng_min_slices[0].start) // 2) + slice_start
+    return py2round(split_index / split_params_frequency), split_value
 
 
 def _split_on_dfc(slice_start_secs, slice_stop_secs, dfc_frequency,
@@ -425,7 +429,7 @@ def _split_on_dfc(slice_start_secs, slice_stop_secs, dfc_frequency,
     '''
     dfc_slice = slice(slice_start_secs * dfc_frequency,
                       floor(slice_stop_secs * dfc_frequency) + 1)
-    unmasked_edges = np.ma.flatnotmasked_edges(dfc_diff[dfc_slice])
+    unmasked_edges = np.ma.flatnotmasked_edges(dfc_diff[slices_int(dfc_slice)])
     if unmasked_edges is None:
         return None
     unmasked_edges = unmasked_edges.astype(float)
@@ -437,7 +441,7 @@ def _split_on_dfc(slice_start_secs, slice_stop_secs, dfc_frequency,
     else:
         # Split on the first DFC jump.
         dfc_jump = unmasked_edges[0]
-    dfc_index = round(dfc_jump + slice_start_secs + dfc_half_period)
+    dfc_index = py2round(dfc_jump + slice_start_secs + dfc_half_period)
     # account for rounding of dfc index exceeding slow slice
     if dfc_index > slice_stop_secs:
         split_index = slice_stop_secs
@@ -464,8 +468,8 @@ def _split_on_rot(slice_start_secs, slice_stop_secs, heading_frequency,
     '''
     rot_slice = slice(slice_start_secs * heading_frequency,
                       slice_stop_secs * heading_frequency)
-    midpoint = (rot_slice.stop - rot_slice.start) / 2
-    stopped_slices = np.ma.clump_unmasked(rate_of_turn[rot_slice])
+    midpoint = (rot_slice.stop - rot_slice.start) // 2
+    stopped_slices = np.ma.clump_unmasked(rate_of_turn[slices_int(rot_slice)])
     if not stopped_slices:
         return
 
@@ -474,9 +478,9 @@ def _split_on_rot(slice_start_secs, slice_stop_secs, heading_frequency,
     # Split half-way within the stop slice.
     stop_duration = middle_stop.stop - middle_stop.start
     rot_split_index = \
-        rot_slice.start + middle_stop.start + (stop_duration / 2)
+        rot_slice.start + middle_stop.start + (stop_duration // 2)
     # Get the absolute split index at 1Hz.
-    split_index = round(rot_split_index / heading_frequency)
+    split_index = py2round(rot_split_index / heading_frequency)
     return split_index
 
 

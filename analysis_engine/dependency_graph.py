@@ -244,7 +244,7 @@ def dependencies3(di_graph, root, node_mgr, raise_cir_dep=False):
         layer = set()  # layer of current node's available dependencies
         # order the successors based on the order in the derive method; this allows the
         # class to define the best path through the dependency tree.
-        ordered_successors = [name for (name, d) in sorted(di_graph[node].items(), key=lambda a: a[1].get('order'))]
+        ordered_successors = [name for (name, d) in sorted(di_graph[node].items(), key=lambda a: a[1].get('order', False))]
         for dependency in ordered_successors:
             # traverse again, 'like we did last summer'
             if traverse_tree(dependency):
@@ -305,7 +305,7 @@ def draw_graph(graph, name, horizontal=False):
     ##plt.show()
     ##plt.savefig(file_path)
     try:
-        ##import pygraphviz as pgv 
+        ##import pygraphviz as pgv
         # sudo apt-get install graphviz libgraphviz-dev
         # pip install pygraphviz
         #Note: nx.nx_agraph.to_agraph performs pygraphviz import

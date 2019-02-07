@@ -89,8 +89,8 @@ class TestDateTimeFunctions(unittest.TestCase):
         month = P('Month', array=np.ma.array([8]*duration))
         day = P('Day', array=np.ma.array([5]*duration))
         hour = P('Hour', array=np.ma.array([0]*duration))
-        minute = P('Minute', array=np.ma.repeat(np.ma.arange(duration/60), 60))
-        second = P('Second', array=np.ma.array(np.tile(np.arange(60), duration/60)))
+        minute = P('Minute', array=np.ma.repeat(np.ma.arange(duration//60), 60))
+        second = P('Second', array=np.ma.array(np.tile(np.arange(60), duration//60)))
         values = {'Year': year, 'Month': month, 'Day': day, 'Hour': hour, 'Minute': minute, 'Second': second}
         def hdf_get(arg):
             return values[arg]
@@ -147,7 +147,7 @@ class TestSplitSegments(unittest.TestCase):
             elif key == 'Segment Split':
                 seg_split = M('Segment Split', array=np.ma.zeros(len(heading_array), dtype=int),
                                  frequency=heading_frequency, values_mapping={0: "-", 1: "Split"})
-                seg_split.array[390/heading_frequency] = "Split"
+                seg_split.array[390//heading_frequency] = "Split"
                 return seg_split
             else:
                 raise KeyError
@@ -214,8 +214,8 @@ class TestSplitSegments(unittest.TestCase):
                                             np.arange(0, 200, 0.5),
                                             np.arange(200, 0, -0.5)])
         airspeed_secs = len(airspeed_array) / airspeed_frequency
-        heading_array = np.ma.concatenate((np.arange(len(airspeed_array) / 4, dtype=float) % 360,
-                                           np.zeros(len(airspeed_array) / 4)))
+        heading_array = np.ma.concatenate((np.arange(len(airspeed_array) // 4, dtype=float) % 360,
+                                           np.zeros(len(airspeed_array) // 4)))
 
         # DFC jumps exactly half way.
         dfc_array = np.ma.concatenate([np.arange(0, 100),
@@ -396,7 +396,6 @@ class TestSplitSegments(unittest.TestCase):
         hdf_path = os.path.join(test_data_path, "split_segments_1.hdf5")
         temp_path = copy_file(hdf_path)
         hdf = hdf_file(temp_path)
-
         segment_tuples = split_segments(hdf, {})
         self.assertEqual(segment_tuples,
                          [('START_AND_STOP', slice(0, 9952.0, None), 0),
@@ -428,6 +427,22 @@ class TestSplitSegments(unittest.TestCase):
         hdf = hdf_file(temp_path)
 
         segment_tuples = split_segments(hdf, {})
+
+        expected = [('START_AND_STOP', slice(0, 3989.0, None), 0),
+                          ('START_AND_STOP', slice(3989.0, 7049.0, None), 1),
+                          ('START_AND_STOP', slice(7049.0, 9569.0, None), 1),
+                          ('START_AND_STOP', slice(9569.0, 12889.0, None), 1),
+                          ('START_AND_STOP', slice(12889.0, 15867.0, None), 1),
+                          ('START_AND_STOP', slice(15867.0, 18526.0, None), 3),
+                          ('START_AND_STOP', slice(18526.0, 21726.0, None), 2),
+                          ('START_AND_STOP', slice(21726.0, 24209.0, None), 2),
+                          ('START_AND_STOP', slice(24209.0, 26607.0, None), 1),
+                          ('START_AND_STOP', slice(26607.0, 28534.0, None), 3),
+                          ('START_AND_STOP', slice(28534.0, 30875.0, None), 2),
+                          ('START_AND_STOP', slice(30875.0, 33680.0, None), 3)]
+        #for a, e in zip(segment_tuples, expected):
+            #print(a,e,a==e)
+
         self.assertEqual(segment_tuples,
                          [('START_AND_STOP', slice(0, 3989.0, None), 0),
                           ('START_AND_STOP', slice(3989.0, 7049.0, None), 1),
@@ -875,4 +890,5 @@ class TestSegmentTypeAndSlice(unittest.TestCase):
         self.assertEqual(segment_type, 'START_AND_STOP')
         self.assertEqual(segment, slice(0, 5560))
         self.assertEqual(array_start_secs, 0)
+
 

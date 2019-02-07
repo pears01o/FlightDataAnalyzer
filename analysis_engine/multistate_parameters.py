@@ -49,6 +49,7 @@ from analysis_engine.library import (
     slice_duration,
     slices_and,
     slices_from_to,
+    slices_int,
     slices_remove_small_gaps,
     slices_remove_small_slices,
     smooth_signal,
@@ -561,9 +562,9 @@ class Daylight(MultistateDerivedParameterNode):
                start_datetime=A('Start Datetime'),
                duration=A('HDF Duration')):
         # Set default to 'Day'
-        array_len = duration.value * self.frequency
+        array_len = int(duration.value * self.frequency)
         self.array = np.ma.ones(array_len)
-        for step in range(int(array_len)):
+        for step in range(array_len):
             curr_dt = datetime_of_index(start_datetime.value, step, 1)
             lat = latitude.array[step]
             lon = longitude.array[step]
@@ -1205,7 +1206,7 @@ class Flap(MultistateDerivedParameterNode):
 
         if family_name == 'Citation VLJ' and duration:
             self.values_mapping = {0: '0', 15: '15', 30: '30'}
-            self.array = np.ma.zeros(duration * self.frequency)
+            self.array = np.ma.zeros(int(duration * self.frequency))
             for toff in toffs:
                 self.array[toff.slice] = 15
             for land in lands:
@@ -1493,7 +1494,10 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         approach_slices = approach.get_slices() if approach else None
 
         if frame_name == 'E170_EBD_047' and approach_slices is not None:
-            self.array[approach_slices][self.array[approach_slices] == 16] = 32
+            # The Lever 4 and 5 share the same flap/slat config.
+            # On approaches the config is refferred to as Lever 5
+            self.array[self.array == 32] = 16  # ensure lever 4 before approach mod
+            self.array[tuple(approach_slices)][self.array[tuple(approach_slices)] == 16] = 32
 
 
 class Flaperon(MultistateDerivedParameterNode):
@@ -1735,7 +1739,7 @@ class GearDownInTransit(MultistateDerivedParameterNode):
         else:
             pass
 
-        for run in runs:
+        for run in slices_int(runs):
             self.array[run.start:run.stop] = 'Extending'
 
 
@@ -1868,7 +1872,7 @@ class GearUpInTransit(MultistateDerivedParameterNode):
         else:
             pass
 
-        for run in runs:
+        for run in slices_int(runs):
             self.array[run.start:run.stop] = 'Retracting'
 
 
@@ -2301,7 +2305,7 @@ class PilotFlying(MultistateDerivedParameterNode):
             pilot_flying = nearest_neighbour_mask_repair(pilot_flying, repair_gap_size=20*self.frequency, copy=False)
             # use second window to remove spiking between captain and first
             # officer during dual stick periods
-            pilot_flying = second_window(pilot_flying, self.frequency, 2).astype(np.short)
+            pilot_flying = second_window(pilot_flying.raw, self.frequency, 2).astype(np.short)
 
         self.array = pilot_flying
 
@@ -3274,11 +3278,11 @@ class StableApproachStages(object):
                 stop = gnd + 10
             else:
                 stop = approach.slice.stop
-            _slice = slice(approach.slice.start, stop)
+            _slice = slices_int(approach.slice.start, stop)
 
             altitude = self.repair(alt.array, _slice)
-            index_at_50 = index_closest_value(altitude, 50)
-            index_at_200 = index_closest_value(altitude, 200)
+            index_at_50 = int(index_closest_value(altitude, 50))
+            index_at_200 = int(index_closest_value(altitude, 200))
 
             if gear:
                 #== 1. Gear Down ==

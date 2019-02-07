@@ -2,6 +2,7 @@ import datetime
 import numpy as np
 import os
 import unittest
+import inspect
 
 from mock import patch
 from numpy.ma.testutils import assert_array_equal
@@ -10,7 +11,7 @@ from hdfaccess.parameter import MappedArray
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.aircrafttables.constants import AVAILABLE_CONF_STATES
 from flightdatautilities import masked_array_testutils as ma_test
-from flight_phase_test import buildsection, buildsections
+from analysis_engine.test_utils import buildsection, buildsections
 from analysis_engine.library import (
     unique_values,
     runs_of_ones,
@@ -773,8 +774,8 @@ class TestConfiguration(unittest.TestCase, NodeTest):
         self.assertEqual(node.values_mapping, AVAILABLE_CONF_STATES)
         self.assertEqual(node.units, None)
         self.assertIsInstance(node.array, MappedArray)
-        values = unique_values(node.array.astype(int))
-        self.assertEqual(values, {0: 4, 10: 4, 13: 4, 16: 1, 20: 4, 26: 1, 30: 4, 90: 4})
+        values = unique_values(node.array)
+        self.assertEqual(values, {'Full': 4, '1+F': 4, '1': 4, '0': 4, '3': 4, '2': 4, '1*': 1, '2*': 1})
 
 
 class TestDaylight(unittest.TestCase):
@@ -2840,9 +2841,42 @@ class TestSmokeWarning(unittest.TestCase):
     def setUp(self):
         self.node_class = SmokeWarning
 
+    @unittest.skip("Taking too long generating all 2,097,151 combinations")
     def test_can_operate(self):
         opts = self.node_class.get_operational_combinations()
         self.assertEqual(len(opts), 2**21-1)
+
+    def test_can_operate_simple(self):
+        expected_params = [
+            'Smoke Avionics Warning',
+            'Smoke Avionics (1) Warning',
+            'Smoke Avionics (2) Warning',
+            'Smoke Lavatory Warning',
+            'Smoke Lavatory (1) Warning',
+            'Smoke Lavatory (2) Warning',
+            'Smoke Cabin Warning',
+            'Smoke Cabin Rest (1) Warning',
+            'Smoke Cabin Rest (2) Warning',
+            'Smoke Cargo Warning',
+            'Smoke Cargo Fwd (1) Warning',
+            'Smoke Cargo Fwd (2) Warning',
+            'Smoke Cargo Aft (1) Warning',
+            'Smoke Cargo Aft (2) Warning',
+            'Smoke Cargo Rest (1) Warning',
+            'Smoke Cargo Rest (2) Warning',
+            'Smoke Lower Deck Stowage',
+            'Smoke Avionic Bulk',
+            'Smoke IFEC',
+            'Smoke BCRC',
+            'Smoke Autonomous VCC',
+        ]
+        derived_args = inspect.getargspec(self.node_class.derive).defaults
+        derived_params = [n.name for n in derived_args]
+        self.assertEqual(len(derived_params), len(expected_params))
+        self.assertEqual(sorted(derived_params), sorted(expected_params))
+        for warning in expected_params:
+            self.assertTrue(self.node_class.can_operate([warning]))
+
 
     def test_derive(self):
         one = M('Smoke Avionics (1) Warning', np.ma.array([0, 1, 0, 0, 0, 0]),

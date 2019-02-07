@@ -20899,6 +20899,55 @@ class EngThrustTakeoffDerate(KeyPointValueNode):
             self.create_kpv(index, derate)
 
 
+class EngTakeoffDerateDuration(KeyPointValueNode):
+    '''
+    KPV to enable operators of B767/757s to measure the number of rated vs derated takeoffs.
+    Depending on available parameters, it will create a duration KPV during the Takeoff Roll if:
+      - Eng (*) EPR Max is below than 95% of the highest (1/2) EPR Limit between 95 and 105 knots, or
+      - Temp Derate Status is 'Operative' between 95 and 105 knots
+    If these conditions aren't met the KPV will be created at the beginning of the Takeoff Roll with a value of 0.
+    '''
+
+    units = ut.SECOND
+
+    @classmethod
+    def can_operate(cls, available):
+        return all_of(['Eng (*) EPR Max', 'Eng (1) EPR Limit', 'Eng (2) EPR Limit', 'Takeoff Roll', 'Airspeed',], available) or \
+               all_of(['Temp Derate Status', 'Takeoff Roll', 'Airspeed',], available)
+
+
+    def derive(self, epr_max=P('Eng (*) EPR Max'),
+                     epr_limit_1=P('Eng (1) EPR Limit'),
+                     epr_limit_2=P('Eng (2) EPR Limit'),
+                     temp_derate=M('Temp Derate Status'),
+                     takeoff_rolls=S('Takeoff Roll'),
+                     airspeed=P('Airspeed'),):
+
+        for roll in takeoff_rolls:
+            airspd_slices = slices_and(runs_of_ones(airspeed.array > 95), runs_of_ones(airspeed.array < 105))
+            if epr_max and epr_limit_1 and epr_limit_2:
+                epr_lim_max = np.ma.maximum(epr_limit_1.array, epr_limit_2.array)
+                sections = slices_and([roll.slice], airspd_slices)
+                for s in sections:
+                    peak_epr_lim = np.ma.max(epr_lim_max[s])
+                    peak_epr = np.ma.max(epr_max.array[s])
+                if peak_epr < 0.95 * peak_epr_lim:
+                    #takeoff is derated
+                    derated_epr_slices = runs_of_ones(epr_max.array < (0.95 * peak_epr_lim))
+                    derated_slices = slices_and([roll.slice], derated_epr_slices)
+                    self.create_kpvs_from_slice_durations(derated_slices, self.hz)
+                else:
+                    #takeoff is rated
+                    self.create_kpv(roll.slice.start, 0)
+            else:
+                operational_slices = runs_of_ones(temp_derate.array == 'Operative')
+                derate_slices = slices_and([roll.slice], operational_slices)
+                if derate_slices:
+                    self.create_kpvs_from_slice_durations(derate_slices, self.hz)
+                else:
+                    self.create_kpv(roll.slice.start, 0)
+
+
 class EngTakeoffFlexTemp(KeyPointValueNode):
     '''
     '''

@@ -392,6 +392,7 @@ from analysis_engine.key_point_values import (
     EngTPRFor5SecDuringGoAround5MinRatingMax,
     EngTPRFor5SecDuringMaximumContinuousPowerMax,
     EngTPRFor5SecDuringTakeoff5MinRatingMax,
+    EngTakeoffDerateDuration,
     EngTakeoffFlexTemp,
     EngThrustTakeoffDerate,
     EngTorque500To50FtMax,
@@ -14837,6 +14838,65 @@ class TestEngTakeoffFlexTemp(unittest.TestCase):
         node = self.node_class()
         node.derive(toff, None, eng_flex_1, eng_flex_2)
         self.assertEqual(node[0].value, 5.5)
+
+
+class TestEngTakeoffDerateDuration(unittest.TestCase):
+
+    def setUp(self):
+        self.node_class = EngTakeoffDerateDuration
+        self.toff = buildsection('Takeoff Roll', 15, 80)
+        self.airspd = P(name='Airspeed', array=np.ma.arange(0, 200, 2))
+
+    def test_can_operate(self):
+        can_operate = self.node_class.can_operate
+        self.assertTrue(can_operate(('Eng (*) EPR Max', 'Eng (1) EPR Limit', 'Eng (2) EPR Limit', 'Takeoff Roll', 'Airspeed')))
+        self.assertTrue(can_operate(('Temp Derate Status', 'Takeoff Roll', 'Airspeed')))
+
+    def test_derive_epr_derated(self):
+        epr_max_array = np.hstack((np.ma.array([1.2] * 10), np.ma.arange(1.2, 1.7, 0.05), np.ma.array([1.7] * 80)))
+        epr_max=P(name='Eng (*) EPR Max', array=epr_max_array)
+        epr_limit_1_array = [1.8] * 100
+        epr_limit_1=P(name='Eng (1) EPR limit', array=epr_limit_1_array)
+        epr_limit_2_array = [1.81] * 100
+        epr_limit_2=P(name='Eng (2) EPR limit', array=epr_limit_2_array)
+        node = self.node_class()
+        node.derive(epr_max, epr_limit_1, epr_limit_2, None, self.toff, self.airspd)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 15)
+        self.assertEqual(node[0].value, 66)
+
+    def test_derive_epr_rated(self):
+        epr_max_array = np.hstack((np.ma.array([1.2] * 10), np.ma.arange(1.25, 1.75, 0.05), np.ma.array([1.75] * 80)))
+        epr_max=P(name='Eng (*) EPR Max', array=epr_max_array)
+        epr_limit_1_array = [1.8] * 100
+        epr_limit_1=P(name='Eng (1) EPR limit', array=epr_limit_1_array)
+        epr_limit_2_array = [1.81] * 100
+        epr_limit_2=P(name='Eng (2) EPR limit', array=epr_limit_2_array)
+        node = self.node_class()
+        node.derive(epr_max, epr_limit_1, epr_limit_2, None, self.toff, self.airspd)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 15)
+        self.assertEqual(node[0].value, 0)
+
+    def test_derive_derate_status_derate(self):
+        temp_derate_array = np.ma.array([1] * 100)
+        values_mapping = {0: '-', 1: 'Operative'}
+        temp_derate=M('Temp Derate Status', array=temp_derate_array, values_mapping=values_mapping)
+        node = self.node_class()
+        node.derive(None, None, None, temp_derate, self.toff, self.airspd)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 15)
+        self.assertEqual(node[0].value, 66)
+
+    def test_derive_derate_status_rated(self):
+        temp_derate_array = np.ma.array([0] * 100)
+        values_mapping = {0: '-', 1: 'Operative'}
+        temp_derate=M('Temp Derate Status', array=temp_derate_array, values_mapping=values_mapping)
+        node = self.node_class()
+        node.derive(None, None, None, temp_derate, self.toff, self.airspd)
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 15)
+        self.assertEqual(node[0].value, 0)
 
 
 ##############################################################################

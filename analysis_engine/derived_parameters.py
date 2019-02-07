@@ -1105,15 +1105,29 @@ class AltitudeRadio(DerivedParameterNode):
                 continue
             # correct for overflow, aligning the fast slice to each source
             aligned_fast = fast.get_aligned(source)
-            source.array = overflow_correction(source.array, aligned_fast)
+
+            #########################################################
+            # Passing filename into library routines for testing only            
+            fid = self._h.file_path.split('\\')[-1] + '__' + source.name + '.png'
+            #########################################################
+
+
+            source.array = overflow_correction(source.array, fast=aligned_fast, fid=fid)
             osources.append(source)
         sources = osources
+        # Blend parameters was written around the Boeing 737NG frames where three sources
+        # are available with different sample rates and latency. Some airbus aircraft
+        # have three altimeters but one of the sensors can give signals that appear to be 
+        # valid in the cruise, hence the alternative validity level. Finally, the overflow
+        # correction algorithms can be out of step, giving differences of the order of 
+        # 1,000ft between two sensors. The tolerance threshold ensures these are rejected.
         self.array = blend_parameters(sources,
                                       offset=self.offset,
                                       frequency=self.frequency,
                                       small_slice_duration=10,
                                       mode='cubic',
-                                      validity='all_but_one')
+                                      validity='all_but_one',
+                                      tolerance=100.0)
 
         # For aircraft where the antennae are placed well away from the main
         # gear, and especially where it is aft of the main gear, compensation

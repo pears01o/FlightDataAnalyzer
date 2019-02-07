@@ -33,6 +33,7 @@ from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.geometry import cross_track_distance, great_circle_distance__haversine
 
 from analysis_engine.settings import (
+    ALTITUDE_RADIO_OVERFLY_SUPPRESSION,
     BUMP_HALF_WIDTH,
     ILS_CAPTURE,
     ILS_CAPTURE_ROC,
@@ -5373,6 +5374,9 @@ def pin_to_ground(array, good_slices, fast_slices):
                 # go_fast stops in the slice
                 d['correction'] = nearest_power_of_two(array[f.stop])
                 break
+                # For in-flight slices, be ready to suppress short bursts
+                if slice_duration(sl, hz) < ALTITUDE_RADIO_OVERFLY_SUPPRESSION:
+                    d['correction'] = 'suppress'
 
 
     # pass 1.5: Extend the corrections from previous valid ones, as the 
@@ -5390,7 +5394,14 @@ def pin_to_ground(array, good_slices, fast_slices):
                     post = corrections[n+1]['correction']
                 else:
                     post = None
-                if pre and post:
+                
+                if pre == 'suppress' and post == 'suppress':
+                    d['next'] = 0.0
+                elif pre == 'suppress':
+                    d['next'] = post
+                elif post == 'suppress':
+                    d['next'] = pre
+                elif pre and post:
                     before = corrections[n]['slice'].start - corrections[n-1]['slice'].stop
                     after = corrections[n+1]['slice'].start - corrections[n]['slice'].stop
                     if before < after:
@@ -5410,6 +5421,8 @@ def pin_to_ground(array, good_slices, fast_slices):
     # pass 2: apply the corrections using known values and masking the ones
     # which have no correction
     for d in corrections:
+        if d['correction'] == 'suppress':
+            continue
         sl = d['slice']
         correction = d['correction']
         if correction == 0:

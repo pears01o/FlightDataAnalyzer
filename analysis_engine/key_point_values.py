@@ -4991,8 +4991,8 @@ class BrakeTempAfterTouchdownDelta(KeyPointValueNode):
     units = ut.CELSIUS
 
     def derive(self, brakes=P('Brake (*) Temp Avg'), touchdowns=S('Touchdown')):
-        touchdown = touchdowns.get_last().index
-        max_temp_idx = np.ma.argmax(brakes.array[slices_int(touchdown,None)]) + touchdown
+        touchdown = int(touchdowns.get_last().index)
+        max_temp_idx = np.ma.argmax(brakes.array[touchdown:]) + touchdown
         max_temp = value_at_index(brakes.array, max_temp_idx)
         min_temp = np.ma.min(brakes.array[slices_int(touchdown,max_temp_idx + 1)])
         self.create_kpv(max_temp_idx, max_temp - min_temp)

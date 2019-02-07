@@ -47,10 +47,8 @@ class ApproachRange(DerivedParameterNode):
             end = tdwn.index
             endpoint = {'latitude': lat.array[int(end)],
                         'longitude': lon.array[int(end)]}
-            try:
-                begin = tdwns.get_previous(end).index+stop_delay
-            except:
-                begin = 0
+            prev_tdwn = tdwns.get_previous(end)
+            begin = prev_tdwn.index + stop_delay if prev_tdwn else 0
             this_leg = slices_int(begin, end+stop_delay)
             _, app_range[this_leg] = bearings_and_distances(lat.array[this_leg],
                                                             lon.array[this_leg],
@@ -80,15 +78,15 @@ class AltitudeADH(DerivedParameterNode):
                 # Stairway to Heaven is getting a bit old. Getting with the times?
                 # Vertical Speed / 60 = Pressure alt V/S in feet per second
                 b_diffs = hdot/60
-                
+
                 # Rate of change on radalt array = Rad alt V/S in feet per second
                 r_diffs = np.ma.ediff1d(rad*rad_hz, to_begin=b_diffs[0])
-                
+
                 # Difference between ROC greater than 6fps will mean flying over
                 # the deck; use pressure alt roc when that happens and radio alt
-                # roc in all other cases 
+                # roc in all other cases
                 diffs = np.ma.where(np.ma.abs(r_diffs-b_diffs)>6.0*rad_hz, b_diffs, r_diffs)
-                
+
                 height = integrate(diffs,
                                    frequency=rad_hz,
                                    direction=sence,
@@ -115,7 +113,7 @@ class AltitudeADH(DerivedParameterNode):
         # Prepare a masked array filled with zeros for the parameter (same length as radalt array)
         self.array = np_ma_masked_zeros_like(rad.array)
         rad_peak_idxs, rad_peak_vals = cycle_finder(rad.array, min_step=150.0)
-        
+
 
         if len(rad_peak_idxs)<4:
             return
@@ -139,4 +137,3 @@ class AltitudeADH(DerivedParameterNode):
                 plt.show()
                 plt.clf()
                 '''
-                

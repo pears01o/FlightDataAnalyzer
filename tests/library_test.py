@@ -4365,7 +4365,14 @@ class TestBlendParameters(unittest.TestCase):
         p1.array[5:] = np.ma.masked
         result = blend_parameters((p1, p2), mode='cubic')
         self.assertAlmostEqual(len(result), 4)
-
+    
+    def test_blend_parameters_outside_tolerance(self):
+        p1 = P(array=range(20), frequency=2, name='First')
+        p2 = P(array=[0]*10, frequency=1, name='Second')
+        result = blend_parameters((p1, p2), tolerance=9, frequency=1.0)
+        ma_test.assert_masked_array_equal(result, np.ma.array(data=range(10), mask=[0]*5+[1]*5) * 4/3.0)
+        result = blend_parameters((p1, p2), tolerance=9, frequency=1.0, mode='cubic')
+        ma_test.assert_masked_array_almost_equal(result, np.ma.array(data=range(10), mask=[1]+[0]*4+[1]*5) * 4 / 3.0)    
 
 class TestBlendParametersWeighting(unittest.TestCase):
     def test_weighting(self):

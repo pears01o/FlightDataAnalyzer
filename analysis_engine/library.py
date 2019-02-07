@@ -4621,7 +4621,8 @@ def blend_two_parameters(param_one, param_two, mode=None):
     return array, frequency, offset
 
 
-def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear', validity='any_one'):
+def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear', 
+                     validity='any_one', tolerance=None):
     '''
     This most general form of the blend options allows for multiple sources
     to be blended together even though the spacing, validity and even sample
@@ -4640,6 +4641,8 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     :type mode: str
     :param validity: requirements for validity in the data - from ['all', 'all_but_one', 'any_one']
     :type validity: str
+    :param tolerance: tolerance for merging to take place
+    :type tolerance: float or None (for no test to be applied)
     '''
 
     assert frequency > 0.0
@@ -4649,8 +4652,17 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     params = [p for p in params if p is not None]
     assert len(params), "No parameters to merge"
 
+    # Find out about the parameters we have to deal with...
+    min_ip_freq = min(p.frequency for p in params)
+
+    if tolerance:
+        test_array = np.ma.zeros((len(params), len(params[0].array) * min_ip_freq / params[0].frequency))
+        for n, p in enumerate(params):
+            test_array[n, :] = p.array[::p.frequency / min_ip_freq]
+        tol_mask = np.ma.masked_greater(np.ma.ptp(test_array, axis=0), tolerance)
+
     if mode == 'linear':
-        return blend_parameters_linear(params, frequency, offset=offset)
+        return blend_parameters_linear(params, frequency, offset=offset, tol_mask=tol_mask)
 
     # mode is cubic
 
@@ -4661,9 +4673,6 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     result = np_ma_masked_zeros(length)
     # Ensure mask is expanded for slicing.
     result.mask = np.ma.getmaskarray(result)
-
-    # Find out about the parameters we have to deal with...
-    min_ip_freq = min(p.frequency for p in params)
 
     # Slices of valid data are scaled to the lowest timebase and then or'd
     # to find out when any valid data is available.
@@ -4709,6 +4718,9 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         result[result_slice][0] = np.ma.masked
         result[result_slice][-1] = np.ma.masked
 
+    if tol_mask.any():
+        result.mask = np.ma.logical_or(result.mask, tol_mask.mask)
+            
     return result
 
 
@@ -4739,7 +4751,7 @@ def resample_mask(mask, orig_hz, resample_hz):
     return resampled
 
 
-def blend_parameters_linear(params, frequency, offset=0):
+def blend_parameters_linear(params, frequency, offset=0, tol_mask=None):
     '''
     This provides linear interpolation to support the generic routine
     blend_parameters.
@@ -4764,7 +4776,12 @@ def blend_parameters_linear(params, frequency, offset=0):
         # Remember the sample rate as this dictates the weighting
         weights.append(param.frequency)
 
-    return np.ma.average(aligned, axis=0, weights=weights)
+    result = np.ma.average(aligned, axis=0, weights=weights)
+
+    if tol_mask.any():
+        result.mask = np.ma.logical_or(result.mask, tol_mask.mask)
+
+    return result
 
 
 def blend_parameters_cubic(frequency, offset, params, result_slice):

@@ -1151,6 +1151,21 @@ class AltitudeRadio(DerivedParameterNode):
             scaling = 0.365 #ft/deg, +ve for altimeters aft of the main wheels.
             offset = -1.5 #ft at pitch=0
             self.array = self.array + (scaling * pitch.array) + offset
+            
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=[14, 10])
+        plt.plot(self.array)
+        
+        for n, each_slice in enumerate(np.ma.clump_unmasked(self.array)):
+            text = ' ' + str(each_slice.start) + ' > ' + str(each_slice.stop)
+            plt.text(0, n*1000 + 300, text)        
+        
+        fid = self._h.file_path.split('\\')[-1] + '.png'
+        plt.title(fid, fontsize='x-small')
+        plt.savefig('C:\\Temp\\alt_plots\\' + fid)
+        plt.clf()
+        plt.close()
+        
 
 
 class AltitudeRadioOffsetRemoved(DerivedParameterNode):

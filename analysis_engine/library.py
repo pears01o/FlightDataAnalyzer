@@ -4656,14 +4656,15 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     # Find out about the parameters we have to deal with...
     min_ip_freq = min(p.frequency for p in params)
 
+    tol_mask = None
     if tolerance:
         test_array = np.ma.zeros((len(params), len(params[0].array) * min_ip_freq / params[0].frequency))
         for n, p in enumerate(params):
-            test_array[n, :] = p.array[::p.frequency / min_ip_freq]
+            test_array[n, :] = resample(p.array, p.frequency, min_ip_freq)
         tol_mask = np.ma.masked_greater(np.ma.ptp(test_array, axis=0), tolerance)
 
     if mode == 'linear':
-        return blend_parameters_linear(params, frequency, offset=offset, tol_mask=tol_mask)
+        return blend_parameters_linear(params, frequency, tol_mask, offset=offset)
 
     # mode is cubic
 
@@ -4719,8 +4720,10 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         result[result_slice][0] = np.ma.masked
         result[result_slice][-1] = np.ma.masked
 
-    if tol_mask.any():
+    try:
         result.mask = np.ma.logical_or(result.mask, tol_mask.mask)
+    except:
+        pass
             
     return result
 
@@ -4752,7 +4755,7 @@ def resample_mask(mask, orig_hz, resample_hz):
     return resampled
 
 
-def blend_parameters_linear(params, frequency, offset=0, tol_mask=None):
+def blend_parameters_linear(params, frequency, tol_mask, offset=0):
     '''
     This provides linear interpolation to support the generic routine
     blend_parameters.
@@ -4779,8 +4782,10 @@ def blend_parameters_linear(params, frequency, offset=0, tol_mask=None):
 
     result = np.ma.average(aligned, axis=0, weights=weights)
 
-    if tol_mask.any():
+    try:
         result.mask = np.ma.logical_or(result.mask, tol_mask.mask)
+    except:
+        pass
 
     return result
 

@@ -5303,23 +5303,27 @@ def overflow_correction(array, fast=None, hz=1, fid='test_'):
     When called from data validation, the fast slice is not established whereas
     when called from derived parameters we are able to fix the data to ground
     levels at the beginning and end of flight. Hence the two alternative uses
-    for this routine.
+    for this routine. Keeping the processed together simple ensures we are 
+    applying the same definition of good_slices in both cases. 
     
-    :param array: array of radio altimeter data
+    :param array: array of data from a single radio altimeter
     :type array: Numpy array
     :param fast: flight phases
     :type fast: Section
-    :param max_val: Saturation value of parameter
-    :type max_val: integer
+    :param hz: array sample rate
+    :type hz: float 
     '''
     good_slices = slices_remove_small_gaps(np.ma.clump_unmasked(array),
                                            time_limit=10,
                                            hz=hz)    
-    if fast:
-        array = pin_to_ground(array, good_slices, fast.get_slices(), hz, fid=fid)
-    else:
+    if not fast:
+        # The first time we use this algorithm we don't have speed information
         for good_slice in good_slices:
             array[good_slice] = overflow_correction_array(array[good_slice])
+    else:
+        # The second time our challenge is to make sure the segments are 
+        # adjusted correctly
+        array = pin_to_ground(array, good_slices, fast.get_slices(), hz, fid=fid)
             
     return array
 
@@ -5333,45 +5337,30 @@ def overflow_correction_array(array, delta=None):
     abs_jump = np.ma.abs(jump)
     jump_sign = -jump / abs_jump
 
-    # We look for large jumps
-    if delta:
-        # In parameter conversion we know the overflow jump, delta, that we are trying to correct
-        steps = np.ma.where(abs_jump > delta * 0.75, np.rint(abs_jump / delta) * delta * jump_sign, 0)
-    else:
-        # In validation we can look for smaller, but still significant, jumps which are below the
-        # size of the ARINC 429 NCD signal.
-        steps = np.ma.where(abs_jump > 2**9.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
+    # Most radio altimeters are scaled to overflow at 2048ft, but occasionally the signed
+    # value changes by half this amount. Hence jumps more than half a power lower than 2**10.
+    steps = np.ma.where(abs_jump > 2**9.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
             
     biggest_step_up = np.ma.max(steps)
     biggest_step_down = np.ma.min(steps)
     # Only fix things that need fixing
     if biggest_step_up or biggest_step_down:
-        # If the data before the first jump or after the last jump is constant, mask this out
-        # and skip that step.
-        steplist = np.ma.nonzero(steps)[0].tolist()
-        if not jump[:steplist[0]].any():
-            array.mask[:steplist[0]] = True
-            steps[steplist[0]] = 0.0
-        if not jump[steplist[-1] + 1:].any():
-            array.mask[steplist[-1]:] = True
-            steps[steplist[-1]] = 0.0
         # Compute and apply the correction
         array += np.ma.cumsum(steps)
-     
 
-    
-    # Simple check to make sure the lowest value is close to zero
-    # following this adjustment.
+    # Simple check to make sure the lowest value is not badly below zero following 
+    # this adjustment, because the resulting array will be displayed to the user
+    # as the converted single sensor parameter.
     min_rad_alt = 20
     if np.min(array) < min_rad_alt:
-        delta = 1024.0 * int(np.min(array) / 1024)
+        delta = 1024.0 * int((np.min(array) + min_rad_alt) / 1024)
         if delta:
             array -= delta
 
     return array
 
 
-def pin_to_ground(array, good_slices, fast_slices, hz=1.0, delta=1024.0, fid='test'):
+def pin_to_ground(array, good_slices, fast_slices, hz=1.0, fid='test'):
     '''
     Fix the altitude within given slice based on takeoff and landing
     information.
@@ -5380,6 +5369,7 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0, delta=1024.0, fid='te
     to zero, so we can postprocess the array accordingly.
     '''
     def nearest_step(x):
+        delta=1024.0
         multiple = np.rint(abs(x) / float(delta))
         if multiple:
             return multiple * delta * np.sign(x)
@@ -5413,7 +5403,6 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0, delta=1024.0, fid='te
             d['correction'] = nearest_step(np.ma.average(array[d['slice']]))
         if d['slice'].start > fast_slices[-1].stop:
             d['correction'] = nearest_step(np.ma.average(array[d['slice']]))
-            
 
     import matplotlib.pyplot as plt
     plt.figure(figsize=[14, 10])
@@ -5422,57 +5411,50 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0, delta=1024.0, fid='te
     for n, d in enumerate(corrections):
         text = ' ' + str(d['slice'].start) + ' > ' \
             + str(d['slice'].stop) + ' = ' \
-            + str(d['correction']) + ' & ' \
-            + str(int(rms_noise(array[d['slice']]) or 0))
+            + str(d['correction'])
         plt.text(0, n*1000 + 300, text)
     plt.title(fid, fontsize='x-small')
     plt.savefig('C:\\Temp\\alt_plots\\' + fid)
     plt.clf()
     plt.close()
 
-    # Remove suppressed segments
+    # pass 2: Remove suppressed segments
     corrections =  [d for d in corrections if d['correction'] != 'suppress']
 
-    # pass 1.5: Extend the corrections from previous valid ones, as the 
-    # range will probably not have changed between masked segments
+    # pass 3: Extend the corrections from known valid ones
     while [d for d in corrections if d['correction'] == None]:
         for n, d in enumerate(corrections):
             # Work out the closest useful correction to apply
             d['next'] = None
             if d['correction'] == None:
-                if n > 0:
-                    pre = corrections[n-1]['correction']
+                if n == 0 and corrections[1]['correction'] != None:
+                    d['next'] = corrections[1]['correction'] + \
+                        nearest_step(array[corrections[1]['slice'].start] - 
+                                     array[corrections[0]['slice'].stop - 1])
+                elif n == len(corrections) - 1 and corrections[-1]['correction'] != None:
+                    d['next'] = corrections[-1]['correction'] + \
+                        nearest_step(array[corrections[n]['slice'].stop - 1] - 
+                                     array[corrections[n+1]['slice'].start])
                 else:
-                    pre = None
-                if n < len(corrections) - 1:
-                    post = corrections[n+1]['correction']
-                else:
-                    post = None
-                
-                if pre == 'suppress' and post == 'suppress':
-                    d['next'] = 0.0
-                elif pre == 'suppress':
-                    d['next'] = post
-                elif post == 'suppress':
-                    d['next'] = pre
-                elif pre and post:
-                    before = corrections[n]['slice'].start - corrections[n-1]['slice'].stop
-                    after = corrections[n+1]['slice'].start - corrections[n]['slice'].stop
-                    if before < after:
-                        d['next'] = pre
-                    else:
-                        d['next'] = post
-                elif pre != None:
-                    d['next'] = pre
-                elif post != None:
-                    d['next'] = post
+                    before = nearest_step(array[corrections[n]['slice'].start] - 
+                                          array[corrections[n-1]['slice'].stop - 1])
+                    after = nearest_step(array[corrections[n]['slice'].stop] - 
+                                         array[corrections[n+1]['slice'].start - 1])
+                    if corrections[n-1]['correction'] != None and \
+                       corrections[n+1]['correction'] != None:
+                        d['next'] = max(corrections[n-1]['correction'] + before, 
+                                        corrections[n+1]['correction'] + after)
+                    elif corrections[n-1]['correction'] != None:
+                        d['next'] = corrections[n-1]['correction'] + before
+                    elif corrections[n+1]['correction'] != None:
+                        d['next'] = corrections[n+1]['correction'] + after
             else:
                 d['next'] = d['correction']
         # Having completed a scan, copy the results across
         for d in corrections:
             d['correction'] = d['next']
     
-    # pass 2: apply the corrections using known values and masking the ones
+    # pass 4: apply the corrections using known values and masking the ones
     # which have no correction
     
     array.mask = True

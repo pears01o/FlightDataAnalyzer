@@ -1111,8 +1111,10 @@ class AltitudeRadio(DerivedParameterNode):
             fid = self._h.file_path.split('\\')[-1] + '__' + source.name + '.png'
             #########################################################
 
-
-            source.array = overflow_correction(source.array, fast=aligned_fast, fid=fid)
+            source.array = overflow_correction(source.array, 
+                                               fast=aligned_fast, 
+                                               hz=source.frequency, 
+                                               fid=fid)
             osources.append(source)
         sources = osources
         # Blend parameters was written around the Boeing 737NG frames where three sources

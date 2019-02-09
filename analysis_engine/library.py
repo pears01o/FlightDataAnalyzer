@@ -5313,9 +5313,13 @@ def overflow_correction(array, fast=None, hz=1):
     :param hz: array sample rate
     :type hz: float 
     '''
-    good_slices = slices_remove_small_gaps(np.ma.clump_unmasked(array),
-                                           time_limit=10,
-                                           hz=hz)    
+    good_slices = slices_remove_small_slices(
+        slices_remove_small_gaps(np.ma.clump_unmasked(array),
+                                 time_limit=10,
+                                 hz=hz),
+        time_limit=10,
+        hz=hz)
+    
     if not fast:
         # The first time we use this algorithm we don't have speed information
         for good_slice in good_slices:

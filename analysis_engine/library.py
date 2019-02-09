@@ -5295,7 +5295,7 @@ def offset_select(mode, param_list):
     raise ValueError ("offset_select called with unrecognised mode")
 
 
-def overflow_correction(array, fast=None, hz=1, fid='test_'):
+def overflow_correction(array, fast=None, hz=1):
     '''
     Overflow Correction postprocessing procedure. Used only on Altitude Radio
     signals.
@@ -5323,7 +5323,7 @@ def overflow_correction(array, fast=None, hz=1, fid='test_'):
     else:
         # The second time our challenge is to make sure the segments are 
         # adjusted correctly
-        array = pin_to_ground(array, good_slices, fast.get_slices(), hz, fid=fid)
+        array = pin_to_ground(array, good_slices, fast.get_slices(), hz)
             
     return array
 
@@ -5360,7 +5360,7 @@ def overflow_correction_array(array, delta=None):
     return array
 
 
-def pin_to_ground(array, good_slices, fast_slices, hz=1.0, fid='test'):
+def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
     '''
     Fix the altitude within given slice based on takeoff and landing
     information.

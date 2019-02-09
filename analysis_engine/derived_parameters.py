@@ -1106,16 +1106,11 @@ class AltitudeRadio(DerivedParameterNode):
             # correct for overflow, aligning the fast slice to each source
             aligned_fast = fast.get_aligned(source)
 
-            #########################################################
-            # Passing filename into library routines for testing only            
-            fid = self._h.file_path.split('\\')[-1] + '__' + source.name + '.png'
-            #########################################################
-
             source.array = overflow_correction(source.array, 
                                                fast=aligned_fast, 
-                                               hz=source.frequency, 
-                                               fid=fid)
+                                               hz=source.frequency)
             osources.append(source)
+        
         sources = osources
         # Blend parameters was written around the Boeing 737NG frames where three sources
         # are available with different sample rates and latency. Some airbus aircraft
@@ -1154,21 +1149,6 @@ class AltitudeRadio(DerivedParameterNode):
             offset = -1.5 #ft at pitch=0
             self.array = self.array + (scaling * pitch.array) + offset
             
-        import matplotlib.pyplot as plt
-        plt.figure(figsize=[14, 10])
-        plt.plot(self.array)
-        
-        for n, each_slice in enumerate(np.ma.clump_unmasked(self.array)):
-            text = ' ' + str(each_slice.start) + ' > ' + str(each_slice.stop)
-            plt.text(0, n*1000 + 300, text)        
-        
-        fid = self._h.file_path.split('\\')[-1] + '.png'
-        plt.title(fid, fontsize='x-small')
-        plt.savefig('C:\\Temp\\alt_plots\\' + fid)
-        plt.clf()
-        plt.close()
-        
-
 
 class AltitudeRadioOffsetRemoved(DerivedParameterNode):
     """

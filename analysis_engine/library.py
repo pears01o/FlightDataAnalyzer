@@ -5356,7 +5356,7 @@ def overflow_correction_array(array, delta=None):
     # this adjustment, because the resulting array will be displayed to the user
     # as the converted single sensor parameter.
     if np.min(array) < 0.0:
-        delta = 1024.0 * np.rint(np.min(array) / 1024)
+        delta = 1024.0 * np.rint((np.min(array) + 20) / 1024)
         if delta:
             array -= delta
 

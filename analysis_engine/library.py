@@ -5355,9 +5355,8 @@ def overflow_correction_array(array, delta=None):
     # Simple check to make sure the lowest value is not badly below zero following 
     # this adjustment, because the resulting array will be displayed to the user
     # as the converted single sensor parameter.
-    min_rad_alt = 20
-    if np.min(array) < min_rad_alt:
-        delta = 1024.0 * int((np.min(array) + min_rad_alt) / 1024)
+    if np.min(array) < 0.0:
+        delta = 1024.0 * np.rint(np.min(array) / 1024)
         if delta:
             array -= delta
 

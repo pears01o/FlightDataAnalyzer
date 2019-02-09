@@ -5379,112 +5379,48 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
         else:
             return 0.0
 
-    def todo(d):
-        return [d for d in corrections if d['correction'] == None]
-
-    corrections = [{'slice': sl, 'correction': None} for sl in good_slices]
-
-    # pass 1: detect the corrections based on fast slices
+    array.mask = np.ma.getmaskarray(array)
+    
+    # We detect the corrections based on fast slices
     for f in fast_slices:
-        begin_step = end_step = 330.0
-        for d in corrections:
-            sl = d['slice']
+        begin_step = end_step = begin_peak = end_peak = begin_peak_idx = 0.0
+        end_peak_idx = len(array)
+        for n, sl in enumerate(good_slices):
             if is_index_within_slice(f.start, sl):
                 # go_fast starts in the slice
                 begin_step = nearest_step(array[f.start])
-                d['correction'] = begin_step
+                array[sl] -=  begin_step
+                begin_peak_idx = sl.stop - 1
+                begin_peak = array[begin_peak_idx]
+                
             elif is_index_within_slice(f.stop, sl):
                 # go_fast stops in the slice
                 end_step = nearest_step(array[f.stop])
-                d['correction'] = end_step
-            elif is_index_within_slice(sl.start, f):
+                array[sl] -=  end_step
+                end_peak_idx = sl.start
+                end_peak = array[end_peak_idx]
+                
+            elif is_index_within_slice(sl.start, f) and \
+                 slice_duration(sl, hz) < ALTITUDE_RADIO_OVERFLY_SUPPRESSION:
                 # For in-flight slices, be ready to suppress short bursts
-                if slice_duration(sl, hz) < ALTITUDE_RADIO_OVERFLY_SUPPRESSION:
-                    d['correction'] = 'suppress'
-        for d in corrections:
-            if is_slice_within_slice(d['slice'], f):
-                d['correction'] = min(begin_step, end_step)
-    
+                array[sl].mask = True
+
+        # We have the corrections for either the start or end of the fast slice, so
+        # apply this to all sections wholly within the fast slice.
+        for n, sl in enumerate(good_slices):
+            if is_slice_within_slice(sl, f):
+                if sl.start - begin_peak_idx < end_peak_idx - sl.stop:
+                    delta = array[sl.start] - begin_peak
+                else:
+                    delta = array[sl.stop - 1] - end_peak
+                array[sl] -=  nearest_step(delta)
+                
+    # Everything not fast must be on the ground    
     for g in slices_not(fast_slices, begin_at=0, end_at=len(array)):
-        for d in corrections:
-            if is_slice_within_slice(d['slice'], g):
-                d['correction'] = nearest_step(np.ma.average(array[d['slice']]))
-        
-        
-
-
-        ### Bring data outside the fast phase down to zero
-        ##if d['slice'].stop < fast_slices[0].start:
-            ##d['correction'] = nearest_step(np.ma.average(array[d['slice']]))
-        ##if d['slice'].start > fast_slices[-1].stop:
-            ##d['correction'] = nearest_step(np.ma.average(array[d['slice']]))
-
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=[14, 10])
-    plt.plot(array.data, linewidth = 1, color='b')
-    plt.plot(array, linewidth=2, color='r')
-    for n, d in enumerate(corrections):
-        text = ' ' + str(d['slice'].start) + ' > ' \
-            + str(d['slice'].stop) + ' = ' \
-            + str(d['correction'])
-        plt.text(0, n*1000 + 300, text)
-    plt.title(fid, fontsize='x-small')
-    plt.savefig('C:\\Temp\\alt_plots\\' + fid)
-    plt.clf()
-    plt.close()
-
-    ### pass 2: Remove suppressed segments
-    ##corrections =  [d for d in corrections if d['correction'] != 'suppress']
-
-    ### pass 3: Extend the corrections from known valid ones
-    ##while [d for d in corrections if d['correction'] == None]:
-        ##for n, d in enumerate(corrections):
-            ### Work out the closest useful correction to apply
-            ##d['next'] = None
-            ##if d['correction'] == None:
-                ##if n == 0 and corrections[1]['correction'] != None:
-                    ##d['next'] = corrections[1]['correction'] + \
-                        ##nearest_step(array[corrections[1]['slice'].start] - 
-                                     ##array[corrections[0]['slice'].stop - 1])
-                ##elif n == len(corrections) - 1 and corrections[-1]['correction'] != None:
-                    ##d['next'] = corrections[-1]['correction'] + \
-                        ##nearest_step(array[corrections[n]['slice'].stop - 1] - 
-                                     ##array[corrections[n+1]['slice'].start])
-                ##else:
-                    ##before = nearest_step(array[corrections[n]['slice'].start] - 
-                                          ##array[corrections[n-1]['slice'].stop - 1])
-                    ##after = nearest_step(array[corrections[n]['slice'].stop] - 
-                                         ##array[corrections[n+1]['slice'].start - 1])
-                    ##if corrections[n-1]['correction'] != None and \
-                       ##corrections[n+1]['correction'] != None:
-                        ##d['next'] = min(corrections[n-1]['correction'] + before, 
-                                        ##corrections[n+1]['correction'] + after)
-                    ##elif corrections[n-1]['correction'] != None:
-                        ##d['next'] = corrections[n-1]['correction'] + before
-                    ##elif corrections[n+1]['correction'] != None:
-                        ##d['next'] = corrections[n+1]['correction'] + after
-            ##else:
-                ##d['next'] = d['correction']
-        ### Having completed a scan, copy the results across
-        ##for d in corrections:
-            ##d['correction'] = d['next']
-    
-    # pass 4: apply the corrections using known values and masking the ones
-    # which have no correction
-    
-    array.mask = True
-    for d in corrections:
-        if d['correction'] == 'suppress':
-            continue
-        sl = d['slice']
-        array.mask[sl] = False
-        correction = d['correction']
-        if correction == 0.0:
-            continue
-        elif correction is None:
-            raise ValueError('pin_to_gound failed to compute usecorrections')
-        else:
-            array[sl] -= correction
+        for n, sl in enumerate(good_slices):
+            if is_slice_within_slice(sl, g):
+                delta = nearest_step(np.ma.average(array[sl]))
+                array[sl] -=  delta
 
     return array
 

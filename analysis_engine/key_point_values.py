@@ -19998,10 +19998,10 @@ class TurbulenceDuringFlightMax(KeyPointValueNode):
             # Restrict Airborne from 5 sec after airborne to the end of the
             # last approach (50 Ft Descending) to ensure we don't capture
             # liftoff, flare or touchdown
-            this_airborne_app = [app for app in apps.get_slices()
-                                 if is_slice_within_slice(app, air)]
-            if this_airborne_app:
-                last_app = this_airborne_app[-1]
+            this_airborne_apps = [app for app in apps.get_slices()
+                                  if is_slice_within_slice(app, air)]
+            if this_airborne_apps:
+                last_app = max(this_airborne_apps, key=operator.attrgetter('start'))
                 stop = last_app.stop
             else:
                 # No Approach in this Airborne section

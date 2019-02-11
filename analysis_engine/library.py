@@ -4754,11 +4754,7 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         result[result_slice][0] = np.ma.masked
         result[result_slice][-1] = np.ma.masked
 
-    try:
-        result.mask = np.ma.logical_or(result.mask, tol_mask.mask)
-    except:
-        pass
-            
+    result.mask = np.ma.logical_or(np.ma.getmaskarray(result), np.ma.getmaskarray(tol_mask))
     return result
 
 

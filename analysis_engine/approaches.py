@@ -31,6 +31,7 @@ from analysis_engine.library import (
     runs_of_ones,
     peak_curvature,
     shift_slices,
+    slices_int,
     latitudes_and_longitudes,
     nearest_runway,
     find_rig_approach,
@@ -306,7 +307,7 @@ class ApproachInformation(ApproachNode):
                 landing = True
             # b) We have a touch and go if Altitude AAL reached zero:
             #elif np.ma.any(alt.array[_slice] <= 0):
-            elif np.ma.any(alt.array[_slice.start:_slice.stop+(5*alt.frequency)] <= 0):
+            elif np.ma.any(alt.array[slices_int(_slice.start, _slice.stop+(5*alt.frequency))] <= 0):
                 if ac_type == aeroplane:
                     approach_type = 'TOUCH_AND_GO'
                     landing = False
@@ -321,7 +322,7 @@ class ApproachInformation(ApproachNode):
                 landing = False
 
             # Rough reference index to allow for go-arounds
-            ref_idx = index_at_value(alt.array, 0.0, _slice=_slice, endpoint='nearest')
+            ref_idx = int(index_at_value(alt.array, 0.0, _slice=_slice, endpoint='nearest'))
 
             turnoff = None
             if landing:
@@ -331,7 +332,7 @@ class ApproachInformation(ApproachNode):
                 else:
                     search_end = _slice.stop
 
-                tdn_hdg = np.ma.median(hdg.array[ref_idx:search_end+1])
+                tdn_hdg = np.ma.median(hdg.array[slices_int(ref_idx, search_end+1)])
                 # Complex trap for the all landing heading data is masked case...
                 if (tdn_hdg % 360.0) is np.ma.masked:
                     lowest_hdg = bearing_and_distance(lat.array[ref_idx], lon.array[ref_idx],
@@ -340,7 +341,7 @@ class ApproachInformation(ApproachNode):
                     lowest_hdg = (tdn_hdg % 360.0).item()
                 
                 # While we're here, let's compute the turnoff index for this landing.
-                head_landing = hdg.array[(ref_idx+_slice.stop)/2:_slice.stop]
+                head_landing = hdg.array[slices_int((ref_idx+_slice.stop)/2, _slice.stop)]
                 if len(head_landing) > 2:
                     peak_bend = peak_curvature(head_landing, curve_sense='Bipolar')
                     fifteen_deg = index_at_value(
@@ -434,11 +435,15 @@ class ApproachInformation(ApproachNode):
                 # A couple of seconds are added to the end of the slice as some flights used
                 # to test this had the touchdown a couple of seconds outside the approach slice 
                 if is_index_within_slice(touchdown.index, slice(_slice.start, _slice.stop+5*alt.frequency)):
-                    if offshore and offshore.array[touchdown.index] == 'Offshore' and tkoff.start < touchdown.index:
+                    if offshore and \
+                       offshore.array[int(touchdown.index)] == 'Offshore' and \
+                       tkoff.start < touchdown.index:
                         if not distance_land:
                             if offshore.array[tkoff.start] == 'Offshore':
                                 approach_type = 'SHUTTLING'
-                        elif offshore.array[tkoff.start] == 'Offshore' and tkoff.start < len(distance_land.array) and distance_land.array[tkoff.start] <= 40:
+                        elif offshore.array[tkoff.start] == 'Offshore' and \
+                             tkoff.start < len(distance_land.array) and \
+                             distance_land.array[int(tkoff.start)] <= 40:
                             approach_type = 'SHUTTLING'
                         elif height_from_rig:
                             Vy = 80.0 # Type dependent?
@@ -621,7 +626,7 @@ class ApproachInformation(ApproachNode):
             
             # Do we have a recorded ILS frequency? If so, what was it tuned to at the start of the approach??
             if ils_freq:
-                appr_ils_freq = ils_freq.array[_slice.start]
+                appr_ils_freq = ils_freq.array[int(_slice.start)]
             # Was this valid, and if so did the start of the approach match the landing runway?
             if appr_ils_freq and not (np.isnan(appr_ils_freq) or np.ma.is_masked(appr_ils_freq)):
                 appr_ils_freq = round(appr_ils_freq, 2)
@@ -643,11 +648,13 @@ class ApproachInformation(ApproachNode):
                 approach_runway = landing_runway
 
             if approach_runway and 'frequency' in approach_runway['localizer']:
-                if np.ma.count(ils_loc.array[_slice]) > 10:
+                if np.ma.count(ils_loc.array[slices_int(_slice)]) > 10:
                     if runway_change:
                         # We only use the first frequency tuned. This stops scanning across both runways if the pilot retunes.
-                        loc_slice = shift_slices(runs_of_ones(np.ma.abs(ils_freq.array[_slice]-appr_ils_freq)<0.001),
-                                                 _slice.start)[0]
+                        loc_slice = shift_slices(
+                            runs_of_ones(np.ma.abs(ils_freq.array[slices_int(_slice)] - appr_ils_freq) < 0.001),
+                            _slice.start
+                        )[0]
                     else:
                         loc_slice = _slice
                 else:
@@ -672,7 +679,7 @@ class ApproachInformation(ApproachNode):
                     
             loc_est = None
             if loc_slice:
-                valid_range = np.ma.flatnotmasked_edges(ils_loc.array[_slice])
+                valid_range = np.ma.flatnotmasked_edges(ils_loc.array[slices_int(_slice)])
                 # I have some data to scan. Shorthand names;
                 loc_start = valid_range[0] + _slice.start
                 loc_end = valid_range[1] + _slice.start
@@ -723,7 +730,10 @@ class ApproachInformation(ApproachNode):
                     elif approach_type == 'LANDING':
                         # Just end at 2 dots where we turn off the runway
                         loc_end_2_dots = index_at_value(np.ma.abs(ils_loc.array), 2.0, _slice=slice(turnoff+5*(_slice.stop-_slice.start)/100, loc_estab, -1))
-                        if loc_end_2_dots and is_index_within_slice(loc_end_2_dots, _slice) and not np.ma.is_masked(ils_loc.array[loc_end_2_dots]) and loc_end_2_dots > loc_estab:
+                        if loc_end_2_dots and \
+                           is_index_within_slice(loc_end_2_dots, _slice) and \
+                           not np.ma.is_masked(ils_loc.array[int(loc_end_2_dots)]) and \
+                           loc_end_2_dots > loc_estab:
                             loc_end = loc_end_2_dots
                     loc_est = slice(loc_estab, loc_end+1)
 

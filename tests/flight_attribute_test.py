@@ -15,6 +15,7 @@ from analysis_engine.node import (
     KeyTimeInstance,
     Section,
 )
+
 from analysis_engine.flight_attribute import (
     DeterminePilot,
     DestinationAirport,
@@ -42,7 +43,7 @@ from analysis_engine.flight_attribute import (
 
 from flightdatautilities import api
 
-from flight_phase_test import buildsection
+from analysis_engine.test_utils import buildsection
 
 test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               'test_data')
@@ -360,7 +361,7 @@ class TestDestinationAirport(unittest.TestCase):
     
     def setUp(self):
         dest_array = np.ma.array(
-            ['FDSL', 'FDSL', 'FDSL', 'FDSL', 'ABCD', 'ABCD'],
+            [b'FDSL', b'FDSL', b'FDSL', b'FDSL', b'ABCD', b'ABCD'],
             mask=[True, False, False, False, False, True])
         self.dest = P('Destination', array=dest_array)
         self.afr_dest = A('AFR Destination Airport', value={'id': 2000})
@@ -442,7 +443,8 @@ class TestFlightNumber(unittest.TestCase):
 
     def test_derive_ascii(self):
         flight_number_param = P('Flight Number',
-                                array=np.ma.masked_array(['ABC', 'DEF', 'DEF']))
+                                array=np.ma.masked_array(['ABC', 'DEF', 'DEF'],
+                                                         dtype=np.string_))
         flight_number = FlightNumber()
         flight_number.set_flight_attr = Mock()
         flight_number.derive(flight_number_param)

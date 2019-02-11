@@ -884,6 +884,8 @@ class TestSectionNode(unittest.TestCase):
         section_node.create_section(slice(5, 7))
         slices = section_node.get_slices()
         self.assertEqual(slices, [slice(2, 4), slice(5, 7)])
+        slices = section_node.get_slices(within_slice=slice(1, 6))
+        self.assertEqual(slices, [slice(2, 4)])
 
     def test_get_surrounding(self):
         node = SectionNode()

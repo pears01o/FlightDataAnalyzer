@@ -498,7 +498,7 @@ def can_operate(cls, available, actype=A('Aircraft Type')):
         :rtype: None
         """
         raise NotImplementedError("Abstract Method")
-    
+
     def __getstate__(self):
         '''
         Do not pickle _cache attr when saving nodes.
@@ -508,7 +508,7 @@ def can_operate(cls, available, actype=A('Aircraft Type')):
         state = self.__dict__.copy()
         del state['_cache']
         return state
-    
+
     def __setstate__(self, state):
         '''
         Add an empty _cache attr when loading nodes.
@@ -1283,19 +1283,14 @@ class SectionNode(Node, list):
         return self.__class__(name=self.name, frequency=self.frequency,
                               offset=self.offset, items=surrounded)
 
-    def get_slices(self, edges=True):
+    def get_slices(self, edges=True, **kwargs):
         '''
         :param edges: Return start and stop edge rather than slice start and stop, using edges results in section[0].slice.start != section.get_slices()[0].start
         :type edges: bool
         :returns: A list of slices from the SectionNode.
         :rtype: [slice]
         '''
-        if edges:
-            slices = [slice(section.start_edge, section.stop_edge)
-                      for section in self]
-        else:
-            slices = [section.slice for section in self]
-        return slices
+        return [slice(s.start_edge, s.stop_edge) if edges else s.slice for s in self.get(**kwargs)]
 
 
 class FlightPhaseNode(SectionNode):

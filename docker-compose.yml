@@ -1,7 +1,7 @@
 version: '3'
 services:
   nosetest:
-    image: docker-registry.flightdataservices.com/test/fds-base:python-3.6-slim-stretch-0.0.1
+    image: docker-registry.flightdataservices.com/test/fds-base:python-3.7-slim-stretch-0.0.4
     command: bash -c 'cd /usr/src/testdir && nosetests --with-xunit'
     volumes:
       - ./:/usr/src/testdir

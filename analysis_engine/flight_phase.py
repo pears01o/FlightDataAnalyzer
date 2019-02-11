@@ -253,7 +253,7 @@ class Holding(FlightPhaseNode):
         # We know turn rate will be positive because Heading Increasing only
         # increases.
         turn_bands = np.ma.clump_unmasked(
-            np.ma.masked_less(turn_rate[to_scan], 0.5))
+            np.ma.masked_less(turn_rate[slices_int(to_scan)], 0.5))
         hold_bands=[]
         for turn_band in shift_slices(turn_bands, to_scan.start):
             # Reject short periods and check that the average groundspeed was

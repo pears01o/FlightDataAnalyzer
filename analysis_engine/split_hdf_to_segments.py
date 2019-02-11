@@ -182,12 +182,12 @@ def _segment_type_and_slice(speed_array, speed_frequency,
         # then the helicopter is likely be on the ground and we can test for slow_start and slow_stop.
         col = next((p for p in (hdf.get(n) for n in ('Collective', 'Collective (1)', 'Collective (2)')) if p), None)
         if col:
-            col_window_sample = 120 * col.frequency
-            col_min_sample = 4 * col.frequency
+            col_window_sample = int(120 * col.frequency)
+            col_min_sample = int(4 * col.frequency)
             speedy = np.ma.where(speed_array[speed_start:speed_stop] > thresholds['speed_threshold'])[0]
             if len(speedy):
-                col_start = (speed_start + speedy[0]) * (col.frequency / speed_frequency)
-                col_stop = (speed_start + speedy[-1]) * (col.frequency / speed_frequency)
+                col_start = int((speed_start + speedy[0]) * (col.frequency / speed_frequency))
+                col_stop = int((speed_start + speedy[-1]) * (col.frequency / speed_frequency))
                 try:  # shift start backwards to earlier low Collective value
                     col_start = col_start - col_window_sample + \
                         np.ma.where(col.array[col_start - col_window_sample:col_start])[0][0]
@@ -203,7 +203,7 @@ def _segment_type_and_slice(speed_array, speed_frequency,
                 # starting and finishing inside the speed_array.
                 # Use unmasked speed slices as the start/end indices for collective window
                 col_start = int(unmasked_slices[0].start * (col.frequency / speed_frequency))
-                col_stop = int(unmasked_slices[-1].stop - 1) * (col.frequency / speed_frequency))
+                col_stop = int((unmasked_slices[-1].stop - 1) * (col.frequency / speed_frequency))
             else:
                 col_start = start * col.frequency
                 col_stop = stop * col.frequency

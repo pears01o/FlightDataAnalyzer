@@ -7679,7 +7679,7 @@ class AirspeedSelectedForApproaches(DerivedParameterNode):
             offset = int(aspd.offset)
             array = np.ma.concatenate(
                 (np_ma_masked_zeros(offset), array[:-offset]))
-        self.array = np.ma.concatenate([array[rep - 1:], array[-(rep - 1):]])
+        self.array = np.ma.concatenate([array[int(rep - 1):], array[-int((rep - 1)):]])
         self.frequency = 1
         self.offset = 0
 
@@ -8213,7 +8213,7 @@ class VrefLookup(DerivedParameterNode):
         max_detent = max(table.vref_detents, key=lambda x: parameter.state.get(x, -1))
 
         for approach in approaches:
-            phase = slices_int(approach)
+            phase = slices_int(approach.slice)
             # Select the maximum flap detent during the phase:
             index, detent = max_value(parameter.array, phase)
             # Allow no gross weight for aircraft which use a fixed vspeed:
@@ -8722,9 +8722,9 @@ class MinimumCleanLookup(DerivedParameterNode):
         detent = '30'
 
         for phase in phases:
-            self.array[phase] = table.vref(detent, gw.array[phase])
+            self.array[slices_int(phase)] = table.vref(detent, gw.array[slices_int(phase)])
             # Add 80kts to the whole array to get Vref30+80kts
-            self.array[phase] += 80
+            self.array[slices_int(phase)] += 80
 
         # above_FL250 includes S('Cruise') slices above FL247 in order to avoid
         # creating 'spikes' when the cruising altitude is FL250

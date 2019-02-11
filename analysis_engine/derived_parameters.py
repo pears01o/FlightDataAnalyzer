@@ -839,7 +839,10 @@ class AltitudeAAL(DerivedParameterNode):
                                                         next_dip['highest_ground'])
 
             for dip in dips:
-                alt_rad_section = alt_rad.array[dip['slice']] if alt_rad else None
+                if alt_rad and np.ma.count(alt_rad.array[dip['slice']]):
+                    alt_rad_section = repair_mask(alt_rad.array[dip['slice']])
+                else:
+                    alt_rad_section = None
 
                 if (dip['type']=='land') and (alt_rad_section is None) and \
                    (dip['slice'].stop<dip['slice'].start) and pitch:
@@ -1074,12 +1077,10 @@ class AltitudeRadio(DerivedParameterNode):
     units = ut.FT
 
     @classmethod
-    def can_operate(cls, available, family=A('Family')):
-        airbus = family and family.value in ('A300', 'A310', 'A319', 'A320', 'A321', 'A330', 'A340')
-        fast = 'Fast' in available if airbus else True
+    def can_operate(cls, available):
         alt_rads = [n for n in cls.get_dependency_names() if n.startswith('Altitude Radio')]
-        return fast and any_of(alt_rads, available)
-
+        return 'Fast' in available and any_of(alt_rads, available)
+    
     def derive(self,
                source_A=P('Altitude Radio (A)'),
                source_B=P('Altitude Radio (B)'),
@@ -1102,53 +1103,32 @@ class AltitudeRadio(DerivedParameterNode):
         self.offset = 0.0
         self.frequency = 4.0
 
-        if family and family.value in ('A300', 'A310', 'A318', 'A319', 'A320', 'A321', 'A330', 'A340'):
-            # The Altitude Radio, Altitude Radio (*) in Airbus frames should
-            # not contain "Overflow Correction = True". The below procedure
-            # works a lot more effective, especially in case of ARINC pattern
-            # in the signal, which can't be removed in conversion process.
-            osources = []
-            for source in sources:
-                if source is None:
-                    continue
-                # FIXME: this process should be moved to pre validation as
-                # we have seen flights where terrain arround the rollover
-                # point (2047) in quick succession get masked by rate of
-                # change. This prevents overflow_correction from correcting
-                # the parameter and leads to multiple touchdowns. example
-                # hash:acda842c2799
-                aligned_fast = fast.get_aligned(source)
-                # look for max jump within longest fast section to ignore
-                # invalid data at beginning or end of segment
-                to_scan = source.array.data[aligned_fast.get_longest().slice]
-                max_jump = abs(np.ma.ediff1d(to_scan, to_begin=0.0)).max()
-                half_p2p = np.ma.ptp(to_scan) / 2.0
-                if max_jump > 4095 and max_jump > half_p2p:
-                    max_val = 8191
-                elif max_jump > 2047 and max_jump > half_p2p:
-                    max_val = 4095
-                elif max_jump > 1024 and max_jump > half_p2p: # previously 1023 changed due to flights such as 1b566455f121
-                    max_val = 2047
-                elif max_jump > 1023 * .75 and max_jump > half_p2p:
-                    max_val = 1023
-                else:
-                    max_val = None
+        osources = []
+        for source in sources:
+            if source is None:
+                continue
+            # correct for overflow, aligning the fast slice to each source
+            aligned_fast = fast.get_aligned(source)
 
-                if max_val:
-                    # correct for overflow, aligning the fast slice to each source
-                    source.array = overflow_correction(
-                        source, aligned_fast, max_val=max_val)
-                    # Mask values less than -20. These values were left unmasked
-                    # previously for overflow_correction.
-                    source.array = np.ma.masked_less(source.array, -20)
-                osources.append(source)
-            sources = osources
-
+            source.array = overflow_correction(source.array, 
+                                               fast=aligned_fast, 
+                                               hz=source.frequency)
+            osources.append(source)
+        
+        sources = osources
+        # Blend parameters was written around the Boeing 737NG frames where three sources
+        # are available with different sample rates and latency. Some airbus aircraft
+        # have three altimeters but one of the sensors can give signals that appear to be 
+        # valid in the cruise, hence the alternative validity level. Finally, the overflow
+        # correction algorithms can be out of step, giving differences of the order of 
+        # 1,000ft between two sensors. The tolerance threshold ensures these are rejected.
         self.array = blend_parameters(sources,
                                       offset=self.offset,
                                       frequency=self.frequency,
                                       small_slice_duration=10,
-                                      mode='cubic')
+                                      mode='cubic',
+                                      validity='all_but_one',
+                                      tolerance=100.0)
 
         # For aircraft where the antennae are placed well away from the main
         # gear, and especially where it is aft of the main gear, compensation
@@ -1172,7 +1152,7 @@ class AltitudeRadio(DerivedParameterNode):
             scaling = 0.365 #ft/deg, +ve for altimeters aft of the main wheels.
             offset = -1.5 #ft at pitch=0
             self.array = self.array + (scaling * pitch.array) + offset
-
+            
 
 class AltitudeRadioOffsetRemoved(DerivedParameterNode):
     """
@@ -4423,7 +4403,8 @@ class SlopeToLanding(DerivedParameterNode):
             if not np.ma.count(alt_aal.array[app.slice]):
                 continue
             # What's the temperature deviation from ISA at landing?
-            dev = from_isa(alt_aal.array[app.slice][-1], sat.array[app.slice][-1])
+            dev = from_isa(last_valid_sample(alt_aal.array[app.slice]).value,
+                           last_valid_sample(sat.array[app.slice]).value)
             # now correct the altitude for temperature deviation.
             alt = alt_dev2alt(alt_aal.array[app.slice], dev)
             self.array[app.slice] = alt / ut.convert(dist.array[app.slice], ut.NM, ut.FT)

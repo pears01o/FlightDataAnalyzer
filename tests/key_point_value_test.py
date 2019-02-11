@@ -233,6 +233,7 @@ from analysis_engine.key_point_values import (
     AltitudeMax,
     AltitudeOvershootAtSuspectedLevelBust,
     AltitudeRadioDuringAutorotationMin,
+    AltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore,
     AltitudeAALCleanConfigurationMin,
     AltitudeWithFlapMax,
     AltitudeRadioAtNoseDownAttitudeInitiation,
@@ -835,7 +836,7 @@ from analysis_engine.key_time_instances import (
 )
 from analysis_engine.library import (max_abs_value, max_value, min_value)
 from analysis_engine.flight_phase import Fast, RejectedTakeoff
-from flight_phase_test import buildsection, buildsections
+from analysis_engine.test_utils import buildsection, buildsections
 
 debug = sys.gettrace() is not None
 
@@ -883,7 +884,7 @@ class NodeTest(object):
                 self.operational_combination_length,
             )
         else:
-            combinations = map(set, self.node_class.get_operational_combinations(**kwargs))
+            combinations = list(map(set, self.node_class.get_operational_combinations(**kwargs)))
             for combination in map(set, self.operational_combinations):
                 self.assertIn(combination, combinations)
 
@@ -1128,6 +1129,7 @@ class CreateKPVsWithinSlicesTest(NodeTest):
     def test_derive_mocked(self):
         mock1, mock2, mock3 = Mock(), Mock(), Mock()
         mock1.array = Mock()
+        mock1.frequency = 1.0
         if hasattr(self, 'second_param_method_calls'):
             mock3 = Mock()
             setattr(mock2, self.second_param_method_calls[0][0], mock3)
@@ -5243,7 +5245,7 @@ class TestAirspeedRelativeWithConfigurationDuringDescentMin(unittest.TestCase, N
         array = np.ma.array((0, 1, 1, 2, 2, 4, 6, 4, 4, 2, 1, 0, 0, 0, 0, 0))
         array = np.ma.concatenate((array, array[::-1]))
         conf = M(name='Configuration', array=array, values_mapping=self.mapping)
-        array = np.ma.concatenate((np.arange(16), np.arange(16, -1, -1)))
+        array = np.ma.concatenate((np.arange(16), np.arange(16, 0, -1)))
         air_spd = P(name='Airspeed', array=array)
         descent = buildsection('Descent To Flare', 16, 30)
         name = self.node_class.get_name()
@@ -5282,13 +5284,17 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
 
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(air_spd, None, None, flap_inc_trans, flap_exc_trans, fast)
-        self.assertEqual(node, KPV(name=name, items=[
+
+        expected = KPV(name=name, items=[
             KeyPointValue(index=29, value=29, name='Airspeed With Flap Including Transition 10 Max'),
             KeyPointValue(index=18, value=18, name='Airspeed With Flap Including Transition 5 Max'),  # 19 was masked
             KeyPointValue(index=29, value=29, name='Airspeed With Flap Excluding Transition 10 Max'),
             KeyPointValue(index=19, value=19, name='Airspeed With Flap Excluding Transition 5 Max'),
-        ]))
+        ])
+
+        node.derive(air_spd, None, None, flap_inc_trans, flap_exc_trans, fast)
+        self.assertEqual(sorted(node, key=lambda k: k.index or False),
+                         sorted(expected, key=lambda k: k.index or False))
 
     @patch.dict('analysis_engine.key_point_values.AirspeedWithFlapMax.NAME_VALUES', {'flap': (5.5, 10.1, 20.9)})
     def test_derive_fractional_settings(self):
@@ -5298,8 +5304,8 @@ class TestAirspeedWithFlapMax(unittest.TestCase, NodeTest):
         flap_synth = M('Flap Lever (Synthetic)', array.copy(), values_mapping=mapping)
         flap_inc_trans = M('Flap Including Transition', array.copy(), values_mapping=mapping)
         flap_exc_trans = M('Flap Excluding Transition', array.copy(), values_mapping=mapping)
-        air_spd = P('Airspeed', np.ma.arange(30))
-        fast = buildsection('Fast', 0, 30)
+        air_spd = P('Airspeed', np.ma.arange(20))
+        fast = buildsection('Fast', 0, 20)
 
         node = self.node_class()
         node.derive(air_spd, None, None, flap_inc_trans, None, fast)
@@ -7281,6 +7287,129 @@ class TestAltitudeRadioDuringAutorotationMin(unittest.TestCase):
         self.assertEqual(len(node), 1)
         self.assertEqual(node[0].index, 240.5)
         self.assertEqual(node[0].value, 152)
+
+
+class TestAltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore(unittest.TestCase):
+
+    def setUp(self):
+        self.offshore_mapping = {0: 'Onshore', 1: 'Offshore'}
+        self.node_class = AltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore
+
+    def test_can_operate(self):
+        expected = [('Offshore', 'Liftoff', 'Hover',
+                     'Nose Down Attitude Adoption', 'Altitude Radio',
+                     'Altitude AAL For Flight Phases')]
+
+        opts_h175 = self.node_class.get_operational_combinations(
+                    ac_type=helicopter, family=A('Family', 'H175'))
+
+        opts_aeroplane = self.node_class.get_operational_combinations(ac_type=aeroplane)
+
+        self.assertEqual(opts_h175, expected)
+        self.assertNotEqual(opts_aeroplane, expected)
+
+    def test_derive(self):
+        node = AltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore()
+        offshore_data = np.concatenate([np.zeros(10), np.ones(80),
+                                        np.zeros(10)])
+
+        offshore_array = MappedArray(offshore_data,
+                                     values_mapping=self.offshore_mapping)
+        offshore_multistate = M(name='Offshore', array=offshore_array)
+
+        liftoff = KTI('Liftoff', items=[
+            KeyTimeInstance(15, 'Liftoff'),
+        ])
+
+        hover = buildsection('Hover', 20, 30)
+        nose_down = buildsection('Nose Down Attitude Adoption', 29, 32)
+
+        rad_alt = np.concatenate([np.zeros(13), np.linspace(0, 30, num=7),
+                                  np.linspace(30, 5, num=10),
+                                  np.linspace(5, 1000, num=70)])
+
+        alt_aal = np.concatenate([np.zeros(13), np.linspace(0, 25, num=7),
+                                  np.linspace(25, 3, num=10),
+                                  np.linspace(3, 1000, num=70)])
+
+        node.derive(offshore_multistate, liftoff, hover, nose_down,
+                    P('Altitude Radio', rad_alt),
+                    P('Altitude AAL For Flight Phases', alt_aal))
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 28)
+        self.assertEqual(round(node[0].value, 2), 7.78)
+
+    def test_derive_multiple_liftoffs_and_offshore_clumps(self):
+        node = AltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore()
+        offshore_data = np.concatenate([np.zeros(10), np.ones(35),
+                                         np.zeros(3), np.ones(35),
+                                         np.zeros(17)])
+
+        offshore_array = MappedArray(offshore_data,
+                                     values_mapping=self.offshore_mapping)
+        offshore_multistate = M(name='Offshore', array=offshore_array)
+
+        liftoffs = KTI('Liftoff', items=[
+            KeyTimeInstance(15, 'Liftoff'),
+            KeyTimeInstance(50, 'Liftoff'),
+        ])
+
+        hovers = buildsections('Hover', [20, 30], [52, 65])
+        nose_downs = buildsections('Nose Down Attitude Adoption', [29, 32],
+                                                                  [59, 67])
+
+        rad_alt = np.concatenate([np.zeros(13), np.linspace(0, 30, num=7),
+                                  np.linspace(30, 5, num=10),
+                                  np.zeros(18), np.linspace(5, 30, num=8),
+                                  np.linspace(5, 1000, num=44)])
+
+        alt_aal = np.concatenate([np.zeros(13), np.linspace(0, 25, num=7),
+                                  np.linspace(25, 3, num=10),
+                                  np.zeros(18), np.linspace(3, 24, num=8),
+                                  np.linspace(5, 1000, num=44)])
+
+        node.derive(offshore_multistate, liftoffs, hovers, nose_downs,
+                    P('Altitude Radio', rad_alt),
+                    P('Altitude AAL For Flight Phases', alt_aal))
+
+        self.assertEqual(len(node), 2)
+
+        self.assertEqual(node[0].index, 28)
+        self.assertEqual(round(node[0].value, 2), 7.78)
+        self.assertEqual(node[1].index, 56)
+        self.assertEqual(round(node[1].value, 2), 5)
+
+    def test_derive_fallback(self):
+        node = AltitudeRadioMinBeforeNoseDownAttitudeAdoptionOffshore()
+        offshore_data = np.concatenate([np.zeros(10), np.ones(80),
+                                        np.zeros(10)])
+
+        offshore_array = MappedArray(offshore_data,
+                                     values_mapping=self.offshore_mapping)
+        offshore_multistate = M(name='Offshore', array=offshore_array)
+
+        liftoff = KTI('Liftoff', items=[
+            KeyTimeInstance(15, 'Liftoff'),
+        ])
+
+        hover = buildsection('Hover', 20, 30)
+        nose_down = buildsection('Nose Down Attitude Adoption', 29, 32)
+
+        rad_alt = np.concatenate([np.zeros(13), np.linspace(30, 5, num=17),
+                                  np.linspace(5, 1000, num=70)])
+
+        alt_aal = np.concatenate([np.zeros(13), np.linspace(0, 25, num=17),
+                                  np.zeros(70)])
+
+        node.derive(offshore_multistate, liftoff, hover, nose_down,
+                    P('Altitude Radio', rad_alt),
+                    P('Altitude AAL For Flight Phases', alt_aal))
+
+        self.assertEqual(len(node), 1)
+        self.assertEqual(node[0].index, 15)
+        self.assertEqual(round(node[0].value, 2), 26.88)
+
 
 
 class TestAltitudeRadioAtNoseDownAttitudeInitation(unittest.TestCase,
@@ -16403,7 +16532,7 @@ class TestFlapWithSpeedbrakeDeployedMax(unittest.TestCase, NodeTest):
         landings = buildsection('Landing', 10, 15)
         name = self.node_class.get_name()
         node = self.node_class()
-        node.derive(flap, spd_brk, airborne, landings)
+        node.derive(flap, spd_brk, airborne, landings, None)
         self.assertEqual(node, KPV(name=name, items=[
             KeyPointValue(index=7, value=7, name=name),
         ]))
@@ -19756,7 +19885,7 @@ class TestRateOfDescentBelow80KtsMax(unittest.TestCase):
         vrt_spd = P('Vertical Speed', -x*np.sin(x) * 100)
         air_spd = P(
             name='Airspeed',
-            array=np.ma.array(list(range(-2, 150, 5)) + (range(150, -2, -5))),
+            array=np.ma.array(list(range(-2, 150, 5)) + list(range(150, -2, -5))),
         )
 
         air_spd.array[0] = 0
@@ -22173,7 +22302,7 @@ class TestEngStartTimeMax(unittest.TestCase):
                                   'Stationary', 'Taxi Out')])
 
     def test_1_start(self):
-        eng_1_start = P('Eng (1) N2', np.ma.array([0]*4+range(55)+[54]*4))
+        eng_1_start = P('Eng (1) N2', np.ma.array([0]*4+list(range(55))+[54]*4))
         eng_2_start = P('Eng (2) N2', np.ma.array([0]*50))
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)
@@ -22193,7 +22322,7 @@ class TestEngStartTimeMax(unittest.TestCase):
 
     def test_early_cut(self):
         eng_start = P('Eng (1) N2',
-                      np.ma.array([60, 30]+[0]*5+range(0, 60, 5)+[60]*3),
+                      np.ma.array([60, 30]+[0]*5+list(range(0, 60, 5))+[60]*3),
                       frequency=0.5)
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)
@@ -22204,7 +22333,7 @@ class TestEngStartTimeMax(unittest.TestCase):
         self.assertEqual(estm[0].index, 8.0)
 
     def test_unclear_start(self):
-        eng_start = P('Eng (1) N2', np.ma.array([0]*5+range(45)+[45]*5))
+        eng_start = P('Eng (1) N2', np.ma.array([0]*5+list(range(45))+[45]*5))
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)
         estm = EngStartTimeMax()
@@ -22213,7 +22342,7 @@ class TestEngStartTimeMax(unittest.TestCase):
 
     def test_2_start(self):
         eng_1_start = P('Eng (1) N2', np.ma.array([60.0]*50))
-        eng_2_start = P('Eng (2) N2', np.ma.array([0]*3+range(0, 55, 2)+[54]*4))
+        eng_2_start = P('Eng (2) N2', np.ma.array([0]*3+list(range(0, 55, 2))+[54]*4))
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)
         estm = EngStartTimeMax()
@@ -22223,8 +22352,8 @@ class TestEngStartTimeMax(unittest.TestCase):
         self.assertEqual(estm[0].index, 4.0)
 
     def test_both_start(self):
-        eng_1_start = P('Eng (1) N2', np.ma.array([0]*4+range(55)+[54]*4))
-        eng_2_start = P('Eng (2) N2', np.ma.array([0]*6+range(55)+[54]*2))
+        eng_1_start = P('Eng (1) N2', np.ma.array([0]*4+list(range(55))+[54]*4))
+        eng_2_start = P('Eng (2) N2', np.ma.array([0]*6+list(range(55))+[54]*2))
         stat=buildsection('Stationary', 0, 25)
         t_out=buildsection('Taxi Out', 20, 70)
         estm = EngStartTimeMax()
@@ -22323,7 +22452,7 @@ class TestTaxiInDuration(unittest.TestCase):
         node = TaxiInDuration()
         node.derive(taxi_ins)
         self.assertEqual(len(node), 2)
-        self.assertEqual(node[0], KeyPointValue(8, 5, 'Taxi In Duration'))
+        self.assertEqual(node[0], KeyPointValue(7.5, 5, 'Taxi In Duration'))
         self.assertEqual(node[1], KeyPointValue(25, 10, 'Taxi In Duration'))
 
 

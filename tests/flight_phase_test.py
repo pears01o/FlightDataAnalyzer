@@ -75,6 +75,11 @@ from analysis_engine.node import (A, App, ApproachItem, KTI,
                                   Parameter, P, S, Section, SectionNode, load,
                                   aeroplane, helicopter)
 from analysis_engine.process_flight import process_flight
+from analysis_engine.test_utils import (
+    buildsection,
+    buildsections,
+    build_kti,
+)
 
 from analysis_engine.settings import AIRSPEED_THRESHOLD
 from analysis_engine.utils import open_node_container
@@ -82,61 +87,6 @@ from analysis_engine.utils import open_node_container
 
 test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               'test_data')
-
-'''
-Three little routines to make building Sections for testing easier.
-'''
-def builditem(name, begin, end, start_edge=None, stop_edge=None):
-    '''
-    This code more accurately represents the aligned section values, but is
-    not suitable for test cases where the data does not get aligned.
-
-    if begin is None:
-        ib = None
-    else:
-        ib = int(begin)
-        if ib < begin:
-            ib += 1
-    if end is None:
-        ie = None
-    else:
-        ie = int(end)
-        if ie < end:
-            ie += 1
-
-    :param begin: index at start of section
-    :param end: index at end of section
-    '''
-    slice_end = end if end is None else end + 1
-    return Section(name, slice(begin, slice_end, None), start_edge or begin, stop_edge or end)
-
-
-def buildsection(name, *args):
-    '''
-    A little routine to make building Sections for testing easier.
-
-    :param name: name for a test Section
-    :returns: a SectionNode populated correctly.
-
-    Example: land = buildsection('Landing', 100, 120)
-    '''
-    return SectionNode(name, items=[builditem(name, *args)])
-
-
-def buildsections(name, *args):
-    '''
-    Like buildsection, this is used to build SectionNodes for test purposes.
-
-    lands = buildsections('name',[from1,to1],[from2,to2])
-
-    Example of use:
-    approach = buildsections('Approach', [80,90], [100,110])
-    '''
-    return SectionNode(name, items=[builditem(name, *a) for a in args])
-
-
-def build_kti(name, *args):
-    return KTI(items=[KeyTimeInstance(a, name) for a in args if a])
 
 
 ##############################################################################
@@ -1854,7 +1804,7 @@ class TestLanding(unittest.TestCase):
         self.assertEqual(landing.get_slices(), expected.get_slices())
 
     def test_landing_aeroplane_turnoff(self):
-        head = np.ma.array([20]*15+range(20,0,-2))
+        head = np.ma.array([20]*15+list(range(20,0,-2)))
         alt_aal = np.ma.array([100,80,60,40,20]+[0]*26)
         phase_fast = buildsection('Fast',0,5)
         landing = Landing()
@@ -1867,7 +1817,7 @@ class TestLanding(unittest.TestCase):
         self.assertEqual(landing.get_slices(), expected.get_slices())
 
     def test_landing_aeroplane_turnoff_left(self):
-        head = np.ma.array([20]*15+range(20,0,-2))*-1.0
+        head = np.ma.array([20]*15+list(range(20,0,-2)))*-1.0
         alt_aal = np.ma.array([100,80,60,40,20]+[0]*26)
         phase_fast = buildsection('Fast', 0, 5)
         landing = Landing()
@@ -1881,7 +1831,7 @@ class TestLanding(unittest.TestCase):
 
     def test_landing_aeroplane_with_multiple_fast(self):
         # ensure that the result is a single phase!
-        head = np.ma.array([20]*15+range(20,0,-2))
+        head = np.ma.array([20]*15+list(range(20,0,-2)))
         alt_aal = np.ma.array(list(range(140,0,-10))+[0]*26)
         # first test the first section that is not within the landing heights
         phase_fast = buildsections('Fast', [2, 5], [7, 10])
@@ -2080,7 +2030,8 @@ class TestLevelFlight(unittest.TestCase, NodeTest):
         self.operational_combinations = [('Airborne', 'Vertical Speed For Flight Phases')]
 
     def test_level_flight_phase_basic(self):
-        data = list(range(0, 400, 1)) + list(range(400, -450, -1)) + list(range(-450, 50, 1))
+        data = list(range(0, 400, 1)) + list(range(400, -450, -1)) +\
+            list(range(-450, 50, 1))
         vrt_spd = Parameter(
             name='Vertical Speed For Flight Phases',
             array=np.ma.array(data),
@@ -2096,7 +2047,8 @@ class TestLevelFlight(unittest.TestCase, NodeTest):
             Section('Level Flight', slice(1400, 1750, None), 1400, 1750)])
 
     def test_level_flight_phase_not_airborne_basic(self):
-        data = list(range(0, 400, 1)) + list(range(400, -450, -1)) + list(range(-450, 50, 1))
+        data = list(range(0, 400, 1)) + list(range(400, -450, -1)) +\
+            list(range(-450, 50, 1))
         vrt_spd = Parameter(
             name='Vertical Speed For Flight Phases',
             array=np.ma.array(data),
@@ -2134,7 +2086,8 @@ class TestStationary(unittest.TestCase, NodeTest):
         self.operational_combinations = [('Groundspeed',)]
 
     def test_stationary_basic(self):
-        data = [0]*30+list(range(0, 60, 1)) + list(range(60,0,-2) + [0]*20)
+        data = [0]*30 + list(range(0, 60, 1)) +\
+            list(range(60,0,-2)) + [0]*20
         gspd = Parameter('Groundspeed',array=np.ma.array(data))
         station = Stationary()
         station.derive(gspd)
@@ -2158,8 +2111,9 @@ class TestStraightAndLevel(unittest.TestCase, NodeTest):
         self.operational_combinations = [('Level Flight', 'Heading')]
 
     def test_straight_and_level_basic(self):
-        data = [0]*60+list(range(0, 360, 1)) + list(range(360,0,-2) + [0]*120)
-        hdg = Parameter('Heading',array=np.ma.array(data))
+        data = [0]*60+ list(range(0, 360, 1)) +\
+            list(range(360,0,-2)) + [0]*120
+        hdg = Parameter('Heading',array=np.ma.array(data, dtype=np.float64))
         level = buildsection('Level Flight', 0, 900)
         s_and_l = StraightAndLevel()
         s_and_l.derive(level, hdg)
@@ -3151,7 +3105,7 @@ class TestOnDeck(unittest.TestCase):
 
 
 class TestTCASOperational(unittest.TestCase, NodeTest):
-    
+
     def setUp(self):
         self.node_class = TCASOperational
         self.operational_combinations = [
@@ -3190,7 +3144,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         }
 
     def test_normal_operation(self):
-        tcas_cc = M('TCAS Combined Control', 
+        tcas_cc = M('TCAS Combined Control',
                     array=np.ma.concatenate([np.zeros(500), np.ones(10) * 4, np.ones(2), np.zeros(500)]),
                     values_mapping=self.values_mapping_cc)
         alt_aal=P('Altitude AAL', array=np.ma.concatenate([np.arange(0, 1000, 200), np.ones(1000) * 1000, np.arange(1000, -100, -200)]))
@@ -3198,7 +3152,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         node.derive(alt_aal, tcas_cc, None, None, None)
         self.assertEqual(node.get_first().slice, slice(5, 1006))
         self.assertEqual(node.get_first().name, 'TCAS Operational')
-        
+
     def test_one_sector(self):
         tcas_cc = M('TCAS Combined Control', array=np.ma.concatenate([np.tile([0,0,6,6], 253), np.zeros(1010)]),
                     values_mapping=self.values_mapping_cc)
@@ -3219,13 +3173,13 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         self.assertEqual(node.get_slices()[0], slice(4, 26))
 
     def test_not_constant(self):
-        tcas_cc = M('TCAS Combined Control', 
+        tcas_cc = M('TCAS Combined Control',
                     array=np.ma.ones(1012) * 4,
                     values_mapping=self.values_mapping_cc)
         alt_aal = P('Altitude AAL', array=np.ma.concatenate([np.arange(0, 1000, 200), np.ones(1000) * 1000, np.arange(1000, -100, -200)]))
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, None)
-        self.assertEqual(node, [])  
+        self.assertEqual(node, [])
 
     def test_not_out_of_scope(self):
         array = np.ma.concatenate([
@@ -3242,24 +3196,24 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, None, None, None)
         self.assertEqual(node.get_slices(), [slice(5, 200, None), slice(220, 250, None), slice(270, 300, None), slice(320, 1006, None)])
-                
+
     def test_not_if_status_wrong(self):
         # Embraer map status zero to Normal Operation
         tcas_cc = M('TCAS Combined Control', array=np.ma.concatenate([np.zeros(500), np.ones(10) * 5, np.zeros(490)]),
                     values_mapping=self.values_mapping_cc)
         alt_aal = P('Altitude AAL', array=np.ma.concatenate([np.arange(0, 1000, 200), np.ones(989) * 1000, np.arange(1000, -100, -200)]))
-        status = M('TCAS Status', array=np.ma.zeros(1000), 
+        status = M('TCAS Status', array=np.ma.zeros(1000),
                    values_mapping=self.status_mapping)
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, status, None, None)
         self.assertEqual(node.get_first().slice.start, 5)
-        
+
         status = M('TCAS Status', array=np.ma.ones(1000) * 2,
                    values_mapping=self.status_mapping)
         node = self.node_class()
         node.derive(alt_aal, tcas_cc, status, None, None)
         self.assertEqual(node, [])
-        
+
         # Airbus map Status one to TCAS Active
         status = M('TCAS Status', array=np.ma.concatenate([np.zeros(490), np.ones(15), np.zeros(495)]),
                    values_mapping={0:'-', 1:'TCAS Active'})
@@ -3319,7 +3273,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
 
     def test_masked_1(self):
         # This replicates the format seen from real data.
-        tcas_cc = M('TCAS Combined Control', 
+        tcas_cc = M('TCAS Combined Control',
                     array=np.ma.array(data=[0, 1, 2, 3, 4, 5, 4, 5, 6, 5],
                                       mask=[0, 1] * 5),
                     values_mapping=self.values_mapping_cc)
@@ -3330,7 +3284,7 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
 
     def test_masked_2(self):
         # This replicates the format seen from real data.
-        tcas_cc = M('TCAS Combined Control', 
+        tcas_cc = M('TCAS Combined Control',
                     array=np.ma.array(data=np.concatenate([np.zeros(50), np.ones(50) * 5, np.zeros(410)]),
                                       mask=np.tile([0, 1], 255)),
                     values_mapping=self.values_mapping_cc)
@@ -3338,9 +3292,9 @@ class TestTCASOperational(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(tcas_cc, alt_aal, None, None)
         self.assertEqual(node, [])
-        
+
         # This is another format seen from real data.
-        tcas_cc = M('TCAS Combined Control', 
+        tcas_cc = M('TCAS Combined Control',
                     array=np.ma.array(data=np.concatenate([np.zeros(50), np.ones(20) * 5, np.zeros(1810)]),
                                       mask=np.concatenate([np.zeros(50), np.ones(20), np.zeros(1810)])),
                     values_mapping=self.values_mapping_cc)
@@ -3363,9 +3317,9 @@ class TestTCASResolutionAdvisory(unittest.TestCase):
     def test_can_operate(self):
         self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Combined Control',
                                                             'TCAS Operational')))
-        self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS RA', 
+        self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS RA',
                                                             'TCAS Operational')))
-                        
+
     def test_derive_cc(self):
         tcas_cc = M('TCAS Combined Control', array=np.ma.array([0,0,0,0,4,5,4,5,5,5,4,3,2,1]+498*[0]),
                     values_mapping={0: 'No Advisory',
@@ -3381,7 +3335,7 @@ class TestTCASResolutionAdvisory(unittest.TestCase):
         node.derive(tcas_cc, tcas_op)
         self.assertEqual(node.get_first().name, 'TCAS Resolution Advisory')
         self.assertEqual(node.get_ordered_by_index()[0].slice, slice(4, 11))
-        
+
     def test_derive_ra(self):
         self.assertTrue(TCASResolutionAdvisory.can_operate(('TCAS Operational', 'TCAS RA')))
         tcas_ra = M('TCAS RA', array=np.ma.array([0]*4 + [1]*10 + 498*[0]),
@@ -3427,7 +3381,7 @@ class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
         node.derive(tcas_ops, None, None, None, ta, None)
         self.assertEqual(len(node), 1)
         self.assertEqual(node.get_first().slice, slice(7, 13))
-                 
+
     def test_not_close_to_ra(self):
         tcas_ops = buildsection('TCAS Operational', 3, 21)
         ta = M('TCAS TA', array=np.ma.array([0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0]),
@@ -3441,7 +3395,7 @@ class TestTCASTrafficAdvisory(unittest.TestCase, NodeTest):
         node.derive(tcas_ops, None, ta, None, None, ra)
         self.assertEqual(len(node), 0)
 
-        
+
 class TestTakeoffRunwayHeading(unittest.TestCase):
 
     def setUp(self):
@@ -3468,3 +3422,4 @@ class TestTakeoffRunwayHeading(unittest.TestCase):
             slice(2119, 2123, None),
             slice(2525, 2632, None)
         ])
+

@@ -30,6 +30,7 @@ from analysis_engine.library import (
     slices_and,
     slices_and_not,
     slice_duration,
+    slices_int,
     slices_not,
     slices_overlap,
     slices_remove_small_gaps,
@@ -1273,8 +1274,8 @@ class Liftoff(KeyTimeInstanceNode):
                                           to_scan)
                 # and try to augment this with another measure
                 if acc_norm:
-                    idx = np.ma.argmax(acc_norm.array[to_scan])
-                    if acc_norm.array[to_scan][idx] > 1.2:
+                    idx = np.ma.argmax(acc_norm.array[slices_int(to_scan)])
+                    if acc_norm.array[slices_int(to_scan)][idx] > 1.2:
                         index_acc = idx + back_6
 
             if alt_rad:
@@ -1283,15 +1284,15 @@ class Liftoff(KeyTimeInstanceNode):
             if gog:
                 # Try using Gear On Ground switch
                 edges = find_edges_on_state_change(
-                    'Ground', gog.array[to_scan], change='leaving')
+                    'Ground', gog.array[slices_int(to_scan)], change='leaving')
                 if edges:
                     # use the last liftoff point
                     index = edges[-1] + back_6
                     # Check we were within 5ft of the ground when the switch triggered.
                     if alt_rad is None:
                         index_gog = index
-                    elif alt_rad.array[index] < 5.0 or \
-                            alt_rad.array[index] is np.ma.masked:
+                    elif alt_rad.array[int(index)] < 5.0 or \
+                            alt_rad.array[int(index)] is np.ma.masked:
                         index_gog = index
                     else:
                         index_gog = None
@@ -1503,7 +1504,7 @@ class Touchdown(KeyTimeInstanceNode):
                     # (i.e. we ignore bounces)
                     index = edges[0] + land.slice.start
                     # Check we were within 10ft of the ground when the switch triggered.
-                    if not alt or alt.array[index] < 10.0:
+                    if not alt or alt.array[int(index)] < 10.0:
                         index_gog = index
 
             if manufacturer and manufacturer.value == 'Saab' and \
@@ -1533,7 +1534,7 @@ class Touchdown(KeyTimeInstanceNode):
             period = slice(period_start, period_end)
 
             if acc_long:
-                drag = np.ma.copy(acc_long.array[period])
+                drag = np.ma.copy(acc_long.array[slices_int(period)])
                 drag = np.ma.where(drag > 0.0, 0.0, drag)
 
                 # Look for inital wheel contact where there is a sudden spike in Ax.
@@ -1572,7 +1573,7 @@ class Touchdown(KeyTimeInstanceNode):
                     index_decel += period.start
 
             if acc_norm:
-                lift = acc_norm.array[period]
+                lift = acc_norm.array[slices_int(period)]
                 mean = np.mean(lift)
                 lift = np.ma.masked_less(lift-mean, 0.0)
                 bump = np_ma_masked_zeros_like(lift)
@@ -1814,7 +1815,7 @@ class AltitudeBeforeLevelFlightWhenClimbing(KeyTimeInstanceNode):
         not_level = [slice(0, ordered_level[0].start)] + \
             slices_not(ordered_level)
 
-        for n, level in enumerate(ordered_level):
+        for n, level in enumerate(slices_int(ordered_level)):
             climb_descent = not_level[n]
             level_height = np.ma.median(aal.array[level])
             if level_height < 3000:
@@ -1854,7 +1855,7 @@ class AltitudeBeforeLevelFlightWhenDescending(KeyTimeInstanceNode):
         not_level = [slice(0, ordered_level[0].start)] + \
             slices_not(ordered_level)
 
-        for n, level in enumerate(ordered_level):
+        for n, level in enumerate(slices_int(ordered_level)):
             climb_descent = not_level[n]
             level_height = np.ma.median(aal.array[level])
             if level_height < 3000:
@@ -1981,9 +1982,9 @@ class Autoland(KeyTimeInstanceNode):
                family=A('Family')):
         family = family.value if family else None
         for td in touchdowns:
-            if ap.array[td.index] == 'Dual' and family not in self.TRIPLE_FAMILIES:
+            if ap.array[int(td.index)] == 'Dual' and family not in self.TRIPLE_FAMILIES:
                 self.create_kti(td.index)
-            elif ap.array[td.index] == 'Triple':
+            elif ap.array[int(td.index)] == 'Triple':
                 self.create_kti(td.index)
             else:
                 # in Single OR Dual and Triple was required

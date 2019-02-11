@@ -9,12 +9,16 @@ You can view the differences in tagged versions as follows:
   git log --pretty=format:"%Cblue%h %Cgreen%cn %Cred(%cr) %Creset%s %n%b %N" --graph "v0.3.2..v0.4.1"
 
 =======
+v0.43.3
+-------
+ New KPVs:
+ - AE-2100: Airspeed Altitude Max QNH KPVs
+
 v0.43.2
 -------
  Fixes:
  - StableApproachStages allows phase to be missing to avoid exception
 
-=======
 v0.43.1
 -------
  New KPVs:

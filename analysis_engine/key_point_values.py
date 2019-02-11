@@ -1707,6 +1707,7 @@ class Airspeed1000To500FtMin(KeyPointValueNode):
 class Airspeed500To100FtMax(KeyPointValueNode):
     '''
     Maximum airspeed during the final approach between 500ft AAL and 100ft AAL.
+    Helicopter only.
     '''
 
     units = ut.KT
@@ -1731,6 +1732,7 @@ class Airspeed500To100FtMax(KeyPointValueNode):
 class Airspeed500To100FtMin(KeyPointValueNode):
     '''
     Minimum airspeed during the final approach between 500ft AAL and 100ft AAL.
+    Helicopter only.
     '''
 
     units = ut.KT
@@ -1756,6 +1758,7 @@ class Airspeed500To100FtMin(KeyPointValueNode):
 class Airspeed100To20FtMax(KeyPointValueNode):
     '''
     Maximum airspeed during the final approach and landing between 100 AAL and 20ft AAL.
+    Helicopter only.
     '''
 
     units = ut.KT
@@ -1781,6 +1784,7 @@ class Airspeed100To20FtMax(KeyPointValueNode):
 class Airspeed100To20FtMin(KeyPointValueNode):
     '''
     Minimum airspeed during the final approach and landing between 100 AAL and 20ft AAL.
+    Helicopter only.
     '''
 
     units = ut.KT
@@ -1900,6 +1904,7 @@ class Airspeed500To50FtMedianMinusAirspeedSelected(KeyPointValueNode):
 class Airspeed20FtToTouchdownMax(KeyPointValueNode):
     '''
     Maximum airspeed between 20ft AGL and touchdown.
+    Helicopter only.
     '''
 
     units = ut.KT
@@ -1959,7 +1964,7 @@ class AirspeedAbove101PercentRotorSpeed(KeyPointValueNode):
 
 class AirspeedAbove500FtMin(KeyPointValueNode):
     '''
-    Minimum airspeed above 500ft AGL during standard approaches (helicopter only)
+    Minimum airspeed above 500ft AGL during standard approaches. Helicopter only.
     '''
 
     units = ut.KT
@@ -1984,7 +1989,7 @@ class AirspeedAbove500FtMin(KeyPointValueNode):
 class AirspeedAbove500FtMinOffshoreSpecialProcedure(KeyPointValueNode):
     '''
     Minimum airspeed above 500ft AGL during a Shuttling Approach, ARDA
-    or AROA (helicopter only)
+    or AROA. Helicopter only.
     '''
 
     units = ut.KT
@@ -2005,7 +2010,7 @@ class AirspeedAbove500FtMinOffshoreSpecialProcedure(KeyPointValueNode):
 
 class AirspeedAt200FtDuringOnshoreApproach(KeyPointValueNode):
     '''
-    Approach airspeed at 200ft AGL (helicopter only)
+    Approach airspeed at 200ft AGL. Helicopter only.
     '''
 
     units = ut.KT
@@ -4483,7 +4488,7 @@ class AirspeedAboveFL200Min(KeyPointValueNode):
 # Airspeed Autorotation
 class AirspeedDuringAutorotationMax(KeyPointValueNode):
     '''
-    Maximum airspeed during autorotation (helicopter only)
+    Maximum airspeed during autorotation. Helicopter only.
     '''
 
     units = ut.KT
@@ -4496,7 +4501,7 @@ class AirspeedDuringAutorotationMax(KeyPointValueNode):
 
 class AirspeedDuringAutorotationMin(KeyPointValueNode):
     '''
-    Minimum airspeed during autorotation (helicopter only)
+    Minimum airspeed during autorotation. Helicopter only.
     '''
 
     units = ut.KT
@@ -5306,7 +5311,7 @@ class AltitudeInCruiseAverage(KeyPointValueNode):
 
 class AltitudeDensityMax(KeyPointValueNode):
     '''
-    Maximum altitude density.
+    Maximum altitude density. Helicopter only.
     '''
 
     units = ut.FT
@@ -5323,7 +5328,7 @@ class AltitudeDensityMax(KeyPointValueNode):
 
 class AltitudeRadioDuringAutorotationMin(KeyPointValueNode):
     '''
-    Minimum altitude (radio) during autorotation.
+    Minimum altitude (radio) during autorotation. Helicopter only.
     '''
 
     units = ut.FT
@@ -5336,7 +5341,7 @@ class AltitudeRadioDuringAutorotationMin(KeyPointValueNode):
 
 class AltitudeDuringCruiseMin(KeyPointValueNode):
     '''
-    Minimum altitude (AGL) recorded during cruise (helicopter only).
+    Minimum altitude (AGL) recorded during cruise. Helicopter only.
     '''
 
     units = ut.FT
@@ -6274,7 +6279,7 @@ class HeightSelectedOnApproachMin(KeyPointValueNode):
 
 class CollectiveFrom10To60PercentDuration(KeyPointValueNode):
     '''
-    Collective from 10% to 60% duration.
+    Collective from 10% to 60% duration. Helicopter only.
     '''
 
     can_operate = helicopter_only
@@ -6301,7 +6306,7 @@ class CollectiveFrom10To60PercentDuration(KeyPointValueNode):
 
 class TailRotorPedalWhileTaxiingABSMax(KeyPointValueNode):
     '''
-    Maximum Absolute tail rotor pedal during ground taxi (helicopter_only).
+    Maximum Absolute tail rotor pedal during ground taxi. Helicopter only.
     '''
 
     name = 'Tail Rotor Pedal While Taxiing ABS Max'
@@ -6317,7 +6322,7 @@ class TailRotorPedalWhileTaxiingABSMax(KeyPointValueNode):
 
 class TailRotorPedalWhileTaxiingMax(KeyPointValueNode):
     '''
-    Maximum tail rotor pedal during ground taxi (helicopter_only).
+    Maximum tail rotor pedal during ground taxi. Helicopter only.
     '''
     can_operate = helicopter_only
 
@@ -6330,7 +6335,7 @@ class TailRotorPedalWhileTaxiingMax(KeyPointValueNode):
 
 class TailRotorPedalWhileTaxiingMin(KeyPointValueNode):
     '''
-    Minimum tail rotor pedal during ground taxi (helicopter only).
+    Minimum tail rotor pedal during ground taxi. Helicopter only.
     '''
     can_operate = helicopter_only
 
@@ -6346,7 +6351,7 @@ class TailRotorPedalWhileTaxiingMin(KeyPointValueNode):
 
 class CyclicDuringTaxiMax(KeyPointValueNode):
     '''
-    Maximum cyclic angle during taxi.
+    Maximum cyclic angle during taxi. Helicopter only.
     '''
 
     can_operate = helicopter_only
@@ -6362,6 +6367,7 @@ class CyclicDuringTaxiMax(KeyPointValueNode):
 class CyclicLateralDuringTaxiMax(KeyPointValueNode):
     '''
     Measures the maximum lateral displacement of the cyclic from the neutral point during ground taxi phase.
+    Helicopter only.
     '''
 
     can_operate = helicopter_only
@@ -6377,6 +6383,7 @@ class CyclicLateralDuringTaxiMax(KeyPointValueNode):
 class CyclicAftDuringTaxiMax(KeyPointValueNode):
     '''
     Measures the maximum rearward displacement of the cyclic from the neutral point during ground taxi phase.
+    Helicopter only.
     '''
 
     can_operate = helicopter_only
@@ -6393,6 +6400,7 @@ class CyclicAftDuringTaxiMax(KeyPointValueNode):
 class CyclicForeDuringTaxiMax(KeyPointValueNode):
     '''
     Measures the maximum fore ward displacement of the cyclic from the neutral point during ground taxi phase.
+    Helicopter only.
     '''
 
     can_operate = helicopter_only
@@ -9764,7 +9772,7 @@ class EngTorqueLimitExceedanceWithOneEngineInoperativeDuration(KeyPointValueNode
 
 class EngTorqueExceeding100Percent(KeyPointValueNode):
     '''
-    Measures the duration of Eng (*) Torque Avg exceeding 100.
+    Measures the duration of Eng (*) Torque Avg exceeding 100. Helicopter only.
     '''
 
     units = ut.SECOND
@@ -9778,7 +9786,7 @@ class EngTorqueExceeding100Percent(KeyPointValueNode):
 
 class EngTorqueExceeding110Percent(KeyPointValueNode):
     '''
-    Measures the duration of Eng (*) Torque Avg exceeding 110.
+    Measures the duration of Eng (*) Torque Avg exceeding 110. Helicopter only.
     '''
 
     units = ut.SECOND
@@ -11552,7 +11560,7 @@ class EngN2DuringMaximumContinuousPowerMin(KeyPointValueNode):
     Minimum N2 recorded during maximum continuous power.
 
     Maximum continuous power applies whenever takeoff or go-around
-    power settings are not in force.
+    power settings are not in force. Helicopter only.
     '''
 
     name = 'Eng N2 During Maximum Continuous Power Min'
@@ -12287,6 +12295,7 @@ class EngTorqueDuringTaxiMax(KeyPointValueNode):
 class EngTorqueWithOneEngineInoperativeMax(KeyPointValueNode):
     '''
     Maximum engine torque recorded with one engine inoperative.
+    Helicoper only.
     '''
 
     units = ut.PERCENT
@@ -12452,10 +12461,11 @@ class EngTorqueFor5SecDuringMaximumContinuousPowerMax(KeyPointValueNode):
 
 class EngTorqueAbove90KtsMax(KeyPointValueNode):
     '''
-    Maximum engine torque where the indicate airspeed is above 90 kts. (helicopter only)
+    Maximum engine torque where the indicate airspeed is above 90 kts.
 
-    Some Helicopters have Torque restictions above 90 kts to limit flight control loads
-    at high speed thereby preserving dynamic component replacement times.
+    Some Helicopters have Torque restictions above 90 kts to limit flight
+    control loads at high speed thereby preserving dynamic component
+    replacement times. Helicopter only.
 
     '''
 
@@ -12477,11 +12487,11 @@ class EngTorqueAbove90KtsMax(KeyPointValueNode):
 
 class EngTorqueAbove100KtsMax(KeyPointValueNode):
     '''
-    Maximum engine torque where the indicate airspeed is above 100 kts. (helicopter only)
+    Maximum engine torque where the indicate airspeed is above 100 kts.
 
-    Some Helicopters have Torque restictions above 100 kts to limit flight control loads
-    at high speed thereby preserving dynamic component replacement times.
-    (taken from S92 type certificate)
+    Some Helicopters have Torque restictions above 100 kts to limit flight
+    control loads at high speed thereby preserving dynamic component
+    replacement times (taken from S92 type certificate). Helicopter only.
     '''
 
     name = 'Eng Torque Above 100 Kts Max'
@@ -13076,7 +13086,7 @@ class MGBOilPressLowDuration(KeyPointValueNode):
 
 class CGBOilTempMax(KeyPointValueNode):
     '''
-    Find the Max temperature for the combining gearbox oil.
+    Find the Max temperature for the combining gearbox oil. Helicopter only.
     '''
     units = ut.CELSIUS
     name = 'CGB Oil Temp Max'
@@ -13088,7 +13098,7 @@ class CGBOilTempMax(KeyPointValueNode):
 
 class CGBOilPressMax(KeyPointValueNode):
     '''
-    Find the Maximum combining gearbox oil pressure.
+    Find the Maximum combining gearbox oil pressure. Helicopter only.
     '''
     units = ut.PSI
     name = 'CGB Oil Press Max'
@@ -13100,7 +13110,7 @@ class CGBOilPressMax(KeyPointValueNode):
 
 class CGBOilPressMin(KeyPointValueNode):
     '''
-    Find the Minimum combining gearbox oil pressure.
+    Find the Minimum combining gearbox oil pressure. Helicopter only.
     '''
     units = ut.PSI
     name = 'CGB Oil Press Min'
@@ -13338,7 +13348,8 @@ class HeadingDeviationFromRunwayDuringLandingRoll(KeyPointValueNode):
 
 class HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxStandardApproach(KeyPointValueNode):
     '''
-    Maximum heading variation (PTP) 1.5 to 1.0 NM from touchdown. (helicopter only)
+    Maximum heading variation (PTP) 1.5 to 1.0 NM from touchdown.
+    Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -13366,7 +13377,8 @@ class HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxStandardApproach(KeyPo
 
 class HeadingVariation1_5NMTo1_0NMFromOffshoreTouchdownMaxSpecialProcedure(KeyPointValueNode):
     '''
-    Maximum heading variation (PTP) 1.5 to 1.0 NM from touchdown. (helicopter only)
+    Maximum heading variation (PTP) 1.5 to 1.0 NM from touchdown.
+    Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -13582,7 +13594,7 @@ class HeadingRateWhileAirborneMax(KeyPointValueNode):
 class TrackVariation100To50Ft(KeyPointValueNode):
     '''
     Checking the variation in track angle during the latter stages of the descent.
-    Helicopter only. Uses Altitude AGL.
+    Uses Altitude AGL. Helicopter only.
     '''
 
     name = 'Track Variation 100 To 50 Ft'
@@ -14329,7 +14341,7 @@ class GroundspeedAtTouchdown(KeyPointValueNode):
 
 class Groundspeed20FtToTouchdownMax(KeyPointValueNode):
     '''
-    The highest groundspeed during the flare manoeuvre.
+    The highest groundspeed during the flare manoeuvre. Helicopter only.
     '''
 
     units = ut.KT
@@ -14351,7 +14363,7 @@ class Groundspeed20FtToTouchdownMax(KeyPointValueNode):
 class Groundspeed20SecToOffshoreTouchdownMax(KeyPointValueNode):
     '''
     Find the maximum groundspeed 20 seconds from the point of an offshore touchdown.
-    (helicopters only)
+    Helicopter only.
     '''
     units = ut.KT
 
@@ -14381,7 +14393,7 @@ class Groundspeed20SecToOffshoreTouchdownMax(KeyPointValueNode):
 class Groundspeed0_8NMToOffshoreTouchdownSpecialProcedure(KeyPointValueNode):
     '''
     Groundspeed at 0.8 NM away from an offshore touchdown during a Shuttling Approach,
-    ARDA or AROA. (helicopters only)
+    ARDA or AROA. Helicopter only.
     '''
 
     name = 'Groundspeed 0.8 NM To Offshore Touchdown Special Procedure'
@@ -14406,7 +14418,7 @@ class Groundspeed0_8NMToOffshoreTouchdownSpecialProcedure(KeyPointValueNode):
 class Groundspeed0_8NMToOffshoreTouchdownStandardApproach(KeyPointValueNode):
     '''
     Groundspeed at 0.8 NM away from an offshore touchdown during a standard
-    approach. (helicopters only)
+    approach. Helicopter only.
     '''
 
     name = 'Groundspeed 0.8 NM To Offshore Touchdown Standard Approach'
@@ -14625,7 +14637,7 @@ class GroundspeedFlapChangeDuringTakeoffMax(KeyPointValueNode):
 class GroundspeedBelow15FtFor20SecMax(KeyPointValueNode):
     '''
     Maximum groundspeed below 15ft AAL recorded for at least 20 seconds
-    while airborne.
+    while airborne. Helicopter only.
     '''
 
     units = ut.KT
@@ -14641,7 +14653,8 @@ class GroundspeedBelow15FtFor20SecMax(KeyPointValueNode):
 
 class GroundspeedWhileAirborneWithASEOff(KeyPointValueNode):
     '''
-    Measures the maximum groundspeed during flight with stability systems disengaged.
+    Measures the maximum groundspeed during flight with stability systems
+    disengaged. Helicopter only.
     '''
 
     name = 'Groundspeed While Airborne With ASE Off'
@@ -14656,7 +14669,7 @@ class GroundspeedWhileAirborneWithASEOff(KeyPointValueNode):
 
 class GroundspeedWhileHoverTaxiingMax(KeyPointValueNode):
     '''
-    Maximum groundspeed reached durng hover taxi.
+    Maximum groundspeed reached durng hover taxi. Helicopter only.
     '''
 
     name = 'Groundspeed While Hover Taxiing Max'
@@ -14671,6 +14684,7 @@ class GroundspeedWhileHoverTaxiingMax(KeyPointValueNode):
 class GroundspeedWithZeroAirspeedFor5SecMax(KeyPointValueNode):
     '''
     Maximum groundspeed recorded for at least 5 seconds with airspeed at 0.
+    Helicopter only.
     '''
 
     align_frequency = 2
@@ -14694,7 +14708,7 @@ class GroundspeedWithZeroAirspeedFor5SecMax(KeyPointValueNode):
 
 class GroundspeedBelow100FtMax(KeyPointValueNode):
     '''
-    Maximum groundspeed below 100ft AGL (helicopter only)
+    Maximum groundspeed below 100ft AGL. Helicopter only.
     '''
     units = ut.KT
 
@@ -14881,7 +14895,7 @@ class PitchAbove1000FtMax(KeyPointValueNode):
 
 class PitchBelow1000FtMax(KeyPointValueNode):
     '''
-    Maximum Pitch below 1000ft AGL in flight (helicopter_only).
+    Maximum Pitch below 1000ft AGL in flight. Helicopter only.
     '''
     can_operate = helicopter_only
 
@@ -14894,7 +14908,7 @@ class PitchBelow1000FtMax(KeyPointValueNode):
 
 class PitchBelow1000FtMin(KeyPointValueNode):
     '''
-    Minimum Pitch below 1000ft AGL in flight (helicopter_only).
+    Minimum Pitch below 1000ft AGL in flight. Helicopter only.
     '''
     can_operate = helicopter_only
 
@@ -14907,7 +14921,7 @@ class PitchBelow1000FtMin(KeyPointValueNode):
 
 class PitchBelow5FtMax(KeyPointValueNode):
     '''
-    Maximum Pitch below 5ft AGL in flight (helicopter_only).
+    Maximum Pitch below 5ft AGL in flight. Helicopter only.
     '''
     can_operate = helicopter_only
 
@@ -14921,7 +14935,7 @@ class PitchBelow5FtMax(KeyPointValueNode):
 
 class Pitch5To10FtMax(KeyPointValueNode):
     '''
-    Maximum Pitch ascending 5 to 10ft AGL in flight (helicopter_only).
+    Maximum Pitch ascending 5 to 10ft AGL in flight. Helicopter only.
     '''
     can_operate = helicopter_only
 
@@ -14936,7 +14950,7 @@ class Pitch5To10FtMax(KeyPointValueNode):
 
 class Pitch10To5FtMax(KeyPointValueNode):
     '''
-    Maximum Pitch descending 10 to 5ft AGL in flight (helicopter_only).
+    Maximum Pitch descending 10 to 5ft AGL in flight. Helicopter only.
     '''
     can_operate = helicopter_only
 
@@ -15391,7 +15405,7 @@ class Pitch500To7FtMin(KeyPointValueNode):
 
 class Pitch100To20FtMax(KeyPointValueNode):
     '''
-    Maximum pitch 100ft to 20ft AAL.
+    Maximum pitch 100ft to 20ft AAL. Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -15635,6 +15649,7 @@ class PitchDuringGoAroundMax(KeyPointValueNode):
 class PitchOnGroundMax(KeyPointValueNode):
     '''
     Pitch attitude maximum to check for sloping ground operation.
+    Helicopter only.
     '''
     units = ut.DEGREE
 
@@ -15655,7 +15670,7 @@ class PitchOnGroundMax(KeyPointValueNode):
 
 class PitchOnDeckMax(KeyPointValueNode):
     '''
-    Pitch attitude maximum during operation on a moving deck.
+    Pitch attitude maximum during operation on a moving deck. Helicopter only.
     '''
     units = ut.DEGREE
 
@@ -15671,7 +15686,7 @@ class PitchOnDeckMax(KeyPointValueNode):
 
 class PitchOnGroundMin(KeyPointValueNode):
     '''
-    Minimum pitch on the ground (or deck).
+    Minimum pitch on the ground (or deck). Helicopter only.
     '''
     units = ut.DEGREE
 
@@ -15688,7 +15703,7 @@ class PitchOnGroundMin(KeyPointValueNode):
 
 class PitchOnDeckMin(KeyPointValueNode):
     '''
-    Minimum pitch while on deck.
+    Minimum pitch while on deck. Helicopter only.
     '''
     units = ut.DEGREE
 
@@ -16315,7 +16330,7 @@ class RateOfDescent1000To500FtMax(KeyPointValueNode):
 class RateOfDescent100To20FtMax(KeyPointValueNode):
     '''
     Measures the most negative vertical speed (rate of descent) between
-    100ft and 20ft AAL.
+    100ft and 20ft AAL. Helicopter only.
     '''
 
     units = ut.FPM
@@ -16342,7 +16357,7 @@ class RateOfDescent100To20FtMax(KeyPointValueNode):
 class RateOfDescent500To100FtMax(KeyPointValueNode):
     '''
     Measures the most negative vertical speed (rate of descent) between
-    500ft and 100ft AAL.
+    500ft and 100ft AAL. Helicopter only.
     '''
 
     units = ut.FPM
@@ -16518,6 +16533,7 @@ class RateOfDescentBelow80KtsMax(KeyPointValueNode):
 class RateOfDescentBelow500FtMax(KeyPointValueNode):
     '''
     Returns the highest single rate of descent for all periods below 500ft AGL.
+    Helicopter only.
     '''
 
     units = ut.FPM
@@ -16537,7 +16553,7 @@ class RateOfDescentBelow500FtMax(KeyPointValueNode):
 
 class RateOfDescentBelow30KtsWithPowerOnMax(KeyPointValueNode):
     '''
-    Rate of descent below 30kts IAS with engine power on max.
+    Rate of descent below 30kts IAS with engine power on max. Helicopter only.
     '''
 
     units = ut.FPM
@@ -16578,7 +16594,7 @@ class RateOfDescentAtHeightBeforeLevelFlight(KeyPointValueNode):
 
 class VerticalSpeedAtAltitude(KeyPointValueNode):
     '''
-    Approach vertical speed at 500 and 300 Ft
+    Approach vertical speed at 500 and 300 Ft. Helicopter only.
     '''
     NAME_FORMAT = 'Vertical Speed At %(altitude)d Ft'
     NAME_VALUES = {'altitude': [500, 300]}
@@ -16740,7 +16756,7 @@ class Roll300To20FtMax(KeyPointValueNode):
 
 class Roll100To20FtMax(KeyPointValueNode):
     '''
-    Maximum recorded roll angle between 100ft and 20ft AAL.
+    Maximum recorded roll angle between 100ft and 20ft AAL. Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -16813,7 +16829,7 @@ class Roll500FtToTouchdownMax(KeyPointValueNode):
 
 class RollAbove300FtMax(KeyPointValueNode):
     '''
-    Maximum Roll above 300ft AGL in flight (helicopter_only).
+    Maximum Roll above 300ft AGL in flight. Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -16827,7 +16843,7 @@ class RollAbove300FtMax(KeyPointValueNode):
 
 class RollBelow300FtMax(KeyPointValueNode):
     '''
-    Maximum Roll below 300ft AGL in flight (helicopter_only).
+    Maximum Roll below 300ft AGL in flight. Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -16843,7 +16859,7 @@ class RollBelow300FtMax(KeyPointValueNode):
 
 class RollWithAFCSDisengagedMax(KeyPointValueNode):
     '''
-    Maximum roll whilst AFCS 1 and AFCS 2 are disengaged.
+    Maximum roll whilst AFCS 1 and AFCS 2 are disengaged. Helicopter only.
     '''
     units = ut.DEGREE
     name = 'Roll With AFCS Disengaged Max'
@@ -16860,7 +16876,7 @@ class RollWithAFCSDisengagedMax(KeyPointValueNode):
 
 class RollAbove500FtMax(KeyPointValueNode):
     '''
-    Maximum Roll above 500ft AGL in flight (helicopter only).
+    Maximum Roll above 500ft AGL in flight. Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -16874,7 +16890,7 @@ class RollAbove500FtMax(KeyPointValueNode):
 
 class RollBelow500FtMax(KeyPointValueNode):
     '''
-    Maximum Roll below 500ft AGL in flight (helicopter only).
+    Maximum Roll below 500ft AGL in flight. Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -16888,7 +16904,7 @@ class RollBelow500FtMax(KeyPointValueNode):
 
 class RollOnGroundMax(KeyPointValueNode):
     '''
-    Roll attitude on firm ground or a solid rig platform
+    Roll attitude on firm ground or a solid rig platform. Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -16906,7 +16922,7 @@ class RollOnGroundMax(KeyPointValueNode):
 
 class RollOnDeckMax(KeyPointValueNode):
     '''
-    Roll attitude on moving deck
+    Roll attitude on moving deck. Helicopter only.
     '''
 
     units = ut.DEGREE
@@ -17280,6 +17296,7 @@ class RollRateMaxAboveLimitAtTouchdown(KeyPointValueNode):
 class RotorSpeedDuringAutorotationAbove108KtsMin(KeyPointValueNode):
     '''
     Minimum recorded rotor speed during autorotation above 108kts IAS.
+    Helicopter only.
     '''
 
     units = ut.PERCENT
@@ -17295,6 +17312,7 @@ class RotorSpeedDuringAutorotationAbove108KtsMin(KeyPointValueNode):
 class RotorSpeedDuringAutorotationBelow108KtsMin(KeyPointValueNode):
     '''
     Minimum recorded rotor speed during autorotation below 108kts IAS.
+    Helicopter only.
     '''
 
     units = ut.PERCENT
@@ -17309,7 +17327,7 @@ class RotorSpeedDuringAutorotationBelow108KtsMin(KeyPointValueNode):
 
 class RotorSpeedDuringAutorotationMax(KeyPointValueNode):
     '''
-    Maximum recorded rotor speed during autorotation.
+    Maximum recorded rotor speed during autorotation. Helicopter only.
     '''
 
     units = ut.PERCENT
@@ -17322,7 +17340,7 @@ class RotorSpeedDuringAutorotationMax(KeyPointValueNode):
 
 class RotorSpeedDuringAutorotationMin(KeyPointValueNode):
     '''
-    Minimum rotor speed during autorotion. (helicopter only)
+    Minimum rotor speed during autorotion. Helicopter only.
     '''
 
     units = ut.PERCENT
@@ -17337,6 +17355,7 @@ class RotorSpeedDuringAutorotationMin(KeyPointValueNode):
 class RotorSpeedWhileAirborneMax(KeyPointValueNode):
     '''
     This excludes autorotation, so is maximum rotor speed with power applied.
+    Helicopter only.
     '''
 
     units = ut.PERCENT
@@ -17353,6 +17372,7 @@ class RotorSpeedWhileAirborneMax(KeyPointValueNode):
 class RotorSpeedWhileAirborneMin(KeyPointValueNode):
     '''
     This excludes autorotation, so is minimum rotor speed with power applied.
+    Helicopter only.
     '''
 
     units = ut.PERCENT
@@ -17368,7 +17388,7 @@ class RotorSpeedWhileAirborneMin(KeyPointValueNode):
 
 class RotorSpeedWithRotorBrakeAppliedMax(KeyPointValueNode):
     '''
-    Maximum rotor speed recorded with rotor brake applied.
+    Maximum rotor speed recorded with rotor brake applied. Helicopter only.
     '''
 
     units = ut.PERCENT
@@ -17384,7 +17404,7 @@ class RotorSpeedWithRotorBrakeAppliedMax(KeyPointValueNode):
 
 class RotorsRunningDuration(KeyPointValueNode):
     '''
-    Duration for which the rotors were running.
+    Duration for which the rotors were running. Helicopter only.
     '''
 
     units = ut.SECOND
@@ -17401,6 +17421,7 @@ class RotorsRunningDuration(KeyPointValueNode):
 class RotorSpeedDuringMaximumContinuousPowerMin(KeyPointValueNode):
     '''
     Minimum rotor speed during maximum continuous power phase.
+    Helicopter only.
     '''
 
     units = ut.PERCENT
@@ -17417,6 +17438,7 @@ class RotorSpeedDuringMaximumContinuousPowerMin(KeyPointValueNode):
 class RotorSpeed36To49Duration(KeyPointValueNode):
     '''
     Duration in which rotor speed in running between 36% and 49%.
+    Helicopter only.
     '''
 
     units = ut.SECOND
@@ -17436,6 +17458,7 @@ class RotorSpeed36To49Duration(KeyPointValueNode):
 class RotorSpeed56To67Duration(KeyPointValueNode):
     '''
     Duration in which rotor speed in running between 56% and 67%.
+    Helicopter only.
     '''
 
     units = ut.SECOND
@@ -20073,7 +20096,7 @@ class WindAcrossLandingRunwayAt50Ft(KeyPointValueNode):
 class WindSpeedInCriticalAzimuth(KeyPointValueNode):
     '''
     Maximum relative windspeed when wind blowing into tail rotor.
-    The critical direction is helicopter type-specific.
+    The critical direction is helicopter type-specific. Helicopter only.
     '''
 
     align_frequency = 2
@@ -20700,7 +20723,7 @@ class SATMax(KeyPointValueNode):
 
 class SATMin(KeyPointValueNode):
     '''
-    Minimum recorded SAT.
+    Minimum recorded SAT. Helicopter only.
     '''
 
     name = 'SAT Min'
@@ -20722,7 +20745,7 @@ class SATMin(KeyPointValueNode):
 class SATRateOfChangeMax(KeyPointValueNode):
     '''
     Peak rate of increase of SAT - specific to offshore helicopter operations to detect
-    transit though gas plumes.
+    transit though gas plumes. Helicopter only.
     '''
 
     name = 'SAT Rate Of Change Max'
@@ -20740,7 +20763,7 @@ class SATRateOfChangeMax(KeyPointValueNode):
 # Cruise Guide Indicator
 class CruiseGuideIndicatorMax(KeyPointValueNode):
     '''
-    Maximum CGI reading throughtout the whole record. (helicopter only)
+    Maximum CGI reading throughtout the whole record. Helicopter only.
     '''
     units = ut.PERCENT
 
@@ -20797,6 +20820,7 @@ class TrainingModeDuration(KeyPointValueNode):
 class HoverHeightDuringOnshoreTakeoffMax(KeyPointValueNode):
     '''
     Maximum hover height, to monitor for safe hover operation.
+    Helicopter only.
     '''
 
     units = ut.FT
@@ -20813,6 +20837,7 @@ class HoverHeightDuringOnshoreTakeoffMax(KeyPointValueNode):
 class HoverHeightDuringOffshoreTakeoffMax(KeyPointValueNode):
     '''
     Maximum hover height, to monitor for safe hover operation.
+    Helicopter only.
     '''
 
     units = ut.FT

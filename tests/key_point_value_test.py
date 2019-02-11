@@ -24275,7 +24275,7 @@ class TestTurbulenceDuringFlightMax(unittest.TestCase, NodeTest):
     def setUp(self):
         self.node_class = TurbulenceDuringFlightMax
         self.operational_combinations = [('Turbulence', 'Airborne', 'Approach')]
-        self.airborne =  buildsections('Airborne', [0, 20], [22, 30])
+        self.airborne =  buildsections('Airborne', [0, 20], [22, 29])
         self.apps = buildsections('Approach', [10, 13], [15, 18], [25, 28])
 
     def test_derive(self):
@@ -24285,10 +24285,10 @@ class TestTurbulenceDuringFlightMax(unittest.TestCase, NodeTest):
         node.derive(turb, self.airborne, self.apps)
 
         self.assertEqual(len(node), 2)
-        self.assertEqual(node[0].index, 17)
-        self.assertEqual(node[0].value, 17)
-        self.assertEqual(node[1].index, 27)
-        self.assertEqual(node[1].value, 27)
+        self.assertEqual(node[0].index, 18)
+        self.assertEqual(node[0].value, 18)
+        self.assertEqual(node[1].index, 28)
+        self.assertEqual(node[1].value, 28)
 
     def test_derive_max_turb_at_takeoff(self):
         array = np.ma.arange(30, 0, -1)
@@ -24312,8 +24312,8 @@ class TestTurbulenceDuringFlightMax(unittest.TestCase, NodeTest):
         node.derive(turb, self.airborne, apps)
 
         self.assertEqual(len(node), 2)
-        self.assertEqual(node[0].index, 17)
-        self.assertEqual(node[0].value, 17)
+        self.assertEqual(node[0].index, 18)
+        self.assertEqual(node[0].value, 18)
         self.assertEqual(node[1].index, 29)
         self.assertEqual(node[1].value, 29)
 

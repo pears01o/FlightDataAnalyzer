@@ -1451,6 +1451,26 @@ class Airspeed1000To8000FtMax(KeyPointValueNode):
                 max_value
             )
 
+class Airspeed1000To8000FtMaxQNH(KeyPointValueNode):
+    '''
+    Maximum airspeed between 1000ft QNH and 8000ft QNH during climb.
+    '''
+
+    name = 'Airspeed 1000 To 8000 Ft Max QNH'
+    units = ut.KT
+
+    def derive(self,
+               air_spd=P('Airspeed'),
+               alt_qnh=P('Altitude QNH'),
+               climbs=S('Climb')):
+
+        alt_band = np.ma.masked_outside(alt_qnh.array, 1000, 8000)
+        alt_climb_sections = valid_slices_within_array(alt_band, climbs)
+        self.create_kpvs_within_slices(
+            air_spd.array,
+            alt_climb_sections,
+            max_value,
+        )
 
 class Airspeed8000To10000FtMax(KeyPointValueNode):
     '''
@@ -1597,6 +1617,26 @@ class Airspeed8000To5000FtMax(KeyPointValueNode):
                 max_value
             )
 
+class Airspeed8000To5000FtMaxQNH(KeyPointValueNode):
+    '''
+    Maximum airspeed during descent between 8000ft QNH and 5000ft QNH.
+    '''
+
+    name = 'Airspeed 8000 To 5000 Ft Max QNH'
+    units = ut.KT
+
+    def derive(self,
+               air_spd=P('Airspeed'),
+               alt_qnh=P('Altitude QNH'),
+               descents=S('Descent')):
+
+            alt_band = np.ma.masked_outside(alt_qnh.array, 8000, 5000)
+            alt_descent_sections = valid_slices_within_array(alt_band, descents)
+            self.create_kpvs_within_slices(
+                air_spd.array,
+                alt_descent_sections,
+                max_value,
+            )
 
 class Airspeed5000To3000FtMax(KeyPointValueNode):
     '''
@@ -1612,6 +1652,27 @@ class Airspeed5000To3000FtMax(KeyPointValueNode):
 
         alt_band = np.ma.masked_outside(alt_aal.array, 5000, 3000)
         alt_descent_sections = valid_slices_within_array(alt_band, descent)
+        self.create_kpvs_within_slices(
+            air_spd.array,
+            alt_descent_sections,
+            max_value,
+        )
+
+class Airspeed5000To3000FtMaxQNH(KeyPointValueNode):
+    '''
+    Maximum airspeed during descent between 5000ft QNH to 3000ft QNH.
+    '''
+
+    name = 'Airspeed 5000 To 3000 Ft Max QNH'
+    units = ut.KT
+
+    def derive(self,
+               air_spd=P('Airspeed'),
+               alt_qnh=P('Altitude QNH'),
+               descents=S('Descent')):
+
+        alt_band = np.ma.masked_outside(alt_qnh.array, 5000, 3000)
+        alt_descent_sections = valid_slices_within_array(alt_band, descents)
         self.create_kpvs_within_slices(
             air_spd.array,
             alt_descent_sections,
@@ -1637,6 +1698,26 @@ class Airspeed3000To1000FtMax(KeyPointValueNode):
         )
 
 
+class Airspeed3000To1000FtMaxQNH(KeyPointValueNode):
+    '''
+    Maximum airspeed during descent between 3000ft QNH and 1000ft QNH.
+    '''
+
+    name = 'Airspeed 3000 To 1000 Ft Max QNH'
+    units = ut.KT
+
+    def derive(self,
+               air_spd=P('Airspeed'),
+               alt_qnh=P('Altitude QNH'),
+               descents=S('Descent')):
+
+        alt_band = np.ma.masked_outside(alt_qnh.array, 3000, 1000)
+        alt_descent_sections = valid_slices_within_array(alt_band, descents)
+        self.create_kpvs_within_slices(
+            air_spd.array,
+            alt_descent_sections,
+            max_value,
+        )
 
 
 class Airspeed1000To500FtMax(KeyPointValueNode):

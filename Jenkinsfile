@@ -7,6 +7,7 @@
     stage('Run the NoseTests') {
           sh '''#!/bin/bash -l
           echo "######NoseTest #######"·
+          docker-compose pull
           docker-compose up
           '''
           junit 'results.xml'

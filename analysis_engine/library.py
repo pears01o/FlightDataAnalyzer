@@ -4781,11 +4781,7 @@ def blend_parameters_linear(params, frequency, tol_mask, offset=0):
         weights.append(param.frequency)
 
     result = np.ma.average(aligned, axis=0, weights=weights)
-
-    try:
-        result.mask = np.ma.logical_or(result.mask, tol_mask.mask)
-    except:
-        pass
+    result.mask = np.ma.logical_or(np.ma.getmaskarray(result), np.ma.getmaskarray(tol_mask))
 
     return result
 
@@ -5300,11 +5296,10 @@ def overflow_correction(array, fast=None, hz=1):
     Overflow Correction postprocessing procedure. Used only on Altitude Radio
     signals.
 
-    When called from data validation, the fast slice is not established whereas
-    when called from derived parameters we are able to fix the data to ground
-    levels at the beginning and end of flight. Hence the two alternative uses
-    for this routine. Keeping the processed together simple ensures we are 
-    applying the same definition of good_slices in both cases. 
+    This can be used to remove overflows and to tidy up the resulting data,
+    which may still be offset following the removal of overflow jumps. The
+    same algorithm is used in both cases to ensure that the same slicing is
+    used consistently.
     
     :param array: array of data from a single radio altimeter
     :type array: Numpy array
@@ -5313,8 +5308,10 @@ def overflow_correction(array, fast=None, hz=1):
     :param hz: array sample rate
     :type hz: float 
     '''
-    good_slices = slices_remove_small_slices(np.ma.clump_unmasked(array),
-                                             time_limit=10,hz=hz)
+    good_slices = slices_remove_small_slices(
+        slices_remove_small_gaps(np.ma.clump_unmasked(array),
+                                 time_limit=10, hz=hz),
+        time_limit=10, hz=hz)
     
     if not fast:
         # The first time we use this algorithm we don't have speed information

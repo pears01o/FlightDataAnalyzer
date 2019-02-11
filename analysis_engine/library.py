@@ -4726,7 +4726,7 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         # collation.
         p_valid_slices.append(slices_multiply(nts, min_ip_freq / param.frequency))
 
-    all_masks = np.array([np.ma.getmaskarray(p.array)[::p.frequency/min_ip_freq] for p in params])
+    all_masks = np.array([np.ma.getmaskarray(p.array)[::p.frequency // min_ip_freq] for p in params])
     num_valid = len(params) - np.sum(all_masks, axis=0)
 
     if validity == 'all':

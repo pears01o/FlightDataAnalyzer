@@ -4738,7 +4738,7 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     else:
         raise ValueError('Unrecognised validity mode in blend_parameters')
     
-    any_valid = np.ma.clump_unmasked(np.ma.array(data=[0]*len(bad), mask=bad))
+    any_valid = runs_of_ones(~bad)
 
     if any_valid is None:
         # No useful chunks of data to process, so give up now.

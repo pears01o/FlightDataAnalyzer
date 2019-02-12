@@ -1707,10 +1707,10 @@ class TestAltitudeRadio(unittest.TestCase):
         fast = buildsection('Fast', 0, 6)
         alt_rad.derive(None, None, None,
                        Parameter('Altitude Radio (L)',
-                                 np.ma.concatenate((np.arange(5,-5,-1), np.arange(-5,15))), 1.0, 0.0),
+                                 np.ma.concatenate((np.arange(5,-5,-1), np.arange(-5,15))).astype(float), 1.0, 0.0),
                        None, None, None, None,
                        Parameter('Pitch',
-                                 np.ma.concatenate((np.zeros(30), np.ones(30) * 5, np.ones(30) * 10, np.ones(30) * 20)), 4.0, 0.0),
+                                 np.ma.concatenate((np.zeros(30), np.ones(30) * 5, np.ones(30) * 10, np.ones(30) * 20)).astype(float), 4.0, 0.0),
                        fast=fast,
                        family=A('Family', 'CL-600'))
         self.assertAlmostEqual(alt_rad.array.data[4], 2.5) # -1.5ft offset

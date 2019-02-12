@@ -4900,7 +4900,7 @@ class TestOverflowCorrectionArray(unittest.TestCase):
     Most functions tested by TestOverflowCorrection above.
     '''
     def test_round_near_zero(self):
-        array = np.ma.array([-2060]*20)
+        array = np.ma.array([-2060]*20, dtype=float)
         result = overflow_correction_array(array)
         self.assertEqual(result[10], -2060 + 2048)
 
@@ -4916,25 +4916,25 @@ class TestPinToGround(unittest.TestCase):
         self.hz = 1.0
         
     def test_basic(self):
-        array = np.ma.array(data = [4100]*5 + range(4100, 5100, 100),
-                            mask = [1] + [0]*12 + [1]*2)
+        array = np.ma.array(data = [4100]*5 + list(range(4100, 5100, 100)),
+                            mask = [1] + [0]*12 + [1]*2, dtype=float)
         result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
         self.assertEqual(result[2], 4)
         
     def test_negative(self):
-        array = np.ma.array(data = [-4100]*5 + range(-4100, -3000, 100),
-                            mask = [1] + [0]*12 + [1]*3)
+        array = np.ma.array(data = [-4100]*5 + list(range(-4100, -3000, 100)),
+                            mask = [1] + [0]*12 + [1]*3, dtype=float)
         result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
         self.assertEqual(result[2], -4)
         
     def test_small_powers(self):
-        array = np.ma.array(data = [4]*5 + range(5, 15),
-                            mask = [1] + [0]*12 + [1]*2)
+        array = np.ma.array(data = [4]*5 + list(range(5, 15)),
+                            mask = [1] + [0]*12 + [1]*2, dtype=float)
         result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
         self.assertEqual(result[2], 4)
     
     def test_short_slice_masked(self):
-        array = np.ma.array(data = [4]*5 + range(5, 15))
+        array = np.ma.array(data = [4]*5 + list(range(5, 15)), dtype=float)
         result = pin_to_ground(array, [slice(10, 13)], self.fast_slices, self.hz)
         self.assertEqual(result[11].mask, True)
         
@@ -4943,7 +4943,7 @@ class TestPinToGround(unittest.TestCase):
         This checks that corrections of 1024 and 2048 ft are propagated forwards
         and backwards, and that the "middle" value is taken from the closest in time.
         '''
-        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10)
+        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10, dtype=float)
         my_fast_slices = [slice(12, 52)]
         my_good_slices = [slice(1, 5), slice(10, 15), slice(20, 24), slice(31, 35), slice(40, 45), slice(50, 55), slice(60, 65)]
         result = pin_to_ground(array, my_good_slices, my_fast_slices, hz=0.1)
@@ -4954,7 +4954,7 @@ class TestPinToGround(unittest.TestCase):
         An error in coding led to an infinite loop condition which this test detects
         by making all the slices so short they are suppressed.
         '''
-        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10)
+        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10, dtype=float)
         my_fast_slices = [slice(12, 52)]
         my_good_slices = [slice(20,24), slice(31,35), slice(40,45)]
         result = pin_to_ground(array, my_good_slices, my_fast_slices, hz=1.0)

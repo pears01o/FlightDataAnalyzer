@@ -4753,8 +4753,10 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         # them back.
         result[result_slice][0] = np.ma.masked
         result[result_slice][-1] = np.ma.masked
-
-    result.mask = np.ma.logical_or(np.ma.getmaskarray(result), np.ma.getmaskarray(tol_mask))
+        
+    if tol_mask is not None:
+        result.mask = np.ma.logical_or(np.ma.getmaskarray(result), 
+                                       resample(np.ma.getmaskarray(tol_mask), min_ip_freq, frequency))
     return result
 
 

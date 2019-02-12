@@ -2,7 +2,11 @@ version: '3'
 services:
   nosetest:
     image: docker-registry.flightdataservices.com/test/fds-base:python-3.7-slim-stretch-0.0.5
-    command: bash -c 'cd /usr/src/testdir && nosetests --with-xunit'
+    command: >
+      bash -c 'pip install ${FDS_PYPI} --no-deps -r /polaris/requirements-jenkins.txt
+      && cd /usr/src/testdir
+      && nosetests --with-xunit'
     volumes:
+      - ./requirements-jenkins.txt:/polaris/requirements-jenkins.txt
       - ./:/usr/src/testdir
       - ./results.xml:/usr/src/testdir/nosetests.xml:rw

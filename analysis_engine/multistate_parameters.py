@@ -14,18 +14,13 @@ from flightdatautilities import aircrafttables as at, dateext, units as ut
 from hdfaccess.parameter import MappedArray
 
 from analysis_engine.node import (
-    A, MultistateDerivedParameterNode,
-    M,
-    P,
-    S,
-    helicopter,
-    helicopter_only,
+    A, M, P, S, helicopter, MultistateDerivedParameterNode
 )
+
 from analysis_engine.library import (
     align,
     all_of,
     any_of,
-    calculate_flap,
     calculate_slat,
     clump_multistate,
     datetime_of_index,
@@ -35,7 +30,6 @@ from analysis_engine.library import (
     index_at_value,
     index_closest_value,
     first_valid_parameter,
-    mask_inside_slices,
     merge_masks,
     merge_two_parameters,
     moving_average,
@@ -55,16 +49,15 @@ from analysis_engine.library import (
     smooth_signal,
     step_values,
     surface_for_synthetic,
-    vstack_params_where_state,
+    vstack_params_where_state
 )
+
 from analysis_engine.settings import (
-    AUTOROTATION_SPLIT,
     MIN_CORE_RUNNING,
     MIN_FAN_RUNNING,
     MIN_FUEL_FLOW_RUNNING,
     REVERSE_THRUST_EFFECTIVE_EPR,
-    REVERSE_THRUST_EFFECTIVE_N1,
-    ROTORS_TURNING,
+    REVERSE_THRUST_EFFECTIVE_N1
 )
 
 logger = logging.getLogger(name=__name__)
@@ -343,58 +336,6 @@ class APURunning(MultistateDerivedParameterNode):
             self.array = np.ma.where(apu_fuel_flow.array > fuel_flow_threshold, 'Running', '-')
         elif apu_on:
             self.array = np.ma.where(apu_on.array == 1, 'Running', '-')
-
-
-class ASEEngaged(MultistateDerivedParameterNode):
-    '''
-    Determines if *any* of the "ASE (*) Engaged" parameters are recording the
-    state of Engaged.
-
-    This is a discrete with only the Engaged state.
-    '''
-
-    name = 'ASE Engaged'
-    values_mapping = {0: '-', 1: 'Engaged'}
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return ac_type and ac_type.value == 'helicopter' and \
-               any_of(cls.get_dependency_names(), available)
-
-    def derive(self,
-               ase1=M('ASE (1) Engaged'),
-               ase2=M('ASE (2) Engaged'),
-               ase3=M('ASE (3) Engaged')):
-        stacked = vstack_params_where_state(
-            (ase1, 'Engaged'),
-            (ase2, 'Engaged'),
-            (ase3, 'Engaged'),
-        )
-        self.array = stacked.any(axis=0)
-        self.offset = offset_select('mean', [ase1, ase2, ase3])
-
-
-class ASEChannelsEngaged(MultistateDerivedParameterNode):
-    '''
-    '''
-    name = 'ASE Channels Engaged'
-    values_mapping = {0: '-', 1: 'Single', 2: 'Dual', 3: 'Triple'}
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return ac_type and ac_type.value == 'helicopter' and len(available) >= 2
-
-    def derive(self,
-               ase1=M('ASE (1) Engaged'),
-               ase2=M('ASE (2) Engaged'),
-               ase3=M('ASE (3) Engaged')):
-        stacked = vstack_params_where_state(
-            (ase1, 'Engaged'),
-            (ase2, 'Engaged'),
-            (ase3, 'Engaged'),
-        )
-        self.array = stacked.sum(axis=0)
-        self.offset = offset_select('mean', [ase1, ase2, ase3])
 
 
 class Configuration(MultistateDerivedParameterNode):
@@ -964,114 +905,6 @@ class Eng_AnyRunning(MultistateDerivedParameterNode, EngRunning):
                fuel_flow=P('Eng (*) Fuel Flow Max'),
                ac_type=A('Aircraft Type')):
         self.array = self.determine_running(eng_n1, eng_n2, eng_np, fuel_flow, ac_type)
-
-# Helicopters
-
-class Eng1OneEngineInoperative(MultistateDerivedParameterNode):
-    '''
-    Look for at least 1% difference between Eng 2 N2 speed and the rotor speed to indicate
-    Eng 1 can use OEI limits.
-
-    OEI: One Engine Inoperative
-    '''
-
-    name = 'Eng (1) One Engine Inoperative'
-
-    values_mapping = {
-        0: '-',
-        1: 'Active',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self,
-               eng_2_n2=P('Eng (2) N2'),
-               nr=P('Nr'),
-               autorotation=S('Autorotation')):
-
-        nr_periods = np.ma.masked_less(nr.array, 80)
-        nr_periods = mask_inside_slices(nr_periods, autorotation.get_slices())
-        delta = nr_periods - eng_2_n2.array
-        self.array = np.ma.where(delta > AUTOROTATION_SPLIT, 'Active', '-')
-
-
-class Eng2OneEngineInoperative(MultistateDerivedParameterNode):
-    '''
-    Look for at least 1% difference between Eng 1 N2 speed and the rotor speed to indicate
-    Eng 1 can use OEI limits.
-
-    OEI: One Engine Inoperative
-    '''
-
-    name = 'Eng (2) One Engine Inoperative'
-
-    values_mapping = {
-        0: '-',
-        1: 'Active',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self,
-               eng_1_n2=P('Eng (1) N2'),
-               nr=P('Nr'),
-               autorotation=S('Autorotation')):
-
-        nr_periods = np.ma.masked_less(nr.array, 80)
-        nr_periods = mask_inside_slices(nr_periods, autorotation.get_slices())
-        delta = nr_periods - eng_1_n2.array
-        self.array = np.ma.where(delta > AUTOROTATION_SPLIT, 'Active', '-')
-
-
-class OneEngineInoperative(MultistateDerivedParameterNode):
-    '''
-    Any Engine is running either engine is OEI
-
-    OEI: One Engine Inoperative
-    '''
-
-    values_mapping = {
-        0: '-',
-        1: 'OEI',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self,
-               eng_1_oei=M('Eng (1) One Engine Inoperative'),
-               eng_2_oei=M('Eng (2) One Engine Inoperative'),
-               autorotation=S('Autorotation')):
-
-        oei = vstack_params_where_state((eng_1_oei, 'Active'),
-                                        (eng_2_oei, 'Active')).any(axis=0)
-        for section in autorotation:
-            oei[section.slice] = False
-        self.array = oei
-
-
-class AllEnginesOperative(MultistateDerivedParameterNode):
-    '''
-    Any Engine is running neither is OEI
-
-    OEI: One Engine Inoperative
-    AEO: All Engines Operative
-    '''
-
-    values_mapping = {
-        0: '-',
-        1: 'AEO',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self,
-               any_running=M('Eng (*) Any Running'),
-               eng_oei=M('One Engine Inoperative'),
-               autorotation=S('Autorotation')):
-        aeo = np.ma.logical_not(eng_oei.array == 'OEI')
-        for section in autorotation:
-            aeo[section.slice] = False
-        self.array = np.ma.logical_and(any_running.array == 'Running', aeo)
 
 
 class ThrustModeSelected(MultistateDerivedParameterNode):
@@ -2330,22 +2163,6 @@ class PitchAlternateLaw(MultistateDerivedParameterNode):
             (alt_law_1, 'Engaged'),
             (alt_law_2, 'Engaged'),
         ).any(axis=0)
-
-
-class RotorsRunning(MultistateDerivedParameterNode):
-    '''
-
-    '''
-
-    values_mapping = {
-        0: 'Not Running',
-        1: 'Running',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self, nr=P('Nr')):
-        self.array = np.ma.where(repair_mask(nr.array) > ROTORS_TURNING, 'Running', 'Not Running')
 
 
 class Slat(MultistateDerivedParameterNode):
@@ -3967,28 +3784,6 @@ class SpeedControl(MultistateDerivedParameterNode):
             (sc1a, 'Auto'), (sc1m, 'Auto'),
             (sc2a, 'Auto'), (sc2m, 'Auto'),
         ).any(axis=0).astype(np.int)
-
-
-class RotorBrakeEngaged(MultistateDerivedParameterNode):
-    ''' Discrete parameter describing when any rotor brake is engaged. '''
-
-    values_mapping = {0: '-', 1: 'Engaged'}
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return any_of(cls.get_dependency_names(), available) and \
-               ac_type == helicopter
-
-    def derive(self,
-               brk1=M('Rotor Brake (1) Engaged'),
-               brk2=M('Rotor Brake (2) Engaged')):
-
-        stacked = vstack_params_where_state(
-            (brk1, 'Engaged'),
-            (brk2, 'Engaged'),
-        )
-        self.array = stacked.any(axis=0)
-        self.array.mask = stacked.mask.any(axis=0)
 
 
 class Transmitting(MultistateDerivedParameterNode):

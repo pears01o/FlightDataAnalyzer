@@ -16,6 +16,7 @@ from analysis_engine.library import (
     slices_and,
     slices_and_not,
     slices_below,
+    slices_from_to,
     slices_overlap,
     slices_remove_small_gaps,
     slices_remove_small_slices
@@ -29,6 +30,9 @@ from analysis_engine.settings import (
     HOVER_MIN_DURATION,
     HOVER_MIN_HEIGHT,
     HOVER_TAXI_HEIGHT,
+    ROTOR_TRANSITION_ALTITUDE,
+    ROTOR_TRANSITION_SPEED_HIGH,
+    ROTOR_TRANSITION_SPEED_LOW,
     TAKEOFF_PERIOD
 )
 

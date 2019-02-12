@@ -10,7 +10,8 @@ from hdfaccess.parameter import MappedArray
 
 from analysis_engine.node import (
     A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem,
-    helicopter, KeyPointValue, KeyTimeInstance, Section, SectionNode
+    helicopter, KeyPointValue, KeyTimeInstance,
+    MultistateDerivedParameterNode, Section, SectionNode
 )
 
 from analysis_engine.library import max_value, min_value

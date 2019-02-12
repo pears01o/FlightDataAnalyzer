@@ -11,9 +11,11 @@ from analysis_engine.node import (
 
 from analysis_engine.library import (
     any_of,
+    all_of,
     bearings_and_distances,
     blend_two_parameters,
     cycle_finder,
+    hysteresis,
     integrate,
     moving_average,
     np_ma_masked_zeros_like,

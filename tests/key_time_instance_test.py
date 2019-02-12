@@ -8,7 +8,9 @@ from flightdatautilities.array_operations import load_compressed
 from hdfaccess.parameter import MappedArray
 
 from analysis_engine.node import (
-    A, ApproachItem, aeroplane, helicopter, KeyTimeInstance, KTI, load, Parameter, P, Section, S, M,)
+    A, M, P, S, KTI, aeroplane, ApproachItem, helicopter,
+    KeyTimeInstance, load, Parameter, Section
+)
 
 from analysis_engine.key_time_instances import (
     AltitudePeak,
@@ -79,7 +81,7 @@ from analysis_engine.key_time_instances import (
     TopOfDescent,
     TouchAndGo,
     Touchdown,
-    Transmit,
+    Transmit
 )
 
 from analysis_engine.test_utils import buildsection, buildsections

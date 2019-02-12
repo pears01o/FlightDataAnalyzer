@@ -14,17 +14,22 @@ from analysis_engine.library import (
     all_of,
     any_of,
     mask_inside_slices,
+    merge_two_parameters,
     moving_average,
     nearest_neighbour_mask_repair,
     np_ma_zeros_like,
     offset_select,
+    repair_mask,
     runs_of_ones,
     slices_and,
     slices_remove_small_slices,
     vstack_params_where_state
 )
 
-from analysis_engine.settings import AUTOROTATION_SPLIT
+from analysis_engine.settings import (
+    AUTOROTATION_SPLIT,
+    ROTORS_TURNING
+)
 
 
 class AllEnginesOperative(MultistateDerivedParameterNode):

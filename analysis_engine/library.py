@@ -5375,7 +5375,7 @@ def overflow_correction_array(array, delta=None):
 
     # Most radio altimeters are scaled to overflow at 2048ft, but occasionally the signed
     # value changes by half this amount. Hence jumps more than half a power lower than 2**10.
-    steps = np.ma.where(abs_jump > 2**9.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
+    steps = np.ma.where(abs_jump > 800.0, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
             
     biggest_step_up = np.ma.max(steps)
     biggest_step_down = np.ma.min(steps)

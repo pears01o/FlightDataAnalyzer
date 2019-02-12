@@ -9,6 +9,7 @@ try:
     from itertools import izip as zip
 except ImportError:
     pass
+
 from mock import Mock, call, patch
 
 from flightdatautilities import units as ut
@@ -18,23 +19,25 @@ from flightdatautilities.geometry import midpoint
 
 from hdfaccess.parameter import MappedArray
 
+from analysis_engine.node import (
+    A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem,
+    KeyPointValue, KeyTimeInstance, load, helicopter,
+    MultistateDerivedParameterNode, Section, SectionNode
+)
+
 from analysis_engine.library import (
     align,
     any_of,
+    max_value,
+    max_abs_value,
+    min_value,
     median_value,
     np_ma_ones_like,
-    runs_of_ones,
-)
-from analysis_engine.node import (
-    A, App, ApproachItem, KPV, KTI, load, M, P, KeyPointValue,
-    MultistateDerivedParameterNode,
-    KeyTimeInstance, Section, SectionNode, S,
-    aeroplane, helicopter,
+    runs_of_ones
 )
 
-from analysis_engine.multistate_parameters import (
-    StableApproach,
-)
+from analysis_engine.multistate_parameters import StableApproach
+
 from analysis_engine.key_point_values import (
     AOADuringGoAroundMax,
     AOAWithFlapDuringClimbMax,
@@ -719,7 +722,7 @@ from analysis_engine.key_point_values import (
     WindDirectionAtAltitudeDuringDescent,
     WindSpeedAtAltitudeDuringDescent,
     DriftAtTouchdown,
-    TransmitInactivityDuration,
+    TransmitInactivityDuration
 )
 
 from analysis_engine.key_time_instances import (
@@ -728,10 +731,9 @@ from analysis_engine.key_time_instances import (
     AltitudeBeforeLevelFlightWhenDescending,
     EngStart,
     EngStop,
-    DistanceFromThreshold,
+    DistanceFromThreshold
 )
 
-from analysis_engine.library import (max_abs_value, max_value, min_value)
 from analysis_engine.flight_phase import Fast, RejectedTakeoff
 from analysis_engine.test_utils import buildsection, buildsections
 
@@ -13796,7 +13798,7 @@ class TestHeadingVariation500To50Ft(unittest.TestCase, NodeTest):
 class TestHeadingVariation800To50Ft(unittest.TestCase, NodeTest):
 
     def setUp(self):
-        self.node_class = HeadingVariation500To50Ft
+        self.node_class = HeadingVariation800To50Ft
         self.operational_combinations = [(
             'Heading Continuous',
             'Altitude AAL For Flight Phases',
@@ -13809,7 +13811,7 @@ class TestHeadingVariation800To50Ft(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(hdg, alt)
         self.assertEqual(node[0].index, 10)
-        self.assertEqual(node[0].value, 3)
+        self.assertEqual(node[0].value, 5.0)
 
         #self.assertTrue(False, msg='Test not implemented.')
 

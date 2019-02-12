@@ -3,19 +3,11 @@ import unittest
 import numpy as np
 
 from analysis_engine.node import (
-    Attribute, aeroplane, helicopter,
-    A,
-    App,
-    load,
-    M,
-    P,
-    Section,
-    S,
+    A, M, P, S, aeroplane, helicopter, load
 )
-from analysis_engine.library import (
-    vstack_params_where_state,
-)
+
 from analysis_engine.multistate_parameters import Eng_AnyRunning
+
 from analysis_engine.helicopter.multistate_parameters import (
     AllEnginesOperative,
     ASEEngaged,
@@ -24,7 +16,7 @@ from analysis_engine.helicopter.multistate_parameters import (
     GearOnGround,
     OneEngineInoperative,
     RotorBrakeEngaged,
-    RotorsRunning,
+    RotorsRunning
 )
 
 test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),

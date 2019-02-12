@@ -5,9 +5,10 @@ from __future__ import print_function
 import numpy as np
 
 from analysis_engine.node import (
-    A, MultistateDerivedParameterNode,
-    M, helicopter, helicopter_only, P, S,
+    A, M, P, S, helicopter, helicopter_only,
+    MultistateDerivedParameterNode
 )
+
 from analysis_engine.library import (
     align,
     all_of,
@@ -20,12 +21,10 @@ from analysis_engine.library import (
     runs_of_ones,
     slices_and,
     slices_remove_small_slices,
-    vstack_params_where_state,
+    vstack_params_where_state
 )
 
-from analysis_engine.settings import (
-    AUTOROTATION_SPLIT,
-)
+from analysis_engine.settings import AUTOROTATION_SPLIT
 
 
 class AllEnginesOperative(MultistateDerivedParameterNode):

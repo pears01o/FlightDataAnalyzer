@@ -1,42 +1,44 @@
 import numpy as np
 
+from flightdatautilities import units as ut
+
 from analysis_engine.node import (
-    KeyPointValueNode, KTI, P, S, A, M, App,
-    helicopter, helicopter_only
+    A, M, P, S, KTI, App, helicopter, helicopter_only, KeyPointValueNode
 )
 
-from flightdatautilities import units as ut
+from analysis_engine.library import (
+    all_of,
+    all_deps,
+    any_of,
+    clump_multistate,
+    cycle_finder,
+    is_index_within_slice,
+    index_at_value,
+    mask_outside_slices,
+    max_abs_value,
+    max_value,
+    min_value,
+    runs_of_ones,
+    rate_of_change_array,
+    second_window,
+    slices_above,
+    slices_and,
+    slices_and_not,
+    slices_below,
+    slices_between,
+    slices_duration,
+    slices_or,
+    slices_overlap,
+    slices_remove_small_gaps,
+    slices_remove_small_slices,
+    valid_slices_within_array,
+    value_at_index,
+    vstack_params,
+    vstack_params_where_state
+)
 
 from analysis_engine.settings import HOVER_MIN_DURATION
 
-from analysis_engine.library import (all_of,
-                                     all_deps,
-                                     any_of,
-                                     clump_multistate,
-                                     cycle_finder,
-                                     is_index_within_slice,
-                                     index_at_value,
-                                     mask_outside_slices,
-                                     max_abs_value,
-                                     max_value,
-                                     min_value,
-                                     runs_of_ones,
-                                     rate_of_change_array,
-                                     second_window,
-                                     slices_above,
-                                     slices_and,
-                                     slices_and_not,
-                                     slices_below,
-                                     slices_between,
-                                     slices_duration,
-                                     slices_or,
-                                     slices_overlap,
-                                     slices_remove_small_gaps,
-                                     slices_remove_small_slices,
-                                     valid_slices_within_array,
-                                     value_at_index,
-                                     vstack_params,
-                                     vstack_params_where_state)
 
 class Airspeed500To100FtMax(KeyPointValueNode):
     '''

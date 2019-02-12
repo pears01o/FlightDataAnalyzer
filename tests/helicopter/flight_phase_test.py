@@ -1,6 +1,10 @@
 import unittest
 import numpy as np
 
+from analysis_engine.node import (
+    A, M, P, aeroplane, helicopter
+)
+
 from analysis_engine.helicopter.flight_phase import (
     Airborne,
     Autorotation,
@@ -8,10 +12,8 @@ from analysis_engine.helicopter.flight_phase import (
     HoverTaxi,
     RotorsTurning,
     Takeoff,
-    OnDeck,
+    OnDeck
 )
-
-from analysis_engine.node import A, M, P, helicopter, aeroplane
 
 from analysis_engine.test_utils import buildsection, buildsections
 

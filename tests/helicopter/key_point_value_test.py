@@ -4,20 +4,20 @@ import unittest
 
 from mock import Mock, patch
 
-from analysis_engine.node import (
-    P, S, M, A, KTI, KPV, helicopter, aeroplane, App, ApproachItem,
-    KeyPointValue, KeyTimeInstance, Section, SectionNode,
-)
-
 from flightdatautilities import units as ut
 
 from hdfaccess.parameter import MappedArray
 
-from analysis_engine.library import (max_value, min_value)
+from analysis_engine.node import (
+    A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem,
+    helicopter, KeyPointValue, KeyTimeInstance, Section, SectionNode
+)
+
+from analysis_engine.library import max_value, min_value
 
 from analysis_engine.key_time_instances import (
     DistanceToTouchdown,
-    SecsToTouchdown,
+    SecsToTouchdown
 )
 
 from analysis_engine.helicopter.key_point_values import (
@@ -122,7 +122,7 @@ from analysis_engine.helicopter.key_point_values import (
     CruiseGuideIndicatorMax,
     TrainingModeDuration,
     HoverHeightDuringOffshoreTakeoffMax,
-    HoverHeightDuringOnshoreTakeoffMax,
+    HoverHeightDuringOnshoreTakeoffMax
 )
 
 from analysis_engine.test_utils import buildsection, buildsections

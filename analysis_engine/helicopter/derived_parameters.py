@@ -4,9 +4,9 @@ from __future__ import print_function
 import numpy as np
 
 from flightdatautilities import units as ut
+
 from analysis_engine.node import (
-    A, DerivedParameterNode, KTI,
-    M, P, helicopter, helicopter_only
+    A, M, P, KTI, DerivedParameterNode, helicopter, helicopter_only
 )
 
 from analysis_engine.library import (
@@ -21,12 +21,12 @@ from analysis_engine.library import (
     slices_and,
     slices_int,
     slices_find_small_slices,
-    slices_remove_small_slices,
+    slices_remove_small_slices
 )
 
 from analysis_engine.settings import (
     ALTITUDE_AGL_SMOOTHING,
-    ALTITUDE_AGL_TRANS_ALT,
+    ALTITUDE_AGL_TRANS_ALT
 )
 
 

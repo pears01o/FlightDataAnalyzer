@@ -14,12 +14,9 @@ from flightdatautilities import aircrafttables as at, dateext, units as ut
 from hdfaccess.parameter import MappedArray
 
 from analysis_engine.node import (
-    A, MultistateDerivedParameterNode,
-    M,
-    P,
-    S,
-    helicopter,
+    A, M, P, S, helicopter, MultistateDerivedParameterNode
 )
+
 from analysis_engine.library import (
     align,
     all_of,
@@ -52,14 +49,15 @@ from analysis_engine.library import (
     smooth_signal,
     step_values,
     surface_for_synthetic,
-    vstack_params_where_state,
+    vstack_params_where_state
 )
+
 from analysis_engine.settings import (
     MIN_CORE_RUNNING,
     MIN_FAN_RUNNING,
     MIN_FUEL_FLOW_RUNNING,
     REVERSE_THRUST_EFFECTIVE_EPR,
-    REVERSE_THRUST_EFFECTIVE_N1,
+    REVERSE_THRUST_EFFECTIVE_N1
 )
 
 logger = logging.getLogger(name=__name__)

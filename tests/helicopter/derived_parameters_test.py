@@ -4,9 +4,11 @@ import numpy as np
 from numpy.ma.testutils import assert_array_equal
 
 from analysis_engine.node import (
-    Attribute, A, App, ApproachItem, KeyPointValue, KPV,
-    KeyTimeInstance, KTI, M, Parameter, P, Section, S, helicopter, helicopter_only, aeroplane
+    M, P, KTI, aeroplane,
+    helicopter, KeyTimeInstance,
 )
+
+from analysis_engine.library import unique_values
 
 from analysis_engine.helicopter.derived_parameters import (
     ApproachRange,
@@ -19,17 +21,9 @@ from analysis_engine.helicopter.derived_parameters import (
     MGBOilTemp,
     MGBOilPress,
     Nr,
-    TorqueAsymmetry,
+    TorqueAsymmetry
 )
 
-from analysis_engine.library import (
-    unique_values,
-)
-
-from analysis_engine.settings import (
-    ALTITUDE_AGL_SMOOTHING,
-    ALTITUDE_AGL_TRANS_ALT,
-)
 
 class TestApproachRange(unittest.TestCase):
     def test_can_operate(self):

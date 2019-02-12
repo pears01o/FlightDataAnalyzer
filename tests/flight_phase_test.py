@@ -5,6 +5,15 @@ import unittest
 from hdfaccess.parameter import MappedArray
 from flightdatautilities.array_operations import load_compressed
 
+from analysis_engine.node import (
+    A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem, helicopter,
+    KeyPointValue, KeyTimeInstance, load, Parameter, Section, SectionNode
+)
+
+from analysis_engine.library import (
+    integrate, np_ma_zeros_like, np_ma_ones_like
+)
+
 from analysis_engine.helicopter.flight_phase import OnDeck
 
 from analysis_engine.flight_phase import (
@@ -61,18 +70,15 @@ from analysis_engine.flight_phase import (
     TCASResolutionAdvisory,
     TCASTrafficAdvisory,
     TurningInAir,
-    TurningOnGround,
+    TurningOnGround
 )
+
 from analysis_engine.key_time_instances import BottomOfDescent, TopOfClimb, TopOfDescent
-from analysis_engine.library import integrate, np_ma_zeros_like, np_ma_ones_like
-from analysis_engine.node import (A, App, ApproachItem, KTI,
-                                  KeyTimeInstance, KPV, KeyPointValue, M,
-                                  Parameter, P, S, Section, SectionNode, load,
-                                  aeroplane, helicopter)
+
 from analysis_engine.test_utils import (
     buildsection,
     buildsections,
-    build_kti,
+    build_kti
 )
 
 from analysis_engine.settings import AIRSPEED_THRESHOLD
@@ -172,7 +178,7 @@ class TestAirborne(unittest.TestCase):
 
 
 class TestAirborneRadarApproach(unittest.TestCase):
-    
+
     def setUp(self):
         self.node_class = AirborneRadarApproach
 
@@ -182,10 +188,10 @@ class TestAirborneRadarApproach(unittest.TestCase):
         self.assertEqual(opts, expected)
 
     def test_derive_one_airborne_radar_approach(self):
-        
-        approaches = App() 
-        approaches.create_approach('AIRBORNE_RADAR', 
-                                   slice(19, 29, None), 
+
+        approaches = App()
+        approaches.create_approach('AIRBORNE_RADAR',
+                                   slice(19, 29, None),
                                    runway_change=False,
                                    offset_ils=False,
                                    airport=None,
@@ -195,96 +201,96 @@ class TestAirborneRadarApproach(unittest.TestCase):
                                    loc_est=None,
                                    ils_freq=None,
                                    turnoff=None,
-                                   lowest_lat=-19.92955434, 
-                                   lowest_lon=115.385025548, 
+                                   lowest_lat=-19.92955434,
+                                   lowest_lon=115.385025548,
                                    lowest_hdg=206.713600159)
-        
-        approaches.create_approach('SHUTTLING', 
-                                   slice(35, 48, None), 
+
+        approaches.create_approach('SHUTTLING',
+                                   slice(35, 48, None),
                                    runway_change=False,
                                    offset_ils=False,
-                                   airport=None, 
+                                   airport=None,
                                    landing_runway=None,
                                    approach_runway=None,
                                    gs_est=None,
                                    loc_est=None,
                                    ils_freq=None,
                                    turnoff=None,
-                                   lowest_lat=-19.92955434, 
-                                   lowest_lon=115.385025548, 
-                                   lowest_hdg=206.713600159)        
+                                   lowest_lat=-19.92955434,
+                                   lowest_lon=115.385025548,
+                                   lowest_hdg=206.713600159)
         node = self.node_class()
         node.derive(approaches)
         expected = slice(19, 29)
-        
+
         self.assertEqual(len(node), 1)
         self.assertEqual('Airborne Radar Approach', node.get_name())
         self.assertEqual(expected, node.get_slices()[0])
-        
+
     def test_derive_two_airborne_radar_approaches(self):
-        
-        approaches = App() 
-        approaches.create_approach('AIRBORNE_RADAR', 
-                                   slice(19, 29, None), 
+
+        approaches = App()
+        approaches.create_approach('AIRBORNE_RADAR',
+                                   slice(19, 29, None),
                                    runway_change=False,
                                    offset_ils=False,
-                                   airport=None, 
+                                   airport=None,
                                    landing_runway=None,
                                    approach_runway=None,
                                    gs_est=None,
                                    loc_est=None,
                                    ils_freq=None,
                                    turnoff=None,
-                                   lowest_lat=-19.92955434, 
-                                   lowest_lon=115.385025548, 
+                                   lowest_lat=-19.92955434,
+                                   lowest_lon=115.385025548,
                                    lowest_hdg=206.713600159)
-        
-        approaches.create_approach('AIRBORNE_RADAR', 
-                                   slice(35, 48, None), 
+
+        approaches.create_approach('AIRBORNE_RADAR',
+                                   slice(35, 48, None),
                                         runway_change=False,
                                         offset_ils=False,
-                                        airport=None, 
+                                        airport=None,
                                         landing_runway=None,
                                         approach_runway=None,
                                         gs_est=None,
                                         loc_est=None,
                                         ils_freq=None,
                                         turnoff=None,
-                                        lowest_lat=-19.92955434, 
-                                        lowest_lon=115.385025548, 
+                                        lowest_lat=-19.92955434,
+                                        lowest_lon=115.385025548,
                                         lowest_hdg=206.713600159)
         node = self.node_class()
         node.derive(approaches)
         expected = [slice(19, 29), slice(35, 48)]
-        
+
         self.assertEqual(len(node), 2)
         self.assertEqual('Airborne Radar Approach', node.get_name())
         self.assertEqual(expected[0], node.get_slices()[0])
         self.assertEqual('Airborne Radar Approach', node.get_name())
-        self.assertEqual(expected[1], node.get_slices()[1])   
-        
+        self.assertEqual(expected[1], node.get_slices()[1])
+
     def test_derive_no_airborne_radar_approaches(self):
-        
-        approaches = App() 
-        approaches.create_approach('SHUTTLING', 
-                                   slice(35, 48, None), 
+
+        approaches = App()
+        approaches.create_approach('SHUTTLING',
+                                   slice(35, 48, None),
                                    runway_change=False,
-                                   offset_ils=False,                                   
-                                   airport=None, 
+                                   offset_ils=False,
+                                   airport=None,
                                    landing_runway=None,
                                    approach_runway=None,
                                    gs_est=None,
                                    loc_est=None,
                                    ils_freq=None,
                                    turnoff=None,
-                                   lowest_lat=-19.92955434, 
-                                   lowest_lon=115.385025548, 
+                                   lowest_lat=-19.92955434,
+                                   lowest_lon=115.385025548,
                                    lowest_hdg=206.713600159)
         node = self.node_class()
         node.derive(approaches)
-        
+
         self.assertEqual(len(node), 0)
-        
+
 
 class TestApproachAndLanding(unittest.TestCase):
     def test_can_operate(self):
@@ -1532,7 +1538,7 @@ class TestHolding(unittest.TestCase):
         hold=Holding()
         hold.derive(alt, hdg, alt_max, tdwns, lat, lon)
         self.assertEqual(len(hold), 0)
-        
+
     def test_rejected_outside_height_range(self):
         rot=np.ma.concatenate((
             np.zeros(600),
@@ -1946,8 +1952,8 @@ class TestStationary(unittest.TestCase, NodeTest):
         self.assertEqual(len(station), 2)
         self.assertEqual(station[0].slice, slice(0, 20, None))
         self.assertEqual(station[1].slice, slice(26, 40, None))
-        
-        
+
+
 class TestStraightAndLevel(unittest.TestCase, NodeTest):
 
     def setUp(self):
@@ -1966,7 +1972,7 @@ class TestStraightAndLevel(unittest.TestCase, NodeTest):
 
 
 class TestShuttlingApproach(unittest.TestCase):
-    
+
     def setUp(self):
         self.node_class = ShuttlingApproach
 
@@ -1976,110 +1982,110 @@ class TestShuttlingApproach(unittest.TestCase):
         self.assertEqual(opts, expected)
 
     def test_derive_one_shuttling_approach(self):
-        
-        approaches = App() 
-        approaches.create_approach('SHUTTLING', 
-                                   slice(19, 29, None), 
+
+        approaches = App()
+        approaches.create_approach('SHUTTLING',
+                                   slice(19, 29, None),
                                    runway_change=False,
-                                   offset_ils=False,                                   
-                                   airport=None, 
+                                   offset_ils=False,
+                                   airport=None,
                                    landing_runway=None,
                                    approach_runway=None,
                                    gs_est=None,
                                    loc_est=None,
                                    ils_freq=None,
                                    turnoff=None,
-                                   lowest_lat=-19.92955434, 
-                                   lowest_lon=115.385025548, 
+                                   lowest_lat=-19.92955434,
+                                   lowest_lon=115.385025548,
                                    lowest_hdg=206.713600159)
-        
-        approaches.create_approach('LANDING', 
-                                   slice(35, 48, None), 
+
+        approaches.create_approach('LANDING',
+                                   slice(35, 48, None),
                                    runway_change=False,
-                                   offset_ils=False,                                   
-                                   airport=None, 
+                                   offset_ils=False,
+                                   airport=None,
                                    landing_runway=None,
                                    approach_runway=None,
                                    gs_est=None,
                                    loc_est=None,
                                    ils_freq=None,
                                    turnoff=None,
-                                   lowest_lat=-19.92955434, 
-                                   lowest_lon=115.385025548, 
-                                   lowest_hdg=206.713600159)        
+                                   lowest_lat=-19.92955434,
+                                   lowest_lon=115.385025548,
+                                   lowest_hdg=206.713600159)
         node = self.node_class()
         node.derive(approaches)
         expected = slice(19, 29)
-        
+
         self.assertEqual(len(node), 1)
         self.assertEqual('Shuttling Approach', node.get_name())
         self.assertEqual(expected, node.get_slices()[0])
-        
+
     def test_derive_two_shuttling_approaches(self):
-        
-        approaches = App() 
-        approaches.create_approach('SHUTTLING', 
-                                   slice(19, 29, None), 
+
+        approaches = App()
+        approaches.create_approach('SHUTTLING',
+                                   slice(19, 29, None),
                                    runway_change=False,
-                                   offset_ils=False,                                   
-                                   airport=None, 
+                                   offset_ils=False,
+                                   airport=None,
                                    landing_runway=None,
                                    approach_runway=None,
                                    gs_est=None,
                                    loc_est=None,
                                    ils_freq=None,
                                    turnoff=None,
-                                   lowest_lat=-19.92955434, 
-                                   lowest_lon=115.385025548, 
+                                   lowest_lat=-19.92955434,
+                                   lowest_lon=115.385025548,
                                    lowest_hdg=206.713600159)
-        
-        approaches.create_approach('SHUTTLING', 
-                                   slice(35, 48, None), 
+
+        approaches.create_approach('SHUTTLING',
+                                   slice(35, 48, None),
                                    runway_change=False,
-                                   offset_ils=False,                                   
-                                   airport=None, 
+                                   offset_ils=False,
+                                   airport=None,
                                    landing_runway=None,
                                    approach_runway=None,
                                    gs_est=None,
                                    loc_est=None,
                                    ils_freq=None,
                                    turnoff=None,
-                                   lowest_lat=-19.92955434, 
-                                   lowest_lon=115.385025548, 
-                                   lowest_hdg=206.713600159)        
-        
+                                   lowest_lat=-19.92955434,
+                                   lowest_lon=115.385025548,
+                                   lowest_hdg=206.713600159)
+
         node = self.node_class()
         node.derive(approaches)
         expected = [slice(19, 29), slice(35, 48)]
-        
+
         self.assertEqual(len(node), 2)
         self.assertEqual('Shuttling Approach', node.get_name())
         self.assertEqual(expected[0], node.get_slices()[0])
         self.assertEqual('Shuttling Approach', node.get_name())
         self.assertEqual(expected[1], node.get_slices()[1])
-        
-        
+
+
     def test_no_shuttling_approaches(self):
-        
-        approaches = App() 
-        approaches.create_approach('LANDING', 
-                                   slice(19, 29, None), 
+
+        approaches = App()
+        approaches.create_approach('LANDING',
+                                   slice(19, 29, None),
                                    runway_change=False,
-                                   offset_ils=False,                                   
-                                   airport=None, 
+                                   offset_ils=False,
+                                   airport=None,
                                    landing_runway=None,
                                    approach_runway=None,
                                    gs_est=None,
                                    loc_est=None,
                                    ils_freq=None,
                                    turnoff=None,
-                                   lowest_lat=-19.92955434, 
-                                   lowest_lon=115.385025548, 
+                                   lowest_lat=-19.92955434,
+                                   lowest_lon=115.385025548,
                                    lowest_hdg=206.713600159)
-        
+
         node = self.node_class()
         node.derive(approaches)
-        
+
         self.assertEqual(len(node), 0)
 
 
@@ -2375,7 +2381,7 @@ class TestTakeoff(unittest.TestCase):
                        phase_fast)
         expected = []
         self.assertEqual(takeoff.get_slices(), expected)
-    
+
     def test_takeoff_alt_spike(self):
         '''
         Altitude spike below rate of change limit before liftoff was truncating

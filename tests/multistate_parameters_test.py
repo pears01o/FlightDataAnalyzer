@@ -12,14 +12,16 @@ from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.aircrafttables.constants import AVAILABLE_CONF_STATES
 from flightdatautilities import masked_array_testutils as ma_test
 from analysis_engine.test_utils import buildsection, buildsections
+
+from analysis_engine.node import (
+    A, M, P, S, App, Attribute, load, Section
+)
+
 from analysis_engine.library import (
     unique_values,
-    runs_of_ones,
+    runs_of_ones
 )
-from analysis_engine.node import (
-    Attribute, A, App, load, M,
-    P, Section, S,
-)
+
 from analysis_engine.multistate_parameters import (
     APEngaged,
     APChannelsEngaged,
@@ -93,8 +95,9 @@ from analysis_engine.multistate_parameters import (
     TCASFailure,
     TCASRA,
     ThrustReversers,
-    Transmitting,
+    Transmitting
 )
+
 
 ##############################################################################
 # Test Configuration

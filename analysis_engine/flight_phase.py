@@ -6,7 +6,10 @@ from scipy.signal import medfilt
 
 from flightdatautilities import units as ut
 
-from analysis_engine import settings
+from analysis_engine.node import (
+    A, M, P, S, KPV, KTI, aeroplane, aeroplane_only,
+    App, FlightPhaseNode, helicopter
+)
 
 from analysis_engine.library import (
     all_deps,
@@ -42,12 +45,8 @@ from analysis_engine.library import (
     slices_overlap,
     slices_overlap_merge,
     slices_remove_small_gaps,
-    slices_remove_small_slices,
+    slices_remove_small_slices
 )
-
-from analysis_engine.node import (
-    A, App, FlightPhaseNode, P, S, KTI, KPV, M,
-    aeroplane, aeroplane_only, helicopter)
 
 from analysis_engine.settings import (
     AIRBORNE_THRESHOLD_TIME,
@@ -58,6 +57,7 @@ from analysis_engine.settings import (
     HEADING_RATE_FOR_FLIGHT_PHASES_FW,
     HEADING_RATE_FOR_FLIGHT_PHASES_RW,
     HEADING_RATE_FOR_MOBILE,
+    HEADING_RATE_FOR_STRAIGHT_FLIGHT,
     HEADING_RATE_FOR_TAXI_TURNS,
     HEADING_TURN_OFF_RUNWAY,
     HEADING_TURN_ONTO_RUNWAY,
@@ -68,14 +68,16 @@ from analysis_engine.settings import (
     INITIAL_CLIMB_THRESHOLD,
     LANDING_ROLL_END_SPEED,
     LANDING_THRESHOLD_HEIGHT,
+    LEVEL_FLIGHT_MIN_DURATION,
     ROTORSPEED_THRESHOLD,
     TAKEOFF_ACCELERATION_THRESHOLD,
     VERTICAL_SPEED_FOR_CLIMB_PHASE,
     VERTICAL_SPEED_FOR_DESCENT_PHASE,
+    VERTICAL_SPEED_FOR_LEVEL_FLIGHT,
 
     LANDING_COLLECTIVE_PERIOD,
     LANDING_HEIGHT,
-    LANDING_TRACEBACK_PERIOD,
+    LANDING_TRACEBACK_PERIOD
 )
 
 
@@ -102,18 +104,18 @@ class Airborne(FlightPhaseNode):
         # Remove short gaps in going fast to account for aerobatic manoeuvres
         speedy_slices = slices_remove_small_gaps(fast.get_slices(),
                                                  time_limit=60, hz=fast.frequency)
-    
+
         # Just find out when altitude above airfield is non-zero.
         for speedy in speedy_slices:
             # Stop here if the aircraft never went fast.
             if speedy.start is None and speedy.stop is None:
                 break
-    
+
             start_point = speedy.start or 0
             stop_point = speedy.stop or len(alt_aal.array)
             # Restrict data to the fast section (it's already been repaired)
             working_alt = alt_aal.array[slices_int(start_point, stop_point)]
-    
+
             # Stop here if there is inadequate airborne data to process.
             if working_alt is None or np.ma.ptp(working_alt)==0.0:
                 continue
@@ -202,8 +204,8 @@ class Holding(FlightPhaseNode):
 
         # Five minutes should include two turn segments.
         turn_rate = rate_of_change(hdg, 5 * 60)
-        
-        # We scan the entire descent, from highest altitude to the final 
+
+        # We scan the entire descent, from highest altitude to the final
         # touchdown, to give us the best chance of finding any hold periods.
         to_scan = slice(alt_max[0].index, tdwns[-1].index)
         # We know turn rate will be positive because Heading Increasing only
@@ -386,14 +388,14 @@ class Approach(FlightPhaseNode):
 class BouncedLanding(FlightPhaseNode):
     '''
     Bounced landing, defined as from first moment on ground to the final moment on the ground.
-    
+
     Note: Airborne includes rejection of short segments, so the bounced period is within
     an airborne phase.
     '''
     def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
                airs=S('Airborne')):
         gnds = np.ma.clump_masked(np.ma.masked_less(alt_aal.array,
-                                                    BOUNCED_LANDING_THRESHOLD))        
+                                                    BOUNCED_LANDING_THRESHOLD))
         for air in airs:
             for gnd in gnds:
                 if not is_slice_within_slice(gnd, air.slice):
@@ -1111,11 +1113,11 @@ class LevelFlight(FlightPhaseNode):
                vrt_spd=P('Vertical Speed For Flight Phases')):
 
         for air in airs:
-            limit = settings.VERTICAL_SPEED_FOR_LEVEL_FLIGHT
+            limit = VERTICAL_SPEED_FOR_LEVEL_FLIGHT
             level_flight = np.ma.masked_outside(vrt_spd.array[air.slice], -limit, limit)
             level_slices = np.ma.clump_unmasked(level_flight)
             level_slices = slices_remove_small_slices(level_slices,
-                                                      time_limit=settings.LEVEL_FLIGHT_MIN_DURATION,
+                                                      time_limit=LEVEL_FLIGHT_MIN_DURATION,
                                                       hz=vrt_spd.frequency)
             self.create_phases(shift_slices(level_slices, air.slice.start))
 
@@ -1132,12 +1134,12 @@ class StraightAndLevel(FlightPhaseNode):
                hdg=P('Heading')):
 
         for level in levels:
-            limit = settings.HEADING_RATE_FOR_STRAIGHT_FLIGHT
+            limit = HEADING_RATE_FOR_STRAIGHT_FLIGHT
             rot = rate_of_change_array(hdg.array[level.slice], hdg.frequency, width=30)
             straight_flight = np.ma.masked_outside(rot, -limit, limit)
             straight_slices = np.ma.clump_unmasked(straight_flight)
             straight_and_level_slices = slices_remove_small_slices(
-                straight_slices, time_limit=settings.LEVEL_FLIGHT_MIN_DURATION,
+                straight_slices, time_limit=LEVEL_FLIGHT_MIN_DURATION,
                 hz=hdg.frequency)
             self.create_phases(shift_slices(straight_and_level_slices, level.slice.start))
 
@@ -1626,10 +1628,10 @@ class RejectedTakeoff(FlightPhaseNode):
             rto_list=[]
             for rto in potential_rtos:
                 for running_on_ground in running_on_grounds:
-                    # The RTO slice can only be within the 'Grounded' phase. 
+                    # The RTO slice can only be within the 'Grounded' phase.
                     # If RTO slice size changes (decreases) when AND'd with
                     # running_on_ground this Acceleration/N1 Max combination
-                    # should be the part of the takeoff. 
+                    # should be the part of the takeoff.
                     if slices_and([rto], [running_on_ground]) == [rto]:
                         if len(rto_list) > 0 and\
                            (rto.start - rto_list[-1].stop)/hz < 60.0:
@@ -1917,7 +1919,7 @@ class Takeoff5MinRating(FlightPhaseNode):
                     rating_end = accel_start.index + (five_minutes)
                 self.create_phase(slice(accel_start.index, min(rating_end, max_idx)))
         elif ac_type == helicopter:
-            
+
             start_idx = end_idx = 0
             for lift in lifts:
                 start_idx = start_idx or lift.index

@@ -23,39 +23,32 @@ from flightdatautilities.aircrafttables.interfaces import VelocitySpeed
 from flightdatautilities import masked_array_testutils as ma_test
 from flightdatautilities.filesystem_tools import copy_file
 
-from analysis_engine.flight_phase import Fast, Mobile
-from analysis_engine.library import (align,
-                                     max_value,
-                                     np_ma_masked_zeros_like,
-                                     np_ma_ones_like,
-                                     unique_values)
-
 from analysis_engine.node import (
-    aeroplane, Attribute, A, App, ApproachItem, helicopter, KeyPointValue, KPV,
-    KeyTimeInstance, KTI, load, M, Parameter, P, Section, S)
+    A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem, Attribute,
+    helicopter, KeyPointValue, KeyTimeInstance, load, Parameter, Section
+)
+
+from analysis_engine.library import (
+    align,
+    max_value,
+    np_ma_masked_zeros_like,
+    np_ma_ones_like,
+    unique_values
+)
+
+from analysis_engine.flight_phase import Fast, Mobile
+
 from analysis_engine.process_flight import process_flight
-from analysis_engine.settings import GRAVITY_IMPERIAL
 
 from analysis_engine.test_utils import buildsection, buildsections
 
 # Use pre-processed version
 from analysis_engine.pre_processing.merge_parameters import (
     LatitudePrepared as LatitudePreparedLatLon,
-    LongitudePrepared as LongitudePreparedLatLon,
+    LongitudePrepared as LongitudePreparedLatLon
 )
 
 from analysis_engine.derived_parameters import (
-    # Velocity Speeds:
-    #ATEngaged,
-    #AltitudeForFlightPhases,
-    #AltitudeRadioForFlightPhases,
-    #AltitudeSTD,
-    #GroundspeedAlongTrack,
-    #ILSGlideslope,
-    #ILSLocalizer,
-    #ILSLocalizerRange,
-    #V2,
-    #V2Lookup,
     AOA,
     AccelerationAcrossTrack,
     AccelerationAlongTrack,
@@ -230,9 +223,10 @@ from analysis_engine.derived_parameters import (
     WheelSpeedRight,
     WindAcrossLandingRunway,
     WindDirection,
-    ZeroFuelWeight,
+    ZeroFuelWeight
 )
 
+from analysis_engine.settings import GRAVITY_IMPERIAL
 
 ##############################################################################
 # Test Configuration

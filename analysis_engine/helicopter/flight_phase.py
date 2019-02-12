@@ -1,5 +1,9 @@
 import numpy as np
 
+from analysis_engine.node import (
+    A, M, P, S, FlightPhaseNode, helicopter, helicopter_only
+)
+
 from analysis_engine.library import (
     all_of,
     filter_slices_duration,
@@ -14,11 +18,8 @@ from analysis_engine.library import (
     slices_below,
     slices_overlap,
     slices_remove_small_gaps,
-    slices_remove_small_slices,
+    slices_remove_small_slices
 )
-
-from analysis_engine.node import (
-    A, FlightPhaseNode, P, S, M, helicopter, helicopter_only)
 
 from analysis_engine.settings import (
     AIRBORNE_THRESHOLD_TIME_RW,
@@ -28,7 +29,7 @@ from analysis_engine.settings import (
     HOVER_MIN_DURATION,
     HOVER_MIN_HEIGHT,
     HOVER_TAXI_HEIGHT,
-    TAKEOFF_PERIOD,
+    TAKEOFF_PERIOD
 )
 
 

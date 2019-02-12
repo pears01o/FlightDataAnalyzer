@@ -1,4 +1,3 @@
-
 import itertools
 import os
 import numpy as np
@@ -671,7 +670,6 @@ from analysis_engine.key_point_values import (
     TCASTAAcceleration,
     TCASTAAltitudeAAL,
     TCASTAAltitudeSTD,
-    TCASTAChangeOfVerticalSpeed,
     TCASTAHeading,
     TCASTAWarningDuration,
     TOGASelectedDuringFlightDuration,
@@ -731,8 +729,6 @@ from analysis_engine.key_time_instances import (
     EngStart,
     EngStop,
     DistanceFromThreshold,
-    DistanceToTouchdown,
-    SecsToTouchdown,
 )
 
 from analysis_engine.library import (max_abs_value, max_value, min_value)

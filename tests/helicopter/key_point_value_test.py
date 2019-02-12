@@ -1,9 +1,8 @@
-import os
 import numpy as np
 import sys
 import unittest
 
-from mock import Mock, call, patch
+from mock import Mock, patch
 
 from analysis_engine.node import (
     P, S, M, A, KTI, KPV, helicopter, aeroplane, App, ApproachItem,
@@ -14,15 +13,9 @@ from flightdatautilities import units as ut
 
 from hdfaccess.parameter import MappedArray
 
-from analysis_engine.library import (max_abs_value, max_value, min_value)
+from analysis_engine.library import (max_value, min_value)
 
 from analysis_engine.key_time_instances import (
-    AltitudeWhenDescending,
-    AltitudeBeforeLevelFlightWhenClimbing,
-    AltitudeBeforeLevelFlightWhenDescending,
-    EngStart,
-    EngStop,
-    DistanceFromThreshold,
     DistanceToTouchdown,
     SecsToTouchdown,
 )

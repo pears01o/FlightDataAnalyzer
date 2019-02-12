@@ -7,7 +7,6 @@ import operator
 import re
 import six
 
-from collections import defaultdict
 from copy import deepcopy
 from math import ceil, copysign
 from operator import itemgetter
@@ -42,7 +41,7 @@ from analysis_engine.settings import (ACCEL_LAT_OFFSET_LIMIT,
 
 from analysis_engine.node import (
     KeyPointValueNode, KPV, KTI, P, S, A, M, App, Section,
-    aeroplane, aeroplane_only, helicopter, helicopter_only)
+    aeroplane, aeroplane_only, helicopter)
 
 from analysis_engine.library import (ambiguous_runway,
                                      align,
@@ -117,7 +116,7 @@ from analysis_engine.library import (ambiguous_runway,
                                      valid_slices_within_array,
                                      value_at_index,
                                      vstack_params_where_state,
-                                     vstack_params)
+                                     )
 
 
 ##############################################################################

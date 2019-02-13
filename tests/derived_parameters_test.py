@@ -23,17 +23,19 @@ from flightdatautilities.aircrafttables.interfaces import VelocitySpeed
 from flightdatautilities import masked_array_testutils as ma_test
 from flightdatautilities.filesystem_tools import copy_file
 
+from analysis_engine.flight_phase import Fast, Mobile, RejectedTakeoff
+from analysis_engine.library import (align,
+                                     max_value,
+                                     np_ma_masked_zeros,
+                                     np_ma_masked_zeros_like,
+                                     np_ma_ones_like,
+                                     mb2ft,
+                                     overflow_correction,
+                                     unique_values)
+
 from analysis_engine.node import (
     A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem, Attribute,
     helicopter, KeyPointValue, KeyTimeInstance, load, Parameter, Section
-)
-
-from analysis_engine.library import (
-    align,
-    max_value,
-    np_ma_masked_zeros_like,
-    np_ma_ones_like,
-    unique_values
 )
 
 from analysis_engine.flight_phase import Fast, Mobile
@@ -1697,17 +1699,18 @@ class TestAltitudeRadio(unittest.TestCase):
             test_data_path, 'A320_Altitude_Radio_A_overflow.nod'))
         radioB = load(os.path.join(
             test_data_path, 'A320_Altitude_Radio_B_overflow.nod'))
-
+        radioA.array = overflow_correction(radioA.array)
+        radioB.array = overflow_correction(radioB.array)
         rad = AltitudeRadio()
         rad.derive(radioA, radioB, None, None, None, None, None, None, None,
                    fast=fast, family=A('Family', 'A320'))
 
         sects = np.ma.clump_unmasked(rad.array)
-        self.assertEqual(len(sects), 4)
-        for sect in sects[0::2]:
+        self.assertEqual(len(sects), 6)
+        for sect in sects[0::3]:
             # takeoffs
             self.assertAlmostEqual(rad.array[sect.start] / 10., 0, 0)
-        for sect in sects[1::2]:
+        for sect in sects[2::3]:
             # landings
             self.assertAlmostEqual(rad.array[sect.stop - 1] / 10., 0, 0)
 
@@ -1716,7 +1719,7 @@ class TestAltitudeRadio(unittest.TestCase):
         fast = buildsection('Fast', 248.8, 3674.3)
         radioA = load(os.path.join(
             test_data_path, 'Altitude_Radio_A_A320_eec5df85279d.nod'))
-
+        radioA.array = overflow_correction(radioA.array)
         rad = AltitudeRadio()
         rad.derive(radioA, None, None, None, None, None, None, None, None,
                    fast=fast, family=A('Family', 'A320'))
@@ -1730,6 +1733,8 @@ class TestAltitudeRadio(unittest.TestCase):
             test_data_path, 'A330_AltitudeRadio_A_overflow_8191.nod'))
         radioB = load(os.path.join(
             test_data_path, 'A330_AltitudeRadio_B_overflow_8191.nod'))
+        radioA.array = overflow_correction(radioA.array)
+        radioB.array = overflow_correction(radioB.array)
 
         rad = AltitudeRadio()
         rad.derive(radioA, radioB, None, None, None, None, None, None, None,
@@ -1738,9 +1743,9 @@ class TestAltitudeRadio(unittest.TestCase):
         sects = np.ma.clump_unmasked(rad.array)
         self.assertEqual(len(sects), 2)
         self.assertEqual(sects[0].start, 17)
-        self.assertEqual(sects[0].stop, 2763)
+        self.assertEqual(sects[1].stop, 2763)
         self.assertAlmostEqual(rad.array[2762], 5524, places=0)
-        self.assertEqual(sects[1].start, 122453)
+        self.assertEqual(sects[2].start, 122453)
         self.assertAlmostEqual(rad.array[122453], 5456, places=0)
 
 

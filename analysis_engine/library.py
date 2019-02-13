@@ -4698,9 +4698,12 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         tol_mask = np.ma.masked_greater(np.ma.ptp(test_array, axis=0), tolerance)
 
     if mode == 'linear':
-        return blend_parameters_linear(params, frequency, tol_mask, offset=offset)
+        return blend_parameters_linear(params, frequency, tolerance=tolerance, offset=offset)
 
     # mode is cubic
+    
+    # Find out about the parameters we have to deal with...
+    min_ip_freq = min(p.frequency for p in params)
 
     p_valid_slices = []
 
@@ -4748,15 +4751,11 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     for this_valid in any_valid:
         result_slice = slice_multiply(this_valid, frequency/min_ip_freq)
         result[result_slice] = blend_parameters_cubic(
-            frequency, offset, params, result_slice)
+            frequency, offset, params, result_slice, tolerance=tolerance)
         # The endpoints of a cubic spline are generally unreliable, so trim
         # them back.
         result[result_slice][0] = np.ma.masked
         result[result_slice][-1] = np.ma.masked
-        
-    if tol_mask is not None:
-        result.mask = np.ma.logical_or(np.ma.getmaskarray(result), 
-                                       resample(np.ma.getmaskarray(tol_mask), min_ip_freq, frequency))
     return result
 
 
@@ -4787,7 +4786,7 @@ def resample_mask(mask, orig_hz, resample_hz):
     return resampled
 
 
-def blend_parameters_linear(params, frequency, tol_mask, offset=0):
+def blend_parameters_linear(params, frequency, tolerance=None, offset=0):
     '''
     This provides linear interpolation to support the generic routine
     blend_parameters.
@@ -4806,6 +4805,9 @@ def blend_parameters_linear(params, frequency, tol_mask, offset=0):
     weights = []
     aligned = []
 
+    # Find out about the parameters we have to deal with...
+    min_ip_freq = min(p.frequency for p in params)
+
     # Compute the individual splines
     for param in params:
         aligned.append(align_args(param.array, param.frequency, param.offset, frequency, offset))
@@ -4813,12 +4815,19 @@ def blend_parameters_linear(params, frequency, tol_mask, offset=0):
         weights.append(param.frequency)
 
     result = np.ma.average(aligned, axis=0, weights=weights)
-    result.mask = np.ma.logical_or(np.ma.getmaskarray(result), np.ma.getmaskarray(tol_mask))
+
+    tol_mask = None
+    if tolerance:
+        test_array = np.ma.zeros((len(params), len(params[0].array) * min_ip_freq / params[0].frequency))
+        for n, p in enumerate(params):
+            test_array[n, :] = resample(p.array, p.frequency, min_ip_freq)
+        tol_mask = np.ma.masked_greater(np.ma.ptp(test_array, axis=0), tolerance)
+        result.mask = np.ma.logical_or(np.ma.getmaskarray(result), np.ma.getmaskarray(tol_mask))
 
     return result
 
 
-def blend_parameters_cubic(frequency, offset, params, result_slice):
+def blend_parameters_cubic(frequency, offset, params, result_slice, tolerance=None):
     '''
     :param frequency: the frequency of the output parameter
     :type frequency: float
@@ -4876,9 +4885,12 @@ def blend_parameters_cubic(frequency, offset, params, result_slice):
             param.array[my_slice], frequency/param.frequency))
 
     a = np.vstack(tuple(curves))
+    result = np.ma.average(a, axis=0, weights=weights)
 
-    return np.ma.average(a, axis=0, weights=weights)
+    if tolerance:
+        result.mask = np.ma.masked_greater(np.ma.ptp(a, axis=0), tolerance).mask
 
+    return result 
 
 def blend_parameters_weighting(array, wt):
     '''
@@ -5363,7 +5375,7 @@ def overflow_correction(array, fast=None, hz=1):
     return array
 
 
-def overflow_correction_array(array, delta=None):
+def overflow_correction_array(array):
     '''
     Overflow correction based on power of two jumps only.
     '''
@@ -5374,7 +5386,7 @@ def overflow_correction_array(array, delta=None):
 
     # Most radio altimeters are scaled to overflow at 2048ft, but occasionally the signed
     # value changes by half this amount. Hence jumps more than half a power lower than 2**10.
-    steps = np.ma.where(abs_jump > 2**9.5, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
+    steps = np.ma.where(abs_jump > 800.0, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
             
     biggest_step_up = np.ma.max(steps)
     biggest_step_down = np.ma.min(steps)

@@ -19227,4 +19227,4 @@ class DHSelectedAt1500FtLVO(KeyPointValueNode):
             alt_aal_array = mask_outside_slices(alt_aal.array, [descent.slice])
             approach_index = np.ma.argmax(alt_aal_array <= 1500)
 
-            self.create_kpv(approach_index, dh_selected.at(approach_index))
+            self.create_kpv(approach_index, dh_selected.array[approach_index])

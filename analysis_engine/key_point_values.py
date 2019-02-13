@@ -748,6 +748,29 @@ class AccelerationNormalWithFlapDownWhileAirborneMin(KeyPointValueNode):
         self.create_kpv_from_slices(acc_flap_dn, remove_bump(airborne), min_value)
 
 
+class AccelerationNormalAboveLimitWithFlapDownWhileAirborne(KeyPointValueNode):
+    '''
+    Returns the difference between the Acceleration Normal and the limit for
+    Acceleration Normal with flaps down depending on aircraft flap position
+    and aircraft weight.
+
+    Specific to B737 MAX.
+    '''
+
+    units = ut.G
+
+    def derive(self,
+               acc_norm=P('Acceleration Normal Offset Removed'),
+               acc_limit=P('Acceleration Normal High Limit With Flaps Down'),
+               airborne=S('Airborne')):
+
+        self.create_kpv_from_slices(
+            acc_norm.array - acc_limit.array,
+            remove_bump(airborne),
+            max_value
+        )
+
+
 class AccelerationNormalAtLiftoff(KeyPointValueNode):
     '''
     This is a measure of the normal acceleration at the point of liftoff, and

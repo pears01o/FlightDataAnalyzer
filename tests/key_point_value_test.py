@@ -62,6 +62,7 @@ from analysis_engine.key_point_values import (
     AccelerationLongitudinalDuringTakeoffMax,
     AccelerationLongitudinalOffset,
     AccelerationNormal20FtTo5FtMax,
+    AccelerationNormalAboveLimitWithFlapDownWhileAirborne,
     AccelerationNormalAboveWeightLimitAtTouchdown,
     AccelerationNormalAboveWeightLowLimitAtTouchdown,
     AccelerationNormalAboveWeightHighLimitAtTouchdown,
@@ -1757,6 +1758,30 @@ class TestAccelerationNormalWithFlapDownWhileAirborneMin(unittest.TestCase, Node
         self.assertEqual(node, KPV(name=name, items=[
             KeyPointValue(index=9, value=-0.2, name=name),
         ]))
+
+
+class TestAccelerationNormalAboveLimitWithFlapDownWhileAirborne(unittest.TestCase, NodeTest):
+    def setUp(self):
+        self.node_class = AccelerationNormalAboveLimitWithFlapDownWhileAirborne
+        self.operational_combinations = [('Acceleration Normal Offset Removed',
+                                        'Acceleration Normal High Limit With Flaps Down',
+                                        'Airborne')]
+
+    def test_derive(self):
+        array = np.ma.repeat(1.0, 200)
+        array[100] = 2.2
+        array[130] = 1.8  # On ground
+        array[160] = 1.6
+        acc_norm = P('Acceleration Normal Offset Removed', array=array)
+        acc_limit = P('Acceleration Normal High Limit With Flaps Down',
+                      array=np.ma.repeat(2.0, 200))
+        airborne = buildsections('Airborne', [30, 120], [150, 180])
+        node = self.node_class()
+        node.derive(acc_norm, acc_limit, airborne)
+
+        self.assertEqual(len(node), 1)  # Only 1 max per flight
+        self.assertEqual(node[0].index, 100)
+        self.assertAlmostEqual(node[0].value, 0.2)
 
 
 class TestAccelerationNormalAtLiftoff(unittest.TestCase, NodeTest):

@@ -6076,6 +6076,62 @@ class AccelerationNormalHighLimitForLandingWeight(DerivedParameterNode):
         self.array[range3] = 1.93
 
 
+class AccelerationNormalHighLimitWithFlapsDown(DerivedParameterNode):
+    '''
+    Maximum acceleration normal during flight with flaps extended.
+    Applicable only for B737-MAX-8.
+
+    Normal threshold is 2.0g.
+
+    With flaps 30 or 40:
+    If gross weight is less than MLW, the threshold is 2.0g.
+
+    If between MLW and MTOW, the threshold varies linearly from
+    2.0g down to 1.5g.
+
+    If the landing weight is higher than MTOW the threshold is 1.5g.
+    '''
+
+    @classmethod
+    def can_operate(cls, available,
+                    family=A('Family'),):
+        family_name = family.value if family else None
+        return family_name in ('B737 MAX',) and \
+               any_of(('Flap Lever', 'Flap Lever (Synthetic)'), available) and \
+               all_of(('Gross Weight Smoothed', 'Maximum Takeoff Weight',
+                       'Maximum Landing Weight'), available)
+
+    def derive(self,
+               flap_lever=P('Flap Lever'),
+               flap_synth=P('Flap Lever (Synthetic)'),
+               gw=P('Gross Weight Smoothed'),
+               mtow=A('Maximum Takeoff Weight'),
+               mlw=A('Maximum Landing Weight')):
+
+        flap = flap_lever or flap_synth
+        # 2.0g is default value
+        array = np_ma_ones_like(flap.array) * 2.0
+
+        if 'Lever 0' in flap.array.state:
+            retracted = flap.array == 'Lever 0'
+        elif '0' in flap.array.state:
+            retracted = flap.array == '0'
+        np.ma.masked_where(retracted, array, copy=False)
+
+        # With flaps 30 or 40 and above MLW
+        mtow = mtow.value
+        mlw = mlw.value
+        flap_30_40 = (flap.array >= 30.) & (gw.array > mlw)
+
+        # Linearly interpolate between 2.0g at MLW and 1.5g at MTOW
+        array[flap_30_40] += (gw.array[flap_30_40] - mlw) / (mtow - mlw) * (1.5 - 2.0)
+
+        flap_30_40_above_mtow = flap_30_40 & (gw.array > mtow)
+        array[flap_30_40_above_mtow] = 1.5
+
+        self.array = array
+
+
 class Rudder(DerivedParameterNode):
     '''
     Combination of multi-part rudder elements.

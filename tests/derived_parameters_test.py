@@ -59,6 +59,7 @@ from analysis_engine.derived_parameters import (
     AccelerationNormalLimitForLandingWeight,
     AccelerationNormalLowLimitForLandingWeight,
     AccelerationNormalHighLimitForLandingWeight,
+    AccelerationNormalHighLimitWithFlapsDown,
     AccelerationSideways,
     AccelerationVertical,
     AccelerationNormalOffsetRemoved,
@@ -644,6 +645,120 @@ class TestAccelerationNormalHighLimitForLandingWeight(unittest.TestCase):
         acc_n_lim.derive(gross_weight)
         expected = np.ma.concatenate((np.ones(3) * 1.93, np.ones(7) * 2.2, np.ones(1) * 2.236605535178393, np.ones(1) * 2.2732844281427145, np.ones(1) * 2.346642214071357, np.ones(1) * 2.3833211070356786, np.ones(1) * 2.42))
         ma_test.assert_array_equal(acc_n_lim.array, expected)
+
+
+class TestAccelerationNormalHighLimitWithFlapsDown(unittest.TestCase):
+
+    node_class = AccelerationNormalHighLimitWithFlapsDown
+
+    def setUp(self):
+        self.mtow = A('Maximum Takeoff Weight', value=82190.0)
+        self.mlw = A('Maximum Landing Weight', value=69308.0)
+        self.mapping = {f: str(f) for f in (0, 1, 2, 5, 10, 15, 25, 30, 40)}
+
+    def test_can_operate(self):
+        node = self.node_class()
+        expected =('Flap Lever', 'Gross Weight Smoothed',
+                   'Maximum Takeoff Weight', 'Maximum Landing Weight')
+        b737_max = A('Family', value='B737 MAX')
+        self.assertTrue(node.can_operate(expected, b737_max))
+
+        expected =('Flap Lever (Synthetic)', 'Gross Weight Smoothed',
+                   'Maximum Takeoff Weight', 'Maximum Landing Weight')
+        self.assertTrue(node.can_operate(expected, b737_max))
+
+        self.assertFalse(node.can_operate(expected))
+        self.assertFalse(node.can_operate(('Flap Lever', 'Gross Weight Smoothed'), b737_max))
+
+    def test_derive(self):
+
+        flap = M('Flap Lever', array=np.ma.repeat(5, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(55000, 20/2.),
+               frequency=2)
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        ma_test.assert_array_equal(node.array, np.ma.repeat(2.0, 20))
+
+    def test_derive_over_MLW_flaps_less_than_30(self):
+        flap = M('Flap Lever', array=np.ma.repeat(5, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(75000, 20/2),
+               frequency=2)
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        ma_test.assert_array_equal(node.array, np.ma.repeat(2.0, 20))
+
+    def test_derive_below_MLW_flaps_30(self):
+        flap = M('Flap Lever', array=np.ma.repeat(30, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(65000, 20/2.),
+               frequency=2)
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        ma_test.assert_array_equal(node.array, np.ma.repeat(2.0, 20))
+
+    def test_derive_over_MLW_flaps_30(self):
+        flap = M('Flap Lever', array=np.ma.repeat(30, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(75000, 20/2.),
+               frequency=2)
+        mtow = self.mtow.value
+        mlw = self.mlw.value
+        # Find expected g by linear interpolation
+        expected_g = (75000 - mlw) / (mtow - mlw) * (1.5 - 2.0) + 2.0
+        # When Gross Weight Smoothed is aligned to Flap, its last value
+        # will be masked, because we do not extrapolate values.
+        # This means that the last expected value will have the default
+        # value of 2.0g.
+        expected = np.ma.concatenate((np.ma.repeat(expected_g, 19), [2.0]))
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        assert_array_almost_equal(node.array, expected)
+
+    def test_derive_over_MTOW_flaps_40(self):
+        flap = M('Flap Lever', array=np.ma.repeat(40, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(82200, 20/2.),
+               frequency=2)
+        mtow = self.mtow.value
+        mlw = self.mlw.value
+        # Above MTOW, with flaps 30 or above, the max acceleration is 1.5g
+        expected_g = 1.5
+        # When Gross Weight Smoothed is aligned to Flap, its last value
+        # will be masked, because we do not extrapolate values.
+        # This means that the last expected value will have the default
+        # value of 2.0g.
+        expected = np.ma.concatenate((np.ma.repeat(expected_g, 19), [2.0]))
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        assert_array_almost_equal(node.array, expected)
+
+    def test_derive_flaps_up(self):
+        flap = M('Flap Lever', array=np.ma.repeat(0, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(62200, 20/2.),
+               frequency=2)
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertTrue(node.array.mask.all())
 
 
 class TestAirspeedSelectedForApproaches(unittest.TestCase):

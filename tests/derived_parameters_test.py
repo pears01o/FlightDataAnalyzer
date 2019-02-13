@@ -1741,7 +1741,7 @@ class TestAltitudeRadio(unittest.TestCase):
                    fast=fast, family=A('Family', 'A330'))
 
         sects = np.ma.clump_unmasked(rad.array)
-        self.assertEqual(len(sects), 2)
+        self.assertEqual(len(sects), 3)
         self.assertEqual(sects[0].start, 17)
         self.assertEqual(sects[1].stop, 2763)
         self.assertAlmostEqual(rad.array[2762], 5524, places=0)

@@ -5426,7 +5426,7 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
     
     # We detect the corrections based on fast slices
     for f in fast_slices:
-        begin_step = end_step = begin_peak = end_peak = begin_peak_idx = 0.0
+        begin_step = end_step = begin_peak = end_peak = 0.0
         end_peak_idx = len(array)
         for n, sl in enumerate(good_slices):
             if is_index_within_slice(f.start, sl):

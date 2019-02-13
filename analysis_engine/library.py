@@ -4687,6 +4687,16 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     params = [p for p in params if p is not None]
     assert len(params), "No parameters to merge"
 
+    # Find out about the parameters we have to deal with...
+    min_ip_freq = min(p.frequency for p in params)
+
+    tol_mask = None
+    if tolerance:
+        test_array = np.ma.zeros((len(params), int(len(params[0].array) * min_ip_freq / params[0].frequency)))
+        for n, p in enumerate(params):
+            test_array[n, :] = resample(p.array, p.frequency, min_ip_freq)
+        tol_mask = np.ma.masked_greater(np.ma.ptp(test_array, axis=0), tolerance)
+
     if mode == 'linear':
         return blend_parameters_linear(params, frequency, tolerance=tolerance, offset=offset)
 
@@ -4719,7 +4729,7 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         # collation.
         p_valid_slices.append(slices_multiply(nts, min_ip_freq / param.frequency))
 
-    all_masks = np.array([np.ma.getmaskarray(p.array)[::p.frequency // min_ip_freq] for p in params])
+    all_masks = np.array([np.ma.getmaskarray(p.array)[::int(p.frequency // min_ip_freq)] for p in params])
     num_valid = len(params) - np.sum(all_masks, axis=0)
 
     if validity == 'all':
@@ -4746,7 +4756,6 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         # them back.
         result[result_slice][0] = np.ma.masked
         result[result_slice][-1] = np.ma.masked
-        
     return result
 
 
@@ -4806,7 +4815,7 @@ def blend_parameters_linear(params, frequency, tolerance=None, offset=0):
         weights.append(param.frequency)
 
     result = np.ma.average(aligned, axis=0, weights=weights)
-    
+
     tol_mask = None
     if tolerance:
         test_array = np.ma.zeros((len(params), len(params[0].array) * min_ip_freq / params[0].frequency))
@@ -5422,14 +5431,14 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
         for n, sl in enumerate(good_slices):
             if is_index_within_slice(f.start, sl):
                 # go_fast starts in the slice
-                begin_step = nearest_step(array[f.start])
+                begin_step = nearest_step(array[int(f.start)])
                 array[sl] -=  begin_step
                 begin_peak_idx = sl.stop - 1
                 begin_peak = array[begin_peak_idx]
                 
             elif is_index_within_slice(f.stop, sl):
                 # go_fast stops in the slice
-                end_step = nearest_step(array[f.stop])
+                end_step = nearest_step(array[int(f.stop)])
                 array[sl] -=  end_step
                 end_peak_idx = sl.start
                 end_peak = array[end_peak_idx]

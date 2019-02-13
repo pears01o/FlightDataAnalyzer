@@ -17,104 +17,103 @@ from scipy.signal import medfilt
 from flightdatautilities import aircrafttables as at, units as ut
 
 from analysis_engine.exceptions import DataFrameError
-from analysis_engine.node import (
-    A, App, DerivedParameterNode, KPV, KTI, M, P, S,
-    aeroplane, helicopter, helicopter_only)
 
-from analysis_engine.library import (air_track,
-                                     align,
-                                     all_of,
-                                     any_of,
-                                     alt2press,
-                                     alt2sat,
-                                     alt_dev2alt,
-                                     bearing_and_distance,
-                                     bearings_and_distances,
-                                     blend_parameters,
-                                     blend_two_parameters,
-                                     cas2dp,
-                                     coreg,
-                                     cycle_finder,
-                                     dp2tas,
-                                     dp_over_p2mach,
-                                     filter_vor_ils_frequencies,
-                                     first_valid_parameter,
-                                     first_valid_sample,
-                                     first_order_lag,
-                                     first_order_washout,
-                                     from_isa,
-                                     ground_track,
-                                     ground_track_precise,
-                                     groundspeed_from_position,
-                                     heading_diff,
-                                     hysteresis,
-                                     integrate,
-                                     ils_localizer_align,
-                                     index_at_value,
-                                     interpolate,
-                                     is_index_within_slice,
-                                     last_valid_sample,
-                                     latitudes_and_longitudes,
-                                     localizer_scale,
-                                     lookup_table,
-                                     machsat2tat,
-                                     machtat2sat,
-                                     mask_inside_slices,
-                                     mask_outside_slices,
-                                     match_altitudes,
-                                     max_value,
-                                     mb2ft,
-                                     merge_masks,
-                                     most_common_value,
-                                     moving_average,
-                                     nearest_neighbour_mask_repair,
-                                     np_ma_ones_like,
-                                     np_ma_zeros,
-                                     np_ma_masked_zeros,
-                                     np_ma_masked_zeros_like,
-                                     np_ma_zeros_like,
-                                     offset_select,
-                                     overflow_correction,
-                                     peak_curvature,
-                                     press2alt,
-                                     power_floor,
-                                     rate_of_change,
-                                     rate_of_change_array,
-                                     repair_mask,
-                                     rms_noise,
-                                     runs_of_ones,
-                                     runway_deviation,
-                                     runway_distances,
-                                     runway_heading,
-                                     runway_length,
-                                     runway_snap_dict,
-                                     second_window,
-                                     shift_slice,
-                                     slices_and,
-                                     slices_of_runs,
-                                     slices_between,
-                                     slices_from_to,
-                                     slices_from_ktis,
-                                     slices_int,
-                                     slices_not,
-                                     slices_or,
-                                     slices_remove_small_slices,
-                                     slices_find_small_slices,
-                                     slices_split,
-                                     smooth_track,
-                                     straighten_altitudes,
-                                     straighten_headings,
-                                     track_linking,
-                                     value_at_index,
-                                     vstack_params,
-                                     vstack_params_sw)
+from analysis_engine.node import (
+    A, M, P, S, KPV, KTI, aeroplane, App, DerivedParameterNode, helicopter
+)
+
+from analysis_engine.library import (
+    air_track,
+    align,
+    all_of,
+    any_of,
+    alt2press,
+    alt2sat,
+    alt_dev2alt,
+    bearing_and_distance,
+    bearings_and_distances,
+    blend_parameters,
+    blend_two_parameters,
+    cas2dp,
+    coreg,
+    cycle_finder,
+    dp2tas,
+    dp_over_p2mach,
+    filter_vor_ils_frequencies,
+    first_valid_parameter,
+    first_valid_sample,
+    first_order_lag,
+    first_order_washout,
+    from_isa,
+    ground_track,
+    ground_track_precise,
+    groundspeed_from_position,
+    heading_diff,
+    hysteresis,
+    integrate,
+    ils_localizer_align,
+    index_at_value,
+    interpolate,
+    is_index_within_slice,
+    last_valid_sample,
+    latitudes_and_longitudes,
+    localizer_scale,
+    lookup_table,
+    machsat2tat,
+    machtat2sat,
+    mask_inside_slices,
+    mask_outside_slices,
+    match_altitudes,
+    max_value,
+    mb2ft,
+    merge_masks,
+    most_common_value,
+    moving_average,
+    nearest_neighbour_mask_repair,
+    np_ma_ones_like,
+    np_ma_zeros,
+    np_ma_masked_zeros,
+    np_ma_masked_zeros_like,
+    np_ma_zeros_like,
+    offset_select,
+    overflow_correction,
+    peak_curvature,
+    press2alt,
+    power_floor,
+    rate_of_change,
+    rate_of_change_array,
+    repair_mask,
+    rms_noise,
+    runs_of_ones,
+    runway_deviation,
+    runway_distances,
+    runway_heading,
+    runway_length,
+    runway_snap_dict,
+    second_window,
+    shift_slice,
+    slices_and,
+    slices_of_runs,
+    slices_between,
+    slices_from_to,
+    slices_from_ktis,
+    slices_int,
+    slices_not,
+    slices_or,
+    slices_remove_small_slices,
+    slices_split,
+    smooth_track,
+    straighten_altitudes,
+    straighten_headings,
+    track_linking,
+    value_at_index,
+    vstack_params
+)
 
 from analysis_engine.settings import (
     AIRSPEED_THRESHOLD,
-    ALTITUDE_AAL_TRANS_ALT,
-    ALTITUDE_AGL_SMOOTHING,
-    ALTITUDE_AGL_TRANS_ALT,
     ALTITUDE_RADIO_OFFSET_LIMIT,
+    ALTITUDE_AAL_TRANS_ALT,
     AZ_WASHOUT_TC,
     BOUNCED_LANDING_THRESHOLD,
     CLIMB_THRESHOLD,
@@ -123,7 +122,7 @@ from analysis_engine.settings import (
     GRAVITY_METRIC,
     LANDING_THRESHOLD_HEIGHT,
     MIN_VALID_FUEL,
-    VERTICAL_SPEED_LAG_TC,
+    VERTICAL_SPEED_LAG_TC
 )
 
 # There is no numpy masked array function for radians, so we just multiply thus:
@@ -940,120 +939,6 @@ class AltitudeAALForFlightPhases(DerivedParameterNode):
                                    0.0)
 
 
-class AltitudeAGL(DerivedParameterNode):
-    '''
-    This simple alorithm adopts radio altitude where available and merges pressure
-    altitude values a transition altitude, joining to the radio altitude segments
-    by making a linear adjustment.
-
-    Note that at high altitudes, the pressure altitude is still corrected, so flight
-    levels will be inaccurate.
-    '''
-    name = 'Altitude AGL'
-    units = ut.FT
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        if ac_type == helicopter:
-            return all_of(('Altitude Radio', 'Altitude STD Smoothed', 'Gear On Ground'), available) or \
-                   ('Altitude Radio' not in available and 'Altitude AAL' in available)
-        else:
-            return False
-
-    def derive(self, alt_rad=P('Altitude Radio'),
-               alt_aal=P('Altitude AAL'),
-               alt_baro=P('Altitude STD Smoothed'),
-               gog=M('Gear On Ground')):
-
-        # If we have no Altitude Radio we will have to fall back to Altitude AAL
-        if not alt_rad:
-            self.array = alt_aal.array
-            return
-
-        # When was the helicopter on the ground?
-        gear_on_grounds = np.ma.clump_masked(np.ma.masked_equal(gog.array, 1))
-        # Find and eliminate short spikes (15 seconds) as these are most likely errors.
-        short_spikes = slices_find_small_slices(gear_on_grounds, time_limit=15, hz=gog.hz)
-        for slice in short_spikes:
-            gog.array[slice.start:slice.stop] = 0
-
-        # Remove slices shorter than 15 seconds as these are most likely created in error.
-        gear_on_grounds = slices_remove_small_slices(gear_on_grounds, time_limit=15, hz=gog.hz)
-        # Compute the half period which we will need.
-        hp = int(alt_rad.frequency*ALTITUDE_AGL_SMOOTHING)/2
-        # We force altitude AGL to be zero when the gear shows 'Ground' state
-        alt_rad_repaired = repair_mask(alt_rad.array, frequency=alt_rad.frequency, repair_duration=20.0, extrapolate=True)
-        alt_agl = moving_average(np.maximum(alt_rad.array, 0.0) * (1 - gog.array.data), window=hp*2+1, weightings=None)
-
-        # Refine the baro estimates
-        length = len(alt_agl)-1
-        baro_sections = np.ma.clump_masked(np.ma.masked_greater(alt_agl, ALTITUDE_AGL_TRANS_ALT))
-        for baro_section in baro_sections:
-            begin = max(baro_section.start - 1, 0)
-            end = min(baro_section.stop + 1, length)
-            start_diff = alt_baro.array[begin] - alt_agl[begin]
-            stop_diff = alt_baro.array[end] - alt_agl[end]
-            if start_diff is not np.ma.masked and stop_diff is not np.ma.masked:
-                diff = np.linspace(start_diff, stop_diff, end-begin-2)
-                alt_agl[begin+1:end-1] = alt_baro.array[begin+1:end-1]-diff
-            elif start_diff is not np.ma.masked:
-                alt_agl[begin+1:end-1] = alt_baro.array[begin+1:end-1] - start_diff
-            elif stop_diff is not np.ma.masked:
-                alt_agl[begin+1:end-1] = alt_baro.array[begin+1:end-1] - stop_diff
-            else:
-                pass
-        low_sections = np.ma.clump_unmasked(np.ma.masked_greater(alt_agl, 5))
-        for both in slices_and(low_sections, gear_on_grounds):
-            alt_agl[both] = 0.0
-
-        '''
-        # Quick visual check of the altitude agl.
-        import matplotlib.pyplot as plt
-        plt.plot(alt_baro.array, 'y-')
-        plt.plot(alt_rad.array, 'r-')
-        plt.plot(alt_agl, 'b-')
-        plt.show()
-        '''
-
-        self.array = alt_agl
-
-class AltitudeAGLForFlightPhases(DerivedParameterNode):
-    '''
-    This parameter repairs short periods of masked data, making it suitable for
-    detecting altitude bands on the climb and descent. The parameter should not
-    be used to compute KPV values themselves, to avoid using interpolated
-    values in an event.
-
-    Hysteresis avoids repeated triggering of KPVs when operating at one of
-    the nominal heights. For example, helicopter searches at 500ft.
-    '''
-
-    name = 'Altitude AGL For Flight Phases'
-    units = ut.FT
-
-    def derive(self, alt_agl=P('Altitude AGL')):
-
-        repair_array = repair_mask(alt_agl.array, repair_duration=None)
-        hyst_array = hysteresis(repair_array, 10.0)
-        self.array = np.ma.where(alt_agl.array > 10.0, hyst_array, repair_array)
-
-
-class AltitudeDensity(DerivedParameterNode):
-    '''
-    Only computed for helicopters, this includes compensation for temperature changes
-    that cause the air density to vary from the ISA standard.
-    '''
-
-    units = ut.FT
-
-    def derive(self, alt_std=P('Altitude STD'), sat=P('SAT'),
-               isa_temp=P('SAT International Standard Atmosphere')):
-        # TODO: libary function to convert to Alitude Density see Aero Calc.
-        # pressure altitude + [120 x (OAT - ISA Temp)]
-        # isa_temp = 15 - 1.98 / 1000 * std_array
-        self.array = alt_std.array + (120 * (sat.array - isa_temp.array))
-
-
 class AltitudeRadio(DerivedParameterNode):
     '''
     There is a wide variety of radio altimeter installations with one, two or
@@ -1646,56 +1531,6 @@ class ClimbForFlightPhases(DerivedParameterNode):
             ups = np.ma.clump_unmasked(np.ma.masked_less(deltas,0.0))
             for up in ups:
                 self.array[air.slice][up] = np.ma.cumsum(deltas[up])
-
-
-class CyclicForeAft(DerivedParameterNode):
-    '''
-    '''
-    align = False
-    name = 'Cyclic Fore-Aft'
-    units = ut.PERCENT
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return ac_type == helicopter and any_of(cls.get_dependency_names(), available)
-
-    def derive(self,
-               capt=P('Cyclic Fore-Aft (1)'),
-               fo=P('Cyclic Fore-Aft (2)')):
-
-        self.array, self.frequency, self.offset = blend_two_parameters(capt, fo)
-
-
-class CyclicLateral(DerivedParameterNode):
-    '''
-    '''
-    align = False
-    units = ut.PERCENT
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return ac_type == helicopter and any_of(cls.get_dependency_names(), available)
-
-    def derive(self,
-               capt=P('Cyclic Lateral (1)'),
-               fo=P('Cyclic Lateral (2)')):
-
-        self.array, self.frequency, self.offset = blend_two_parameters(capt, fo)
-
-
-class CyclicAngle(DerivedParameterNode):
-    '''
-    '''
-    align = False
-    units = ut.PERCENT
-
-    can_operate = helicopter_only
-
-    def derive(self,
-               cyclic_pitch=P('Cyclic Fore-Aft'),
-               cyclic_roll=P('Cyclic Lateral')):
-
-        self.array = np.ma.sqrt(cyclic_pitch.array ** 2 + cyclic_roll.array ** 2)
 
 
 class DescendForFlightPhases(DerivedParameterNode):
@@ -3315,22 +3150,6 @@ class Eng_TorqueMin(DerivedParameterNode):
         self.offset = offset_select('mean', [eng1, eng2, eng3, eng4])
 
 
-class TorqueAsymmetry(DerivedParameterNode):
-    '''
-    '''
-
-    align_frequency = 1 # Forced alignment to allow fixed window period.
-    align_offset = 0
-    units = ut.PERCENT
-
-    can_operate = helicopter_only
-
-    def derive(self, torq_max=P('Eng (*) Torque Max'), torq_min=P('Eng (*) Torque Min')):
-        diff = (torq_max.array - torq_min.array)
-        window = 5 # 5 second window
-        self.array = moving_average(diff, window=window)
-
-
 ##############################################################################
 # Engine Vibration (N1)
 
@@ -3619,41 +3438,6 @@ class Eng_VibCMax(DerivedParameterNode):
         self.offset = offset_select('mean', params)
 
 
-##############################################################################
-# Gearbox Oil
-class MGBOilTemp(DerivedParameterNode):
-    '''
-    This derived parameter blends together two main gearbox temperatures.
-    '''
-    name = 'MGB Oil Temp'
-    align = False
-    units = ut.CELSIUS
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return any_of(('MGB Oil Temp (1)', 'MGB Oil Temp (2)'), available) \
-               and ac_type == helicopter
-
-    def derive(self, t1=P('MGB Oil Temp (1)'), t2=P('MGB Oil Temp (2)')):
-        self.array, self.frequency, self.offset = \
-            blend_two_parameters(t1, t2)
-
-
-class MGBOilPress(DerivedParameterNode):
-    '''
-    This derived parameter blends together two main gearbox pressures.
-    '''
-    name = 'MGB Oil Press'
-    align = False
-    units = ut.PSI
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return any_of(('MGB Oil Press (1)', 'MGB Oil Press (2)'), available) \
-               and ac_type == helicopter
-
-    def derive(self, p1=P('MGB Oil Press (1)'), p2=P('MGB Oil Press (2)')):
-        self.array, self.frequency, self.offset = blend_two_parameters(p1, p2)
 
 
 ##############################################################################
@@ -4268,51 +4052,6 @@ class SlatAngle(DerivedParameterNode):
     s1t = M('Slat (1) In Transit'),
     s1m = M('Slat (1) Mid Extended'),
 '''
-
-
-class Nr(DerivedParameterNode):
-    '''
-    Combination of rotor speed signals from two sources where required.
-    '''
-
-    align = False
-    units = ut.PERCENT
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return ac_type == helicopter and any_of(cls.get_dependency_names(), available)
-
-    def derive(self, p1=P('Nr (1)'), p2=P('Nr (2)')):
-        self.array, self.frequency, self.offset = \
-            blend_two_parameters(p1, p2)
-
-
-class Collective(DerivedParameterNode):
-    '''
-    '''
-
-    align = False
-    units = ut.PERCENT
-
-    def derive(self,
-               capt=P('Collective (1)'),
-               fo=P('Collective (2)')):
-
-        self.array, self.frequency, self.offset = blend_two_parameters(capt, fo)
-
-
-class TailRotorPedal(DerivedParameterNode):
-    '''
-    '''
-
-    align = False
-    units = ut.PERCENT
-
-    def derive(self,
-               capt=P('Tail Rotor Pedal (1)'),
-               fo=P('Tail Rotor Pedal (2)')):
-
-        self.array, self.frequency, self.offset = blend_two_parameters(capt, fo)
 
 
 class SlatAngle(DerivedParameterNode):
@@ -6336,6 +6075,62 @@ class AccelerationNormalHighLimitForLandingWeight(DerivedParameterNode):
         self.array[range2] = 2.2
         range3 = gw.array > 34000
         self.array[range3] = 1.93
+
+
+class AccelerationNormalHighLimitWithFlapsDown(DerivedParameterNode):
+    '''
+    Maximum acceleration normal during flight with flaps extended.
+    Applicable only for B737-MAX-8.
+
+    Normal threshold is 2.0g.
+
+    With flaps 30 or 40:
+    If gross weight is less than MLW, the threshold is 2.0g.
+
+    If between MLW and MTOW, the threshold varies linearly from
+    2.0g down to 1.5g.
+
+    If the landing weight is higher than MTOW the threshold is 1.5g.
+    '''
+
+    @classmethod
+    def can_operate(cls, available,
+                    family=A('Family'),):
+        family_name = family.value if family else None
+        return family_name in ('B737 MAX',) and \
+               any_of(('Flap Lever', 'Flap Lever (Synthetic)'), available) and \
+               all_of(('Gross Weight Smoothed', 'Maximum Takeoff Weight',
+                       'Maximum Landing Weight'), available)
+
+    def derive(self,
+               flap_lever=P('Flap Lever'),
+               flap_synth=P('Flap Lever (Synthetic)'),
+               gw=P('Gross Weight Smoothed'),
+               mtow=A('Maximum Takeoff Weight'),
+               mlw=A('Maximum Landing Weight')):
+
+        flap = flap_lever or flap_synth
+        # 2.0g is default value
+        array = np_ma_ones_like(flap.array) * 2.0
+
+        if 'Lever 0' in flap.array.state:
+            retracted = flap.array == 'Lever 0'
+        elif '0' in flap.array.state:
+            retracted = flap.array == '0'
+        np.ma.masked_where(retracted, array, copy=False)
+
+        # With flaps 30 or 40 and above MLW
+        mtow = mtow.value
+        mlw = mlw.value
+        flap_30_40 = (flap.array >= 30.) & (gw.array > mlw)
+
+        # Linearly interpolate between 2.0g at MLW and 1.5g at MTOW
+        array[flap_30_40] += (gw.array[flap_30_40] - mlw) / (mtow - mlw) * (1.5 - 2.0)
+
+        flap_30_40_above_mtow = flap_30_40 & (gw.array > mtow)
+        array[flap_30_40_above_mtow] = 1.5
+
+        self.array = array
 
 
 class Rudder(DerivedParameterNode):

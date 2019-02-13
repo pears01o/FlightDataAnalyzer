@@ -12,7 +12,7 @@ try:
     from itertools import izip as zip
 except ImportError:
     pass
-from mock import Mock, call, patch
+from mock import Mock, patch
 
 from numpy.ma.testutils import assert_array_almost_equal, assert_array_equal, assert_almost_equal, assert_equal
 
@@ -34,31 +34,23 @@ from analysis_engine.library import (align,
                                      unique_values)
 
 from analysis_engine.node import (
-    aeroplane, Attribute, A, App, ApproachItem, helicopter, KeyPointValue, KPV,
-    KeyTimeInstance, KTI, load, M, Parameter, P, Section, S)
+    A, M, P, S, KPV, KTI, aeroplane, App, ApproachItem, Attribute,
+    helicopter, KeyPointValue, KeyTimeInstance, load, Parameter, Section
+)
+
+from analysis_engine.flight_phase import Fast, Mobile
+
 from analysis_engine.process_flight import process_flight
-from analysis_engine.settings import GRAVITY_IMPERIAL
 
 from analysis_engine.test_utils import buildsection, buildsections
 
 # Use pre-processed version
 from analysis_engine.pre_processing.merge_parameters import (
     LatitudePrepared as LatitudePreparedLatLon,
-    LongitudePrepared as LongitudePreparedLatLon,
+    LongitudePrepared as LongitudePreparedLatLon
 )
 
 from analysis_engine.derived_parameters import (
-    # Velocity Speeds:
-    #ATEngaged,
-    #AltitudeForFlightPhases,
-    #AltitudeRadioForFlightPhases,
-    #AltitudeSTD,
-    #GroundspeedAlongTrack,
-    #ILSGlideslope,
-    #ILSLocalizer,
-    #ILSLocalizerRange,
-    #V2,
-    #V2Lookup,
     AOA,
     AccelerationAcrossTrack,
     AccelerationAlongTrack,
@@ -69,6 +61,7 @@ from analysis_engine.derived_parameters import (
     AccelerationNormalLimitForLandingWeight,
     AccelerationNormalLowLimitForLandingWeight,
     AccelerationNormalHighLimitForLandingWeight,
+    AccelerationNormalHighLimitWithFlapsDown,
     AccelerationSideways,
     AccelerationVertical,
     AccelerationNormalOffsetRemoved,
@@ -99,8 +92,6 @@ from analysis_engine.derived_parameters import (
     AirspeedTrue,
     AltitudeAAL,
     AltitudeAALForFlightPhases,
-    AltitudeAGL,
-    AltitudeDensity,
     AltitudeQNH,
     AltitudeVisualizationWithGroundOffset,
     AltitudeVisualizationWithoutGroundOffset,
@@ -120,9 +111,6 @@ from analysis_engine.derived_parameters import (
     ControlWheel,
     ControlWheelForce,
     CoordinatesSmoothed,
-    CyclicAngle,
-    CyclicForeAft,
-    CyclicLateral,
     DescendForFlightPhases,
     DistanceFlown,
     DistanceToLanding,
@@ -171,8 +159,6 @@ from analysis_engine.derived_parameters import (
     FlapManoeuvreSpeed,
     FlapSynchroAsymmetry,
     ApproachFlightPathAngle,
-    MGBOilTemp,
-    MGBOilPress,
     FuelQty,
     FuelQtyC,
     FuelQtyL,
@@ -200,7 +186,6 @@ from analysis_engine.derived_parameters import (
     MagneticVariationFromRunway,
     MinimumAirspeed,
     MinimumCleanLookup,
-    Nr,
     Pitch,
     PotentialEnergy,
     Roll,
@@ -211,7 +196,6 @@ from analysis_engine.derived_parameters import (
     RudderPedal,
     RudderPedalCapt,
     RudderPedalFO,
-    SAT,
     SAT_ISA,
     SidestickAngleCapt,
     SidestickAngleFO,
@@ -222,7 +206,6 @@ from analysis_engine.derived_parameters import (
     TAT,
     ThrottleLevers,
     ThrustAsymmetry,
-    TorqueAsymmetry,
     Track,
     TrackContinuous,
     TrackDeviationFromRunway,
@@ -243,9 +226,10 @@ from analysis_engine.derived_parameters import (
     WheelSpeedRight,
     WindAcrossLandingRunway,
     WindDirection,
-    ZeroFuelWeight,
+    ZeroFuelWeight
 )
 
+from analysis_engine.settings import GRAVITY_IMPERIAL
 
 ##############################################################################
 # Test Configuration
@@ -663,6 +647,120 @@ class TestAccelerationNormalHighLimitForLandingWeight(unittest.TestCase):
         acc_n_lim.derive(gross_weight)
         expected = np.ma.concatenate((np.ones(3) * 1.93, np.ones(7) * 2.2, np.ones(1) * 2.236605535178393, np.ones(1) * 2.2732844281427145, np.ones(1) * 2.346642214071357, np.ones(1) * 2.3833211070356786, np.ones(1) * 2.42))
         ma_test.assert_array_equal(acc_n_lim.array, expected)
+
+
+class TestAccelerationNormalHighLimitWithFlapsDown(unittest.TestCase):
+
+    node_class = AccelerationNormalHighLimitWithFlapsDown
+
+    def setUp(self):
+        self.mtow = A('Maximum Takeoff Weight', value=82190.0)
+        self.mlw = A('Maximum Landing Weight', value=69308.0)
+        self.mapping = {f: str(f) for f in (0, 1, 2, 5, 10, 15, 25, 30, 40)}
+
+    def test_can_operate(self):
+        node = self.node_class()
+        expected =('Flap Lever', 'Gross Weight Smoothed',
+                   'Maximum Takeoff Weight', 'Maximum Landing Weight')
+        b737_max = A('Family', value='B737 MAX')
+        self.assertTrue(node.can_operate(expected, b737_max))
+
+        expected =('Flap Lever (Synthetic)', 'Gross Weight Smoothed',
+                   'Maximum Takeoff Weight', 'Maximum Landing Weight')
+        self.assertTrue(node.can_operate(expected, b737_max))
+
+        self.assertFalse(node.can_operate(expected))
+        self.assertFalse(node.can_operate(('Flap Lever', 'Gross Weight Smoothed'), b737_max))
+
+    def test_derive(self):
+
+        flap = M('Flap Lever', array=np.ma.repeat(5, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(55000, 20/2.),
+               frequency=2)
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        ma_test.assert_array_equal(node.array, np.ma.repeat(2.0, 20))
+
+    def test_derive_over_MLW_flaps_less_than_30(self):
+        flap = M('Flap Lever', array=np.ma.repeat(5, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(75000, 20/2),
+               frequency=2)
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        ma_test.assert_array_equal(node.array, np.ma.repeat(2.0, 20))
+
+    def test_derive_below_MLW_flaps_30(self):
+        flap = M('Flap Lever', array=np.ma.repeat(30, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(65000, 20/2.),
+               frequency=2)
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        ma_test.assert_array_equal(node.array, np.ma.repeat(2.0, 20))
+
+    def test_derive_over_MLW_flaps_30(self):
+        flap = M('Flap Lever', array=np.ma.repeat(30, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(75000, 20/2.),
+               frequency=2)
+        mtow = self.mtow.value
+        mlw = self.mlw.value
+        # Find expected g by linear interpolation
+        expected_g = (75000 - mlw) / (mtow - mlw) * (1.5 - 2.0) + 2.0
+        # When Gross Weight Smoothed is aligned to Flap, its last value
+        # will be masked, because we do not extrapolate values.
+        # This means that the last expected value will have the default
+        # value of 2.0g.
+        expected = np.ma.concatenate((np.ma.repeat(expected_g, 19), [2.0]))
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        assert_array_almost_equal(node.array, expected)
+
+    def test_derive_over_MTOW_flaps_40(self):
+        flap = M('Flap Lever', array=np.ma.repeat(40, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(82200, 20/2.),
+               frequency=2)
+        mtow = self.mtow.value
+        mlw = self.mlw.value
+        # Above MTOW, with flaps 30 or above, the max acceleration is 1.5g
+        expected_g = 1.5
+        # When Gross Weight Smoothed is aligned to Flap, its last value
+        # will be masked, because we do not extrapolate values.
+        # This means that the last expected value will have the default
+        # value of 2.0g.
+        expected = np.ma.concatenate((np.ma.repeat(expected_g, 19), [2.0]))
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertEqual(len(node.array), 20)
+        assert_array_almost_equal(node.array, expected)
+
+    def test_derive_flaps_up(self):
+        flap = M('Flap Lever', array=np.ma.repeat(0, 20),
+                 values_mapping=self.mapping, frequency=4)
+        gw = P('Gross Weight Smoothed', array=np.ma.repeat(62200, 20/2.),
+               frequency=2)
+
+        node = self.node_class()
+        node.get_derived((flap, None, gw, self.mtow, self.mlw))
+
+        self.assertTrue(node.array.mask.all())
 
 
 class TestAirspeedSelectedForApproaches(unittest.TestCase):
@@ -1270,61 +1368,6 @@ class TestAltitudeAALForFlightPhases(unittest.TestCase):
         assert_array_equal(alt_4_ph.array, expected)
 
 
-class TestAltitudeAGL(unittest.TestCase):
-
-    def test_basic(self):
-        # Although "basic" the synthetic radio altitude tests for noise rejection, transfer from radio to pressure altimetry and use of
-        # the gear on ground signals. The wide tolerance is because the noise signal varies from run to run.
-        alt_rad = P(name='Altitude Radio', array=(np.minimum(6000,
-                                                             (1.0-np.cos(np.arange(100)*3.14/50))*4000 + np.random.rand(100)*300)),
-                                           frequency = 2)
-        alt_baro = P(name='Altitude STD', array=np.ma.array((1.0-np.cos(np.arange(100)*3.14/50))*4000 + 1000))
-        gog = M(name='Gear On Ground', array=np.ma.array([1]*5+[0]*90+[1]*5), values_mapping={0:'Air', 1:'Ground'})
-        alt_aal = AltitudeAGL()
-        alt_aal.derive(alt_rad, None, alt_baro, gog)
-        self.assertLess(abs(np.max(alt_aal.array)-8000), 300)
-
-    def test_negative(self):
-        alt_rad = P(name='Altitude Radio', array=np.ma.array([-1, 0, 0, 0, -1]))
-        alt_baro = P(name='Altitude STD', array=np.ma.array([0]*5))
-        gog = M(name='Gear On Ground', array=np.ma.array([0]*5), values_mapping={0:'Air', 1:'Ground'})
-        alt_aal = AltitudeAGL()
-        alt_aal.derive(alt_rad, None, alt_baro, gog)
-        expected = [0, 0, 0, 0, 0]
-        assert_array_equal(alt_aal.array, expected)
-
-    def test_on_ground(self):
-        alt_rad = P(name='Altitude Radio', array=np.ma.array([-1, 0, 6, 0, -1, -1, 0, 6, 0, -1, -1, 0, 6, 0, -1, -1, 0, 6, 0, -1]))
-        alt_baro = P(name='Altitude STD', array=np.ma.array([0]*20))
-        gog = M(name='Gear On Ground', array=np.ma.array([1]*20), values_mapping={0:'Air', 1:'Ground'})
-        alt_aal = AltitudeAGL()
-        alt_aal.derive(alt_rad, None, alt_baro, gog)
-        expected = [0]*20
-        assert_array_equal(alt_aal.array, expected)
-
-
-class TestAltitudeDensity(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = AltitudeDensity
-
-    def test_can_operate(self):
-        available = ('Altitude STD', 'SAT', 'SAT International Standard Atmosphere')
-        self.assertTrue(self.node_class.can_operate(available))
-
-    def test_derive(self):
-
-        alt_std = P('Altitude STD', array=np.ma.array([12000, 15000, 3000, 5000, 3500, 2000]))
-        sat = P('SAT', array=np.ma.array([0, -45, 35, 40, 32, 8]))
-        isa = P('SAT International Standard Atmosphere', array=np.ma.array([-9, -15, 9, 5, 8, 11]))
-
-        node = self.node_class()
-        node.derive(alt_std, sat, isa)
-
-        expected = [13080, 11400, 6120, 9200, 6380, 1640]
-        assert_array_equal(node.array, expected)
-
-
 '''
 class TestAltitudeForFlightPhases(unittest.TestCase):
     def test_can_operate(self):
@@ -1698,7 +1741,7 @@ class TestAltitudeRadio(unittest.TestCase):
                    fast=fast, family=A('Family', 'A330'))
 
         sects = np.ma.clump_unmasked(rad.array)
-        self.assertEqual(len(sects), 3)
+        self.assertEqual(len(sects), 2)
         self.assertEqual(sects[0].start, 17)
         self.assertEqual(sects[1].stop, 2763)
         self.assertAlmostEqual(rad.array[2762], 5524, places=0)
@@ -1711,10 +1754,10 @@ class TestAltitudeRadio(unittest.TestCase):
         fast = buildsection('Fast', 0, 6)
         alt_rad.derive(None, None, None,
                        Parameter('Altitude Radio (L)',
-                                 np.ma.concatenate((np.arange(5,-5,-1), np.arange(-5,15))), 1.0, 0.0),
+                                 np.ma.concatenate((np.arange(5,-5,-1), np.arange(-5,15))).astype(float), 1.0, 0.0),
                        None, None, None, None,
                        Parameter('Pitch',
-                                 np.ma.concatenate((np.zeros(30), np.ones(30) * 5, np.ones(30) * 10, np.ones(30) * 20)), 4.0, 0.0),
+                                 np.ma.concatenate((np.zeros(30), np.ones(30) * 5, np.ones(30) * 10, np.ones(30) * 20)).astype(float), 4.0, 0.0),
                        fast=fast,
                        family=A('Family', 'CL-600'))
         self.assertAlmostEqual(alt_rad.array.data[4], 2.5) # -1.5ft offset
@@ -2800,93 +2843,6 @@ class TestEng_NpMin(unittest.TestCase):
         )
 
 
-class TestMGBOilTemp(unittest.TestCase):
-    def setUp(self):
-        self.node_class = MGBOilTemp
-
-    def test_can_operate(self):
-        self.assertFalse(self.node_class.can_operate([], ac_type=aeroplane))
-        self.assertFalse(self.node_class.can_operate([], ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate('MGB Oil Temp (1)',
-                                                    ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate('MGB Oil Temp (2)',
-                                                    ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate(('MGB Oil Temp (1)',
-                                                     'MGB Oil Temp (2)'),
-                                                    ac_type=helicopter))
-
-        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
-        self.assertEquals(len(opts), 3)
-
-    def test_derive(self):
-        t1 = [78.0]*14 + [78.5,78] + [78.5]*23 + [79.0]*5 + [79.5] + [79.0]*5
-        t2 = [78.0]*13 + [78.5,78.0, 77.5] + [78.5]*20 + [79.0]*14
-
-        oil_temp1 = P('MGB Oil Temp (1)', np.ma.array(t1))
-        oil_temp2 = P('MGB Oil Temp (2)', np.ma.array(t2))
-
-        mgb_oil_temp = self.node_class()
-        mgb_oil_temp.derive(oil_temp1, oil_temp2)
-
-        # array size should be double, 100
-        self.assertEqual(mgb_oil_temp.array.size, (oil_temp1.array.size*2))
-        self.assertEqual(mgb_oil_temp.array.size, (oil_temp2.array.size*2))
-        # Frequency should be doubled 2Hz
-        self.assertEqual(mgb_oil_temp.frequency, (oil_temp1.frequency*2))
-        self.assertEqual(mgb_oil_temp.frequency, (oil_temp2.frequency*2))
-        # Offset should remain the same as the parameter. 0.0
-        self.assertEqual(mgb_oil_temp.offset, oil_temp1.offset)
-        self.assertEqual(mgb_oil_temp.offset, oil_temp2.offset)
-        # Element 44 will become 88 and values 79.5, 79 average to 79.25
-        self.assertEqual(oil_temp1.array[44], 79.5)
-        self.assertEqual(oil_temp2.array[44], 79)
-        self.assertEqual(mgb_oil_temp.array[88],
-                         (oil_temp1.array[44]+oil_temp2.array[44])/2)
-
-
-class TestMGBOilPress(unittest.TestCase):
-    def setUp(self):
-        self.node_class = MGBOilPress
-
-    def test_can_operate(self):
-        self.assertFalse(self.node_class.can_operate([], ac_type=aeroplane))
-        self.assertFalse(self.node_class.can_operate([], ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate('MGB Oil Press (1)',
-                                                    ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate('MGB Oil Press (2)',
-                                                    ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate(('MGB Oil Press (1)',
-                                                     'MGB Oil Press (2)'),
-                                                    ac_type=helicopter))
-
-        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
-        self.assertEquals(len(opts), 3)
-
-    def test_derive(self):
-        p1 = [26.51]*7 + [26.63] + [26.51]*7 + [26.4]*27 + [26.29] + [26.4]*7
-        p2 = [26.51]*14 + [26.63] + [26.4]*20 + [26.29] + [26.4]*14
-        oil_press1 = P('MGB Oil Press (1)', np.ma.array(p1))
-        oil_press2 = P('MGB Oil Press (2)', np.ma.array(p2))
-
-        mgb_oil_press = self.node_class()
-        mgb_oil_press.derive(oil_press1, oil_press2)
-
-        # array size should be double, 100
-        self.assertEqual(mgb_oil_press.array.size, (oil_press1.array.size*2))
-        self.assertEqual(mgb_oil_press.array.size, (oil_press2.array.size*2))
-        # Frequency should be doubled 2Hz
-        self.assertEqual(mgb_oil_press.frequency, (oil_press1.frequency*2))
-        self.assertEqual(mgb_oil_press.frequency, (oil_press2.frequency*2))
-        # Offset should remain the same as the parameter. 0.0
-        self.assertEqual(mgb_oil_press.offset, oil_press1.offset)
-        self.assertEqual(mgb_oil_press.offset, oil_press2.offset)
-        # Element 7 will become 14 and values 26.63, 26.51 average to 26.57
-        self.assertEqual(oil_press1.array[7], 26.63)
-        self.assertEqual(oil_press2.array[7], 26.51)
-        self.assertEqual(mgb_oil_press.array[14],
-                         (oil_press1.array[7]+oil_press2.array[7])/2)
-
-
 class TestFuelQty(unittest.TestCase):
     def test_can_operate(self):
         # testing for number of combinations possible, will operate with at
@@ -3641,54 +3597,6 @@ class TestHeadingContinuous(unittest.TestCase, NodeTest):
         node.derive(None, hdg_ca, hdg_fo, None)
         expected = np.ma.array([359,359,359.25,360,360,359.75,359.5,359 ])
         assert_equal(node.array, expected)
-
-
-class TestNr(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = Nr
-
-    def test_can_operate(self):
-        self.assertFalse(self.node_class.can_operate([], ac_type=aeroplane))
-        self.assertTrue(self.node_class.can_operate(('Nr (1)',), ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate(('Nr (2)',), ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate(('Nr (1)', 'Nr (2)'), ac_type=helicopter))
-        self.assertFalse(self.node_class.can_operate(('Nr (1)', 'Nr (2)'), ac_type=aeroplane))
-
-    def test_derive(self):
-        one = P('Nr (1)', np.ma.array([100,200,300]), frequency=0.5, offset=0.0)
-        two = P('Nr (2)', np.ma.array([150,250,350]), frequency=0.5, offset=1.0)
-
-        node = self.node_class()
-        node.derive(one, two)
-
-        # Note: end samples are not 100 & 350 due to method of merging.
-        assert_array_equal(node.array[1:-1], np.array([150, 200, 250, 300]))
-        self.assertEqual(node.frequency, 1.0)
-        self.assertEqual(node.offset, 0.0)
-
-
-class TestTorqueAsymmetry(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = TorqueAsymmetry
-
-    def test_can_operate(self):
-        self.assertFalse(self.node_class.can_operate([], ac_type=helicopter))
-        self.assertTrue(self.node_class.can_operate(('Eng (*) Torque Max', 'Eng (*) Torque Min'), ac_type=helicopter))
-        self.assertFalse(self.node_class.can_operate(('Eng (*) Torque Max', 'Eng (*) Torque Min'), ac_type=aeroplane))
-
-    def test_derive(self):
-        torque_max = P('Eng (*) Torque Max', np.arange(10, 30))
-        torque_min = P('Eng (*) Torque Min', np.arange(8, 28))
-
-        node = self.node_class()
-        node.derive(torque_max, torque_min)
-
-        self.assertEqual(len(node.array), len(torque_max.array))
-        uniq = unique_values(node.array.astype(int))
-        # there should be all 20 values being 2 out
-        self.assertEqual(uniq, {2: 20})
 
 
 class TestTrack(unittest.TestCase, NodeTest):
@@ -6455,63 +6363,6 @@ class TestCoordinatesSmoothed(TemporaryFileTest, unittest.TestCase):
         chunks = np.ma.clump_unmasked(lat_new)
         self.assertEqual(len(chunks),2)
         self.assertEqual(chunks,[slice(44,414),slice(12930,13424)])
-
-
-class TestCyclicForeAft(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = CyclicForeAft
-
-    def test_can_operate(self):
-        self.assertEqual(self.node_class.get_operational_combinations(ac_type=aeroplane), [])
-        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
-        self.assertEqual(opts, [('Cyclic Fore-Aft (1)',),
-                                ('Cyclic Fore-Aft (2)',),
-                                ('Cyclic Fore-Aft (1)', 'Cyclic Fore-Aft (2)')])
-
-    @unittest.SkipTest
-    def test_derive(self):
-        self.assertTrue(False)
-
-
-class TestCyclicLateral(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = CyclicLateral
-
-    def test_can_operate(self):
-        self.assertEqual(self.node_class.get_operational_combinations(ac_type=aeroplane), [])
-        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
-        self.assertEqual(opts, [('Cyclic Lateral (1)',),
-                                ('Cyclic Lateral (2)',),
-                                ('Cyclic Lateral (1)', 'Cyclic Lateral (2)')])
-
-    @unittest.SkipTest
-    def test_derive(self):
-        self.assertTrue(False)
-
-
-class TestCyclicAngle(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = CyclicAngle
-
-    def test_can_operate(self):
-        self.assertEqual(self.node_class.get_operational_combinations(ac_type=aeroplane), [])
-        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
-        self.assertEqual(opts, [('Cyclic Fore-Aft', 'Cyclic Lateral')])
-
-    @unittest.SkipTest
-    def test_derive(self):
-        pitch_array = np.ma.arange(20)
-        roll_array = pitch_array[::-1]
-        pitch = P('Cyclic Fore-Aft', pitch_array)
-        roll = P('Cyclic Lateral', roll_array)
-        node = self.node_class()
-        node.derive(pitch, roll)
-
-        expected_array = np.ma.sqrt(pitch_array ** 2 + roll_array ** 2)
-        assert_array_equal(node.array, expected_array)
 
 
 class TestApproachRange(TemporaryFileTest, unittest.TestCase):

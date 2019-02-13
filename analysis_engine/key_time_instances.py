@@ -5,6 +5,14 @@ import six
 
 from math import ceil, floor
 
+from flightdatautilities import units as ut
+from flightdatautilities.geometry import great_circle_distance__haversine
+
+from analysis_engine.node import (
+    A, M, P, S, KTI, aeroplane, aeroplane_only, App,
+    helicopter, KeyTimeInstanceNode
+)
+
 from analysis_engine.library import (
     all_deps,
     all_of,
@@ -34,15 +42,10 @@ from analysis_engine.library import (
     slices_not,
     slices_overlap,
     slices_remove_small_gaps,
-    value_at_index,
+    value_at_index
 )
 
-from analysis_engine.node import (
-    A, App, M, P, S, KTI, KeyTimeInstanceNode,
-    aeroplane, aeroplane_only, helicopter, helicopter_only)
 
-from flightdatautilities import units as ut
-from flightdatautilities.geometry import great_circle_distance__haversine
 
 from analysis_engine.settings import (
     CLIMB_THRESHOLD,
@@ -680,32 +683,6 @@ class EnterHold(KeyTimeInstanceNode):
 
 class ExitHold(KeyTimeInstanceNode):
     def derive(self, holds=S('Holding')):
-        for hold in holds:
-            self.create_kti(hold.slice.stop)
-
-
-class EnterTransitionFlightToHover(KeyTimeInstanceNode):
-
-    can_operate = helicopter_only
-
-    def derive(self, holds=S('Transition Flight To Hover')):
-        for hold in holds:
-            self.create_kti(hold.slice.start)
-
-class ExitTransitionFlightToHover(KeyTimeInstanceNode):
-
-    can_operate = helicopter_only
-
-    def derive(self, holds=S('Transition Flight To Hover')):
-        for hold in holds:
-            self.create_kti(hold.slice.stop)
-
-
-class ExitTransitionHoverToFlight(KeyTimeInstanceNode):
-
-    can_operate = helicopter_only
-
-    def derive(self, holds=S('Transition Hover To Flight')):
         for hold in holds:
             self.create_kti(hold.slice.stop)
 

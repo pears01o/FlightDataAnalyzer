@@ -4359,8 +4359,8 @@ class HeadingIncreasing(DerivedParameterNode):
     units = ut.DEGREE
 
     def derive(self, head=P('Heading Continuous')):
-        rot = np.ma.ediff1d(head.array, to_begin = 0.0)
-        self.array = integrate(np.ma.abs(rot), head.frequency)
+        self.array = np.ma.cumsum(np.ma.abs(np.ma.ediff1d(head.array, 
+                                                          to_begin=head.array[0])))
 
 
 class HeadingTrueContinuous(DerivedParameterNode):

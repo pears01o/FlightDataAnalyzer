@@ -3833,48 +3833,19 @@ class TestHeadingIncreasing(unittest.TestCase):
         self.assertEqual(opts, expected)
 
     def test_heading_increasing(self):
-        head = P('Heading Continuous', array=np.ma.array([0.0,1.0,-2.0]),
+        head = P('Heading Continuous', array=np.ma.array([0.0, 1.0, 2.0, -1.0, -2.0, -2.0]),
                  frequency=0.5)
         head_inc=HeadingIncreasing()
         head_inc.derive(head)
-        expected = np.ma.array([0.0, 1.0, 5.0])
+        expected = np.ma.array([0.0, 1.0, 2.0, 5.0, 6.0, 6.0])
         assert_array_equal(head_inc.array, expected)
 
-
-    def test_latitude_smoothing_basic(self):
-        lat = P('Latitude',np.ma.array([0,0,1,2,1,0,0],dtype=float))
-        lon = P('Longitude', np.ma.array([0,0,0,0,0,0,0.001],dtype=float))
-        smoother = LatitudePreparedLatLon()
-        smoother.get_derived([lon, lat, aeroplane])
-        # An output warning of smooth cost function closing with cost > 1 is
-        # normal and arises because the data sample is short.
-        expected = [0.0, 0.0, 0.00088, 0.00088, 0.00088, 0.0, 0.0]
-        np.testing.assert_almost_equal(smoother.array, expected, decimal=5)
-
-    def test_latitude_smoothing_masks_static_data(self):
-        lat = P('Latitude',np.ma.array([0,0,1,2,1,0,0],dtype=float))
-        lon = P('Longitude', np.ma.zeros(7,dtype=float))
-        smoother = LatitudePreparedLatLon()
-        smoother.get_derived([lon, lat, aeroplane])
-        self.assertEqual(np.ma.count(smoother.array),0) # No non-masked values.
-
-    #@unittest.skip('Need proper assertions')
-    def test_latitude_smoothing_short_array(self):
-        lat = P('Latitude',np.ma.array([0,0],dtype=float))
-        lon = P('Longitude', np.ma.zeros(2,dtype=float))
-        smoother = LatitudePreparedLatLon()
-        smoother.get_derived([lon, lat, aeroplane])
-        self.assertTrue(smoother.array.mask.all())
-
-    def test_longitude_smoothing_basic(self):
-        lat = P('Latitude',np.ma.array([0,0,1,2,1,0,0],dtype=float))
-        lon = P('Longitude', np.ma.array([0,0,-2,-4,-2,0,0],dtype=float))
-        smoother = LongitudePreparedLatLon()
-        smoother.get_derived([lon, lat, aeroplane])
-        # An output warning of smooth cost function closing with cost > 1 is
-        # normal and arises because the data sample is short.
-        expected = [0.0, 0.0, -0.00176, -0.00176, -0.00176, 0.0, 0.0]
-        np.testing.assert_almost_equal(smoother.array, expected, decimal=5)
+    def test_heading_increasing_sample_rate(self):
+        data = np.ma.array(range(10)) + 76.0 # Arbitrary starting heading
+        head = P('Heading Continuous', array=data, frequency=4.0)
+        head_inc=HeadingIncreasing()
+        head_inc.derive(head)
+        assert_array_equal(head_inc.array, data)
 
 
 class TestHeading(unittest.TestCase):
@@ -5322,9 +5293,30 @@ class TestLatitudeSmoothed(unittest.TestCase):
         combinations = LatitudeSmoothed.get_operational_combinations()
         self.assertTrue(all('Latitude Prepared' in c for c in combinations))
 
-    @unittest.skip('Test Not Implemented')
-    def test_derive(self):
-        self.assertTrue(False, msg='Test not implemented.')
+    def test_latitude_smoothing_basic(self):
+        lat = P('Latitude',np.ma.array([0,0,1,2,1,0,0],dtype=float))
+        lon = P('Longitude', np.ma.array([0,0,0,0,0,0,0.001],dtype=float))
+        smoother = LatitudePreparedLatLon()
+        smoother.get_derived([lon, lat, aeroplane])
+        # An output warning of smooth cost function closing with cost > 1 is
+        # normal and arises because the data sample is short.
+        expected = [0.0, 0.0, 0.00088, 0.00088, 0.00088, 0.0, 0.0]
+        np.testing.assert_almost_equal(smoother.array, expected, decimal=5)
+
+    def test_latitude_smoothing_masks_static_data(self):
+        lat = P('Latitude',np.ma.array([0,0,1,2,1,0,0],dtype=float))
+        lon = P('Longitude', np.ma.zeros(7,dtype=float))
+        smoother = LatitudePreparedLatLon()
+        smoother.get_derived([lon, lat, aeroplane])
+        self.assertEqual(np.ma.count(smoother.array),0) # No non-masked values.
+
+    #@unittest.skip('Need proper assertions')
+    def test_latitude_smoothing_short_array(self):
+        lat = P('Latitude',np.ma.array([0,0],dtype=float))
+        lon = P('Longitude', np.ma.zeros(2,dtype=float))
+        smoother = LatitudePreparedLatLon()
+        smoother.get_derived([lon, lat, aeroplane])
+        self.assertTrue(smoother.array.mask.all())
 
 
 class TestLongitudePrepared(unittest.TestCase):
@@ -5368,9 +5360,15 @@ class TestLongitudeSmoothed(unittest.TestCase):
         combinations = LongitudeSmoothed.get_operational_combinations()
         self.assertTrue(all('Longitude Prepared' in c for c in combinations))
 
-    @unittest.skip('Test Not Implemented')
-    def test_derive(self):
-        self.assertTrue(False, msg='Test not implemented.')
+    def test_longitude_smoothing_basic(self):
+        lat = P('Latitude',np.ma.array([0,0,1,2,1,0,0],dtype=float))
+        lon = P('Longitude', np.ma.array([0,0,-2,-4,-2,0,0],dtype=float))
+        smoother = LongitudePreparedLatLon()
+        smoother.get_derived([lon, lat, aeroplane])
+        # An output warning of smooth cost function closing with cost > 1 is
+        # normal and arises because the data sample is short.
+        expected = [0.0, 0.0, -0.00176, -0.00176, -0.00176, 0.0, 0.0]
+        np.testing.assert_almost_equal(smoother.array, expected, decimal=5)
 
 
 class TestMagneticVariation(unittest.TestCase):

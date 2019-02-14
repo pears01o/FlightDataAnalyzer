@@ -1579,10 +1579,10 @@ class TestHolding(unittest.TestCase):
         lon=P('Longitude Smoothed', np.ma.ones(11880) * 24.0)
         hold=Holding()
         hold.derive(alt, hdg, alt_max, tdwns, lat, lon)
-        self.assertEqual(hold[0].slice, slice(500, 1360))
-        self.assertEqual(hold[1].slice, slice(3400, 4260))
-        self.assertEqual(hold[2].slice, slice(6350, 7620))
-        self.assertEqual(hold[3].slice, slice(9790, 11210))
+        self.assertEqual(hold[0].slice, slice(510, 1350))
+        self.assertEqual(hold[1].slice, slice(3410, 4250))
+        self.assertEqual(hold[2].slice, slice(6370, 7600))
+        self.assertEqual(hold[3].slice, slice(9810, 11190))
 
     def test_hold_rejected_if_travelling(self):
         rot=np.ma.concatenate((

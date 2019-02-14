@@ -4656,7 +4656,7 @@ def blend_two_parameters(param_one, param_two, mode=None):
     return array, frequency, offset
 
 
-def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear', 
+def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear',
                      validity='any_one', tolerance=None):
     '''
     This most general form of the blend options allows for multiple sources
@@ -4701,7 +4701,7 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         return blend_parameters_linear(params, frequency, tolerance=tolerance, offset=offset)
 
     # mode is cubic
-    
+
     # Find out about the parameters we have to deal with...
     min_ip_freq = min(p.frequency for p in params)
 
@@ -4740,7 +4740,7 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         bad = num_valid == 0
     else:
         raise ValueError('Unrecognised validity mode in blend_parameters')
-    
+
     any_valid = runs_of_ones(~bad)
 
     if any_valid is None:
@@ -4818,7 +4818,7 @@ def blend_parameters_linear(params, frequency, tolerance=None, offset=0):
 
     tol_mask = None
     if tolerance:
-        test_array = np.ma.zeros((len(params), len(params[0].array) * min_ip_freq / params[0].frequency))
+        test_array = np.ma.zeros((len(params), int(len(params[0].array) * min_ip_freq / params[0].frequency)))
         for n, p in enumerate(params):
             test_array[n, :] = resample(p.array, p.frequency, min_ip_freq)
         tol_mask = np.ma.masked_greater(np.ma.ptp(test_array, axis=0), tolerance)
@@ -4890,7 +4890,7 @@ def blend_parameters_cubic(frequency, offset, params, result_slice, tolerance=No
     if tolerance:
         result.mask = np.ma.masked_greater(np.ma.ptp(a, axis=0), tolerance).mask
 
-    return result 
+    return result
 
 def blend_parameters_weighting(array, wt):
     '''
@@ -5350,28 +5350,28 @@ def overflow_correction(array, fast=None, hz=1):
     which may still be offset following the removal of overflow jumps. The
     same algorithm is used in both cases to ensure that the same slicing is
     used consistently.
-    
+
     :param array: array of data from a single radio altimeter
     :type array: Numpy array
     :param fast: flight phases
     :type fast: Section
     :param hz: array sample rate
-    :type hz: float 
+    :type hz: float
     '''
     good_slices = slices_remove_small_slices(
         slices_remove_small_gaps(np.ma.clump_unmasked(array),
                                  time_limit=10, hz=hz),
         time_limit=10, hz=hz)
-    
+
     if not fast:
         # The first time we use this algorithm we don't have speed information
         for good_slice in good_slices:
             array[good_slice] = overflow_correction_array(array[good_slice])
     else:
-        # The second time our challenge is to make sure the segments are 
+        # The second time our challenge is to make sure the segments are
         # adjusted correctly
         array = pin_to_ground(array, good_slices, fast.get_slices(), hz)
-            
+
     return array
 
 
@@ -5387,7 +5387,7 @@ def overflow_correction_array(array):
     # Most radio altimeters are scaled to overflow at 2048ft, but occasionally the signed
     # value changes by half this amount. Hence jumps more than half a power lower than 2**10.
     steps = np.ma.where(abs_jump > 800.0, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
-            
+
     biggest_step_up = np.ma.max(steps)
     biggest_step_down = np.ma.min(steps)
     # Only fix things that need fixing
@@ -5395,7 +5395,7 @@ def overflow_correction_array(array):
         # Compute and apply the correction
         array += np.ma.cumsum(steps)
 
-    # Simple check to make sure the lowest value is not badly below zero following 
+    # Simple check to make sure the lowest value is not badly below zero following
     # this adjustment, because the resulting array will be displayed to the user
     # as the converted single sensor parameter.
     if np.min(array) < 0.0:
@@ -5411,7 +5411,7 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
     Fix the altitude within given slice based on takeoff and landing
     information.
 
-    We assume that at takeoff and landing the altitude radio is close 
+    We assume that at takeoff and landing the altitude radio is close
     to zero, so we can postprocess the array accordingly.
     '''
     def nearest_step(x):
@@ -5423,7 +5423,7 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
             return 0.0
 
     array.mask = np.ma.getmaskarray(array)
-    
+
     # We detect the corrections based on fast slices
     for f in fast_slices:
         begin_step = end_step = begin_peak = end_peak = begin_peak_idx = 0.0
@@ -5435,14 +5435,14 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
                 array[sl] -=  begin_step
                 begin_peak_idx = sl.stop - 1
                 begin_peak = array[begin_peak_idx]
-                
+
             elif is_index_within_slice(f.stop, sl):
                 # go_fast stops in the slice
                 end_step = nearest_step(array[int(f.stop)])
                 array[sl] -=  end_step
                 end_peak_idx = sl.start
                 end_peak = array[end_peak_idx]
-                
+
             elif is_index_within_slice(sl.start, f) and \
                  slice_duration(sl, hz) < ALTITUDE_RADIO_OVERFLY_SUPPRESSION:
                 # For in-flight slices, be ready to suppress short bursts
@@ -5457,8 +5457,8 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
                 else:
                     delta = array[sl.stop - 1] - end_peak
                 array[sl] -=  nearest_step(delta)
-                
-    # Everything not fast must be on the ground    
+
+    # Everything not fast must be on the ground
     for g in slices_not(fast_slices, begin_at=0, end_at=len(array)):
         for n, sl in enumerate(good_slices):
             if is_slice_within_slice(sl, g):

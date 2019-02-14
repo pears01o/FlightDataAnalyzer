@@ -1877,7 +1877,8 @@ class TestLevelFlight(unittest.TestCase, NodeTest):
 
     def setUp(self):
         self.node_class = LevelFlight
-        self.operational_combinations = [('Airborne', 'Vertical Speed For Flight Phases')]
+        self.operational_combinations = [('Airborne', 'Vertical Speed For Flight Phases',
+                                          'Altitude AAL')]
 
     def test_level_flight_phase_basic(self):
         data = list(range(0, 400, 1)) + list(range(400, -450, -1)) +\
@@ -1886,11 +1887,12 @@ class TestLevelFlight(unittest.TestCase, NodeTest):
             name='Vertical Speed For Flight Phases',
             array=np.ma.array(data),
         )
+        alt_aal = Parameter('Altitude AAL', np_ma_ones_like(vrt_spd.array) * 1000.0)
         airborne = SectionNode('Airborne', items=[
             Section('Airborne', slice(0, 3600, None), 0, 3600),
         ])
         level = LevelFlight()
-        level.derive(airborne, vrt_spd)
+        level.derive(airborne, vrt_spd, alt_aal)
         self.assertEqual(level, [
             Section('Level Flight', slice(0, 301, None), 0, 301),
             Section('Level Flight', slice(500, 1101, None), 500, 1101),
@@ -1903,11 +1905,12 @@ class TestLevelFlight(unittest.TestCase, NodeTest):
             name='Vertical Speed For Flight Phases',
             array=np.ma.array(data),
         )
+        alt_aal = Parameter('Altitude AAL', np_ma_ones_like(vrt_spd.array) * 1000.0)
         airborne = SectionNode('Airborne', items=[
             Section('Airborne', slice(550, 1200, None), 550, 1200),
         ])
         level = LevelFlight()
-        level.derive(airborne, vrt_spd)
+        level.derive(airborne, vrt_spd, alt_aal)
         self.assertEqual(level, [
             Section('Level Flight', slice(550, 1101, None), 550, 1101)
         ])
@@ -1919,14 +1922,23 @@ class TestLevelFlight(unittest.TestCase, NodeTest):
             array=np.ma.array(data),
             frequency=1.0
         )
+        alt_aal = Parameter('Altitude AAL', np_ma_ones_like(vrt_spd.array) * 1000.0)
         airborne = SectionNode('Airborne', items=[
             Section('Airborne', slice(0, 320), 0, 320),
         ])
         level = LevelFlight()
-        level.derive(airborne, vrt_spd)
+        level.derive(airborne, vrt_spd, alt_aal)
         self.assertEqual(level, [
             Section('Level Flight', slice(120, 200, None), 120, 200)
         ])
+
+    def test_rejects_on_gound(self):
+        aal = Parameter('Altitude AAL', array=np.ma.array([200]*120 + [0]*60 + [200]*120))
+        vs = Parameter('Vertical Speed For Flight Phases', array=np.ma.array([0.0]*280))
+        airs=buildsection('Airborne', 1, 280)
+        level = LevelFlight()
+        level.derive(airs, vs, aal)
+        self.assertEqual(level.get_slices(), [slice(1, 120, None), slice(180, 280, None)])
 
 
 class TestStationary(unittest.TestCase, NodeTest):

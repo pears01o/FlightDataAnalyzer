@@ -1107,15 +1107,24 @@ class InitialClimb(FlightPhaseNode):
 
 class LevelFlight(FlightPhaseNode):
     '''
+    Level flight for at least 20 seconds. 
+    
+    This now excludes extended touch and go operations which are level, but
+    below 5ft above the runway. We have seen almost a minute on the runway, 
+    so this algorithm does not include a time limit for such actions.
     '''
     def derive(self,
                airs=S('Airborne'),
-               vrt_spd=P('Vertical Speed For Flight Phases')):
+               vrt_spd=P('Vertical Speed For Flight Phases'),
+               alt_aal=P('Altitude AAL')):
 
         for air in airs:
             limit = VERTICAL_SPEED_FOR_LEVEL_FLIGHT
             level_flight = np.ma.masked_outside(vrt_spd.array[air.slice], -limit, limit)
-            level_slices = np.ma.clump_unmasked(level_flight)
+            level_flight_slices = np.ma.clump_unmasked(level_flight)
+            above_runway = np.ma.masked_less(alt_aal.array[air.slice], 5.0)
+            above_runway_slices = np.ma.clump_unmasked(above_runway)
+            level_slices = slices_and(level_flight_slices, above_runway_slices)
             level_slices = slices_remove_small_slices(level_slices,
                                                       time_limit=LEVEL_FLIGHT_MIN_DURATION,
                                                       hz=vrt_spd.frequency)

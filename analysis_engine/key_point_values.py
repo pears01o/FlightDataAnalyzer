@@ -6,6 +6,8 @@ import numpy as np
 import operator
 import re
 import six
+import requests
+import json
 
 from collections import defaultdict
 from copy import deepcopy
@@ -25,6 +27,7 @@ from analysis_engine.settings import (ACCEL_LAT_OFFSET_LIMIT,
                                       CONTROL_FORCE_THRESHOLD,
                                       GRAVITY_IMPERIAL,
                                       GRAVITY_METRIC,
+                                      HEADING_RATE_FOR_TAXI_TURNS,
                                       HOVER_MIN_DURATION,
                                       HYSTERESIS_FPALT,
                                       MIN_HEADING_CHANGE,
@@ -32,7 +35,6 @@ from analysis_engine.settings import (ACCEL_LAT_OFFSET_LIMIT,
                                       NAME_VALUES_ENGINE,
                                       NAME_VALUES_LEVER,
                                       NAME_VALUES_RANGES,
-                                      HEADING_RATE_FOR_TAXI_TURNS,
                                       REVERSE_THRUST_EFFECTIVE_EPR,
                                       REVERSE_THRUST_EFFECTIVE_N1,
                                       SPOILER_DEPLOYED,
@@ -82,6 +84,7 @@ from analysis_engine.library import (ambiguous_runway,
                                      most_common_value,
                                      moving_average,
                                      repair_mask,
+                                     nearest_runway,
                                      np_ma_masked_zeros_like,
                                      np_ma_zeros_like,
                                      peak_curvature,
@@ -7760,6 +7763,74 @@ class ElevatorDuringLandingMin(KeyPointValueNode):
     def derive(self, elev=P('Elevator'), landing=S('Landing')):
 
         self.create_kpvs_within_slices(elev.array, landing, min_value)
+
+
+class TakeoffTurnOntoRunwayTakeoffRollStartDistance(KeyPointValueNode):
+    '''
+    The distance between the turn onto the runway and the start of takeoff roll.
+    Will be negative if the takeoff roll was started from the taxiway extending runway centreline - for example EGKK 26R,
+    UUDD 32R.
+    'Runway start' used here is the opposite runway end as our runway database considers the landing threshold as the
+    runway starting point, rather than the point where TODA begins.
+    '''
+
+    units = ut.METER
+
+    def derive(self, precise=A('Precise Positioning'),
+                     lat=P('Latitude Smoothed'),
+                     lon=P('Longitude Smoothed'),
+                     to_rwy=A('FDR Takeoff Runway'),
+                     to_arpt=A('FDR Takeoff Airport'),
+                     takeoffs=S('Takeoff'),
+                     accel_start=KTI('Takeoff Acceleration Start'),):
+
+        # Find the opposite runway
+        to_rwy_lat = to_rwy.value['end']['latitude']
+        to_rwy_lon = to_rwy.value['end']['longitude']
+        hdg = to_rwy.value['magnetic_heading'] - 180
+        opposite_runway = nearest_runway(to_arpt.value, hdg, None, to_rwy_lat, to_rwy_lon)
+
+        # TODO: what about multiple takeoff rolls, accel starts? (RTO)
+
+        # takeoff threshold is the opposite runway's end
+        to_threshold = (opposite_runway['end']['latitude'], opposite_runway['end']['longitude'])
+        to_accel_start_point = (lat.array[int(accel_start[0].index)], lon.array[int(accel_start[0].index)])
+        to_turn_onto_runway_point = (lat.array[int(takeoffs[0].slice.start)], lon.array[int(takeoffs[0].slice.start)])
+
+        # calculate some distances
+        # between the turn onto the runway and the start of takeoff roll
+        # we use the start of Takeoff phase as it proved to be more reliable than the 'Takeoff Turn Onto Runway' KTI
+        roll_distance = great_circle_distance__haversine(to_accel_start_point[0], to_accel_start_point[1],
+                                                         to_turn_onto_runway_point[0], to_turn_onto_runway_point[1])
+
+        # runway length
+        rwy_length = great_circle_distance__haversine(to_rwy.value['end']['latitude'], to_rwy.value['end']['longitude'],
+                                                      opposite_runway['end']['latitude'], opposite_runway['end']['longitude'])
+
+        # in order to cover the 'straight in' cases where the taxiway extends the runway we will need to see whether our
+        # turn onto the runway didn't happen further than the takeoff threshold
+        turn_onto_rwy_distance = great_circle_distance__haversine(to_rwy.value['end']['latitude'], to_rwy.value['end']['longitude'],
+                                                                  to_turn_onto_runway_point[0], to_turn_onto_runway_point[1])
+
+        # check whether the takeoff roll didn't start before the runway threshold - straight in case with TO commenced too early
+        to_roll_distance = great_circle_distance__haversine(opposite_runway['end']['latitude'], opposite_runway['end']['longitude'],
+                                                                  to_accel_start_point[0], to_accel_start_point[1])
+
+        threshold_roll_start_distance = great_circle_distance__haversine(to_threshold[0], to_threshold[1],
+                                                                         to_accel_start_point[0], to_accel_start_point[1])
+
+        # start of the takeoff roll before reaching the TODA point, value will be negative
+        if to_roll_distance > rwy_length:
+            self.create_kpv(accel_start[0].index, -roll_distance)
+
+        # this is a 'straight in' case - turn onto runway point has to be the threshold
+        elif turn_onto_rwy_distance > rwy_length:
+            self.create_kpv(accel_start[0].index, threshold_roll_start_distance)
+
+        # this is a 'normal' case - just need a distance
+        else:
+            self.create_kpv(accel_start[0].index, roll_distance)
+
 
 
 ##############################################################################

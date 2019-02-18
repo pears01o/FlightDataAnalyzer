@@ -7787,10 +7787,8 @@ class TakeoffTurnOntoRunwayTakeoffRollStartDistance(KeyPointValueNode):
         # Find the opposite runway
         to_rwy_lat = to_rwy.value['end']['latitude']
         to_rwy_lon = to_rwy.value['end']['longitude']
-        hdg = to_rwy.value['magnetic_heading'] - 180
+        hdg = (to_rwy.value['magnetic_heading'] + 180) % 360
         opposite_runway = nearest_runway(to_arpt.value, hdg, None, to_rwy_lat, to_rwy_lon)
-
-        # TODO: what about multiple takeoff rolls, accel starts? (RTO)
 
         # takeoff threshold is the opposite runway's end
         to_threshold = (opposite_runway['end']['latitude'], opposite_runway['end']['longitude'])
@@ -7821,7 +7819,7 @@ class TakeoffTurnOntoRunwayTakeoffRollStartDistance(KeyPointValueNode):
 
         # start of the takeoff roll before reaching the TODA point, value will be negative
         if to_roll_distance > rwy_length:
-            self.create_kpv(accel_start[0].index, -roll_distance)
+            self.create_kpv(accel_start[0].index, -threshold_roll_start_distance)
 
         # this is a 'straight in' case - turn onto runway point has to be the threshold
         elif turn_onto_rwy_distance > rwy_length:

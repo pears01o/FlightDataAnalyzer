@@ -4978,14 +4978,14 @@ class TestPeakCurvature(unittest.TestCase):
     # artificial data results in multiple maxima.
 
     def test_peak_curvature_basic(self):
-        array = np.ma.array([0]*20+list(range(20)))
+        array = np.ma.concatenate([np.zeros(20), np.arange(20)])
         pc = peak_curvature(array)
         self.assertEqual(pc,18.5)
         #  Very artificial case returns first location of many seconds of
         #  high curvature.
 
     def test_peak_curvature(self):
-        array = np.ma.array([0]*40+list(range(40)))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         pc = peak_curvature(array)
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
@@ -4996,37 +4996,37 @@ class TestPeakCurvature(unittest.TestCase):
         self.assertEqual(pc,None)
 
     def test_peak_curvature_convex(self):
-        array = np.ma.array([0]*40+list(range(40)))*(-1.0)
+        array = np.ma.concatenate([np.zeros(40), np.arange(0, -40, -1)])
         pc = peak_curvature(array, curve_sense='Convex')
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
 
     def test_peak_curvature_convex_big_concave(self):
         # Tests for identification of the convex section with a larger concave angle in the same data segment.
-        array = np.ma.array([0]*40+list(range(40))+list(range(40,-60,-10)))*(-1.0)
+        array = np.ma.concatenate([np.zeros(40), np.arange(0, -40, -1), np.arange(-40, 60, 10)])
         pc = peak_curvature(array, curve_sense='Convex')
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
 
     def test_peak_curvature_concave_big_convex(self):
         # See above !
-        array = np.ma.array([0]*40+list(range(40))+list(range(40,-60,-10)))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40), np.arange(40,-60,-10)])
         pc = peak_curvature(array, curve_sense='Concave')
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
 
     def test_peak_curvature_flat_data(self):
-        array = np.ma.array([34]*40)
+        array = np.ma.ones(40) * 34
         pc = peak_curvature(array)
         self.assertEqual(pc,None)
 
     def test_peak_curvature_short_flat_data(self):
-        array = np.ma.array([34]*4)
+        array = np.ma.ones(4) * 34
         pc = peak_curvature(array)
         self.assertEqual(pc,None)
 
     def test_peak_curvature_bipolar(self):
-        array = np.ma.array([0]*40+list(range(40)))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         pc = peak_curvature(array, curve_sense='Bipolar')
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
@@ -5041,24 +5041,24 @@ class TestPeakCurvature(unittest.TestCase):
         self.assertLessEqual(pc,15.1)
 
     def test_peak_curvature_with_slice(self):
-        array = np.ma.array([0]*20+[10]*20+[0]*20)
+        array = np.ma.concatenate([np.zeros(20), np.ones(20) * 10, np.zeros(20)])
         pc = peak_curvature(array, slice(10, 50), curve_sense='Bipolar')
         self.assertEqual(pc, 24.5)
 
     def test_peak_curvature_slice_backwards(self):
-        array = np.ma.array([0]*40+list(range(40)))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         pc = peak_curvature(array, slice(75, 10, -1))
         self.assertEqual(pc, 41.5)
 
     def test_peak_curvature_masked_data_no_curve(self):
-        array = np.ma.array([0]*40+list(range(40)))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         array[:4] = np.ma.masked
         array[16:] = np.ma.masked
         pc = peak_curvature(array, slice(0,40))
         self.assertEqual(pc, None)
 
     def test_peak_curvature_masked_data(self):
-        array = np.ma.array([0]*40+list(range(40)))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         array[:4] = np.ma.masked
         array[66:] = np.ma.masked
         pc = peak_curvature(array, slice(0,78))

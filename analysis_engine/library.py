@@ -33,6 +33,7 @@ from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.geometry import cross_track_distance, great_circle_distance__haversine
 
 from analysis_engine.settings import (
+    ALTITUDE_RADIO_OVERFLY_SUPPRESSION,
     BUMP_HALF_WIDTH,
     ILS_CAPTURE,
     ILS_CAPTURE_ROC,
@@ -3670,7 +3671,7 @@ def slices_overlap(first_slice, second_slice):
            ((first_slice.stop is None) or ((second_slice.start or 0) < first_slice.stop))
 
 
-def slices_overlap_merge(first_list, second_list, extend_stop=0):
+def slices_overlap_merge(first_list, second_list, extend_start=0, extend_stop=0):
     '''
     Where slices from the second list overlap the first, the first slice is
     extended to the limit of the second list slice.
@@ -3680,6 +3681,8 @@ def slices_overlap_merge(first_list, second_list, extend_stop=0):
     :type first_list: List of slices
     :param second_list: Second list of slices
     :type second_list: List of slices
+    :param extend_start: Increment at start of the resulting slices_above
+    :type extend_stop: Integer
     :param extend_stop: Increment at stop end of the resulting slices_above
     :type extend_stop: Integer
     '''
@@ -3690,14 +3693,15 @@ def slices_overlap_merge(first_list, second_list, extend_stop=0):
         for second_slice in second_list:
             if slices_overlap(first_slice, second_slice):
                 overlap = True
-                result_list.append(slice(min(first_slice.start, second_slice.start),
+                result_list.append(slice(max(min(first_slice.start, second_slice.start) - extend_start, 0),
                                          max(first_slice.stop, second_slice.stop) + extend_stop))
                 break
         if not overlap:
-            if extend_stop:
-                result_list.append(slice(first_slice.start, first_slice.stop + extend_stop))
-            else:
+            if not extend_start and not extend_stop:
                 result_list.append(first_slice)
+            else:
+                result_list.append(slice(first_slice.start - extend_start,
+                                         first_slice.stop + extend_stop))
 
     return result_list
 
@@ -4652,7 +4656,8 @@ def blend_two_parameters(param_one, param_two, mode=None):
     return array, frequency, offset
 
 
-def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear'):
+def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, mode='linear',
+                     validity='any_one', tolerance=None):
     '''
     This most general form of the blend options allows for multiple sources
     to be blended together even though the spacing, validity and even sample
@@ -4669,6 +4674,10 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     :type small_slice_duration: float
     :param mode: type of interpolation to use - default 'linear' or 'cubic'. Anything else raises exception.
     :type mode: str
+    :param validity: requirements for validity in the data - from ['all', 'all_but_one', 'any_one']
+    :type validity: str
+    :param tolerance: tolerance for merging to take place
+    :type tolerance: float or None (for no test to be applied)
     '''
 
     assert frequency > 0.0
@@ -4678,10 +4687,23 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     params = [p for p in params if p is not None]
     assert len(params), "No parameters to merge"
 
+    # Find out about the parameters we have to deal with...
+    min_ip_freq = min(p.frequency for p in params)
+
+    tol_mask = None
+    if tolerance:
+        test_array = np.ma.zeros((len(params), int(len(params[0].array) * min_ip_freq / params[0].frequency)))
+        for n, p in enumerate(params):
+            test_array[n, :] = resample(p.array, p.frequency, min_ip_freq)
+        tol_mask = np.ma.masked_greater(np.ma.ptp(test_array, axis=0), tolerance)
+
     if mode == 'linear':
-        return blend_parameters_linear(params, frequency, offset=offset)
+        return blend_parameters_linear(params, frequency, tolerance=tolerance, offset=offset)
 
     # mode is cubic
+
+    # Find out about the parameters we have to deal with...
+    min_ip_freq = min(p.frequency for p in params)
 
     p_valid_slices = []
 
@@ -4690,9 +4712,6 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     result = np_ma_masked_zeros(length)
     # Ensure mask is expanded for slicing.
     result.mask = np.ma.getmaskarray(result)
-
-    # Find out about the parameters we have to deal with...
-    min_ip_freq = min(p.frequency for p in params)
 
     # Slices of valid data are scaled to the lowest timebase and then or'd
     # to find out when any valid data is available.
@@ -4710,11 +4729,19 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
         # collation.
         p_valid_slices.append(slices_multiply(nts, min_ip_freq / param.frequency))
 
-    # To find the valid ranges I need to 'or' the slices at a high level, hence
-    # this list of lists of slices needs to be flattened. Don't ask me what
-    # this does, go to http://stackoverflow.com/questions/952914 for an
-    # explanation !
-    any_valid = slices_or([item for sublist in p_valid_slices for item in sublist])
+    all_masks = np.array([np.ma.getmaskarray(p.array)[::int(p.frequency // min_ip_freq)] for p in params])
+    num_valid = len(params) - np.sum(all_masks, axis=0)
+
+    if validity == 'all':
+        bad = num_valid < len(params)
+    elif validity == 'all_but_one':
+        bad = num_valid < len(params) - 1
+    elif validity == 'any_one':
+        bad = num_valid == 0
+    else:
+        raise ValueError('Unrecognised validity mode in blend_parameters')
+
+    any_valid = runs_of_ones(~bad)
 
     if any_valid is None:
         # No useful chunks of data to process, so give up now.
@@ -4724,12 +4751,11 @@ def blend_parameters(params, offset=0.0, frequency=1.0, small_slice_duration=4, 
     for this_valid in any_valid:
         result_slice = slice_multiply(this_valid, frequency/min_ip_freq)
         result[result_slice] = blend_parameters_cubic(
-            frequency, offset, params, result_slice)
+            frequency, offset, params, result_slice, tolerance=tolerance)
         # The endpoints of a cubic spline are generally unreliable, so trim
         # them back.
         result[result_slice][0] = np.ma.masked
         result[result_slice][-1] = np.ma.masked
-
     return result
 
 
@@ -4760,7 +4786,7 @@ def resample_mask(mask, orig_hz, resample_hz):
     return resampled
 
 
-def blend_parameters_linear(params, frequency, offset=0):
+def blend_parameters_linear(params, frequency, tolerance=None, offset=0):
     '''
     This provides linear interpolation to support the generic routine
     blend_parameters.
@@ -4779,16 +4805,29 @@ def blend_parameters_linear(params, frequency, offset=0):
     weights = []
     aligned = []
 
+    # Find out about the parameters we have to deal with...
+    min_ip_freq = min(p.frequency for p in params)
+
     # Compute the individual splines
     for param in params:
         aligned.append(align_args(param.array, param.frequency, param.offset, frequency, offset))
         # Remember the sample rate as this dictates the weighting
         weights.append(param.frequency)
 
-    return np.ma.average(aligned, axis=0, weights=weights)
+    result = np.ma.average(aligned, axis=0, weights=weights)
+
+    tol_mask = None
+    if tolerance:
+        test_array = np.ma.zeros((len(params), int(len(params[0].array) * min_ip_freq / params[0].frequency)))
+        for n, p in enumerate(params):
+            test_array[n, :] = resample(p.array, p.frequency, min_ip_freq)
+        tol_mask = np.ma.masked_greater(np.ma.ptp(test_array, axis=0), tolerance)
+        result.mask = np.ma.logical_or(np.ma.getmaskarray(result), np.ma.getmaskarray(tol_mask))
+
+    return result
 
 
-def blend_parameters_cubic(frequency, offset, params, result_slice):
+def blend_parameters_cubic(frequency, offset, params, result_slice, tolerance=None):
     '''
     :param frequency: the frequency of the output parameter
     :type frequency: float
@@ -4846,9 +4885,12 @@ def blend_parameters_cubic(frequency, offset, params, result_slice):
             param.array[my_slice], frequency/param.frequency))
 
     a = np.vstack(tuple(curves))
+    result = np.ma.average(a, axis=0, weights=weights)
 
-    return np.ma.average(a, axis=0, weights=weights)
+    if tolerance:
+        result.mask = np.ma.masked_greater(np.ma.ptp(a, axis=0), tolerance).mask
 
+    return result
 
 def blend_parameters_weighting(array, wt):
     '''
@@ -5299,106 +5341,131 @@ def offset_select(mode, param_list):
     raise ValueError ("offset_select called with unrecognised mode")
 
 
-def overflow_correction(param, fast=None, max_val=8191):
+def overflow_correction(array, fast=None, hz=1):
     '''
-    Overflow Correction postprocessing procedure. Tested on Altitude Radio
-    signals where only 12 bits are used for a signal that can reach over 8000.
+    Overflow Correction postprocessing procedure. Used only on Altitude Radio
+    signals.
 
-    This function fixes the wrong values resulting from too narrow bit
-    range. The value range is extended using an algorithm similar to binary
-    overflow: we detect value changes bigger than 75% and modify the result
-    ranges.
+    This can be used to remove overflows and to tidy up the resulting data,
+    which may still be offset following the removal of overflow jumps. The
+    same algorithm is used in both cases to ensure that the same slicing is
+    used consistently.
 
-    We attempt to cater for noisy signal as well, trying to get rid of narrow
-    spikes before applying the correction.
-
-    :param param: Parameter object
-    :type param: Node
-    :param hz: Frequency of array (used for repairing gaps)
-    :type hz: float
-    :param fast: flight phases to be used to indicate points in time where the
-        value should be zero. Should be used only with altitude radio
-        parameters.
+    :param array: array of data from a single radio altimeter
+    :type array: Numpy array
+    :param fast: flight phases
     :type fast: Section
-    :param max_val: Saturation value of parameter (hint: expects Unsigned
-        params)
-    :type max_val: integer
+    :param hz: array sample rate
+    :type hz: float
     '''
-    array = param.array
-    hz = param.hz
-    delta = max_val * 0.75
+    good_slices = slices_remove_small_slices(
+        slices_remove_small_gaps(np.ma.clump_unmasked(array),
+                                 time_limit=10, hz=hz),
+        time_limit=10, hz=hz)
 
-    def pin_to_ground(array, good_slices, fast_slices):
-        '''
-        Fix the altitude within given slice based on takeoff and landing
-        information.
+    if not fast:
+        # The first time we use this algorithm we don't have speed information
+        for good_slice in good_slices:
+            array[good_slice] = overflow_correction_array(array[good_slice])
+    else:
+        # The second time our challenge is to make sure the segments are
+        # adjusted correctly
+        array = pin_to_ground(array, good_slices, fast.get_slices(), hz)
 
-        We assume that at takeoff and landing the altitude radio is zero, so we
-        can postprocess the array accordingly.
-        '''
-        corrections = [{'slice': sl, 'correction': None} for sl in good_slices]
-
-        # pass 1: detect the corrections based on fast slices
-        for d in corrections:
-            sl = d['slice']
-            for f in fast_slices:
-                if is_index_within_slice(f.start, sl):
-                    # go_fast starts in the slice
-                    d['correction'] = array[f.start]
-                    break
-                elif is_index_within_slice(f.stop, sl):
-                    # go_fast stops in the slice
-                    d['correction'] = array[f.stop]
-                    break
-
-        # pass 2: apply the corrections using known values and masking the ones
-        # which have no correction
-        # FIXME: we probably should reuse the corrections from previous valid
-        # ones, as the range should not have changed between masked segments.
-        for d in corrections:
-            sl = d['slice']
-            correction = d['correction']
-            if correction == 0:
-                continue
-            elif correction is None:
-                array.mask[sl] = True
-            else:
-                array[sl] -= correction
-
-        return array
-
-    # remove small masks (up to 10 samples) which may be related to the
-    # overflow.
-    old_mask = array.mask.copy()
-    good_slices = slices_remove_small_gaps(
-        np.ma.clump_unmasked(array), time_limit=25.0,
-        hz=hz)
-
-    for sl in good_slices:
-        array.mask[sl] = False
-        jump = np.ma.ediff1d(array[sl], to_begin=0.0)
-        abs_jump = np.ma.abs(jump)
-        jump_sign = -jump / abs_jump
-        steps = np.ma.where(abs_jump > delta, max_val * jump_sign, 0)
-        for jump_idx in np.ma.where(steps)[0]:
-            old_mask[sl.start + jump_idx - 2: sl.start + jump_idx + 2] = False
-        correction = np.ma.cumsum(steps)
-
-        array[sl] += correction
-
-        if not fast and np.ma.min(array[sl]) < -delta:
-            # FIXME: fallback postprocessing: compensate for the descent
-            # starting at the overflown value
-            array[sl] += max_val
-
-    if fast:
-        pin_to_ground(array, good_slices, slices_int(fast.get_slices()))
-
-    # reapply the original mask as it may contain genuine spikes unrelated to
-    # the overflow
-    array.mask = old_mask
     return array
 
+
+def overflow_correction_array(array):
+    '''
+    Overflow correction based on power of two jumps only.
+    '''
+    array.mask = False
+    jump = np.ma.ediff1d(array, to_begin=0.0)
+    abs_jump = np.ma.abs(jump)
+    jump_sign = -jump / abs_jump
+
+    # Most radio altimeters are scaled to overflow at 2048ft, but occasionally the signed
+    # value changes by half this amount. Hence jumps more than half a power lower than 2**10.
+    steps = np.ma.where(abs_jump > 800.0, 2**np.rint(np.ma.log2(abs_jump)) * jump_sign, 0)
+
+    biggest_step_up = np.ma.max(steps)
+    biggest_step_down = np.ma.min(steps)
+    # Only fix things that need fixing
+    if biggest_step_up or biggest_step_down:
+        # Compute and apply the correction
+        array += np.ma.cumsum(steps)
+
+    # Simple check to make sure the lowest value is not badly below zero following
+    # this adjustment, because the resulting array will be displayed to the user
+    # as the converted single sensor parameter.
+    if np.min(array) < 0.0:
+        delta = 1024.0 * np.rint((np.min(array) + 20) / 1024)
+        if delta:
+            array -= delta
+
+    return array
+
+
+def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
+    '''
+    Fix the altitude within given slice based on takeoff and landing
+    information.
+
+    We assume that at takeoff and landing the altitude radio is close
+    to zero, so we can postprocess the array accordingly.
+    '''
+    def nearest_step(x):
+        delta=1024.0
+        multiple = np.rint(abs(x) / float(delta))
+        if multiple:
+            return multiple * delta * np.sign(x)
+        else:
+            return 0.0
+
+    array.mask = np.ma.getmaskarray(array)
+
+    # We detect the corrections based on fast slices
+    for f in fast_slices:
+        begin_step = end_step = begin_peak = end_peak = 0.0
+        end_peak_idx = len(array)
+        for n, sl in enumerate(good_slices):
+            if is_index_within_slice(f.start, sl):
+                # go_fast starts in the slice
+                begin_step = nearest_step(array[int(f.start)])
+                array[sl] -=  begin_step
+                begin_peak_idx = sl.stop - 1
+                begin_peak = array[begin_peak_idx]
+
+            elif is_index_within_slice(f.stop, sl):
+                # go_fast stops in the slice
+                end_step = nearest_step(array[int(f.stop)])
+                array[sl] -=  end_step
+                end_peak_idx = sl.start
+                end_peak = array[end_peak_idx]
+
+            elif is_index_within_slice(sl.start, f) and \
+                 slice_duration(sl, hz) < ALTITUDE_RADIO_OVERFLY_SUPPRESSION:
+                # For in-flight slices, be ready to suppress short bursts
+                array[sl].mask = True
+
+        # We have the corrections for either the start or end of the fast slice, so
+        # apply this to all sections wholly within the fast slice.
+        for n, sl in enumerate(good_slices):
+            if is_slice_within_slice(sl, f):
+                if sl.start - begin_peak_idx < end_peak_idx - sl.stop:
+                    delta = array[sl.start] - begin_peak
+                else:
+                    delta = array[sl.stop - 1] - end_peak
+                array[sl] -=  nearest_step(delta)
+
+    # Everything not fast must be on the ground
+    for g in slices_not(fast_slices, begin_at=0, end_at=len(array)):
+        for n, sl in enumerate(good_slices):
+            if is_slice_within_slice(sl, g):
+                delta = nearest_step(np.ma.average(array[sl]))
+                array[sl] -=  delta
+
+    return array
 
 def peak_curvature(array, _slice=slice(None), curve_sense='Concave',
                    gap = TRUCK_OR_TRAILER_INTERVAL,

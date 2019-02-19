@@ -935,7 +935,7 @@ class TestAlign(unittest.TestCase):
         slave = P('slave', np.ma.arange(15), frequency=5.0, offset=0.0)
         result = align(slave, master)
         assert_array_equal(result, [0, 5, 10])
-    
+
     def test_align_5hz_reverse(self):
         master = P('master', np.ma.arange(15.0), frequency=5.0, offset=0.0)
         slave = P('slave', array=[1,2,3], frequency=1.0, offset=0.0)
@@ -957,13 +957,13 @@ class TestAlign(unittest.TestCase):
         expected = (master.array/10.0)+2.0
         expected[21:]=np.ma.masked
         assert_array_almost_equal(result, expected)
-    
+
     def test_align_15hz(self):
         master = P('master', array=[1,2,3], frequency=1.0, offset=0.0)
         slave = P('slave', np.ma.arange(45), frequency=15.0, offset=0.0)
         result = align(slave, master)
         assert_array_equal(result, [0, 15, 30])
-    
+
     def test_align_15hz_reverse(self):
         master = P('master', np.ma.arange(30), frequency=15.0, offset=0.0)
         slave = P('slave', [2,3], frequency=1.0, offset=0.0)
@@ -1007,7 +1007,7 @@ class TestAlign(unittest.TestCase):
         self.assertEqual(result.dtype, int)
         np.testing.assert_array_equal(result.data, [1,3,3,4,4,5,5,6,0,0])
         np.testing.assert_array_equal(result.mask, [0,0,0,0,0,0,0,0,1,1])
-    
+
     def test_align_multi_state_10_15(self):
         first = P(frequency=15, offset=0.0,
                   array=np.ma.array([11,12,13,14,15,16,17,18,19,20,21,22,23,24,25], dtype=float))
@@ -1019,18 +1019,18 @@ class TestAlign(unittest.TestCase):
         self.assertEqual(result.dtype, int)
         np.testing.assert_array_equal(result.data, [1,3,3,4,5,5,6,7,7,8,9,9,10,11,0])
         np.testing.assert_array_equal(result.mask, [0] * 14 + [1])
-    
+
     def test_align_multi_state_15_25(self):
         first = P(frequency=25, offset=0.0, array=np.ma.arange(25, dtype=int))
         second = M(frequency=15, offset=0.0,
                    array=np.ma.array([1,3,4,5,6,7,8,9,10,11,12,13,14,15,16], dtype=int))
-        
+
         result = align(second, first)
         # check dtype is int
         self.assertEqual(result.dtype, int)
         np.testing.assert_array_equal(result.data, [1,3,3,4,4,5,6,6,7,7,8,9,9,10,10,11,12,12,13,13,14,15,15,16,0])
         np.testing.assert_array_equal(result.mask, [0] * 24  + [1])
-    
+
     def test_align_multi_state_25_15(self):
         first = P(frequency=15, offset=0.0, array=np.ma.arange(15, dtype=np.int))
         second = M(frequency=25, offset=0.0, array=np.ma.arange(25, dtype=np.int))
@@ -1254,7 +1254,7 @@ class TestBlendNonequispacedSensors(unittest.TestCase):
         expected = np.ma.array(data=[2.5, 2.5, 2.5, 5.25, 5.75, 3.5, 3.5, 9],
                                mask = [0,   0,   0,    0,    0,   0,   0, 1])
         ma_test.assert_masked_array_equal(expected, result)
-        
+
     def test_blend_alternate_sensors_reverse(self):
         array_1 = np.ma.array([0, 0, 1, 1],dtype=float)
         array_2 = np.ma.array([5, 5, 6, 6],dtype=float)
@@ -1283,7 +1283,7 @@ class TestIncludingTransition(unittest.TestCase):
     flap_map_3 = {0: '0', 15: '15', 30: '30'}
     flap_map_4 = {0: '0', 1: '1', 2: '2', 5: '5', 10: '10', 15: '15', 25: '25', 30: '30', 40: '40'}
     hz=2
-    
+
     @staticmethod
     def _plot(array, flap_inc):
         from analysis_engine.plot_flight import plot_parameter
@@ -1359,14 +1359,14 @@ class TestIncludingTransition(unittest.TestCase):
         flap_inc = including_transition(array, self.flap_map_1)
         self.assertTrue(np.ma.all(flap_inc[0:11] == 0))
         self.assertTrue(np.ma.all(flap_inc[11:29] == 15))
-    
+
     @unittest.skip('Not Implemented')
     def test_including_transition_12(self):
         array = load_compressed(os.path.join(test_data_path, 'calculate_flap_12.npz'))
         flap_inc = including_transition(array, self.flap_map_1)
         # this example wont work with the new algorithm as the flaps didn't
         # transition to position 15 and this is expected - prepending the array
-        # with few values lower than 15 works just fine, therefore in a real-world 
+        # with few values lower than 15 works just fine, therefore in a real-world
         # case the results are as expected
         self.assertEqual(flap_inc.tolist(), [15] * 16 + [30] * 17)
 
@@ -1409,7 +1409,7 @@ class TestIncludingTransition(unittest.TestCase):
         self.assertTrue(np.ma.all(flap_inc[0:11] == 5))
         self.assertTrue(np.ma.all(flap_inc[11:22] == 15))
         self.assertTrue(np.ma.all(flap_inc[22:43] == 20))
-    
+
     def test_including_transition_19(self):
         array = load_compressed(os.path.join(test_data_path, 'calculate_flap_19.npz'))
         flap_inc = including_transition(array, self.flap_map_2)
@@ -2959,7 +2959,7 @@ class TestGroundspeedFromPosition(unittest.TestCase):
         self.assertAlmostEqual(result[3], 30.0, places = 0)
         # and make sure the values are all practically the same
         self.assertAlmostEqual(np.ptp(result), 0.0)
-        
+
 class TestGroundTrack(unittest.TestCase):
     def test_ground_track_basic(self):
         gspd = np.ma.array([60,60,60,60,60,60,60])
@@ -3039,9 +3039,9 @@ class TestGroundTrackPrecise(unittest.TestCase):
                 lon.append(float(row['Longitude']))
                 hdg.append(float(row['Heading']))
                 gspd.append(float(row['Groundspeed']))
-            la, lo = ground_track_precise(np.ma.array(lat), 
-                                          np.ma.array(lon), 
-                                          np.ma.array(gspd), 
+            la, lo = ground_track_precise(np.ma.array(lat),
+                                          np.ma.array(lon),
+                                          np.ma.array(gspd),
                                           np.ma.array(hdg),
                                           1.0)
         self.assertLess(np.min(la), -.0002)
@@ -3067,7 +3067,7 @@ class TestGroundTrackPrecise(unittest.TestCase):
             self.lon = np.ma.masked_equal(np.ma.array(lon_data), 0.0)
             self.hdg = np.ma.masked_equal(np.ma.array(hdg_data), 0.0)
             self.gspd = np.ma.array(gspd_data)
-            
+
             la, lo = ground_track_precise(self.lat, self.lon, self.gspd,
                                            self.hdg, 1.0)
         # For this test data the worst case adjustment should be very small.
@@ -3076,7 +3076,7 @@ class TestGroundTrackPrecise(unittest.TestCase):
 
     def test_ppgt_svalbard(self):
         # Because Svalbard is a nicer word than Longyearbyen
-        # This taxi out includes de-icing and a turn on the runway 
+        # This taxi out includes de-icing and a turn on the runway
         lat_data=[]
         lon_data=[]
         hdg_data=[]
@@ -3094,20 +3094,20 @@ class TestGroundTrackPrecise(unittest.TestCase):
             self.lon = np.ma.masked_equal(np.ma.array(lon_data), 0.0)
             self.hdg = np.ma.masked_equal(np.ma.array(hdg_data), 0.0)
             self.gspd = np.ma.array(gspd_data)
-            
+
             la, lo = ground_track_precise(self.lat, self.lon, self.gspd,
                                            self.hdg, 1.0)
         self.assertTrue(True)
 
 
 class TestGtpBlendCurve(unittest.TestCase):
-    
+
     def test_gtp_blender(self):
         array = np.ma.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         expected = np.ma.array([1.0, 0.8, 0.6, 0.4, 0.2, 0.0])
         result = gtp_blend_curve(array)
         ma_test.assert_masked_array_almost_equal(result, expected)
-        
+
 
 class TestHashArray(unittest.TestCase):
     def test_hash_array(self):
@@ -4244,12 +4244,40 @@ class TestBlendParameters(unittest.TestCase):
 
         self.params = (p_alt_a, p_alt_b, p_alt_c)
 
-    def test_blend_parameters_assertion_errors(self):
+    def test_blend_parameters_errors(self):
         p1 = P(array=[0,0,0,1.0,2], frequency=1, offset=0.9)
         p2 = P(array=[1,2,3,4.0,5], frequency=1, offset=0.4)
         self.assertRaises(AssertionError, blend_parameters, (p1, p2), frequency=0.0)
         self.assertRaises(AssertionError, blend_parameters, (None, None))
         self.assertRaises(AssertionError, blend_parameters, (p1, p2), mode='silly')
+        self.assertRaises(ValueError, blend_parameters, (p1, p2), mode='cubic', validity='silly')
+
+    def test_cubic_validities(self):
+        p1 = P('Altitude Radio (A)', array=np.ma.array([1.0]*10, mask=[0]*10))
+        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10, mask=[1]*10))
+        p3 = P('Altitude Radio (C)', array=np.ma.array([4.0]*10, mask=[1]*10))
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
+        self.assertAlmostEqual(result[5], 1.0)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
+        self.assertEqual(result[5].mask, True)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
+        self.assertEqual(result[5].mask, True)
+
+        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10, mask=[0]*10))
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
+        self.assertAlmostEqual(result[5], 1.5)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
+        self.assertAlmostEqual(result[5], 1.5)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
+        self.assertEqual(result[5].mask, True)
+
+        p3 = P('Altitude Radio (C)', array=np.ma.array([3.0]*10, mask=[0]*10))
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
+        self.assertAlmostEqual(result[5], 2.0)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
+        self.assertAlmostEqual(result[5], 2.0)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
+        self.assertAlmostEqual(result[5], 2.0)
 
     def test_blend_linear_params_complex_example(self):
         result = blend_parameters(self.params, offset=0.0, frequency=2.0)
@@ -4330,7 +4358,7 @@ class TestBlendParameters(unittest.TestCase):
         p1 = P(array=[5,10,7,8,9], frequency=1, offset=0.1, name='First')
         p2 = P(array=[1,2,3,4,5], frequency=1, offset=0.0, name='Second')
         p1.array.mask = True
-        result = blend_parameters((p1, None, p2), mode='cubic')  # random None parameter too
+        result = blend_parameters((p1, None, p2), mode='cubic', validity='all_but_one')  # random None parameter too
         self.assertAlmostEqual(result[2], 3)
 
     def test_blend_cubic_two_parameters_lower_op_freq(self):
@@ -4340,6 +4368,13 @@ class TestBlendParameters(unittest.TestCase):
         result = blend_parameters((p1, p2), mode='cubic')
         self.assertAlmostEqual(len(result), 4)
 
+    def test_blend_parameters_outside_tolerance(self):
+        p1 = P(array=range(20), frequency=2, name='First')
+        p2 = P(array=[0]*10, frequency=1, name='Second')
+        result = blend_parameters((p1, p2), tolerance=9, frequency=1.0)
+        ma_test.assert_masked_array_equal(result, np.ma.array(data=np.arange(10), mask=[0]*5+[1]*5) * 4/3.0)
+        result = blend_parameters((p1, p2), tolerance=9, frequency=1.0, mode='cubic')
+        ma_test.assert_masked_array_almost_equal(result, np.ma.array(data=np.arange(10), mask=[1]+[0]*4+[1]*5) * 4 / 3.0)
 
 class TestBlendParametersWeighting(unittest.TestCase):
     def test_weighting(self):
@@ -4816,69 +4851,114 @@ class TestOffsetSelect(unittest.TestCase):
 
 
 class TestOverflowCorrection(unittest.TestCase):
+    '''
+    Overflow correction is applied in two stages, once in validation and
+    once in derived parameters, hence the double call, first without fast
+    and then with.
+    '''
     def test_overflow_correction_a320(self):
         fast = S(items=[Section('Fast', slice(336, 5397), 336, 5397),
                         Section('Fast', slice(5859, 11520), 5859, 11520)])
         radioA = load(os.path.join(
             test_data_path, 'A320_Altitude_Radio_A_overflow.nod'))
-        resA = overflow_correction(radioA, fast, max_val=4095)
+        resA = overflow_correction(overflow_correction(radioA.array, None), fast)
         sects = np.ma.clump_unmasked(resA)
         self.assertEqual(len(sects), 5)
-        self.assertEqual(resA.max(), 8191)
-        self.assertEqual(resA.min(), -1)
-        ##for sect in sects[0::2]:
-            ### takeoffs
-            ##self.assertAlmostEqual(resA[sect.start] / 10., 0, 0)
-        ##for sect in sects[1::2]:
-            ### landings
-            ##self.assertAlmostEqual(resA[sect.stop - 1] / 10., 0, 0)
+        self.assertEqual(resA.max(), 7168)
+        self.assertEqual(resA.min(), -2)
 
         radioB = load(os.path.join(
             test_data_path, 'A320_Altitude_Radio_B_overflow.nod'))
-        resB = overflow_correction(radioB, max_val=4095)
+        resB = overflow_correction(overflow_correction(radioB.array, None), fast)
         sects = np.ma.clump_unmasked(resB)
-        self.assertEqual(len(sects), 5)
-        self.assertEqual(resB.max(), 5917)
+        self.assertEqual(len(sects), 4)
+        self.assertEqual(resB.max(), 5918)
         self.assertEqual(resB.min(), -2)
-        ##for sect in sects[0::2]:
-            ### takeoffs
-            ##self.assertAlmostEqual(resB[sect.start] / 10., 0, 0)
-        ##for sect in sects[1::2]:
-            ### landings
-            ##self.assertAlmostEqual(resB[sect.stop - 1] / 10., 0, 0)
 
     def test_overflow_correction_a340(self):
         fast = S(items=[Section('Fast', slice(2000, 6500), 2000, 6500)])
         radioA = load(os.path.join(
             test_data_path, 'A340_Altitude_Radio_A_overflow.nod'))
-        resA = overflow_correction(radioA, fast, max_val=4095)
+        resA = overflow_correction(overflow_correction(radioA.array, None), fast)
         sects = np.ma.clump_unmasked(resA)
         # 1 section for climb, one for descent
         self.assertEqual(len(sects), 2)
-        self.assertEqual(resA.max(), 7852)
-        self.assertEqual(resA.min(), -2)
-        ##for sect in sects[0::2]:
-            ### takeoffs
-            ##self.assertAlmostEqual(resA[sect.start] / 10., 0, 0)
-        ##for sect in sects[1::2]:
-            ### landings
-            ##self.assertAlmostEqual(resA[sect.stop - 1] / 10., 0, 0)
+        self.assertEqual(resA.max(), 7855)
+        self.assertEqual(resA.min(), 0)
 
         radioB = load(os.path.join(
             test_data_path, 'A340_Altitude_Radio_B_overflow.nod'))
-        resB = overflow_correction(radioB, fast, max_val=4095)
+        resB = overflow_correction(overflow_correction(radioB.array, None), fast)
         sects = np.ma.clump_unmasked(resB)
         # 1 section for climb, one for descent
         self.assertEqual(len(sects), 2)
-        self.assertEqual(resB.max(), 7841)
-        self.assertEqual(resB.min(), -2)
-        ##for sect in sects[0::2]:
-            ### takeoffs
-            ##self.assertAlmostEqual(resB[sect.start] / 10., 0, 0)
-        ##for sect in sects[1::2]:
-            ### landings
-            ##self.assertAlmostEqual(resB[sect.stop - 1] / 10., 0, 0)
+        self.assertEqual(resB.max(), 7844)
+        self.assertEqual(resB.min(), 0)
 
+class TestOverflowCorrectionArray(unittest.TestCase):
+    '''
+    Most functions tested by TestOverflowCorrection above.
+    '''
+    def test_round_near_zero(self):
+        array = np.ma.array([-2060]*20, dtype=float)
+        result = overflow_correction_array(array)
+        self.assertEqual(result[10], -2060 + 2048)
+
+class TestPinToGround(unittest.TestCase):
+    '''
+    Revised version of pin to ground which only corrects multiples of the
+    overflow threshold, not small values which are best resolved by
+    Altitude Radio Offset Removed.
+    '''
+    def setUp(self):
+        self.fast_slices = [slice(3, 15)]
+        self.good_slices = [slice(1, 13)]
+        self.hz = 1.0
+
+    def test_basic(self):
+        array = np.ma.array(data = [4100]*5 + list(range(4100, 5100, 100)),
+                            mask = [1] + [0]*12 + [1]*2, dtype=float)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
+        self.assertEqual(result[2], 4)
+
+    def test_negative(self):
+        array = np.ma.array(data = [-4100]*5 + list(range(-4100, -3000, 100)),
+                            mask = [1] + [0]*12 + [1]*3, dtype=float)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
+        self.assertEqual(result[2], -4)
+
+    def test_small_powers(self):
+        array = np.ma.array(data = [4]*5 + list(range(5, 15)),
+                            mask = [1] + [0]*12 + [1]*2, dtype=float)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
+        self.assertEqual(result[2], 4)
+
+    def test_short_slice_masked(self):
+        array = np.ma.array(data = [4]*5 + list(range(5, 15)), dtype=float)
+        result = pin_to_ground(array, [slice(10, 13)], self.fast_slices, self.hz)
+        self.assertEqual(result[11].mask, True)
+
+    def test_spreading_corrections(self):
+        '''
+        This checks that corrections of 1024 and 2048 ft are propagated forwards
+        and backwards, and that the "middle" value is taken from the closest in time.
+        '''
+        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10, dtype=float)
+        my_fast_slices = [slice(12, 52)]
+        my_good_slices = [slice(1, 5), slice(10, 15), slice(20, 24), slice(31, 35), slice(40, 45), slice(50, 55), slice(60, 65)]
+        result = pin_to_ground(array, my_good_slices, my_fast_slices, hz=0.1)
+        self.assertEqual(list(result[2::10]), [0, -24, -48, -96, -72, -48, -24])
+
+    def test_avoid_infinite_loop(self):
+        '''
+        An error in coding led to an infinite loop condition which this test detects
+        by making all the slices so short they are suppressed.
+        '''
+        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10, dtype=float)
+        my_fast_slices = [slice(12, 52)]
+        my_good_slices = [slice(20,24), slice(31,35), slice(40,45)]
+        result = pin_to_ground(array, my_good_slices, my_fast_slices, hz=1.0)
+        self.assertEqual(True, True) # Simply getting here is a pass!
 
 class TestPeakCurvature(unittest.TestCase):
     # Also known as the "Truck and Trailer" algorithm, this detects the peak
@@ -5075,8 +5155,8 @@ class TestRateOfChangeArray(unittest.TestCase):
         assert_array_almost_equal(sloped.data, answer)
         sloped = rate_of_change_array(test_array, 1.0, width=7)
         assert_array_almost_equal(sloped.data, answer)
-        
-        
+
+
     def test_case_short_data(self):
         test_array = np.ma.array([0,1,2,3,4], dtype=float)
         sloped = rate_of_change_array(test_array, 2.0, 10.0)
@@ -5497,20 +5577,20 @@ class TestRunwayHeading(unittest.TestCase):
         result = runway_heading(rwy.value[0]['runway'])
         self.assertGreater(result, 298)
         self.assertLess(result, 302)
-        
+
     # This case tests handling of a rare database error in open source airport databases.
     def test_database_reversed(self):
         rwy = A(name='Nadi',
                 value=[{'runway': {'end': {'latitude': -17.7727,
                                            'longitude': 177.429},
-                                   'start': {'latitude': -17.7499, 
+                                   'start': {'latitude': -17.7499,
                                              'longitude': 177.44756},
                                    'magnetic_heading': 2.4,
                                    'identifier': '20'}}])
         result = runway_heading(rwy.value[0]['runway'])
         # Runway 20 at Nadi is 37 deg by Google Earth
         self.assertGreater(result, 35)
-        self.assertLess(result, 40) 
+        self.assertLess(result, 40)
 
 
 class TestRunwayLength(unittest.TestCase):
@@ -5590,7 +5670,7 @@ class TestRunwayTouchdown(unittest.TestCase):
         self.assertEqual(tdn_dist, 265)
         self.assertAlmostEqual(coords['latitude'], 33.295982, places=4)
         self.assertAlmostEqual(coords['longitude'], -111.915803, places=4)
-        
+
     def test_runway_touchdown_zero(self):
         # Helipads have zero length, for example Battersea  :o)
         runway = {'start': {'latitude': 51.469955, 'longitude': -0.179543},
@@ -5598,7 +5678,7 @@ class TestRunwayTouchdown(unittest.TestCase):
         tdn_dist, coords = runway_touchdown(runway)
         self.assertEqual(tdn_dist, 0)
         self.assertAlmostEqual(coords['latitude'], 51.469955)
-        self.assertAlmostEqual(coords['longitude'], -0.179543, places=4)        
+        self.assertAlmostEqual(coords['longitude'], -0.179543, places=4)
 
 """
 class TestSectionContainsKti(unittest.TestCase):
@@ -6355,19 +6435,19 @@ class TestSlicesOverlap(unittest.TestCase):
         self.assertRaises(ValueError, slices_overlap, first, slice(1,2,-1))
 
 class TestSlicesOverlapMerge(unittest.TestCase):
-    
+
     def test_slices_overlap_merge_basic(self):
         first = [slice(10,20)]
         second = [slice(15,25)]
         self.assertEqual(slices_overlap_merge(first, second),
                          [slice(10, 25)])
-    
+
     def test_slices_overlap_merge_no_overlap(self):
         first = [slice(10,20)]
         second = [slice(25,35)]
         self.assertEqual(slices_overlap_merge(first, second),
                          [slice(10, 20)])
-    
+
     def test_slices_overlap_merge_no_first(self):
         first = []
         second = [slice(25,35)]
@@ -6378,12 +6458,18 @@ class TestSlicesOverlapMerge(unittest.TestCase):
         second = []
         self.assertEqual(slices_overlap_merge(first, second),
                          [slice(10, 20)])
-        
-    def test_slices_everlap_extend(self):
-        first = [slice(10,20)]
-        second = [slice(25,35)]
+
+    def test_slices_overlap_extend_start(self):
+        first = [slice(20,35)]
+        second = [slice(10,25)]
+        self.assertEqual(slices_overlap_merge(first, second, extend_start=2),
+                             [slice(8, 35)])
+
+    def test_slices_overlap_extend_stop(self):
+        first = [slice(10,25)]
+        second = [slice(20,35)]
         self.assertEqual(slices_overlap_merge(first, second, extend_stop=2),
-                             [slice(10, 22)])
+                             [slice(10, 37)])
 
 class TestSlicesOverlay(unittest.TestCase):
     def test_slices_and(self):
@@ -6431,7 +6517,7 @@ class TestSlicesRemoveOverlaps(unittest.TestCase):
         newlist = slices_remove_overlaps(slices)
         expected = [slice(2, 22)]
         self.assertEqual(expected, newlist)
-    
+
     def test_complex(self):
         slices = [slice(*s) for s in ((538, 570), (571, 582), (605, 606), (539, 540), (541, 544), (545, 546), (547, 558), (559, 561), (562, 563), (564, 582))]
         newlist = slices_remove_overlaps(slices)
@@ -6487,7 +6573,7 @@ class TestSlicesRemoveSmallGaps(unittest.TestCase):
         slicelist = [slice(1, None), slice(4,6), slice(None, 8)]
         newlist = slices_remove_small_gaps(slicelist)
         self.assertEqual(newlist, [slice(None, None, None)])
-    
+
     def test_unsorted_slices(self):
         slicelist = [slice(*s) for s in (
             (2565, 4378), (1911, 2277), (1642, 1817), (631, 796), (820, 892), (2420, 2489),
@@ -7054,12 +7140,12 @@ class TestSmoothSignal(unittest.TestCase):
         self.signal_to_smooth = signal.array[_slices[2]]
 
     def test_smooth_signal_flat(self):
-        expected = [ 
+        expected = [
             0.9668, 0.9844, 1.0371, 1.0547, 1.0723, 1.125, 1.1953, 1.2656,
-            1.3359, 1.3887, 1.4238, 1.4766, 1.5469, 1.6172, 1.6875, 1.7402, 
-            1.7754, 1.8281, 1.8984, 1.9687, 2.039, 2.0918, 2.1094, 2.1269,         
+            1.3359, 1.3887, 1.4238, 1.4766, 1.5469, 1.6172, 1.6875, 1.7402,
+            1.7754, 1.8281, 1.8984, 1.9687, 2.039, 2.0918, 2.1094, 2.1269,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='flat')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7073,7 +7159,7 @@ class TestSmoothSignal(unittest.TestCase):
             1.4062, 1.4282, 1.5161, 1.6479, 1.7358, 1.7578, 1.7798, 1.8677,
             1.9995, 2.0874, 2.1094, 2.1313,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='hanning')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7088,7 +7174,7 @@ class TestSmoothSignal(unittest.TestCase):
             1.7547, 1.7609, 1.7884, 1.8732, 1.994, 2.0788, 2.1062, 2.1094,
             2.1125, 2.1305,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='hamming')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7102,7 +7188,7 @@ class TestSmoothSignal(unittest.TestCase):
             1.4062, 1.4282, 1.5161, 1.6479, 1.7358, 1.7578, 1.7798, 1.8677,
             1.9995, 2.0874, 2.1094, 2.1313,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='bartlett')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7116,7 +7202,7 @@ class TestSmoothSignal(unittest.TestCase):
             1.4062, 1.424, 1.5119, 1.6521, 1.74, 1.7578, 1.7756, 1.8635,
             2.0037, 2.0916, 2.1094, 2.1271,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='blackman')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7731,7 +7817,7 @@ class TestAlt2Sat(unittest.TestCase):
         ma_test.assert_masked_array_almost_equal(value, truth)
 
 class TestAltDev2Alt(unittest.TestCase):
-    
+
     def test_on_ISA(self):
         alt = np.ma.array([0.0, 3000.0, 30000.0])
         dev = np.ma.array([0.0, 0.0, 0.0])
@@ -7748,15 +7834,15 @@ class TestAltDev2Alt(unittest.TestCase):
 
 
 class TestFromIsa(unittest.TestCase):
-    
+
     def test_from_ISA(self):
         self.assertEqual(from_isa(0.0, 15.0), 0.0)
         self.assertEqual(from_isa(0.0, 0.0), -15.0)
         self.assertAlmostEqual(from_isa(5000.0, 0.0), -5.094)
         self.assertAlmostEqual(from_isa(5000.0, -30), -35.094)
         self.assertEqual(from_isa(40000.0, 0.0), None)
-                
-        
+
+
 class TestLevelOffIndex(unittest.TestCase):
     def test_level_off_index_index_array_too_small(self):
         self.assertEqual(level_off_index(np.ma.arange(5), 1, 10, 1), None)

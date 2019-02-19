@@ -193,6 +193,11 @@ ALTITUDE_FOR_CLB_CRU_DSC = 12500
 # NB: Negative offsets are not corrected, assumed to be from oleo compression.
 ALTITUDE_RADIO_OFFSET_LIMIT = 10.0
 
+# When in the cruise, an aircraft can get short periods of radio altimeter 
+# signal when overflying other aircraft. This period is suppressed to avoid
+# nuisance returns.
+ALTITUDE_RADIO_OVERFLY_SUPPRESSION = 30.0
+
 # Minimum descent height range for an approach and landing phase.
 APPROACH_MIN_DESCENT = 500
 

@@ -3980,7 +3980,7 @@ class TestMatchAltitudes(unittest.TestCase):
 
 class TestMaxValue(unittest.TestCase):
     def test_max_value(self):
-        array = np.ma.array(list(range(50,100)) + list(range(100,50,-1)))
+        array = np.ma.concatenate([np.arange(50,100), np.arange(100,50,-1)])
         i, v = max_value(array)
         self.assertEqual(i, 50)
         self.assertEqual(v, 100)
@@ -3995,31 +3995,31 @@ class TestMaxValue(unittest.TestCase):
         ##self.assertEqual(res, (69, 81)) # you can get this if you use slice.stop!
 
     def test_max_value_non_integer_slices_no_limits(self):
-        array = np.ma.arange(5)+10
+        array = np.ma.arange(10, 15)
         i, v, = max_value(array)
         self.assertEqual(i, 4)
         self.assertEqual(v, 14)
 
     def test_max_value_integer_slices(self):
-        array = np.ma.arange(10)+10
+        array = np.ma.arange(10, 20)
         i, v, = max_value(array, slice(2,4))
         self.assertEqual(i, 3)
         self.assertEqual(v, 13)
 
     def test_max_value_non_integer_upper_edge(self):
-        array = np.ma.arange(5)+10
+        array = np.ma.arange(10, 15)
         i, v, = max_value(array, slice(2,3),None,3.7)
         self.assertEqual(i, 3.7)
         self.assertEqual(v, 13.7)
 
     def test_max_value_non_integer_lower_edge(self):
-        array = 20-np.ma.arange(5)
+        array = np.ma.arange(20, 15, -1)
         i, v, = max_value(array, slice(2,3),1.3,None)
         self.assertEqual(i, 1.3)
         self.assertEqual(v, 18.7)
 
     def test_max_value_slice_mismatch(self):
-        array = np.ma.arange(5)+10
+        array = np.ma.arange(10, 15)
         i, v, = max_value(array, slice(100,101))
         self.assertEqual(i, None)
         self.assertEqual(v, None)
@@ -4055,7 +4055,7 @@ class TestAverageValue(unittest.TestCase):
 
 class TestMedianValue(unittest.TestCase):
     def test_median_value(self):
-        array = np.ma.array(list(range(6)) + list(range(4)))
+        array = np.ma.concatenate([np.arange(6), np.arange(4)])
         self.assertEqual(median_value(array), Value(5, 2))
 
         array = np.ma.arange(30)
@@ -4064,7 +4064,7 @@ class TestMedianValue(unittest.TestCase):
 
 class TestMaxAbsValue(unittest.TestCase):
     def test_max_abs_value(self):
-        array = np.ma.array(list(range(-20,30)) + list(range(10,-41, -1)) + list(range(10)))
+        array = np.ma.concatenate([np.arange(-20,30), np.arange(10,-41, -1), np.arange(10)])
         self.assertEqual(max_abs_value(array), (100, -40))
         array = array*-1.0
         self.assertEqual(max_abs_value(array), (100, 40))
@@ -4107,7 +4107,7 @@ class TestMergeMasks(unittest.TestCase):
 
 class TestMergeSources(unittest.TestCase):
     def test_merge_sources_basic(self):
-        p1 = np.ma.array([0]*4)
+        p1 = np.ma.zeros(4)
         p2 = np.ma.array([1,2,3,4])
         result = merge_sources(p1, p2)
         expected = np.ma.array([0,1,0,2,0,3,0,4])
@@ -4116,8 +4116,8 @@ class TestMergeSources(unittest.TestCase):
 
 class TestMergeTwoParameters(unittest.TestCase):
     def test_merge_two_parameters_offset_ordered_forward(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1,2,3,4], frequency=1, offset=0.4)
+        p1 = P(array=np.ma.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ma.arange(1, 5), frequency=1, offset=0.4)
         arr, freq, off = merge_two_parameters(p1, p2)
         self.assertEqual(arr[1], 1.0) # Differs from blend function here.
         self.assertEqual(freq, 2)
@@ -4125,31 +4125,31 @@ class TestMergeTwoParameters(unittest.TestCase):
 
     def test_merge_two_parameters_offset_ordered_backward(self):
         p1 = P(array=[5,10,7,8], frequency=2, offset=0.3)
-        p2 = P(array=[1,2,3,4], frequency=2, offset=0.1)
+        p2 = P(array=np.ma.arange(1, 5), frequency=2, offset=0.1)
         arr, freq, off = merge_two_parameters(p1, p2)
         self.assertEqual(arr[3], 10.0)
         self.assertEqual(freq, 4)
         self.assertAlmostEqual(off, 0.075)
 
     def test_merge_two_parameters_assertion_error(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1]*4, frequency=2, offset=0.2)
+        p1 = P(array=np.ma.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ma.ones(4), frequency=2, offset=0.2)
         self.assertRaises(AssertionError, merge_two_parameters, p1, p2)
 
     def test_merge_two_parameters_array_mismatch_error(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1]*3, frequency=1, offset=0.2)
+        p1 = P(array=np.ma.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ma.ones(3), frequency=1, offset=0.2)
         self.assertRaises(AssertionError, merge_two_parameters, p1, p2)
 
     def test_merge_two_parameters_arrays_biassed_error(self):
-        p1 = P(array=[0]*4, name='One', frequency=1, offset=0.9)
-        p2 = P(array=[1]*4, name='Two', frequency=1, offset=0.9)
+        p1 = P(array=np.ma.zeros(4), name='One', frequency=1, offset=0.9)
+        p2 = P(array=np.ma.ones(4), name='Two', frequency=1, offset=0.9)
         self.assertRaises(ValueError, merge_two_parameters, p1, p2)
 
 
 class TestMinValue(unittest.TestCase):
     def test_min_value(self):
-        array = np.ma.array(list(range(50,100)) + list(range(100,50,-1)))
+        array = np.ma.concatenate([np.arange(50,100), np.arange(100,50,-1)])
         i, v = min_value(array)
         self.assertEqual(i, 0)
         self.assertEqual(v, 50)
@@ -4253,9 +4253,9 @@ class TestBlendParameters(unittest.TestCase):
         self.assertRaises(ValueError, blend_parameters, (p1, p2), mode='cubic', validity='silly')
 
     def test_cubic_validities(self):
-        p1 = P('Altitude Radio (A)', array=np.ma.array([1.0]*10, mask=[0]*10))
-        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10, mask=[1]*10))
-        p3 = P('Altitude Radio (C)', array=np.ma.array([4.0]*10, mask=[1]*10))
+        p1 = P('Altitude Radio (A)', array=np.ma.array([1.0]*10))
+        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10, mask=True))
+        p3 = P('Altitude Radio (C)', array=np.ma.array([4.0]*10, mask=True))
         result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
         self.assertAlmostEqual(result[5], 1.0)
         result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
@@ -4263,7 +4263,7 @@ class TestBlendParameters(unittest.TestCase):
         result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
         self.assertEqual(result[5].mask, True)
 
-        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10, mask=[0]*10))
+        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10))
         result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
         self.assertAlmostEqual(result[5], 1.5)
         result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
@@ -4271,7 +4271,7 @@ class TestBlendParameters(unittest.TestCase):
         result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
         self.assertEqual(result[5].mask, True)
 
-        p3 = P('Altitude Radio (C)', array=np.ma.array([3.0]*10, mask=[0]*10))
+        p3 = P('Altitude Radio (C)', array=np.ma.array([3.0]*10))
         result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
         self.assertAlmostEqual(result[5], 2.0)
         result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
@@ -4369,12 +4369,13 @@ class TestBlendParameters(unittest.TestCase):
         self.assertAlmostEqual(len(result), 4)
 
     def test_blend_parameters_outside_tolerance(self):
-        p1 = P(array=range(20), frequency=2, name='First')
-        p2 = P(array=[0]*10, frequency=1, name='Second')
+        p1 = P(array=np.ma.arange(20), frequency=2, name='First')
+        p2 = P(array=np.ma.zeros(10), frequency=1, name='Second')
         result = blend_parameters((p1, p2), tolerance=9, frequency=1.0)
         ma_test.assert_masked_array_equal(result, np.ma.array(data=np.arange(10), mask=[0]*5+[1]*5) * 4/3.0)
         result = blend_parameters((p1, p2), tolerance=9, frequency=1.0, mode='cubic')
         ma_test.assert_masked_array_almost_equal(result, np.ma.array(data=np.arange(10), mask=[1]+[0]*4+[1]*5) * 4 / 3.0)
+
 
 class TestBlendParametersWeighting(unittest.TestCase):
     def test_weighting(self):
@@ -4441,13 +4442,13 @@ class TestBlendTwoParameters(unittest.TestCase):
         self.assertEqual(off, 0.05)
 
     def test_blend_two_parameters_assertion_error(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1]*4, frequency=2, offset=0.2)
+        p1 = P(array=np.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ones(4), frequency=2, offset=0.2)
         self.assertRaises(AssertionError, blend_two_parameters, p1, p2)
 
     def test_blend_two_parameters_array_mismatch_error(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1]*3, frequency=2, offset=0.2)
+        p1 = P(array=np.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ones(3), frequency=2, offset=0.2)
         self.assertRaises(AssertionError, blend_two_parameters, p1, p2)
 
     def test_blend_two_parameters_param_one_rubbish(self):
@@ -4566,8 +4567,8 @@ class TestMostPointsCost(unittest.TestCase):
 
     def test_mpc_basic(self):
         coefs=[0.0,1.0]
-        x = np.ma.array([0.0, 0.0, 0.0])
-        y = np.ma.array([0.0, 0.0, 0.0])
+        x = np.ma.zeros(3, dtype=np.float64)
+        y = np.ma.zeros(3, dtype=np.float64)
         result = most_points_cost(coefs, x, y)
         self.assertAlmostEqual(result, 0.003, places=3)
 
@@ -6802,7 +6803,7 @@ class TestStepValues(unittest.TestCase):
 
     def test_step_values(self):
         # borrowed from TestSlat
-        array = np.ma.array(list(range(25)) + list(range(-5,0)))
+        array = np.ma.concatenate([np.arange(25), np.arange(-5,0)])
         array[1] = np.ma.masked
         array = step_values(array, ( 0, 16, 20, 23))
         self.assertEqual(len(array), 30)
@@ -6828,7 +6829,7 @@ class TestStepValues(unittest.TestCase):
         ##self.assertEqual(list(stepped),
                          ##[0]*3+[1]+[5]*6+[10]+[15]*3+[10]*3+[5]+[1]*5+[0]*3)
         # now this:
-        self.assertEqual(list(stepped),
+        self.assertEqual(stepped.tolist(),
                          [0]*3+[1]+[5]*5+[10]*2+[15]*2+[10]*3+[5]*2+[1]*5+[0]*3)
 
     def test_step_move_start(self):
@@ -6845,7 +6846,7 @@ class TestStepValues(unittest.TestCase):
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_start')
-        self.assertEqual(list(stepped),
+        self.assertEqual(stepped.tolist(),
                          [0]*11+[1]*3+[5]*19+[15]*26+[5]*7+[1]*19+[0]*11)
 
     @unittest.skip('skip was used when creating Flap Lever from Flap Surface '
@@ -6863,7 +6864,7 @@ class TestStepValues(unittest.TestCase):
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_start',
                               skip=True, rate_threshold=0.1)
-        self.assertEqual(list(stepped), [0]*10+[15]*47+[0]*39)
+        self.assertEqual(stepped.tolist(), [0]*10+[15]*47+[0]*39)
 
     def test_step_midpoint_real_data(self):
         array = np.ma.array([0, 0, 0, 0, 0, 0, 0.12, 0.37, 0.5, 0.49, 0.49,
@@ -6874,7 +6875,7 @@ class TestStepValues(unittest.TestCase):
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='midpoint')
-        self.assertEqual(list(stepped),
+        self.assertEqual(stepped.tolist(),
                          [0]*11+[1]*12+[5]*13+[15]*24+[5]*13+[1]*12+[0]*11)
 
     def test_step_excluding_transition_real_data(self):
@@ -6886,7 +6887,7 @@ class TestStepValues(unittest.TestCase):
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='excluding_transition')
-        self.assertEqual(list(stepped), [0]*11+[1]*19+[5]*7+[15]*22+[5]*7+[1]*19+[0]*11)
+        self.assertEqual(stepped.tolist(), [0]*11+[1]*19+[5]*7+[15]*22+[5]*7+[1]*19+[0]*11)
 
 
     def test_step_including_transition_real_data(self):
@@ -6898,13 +6899,13 @@ class TestStepValues(unittest.TestCase):
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='including_transition')
-        self.assertEqual(list(stepped),[0]*11+[1]*3+[5]*19+[15]*30+[5]*19+[1]*3+[0]*11)
+        self.assertEqual(stepped.tolist(),[0]*11+[1]*3+[5]*19+[15]*30+[5]*19+[1]*3+[0]*11)
 
     def test_step_including_transition_edge_case(self):
         # This set of values caused problems with a low sample rate flap (767-4 frame)
         array = np.ma.array([0, 1, 1, 1, 1, 0.878, 0.5270, 0.0, 0.0, 0.0, 0.45, 1])
         stepped = step_values(array, (0, 1), hz=0.25, step_at='including_transition')
-        self.assertEqual(list(stepped),[0]+[1]*6+[0]*3+[1]*2)
+        self.assertEqual(stepped.tolist(),[0]+[1]*6+[0]*3+[1]*2)
 
     @unittest.skip("move_stop no longer in use")
     def test_step_trailing_edge_real_data(self):
@@ -6919,7 +6920,7 @@ class TestStepValues(unittest.TestCase):
         self.assertRaises(ValueError, step_values, array, (0, 1, 5, 15),
                           step_at='move_end')
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_stop')
-        self.assertEqual(list(stepped),
+        self.assertEqual(stepped.tolist(),
                          [0]*12+[1]*18+[5]*7+[15]*26+[5]*19+[1]*6+[0]*8)
 
     def test_step_trailing_edge_masked_data(self):
@@ -6931,7 +6932,7 @@ class TestStepValues(unittest.TestCase):
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_stop')
         expected = np.ma.array([5.0]*24+[0.0]*4)
         expected[:4] = np.ma.masked
-        self.assertEqual(list(stepped), list(expected))
+        self.assertEqual(stepped.tolist(), expected.tolist())
 
     def test_flap_transition_real_data(self):
         flap = load(os.path.join(test_data_path,
@@ -7731,8 +7732,7 @@ class TestDelay(unittest.TestCase):
     def test_excessive(self):
         array=np.ma.arange(5)
         result = delay(array,20)
-        expected = np.ma.array(data=[0,0,0,0,0],
-                               mask=[1,1,1,1,1])
+        expected = np.ma.array(np.zeros(5), mask=True)
         ma_test.assert_masked_array_approx_equal(result, expected)
 
 class TestDp2Cas(unittest.TestCase):
@@ -8575,7 +8575,7 @@ class TestMaxMaintainedValue(unittest.TestCase):
 
 class TestPy2Round(unittest.TestCase):
     def test_py2round(self):
-        test_range = list(np.arange(0,100,0.1))
+        test_range = np.arange(0, 100, 0.1).tolist()
         rounded = [py2round(n) for n in test_range]
         expected = [float(0)]*5
         for n in range(1,100):

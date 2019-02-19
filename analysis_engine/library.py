@@ -5428,7 +5428,7 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
     for f in fast_slices:
         begin_step = end_step = begin_peak = end_peak = 0.0
         end_peak_idx = len(array)
-        for n, sl in enumerate(good_slices):
+        for sl in good_slices:
             if is_index_within_slice(f.start, sl):
                 # go_fast starts in the slice
                 begin_step = nearest_step(array[int(f.start)])
@@ -5450,9 +5450,9 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
 
         # We have the corrections for either the start or end of the fast slice, so
         # apply this to all sections wholly within the fast slice.
-        for n, sl in enumerate(good_slices):
+        for sl in good_slices:
             if is_slice_within_slice(sl, f):
-                if sl.start - begin_peak_idx < end_peak_idx - sl.stop:
+                if sl.start - (sl.stop - 1) < end_peak_idx - sl.stop:
                     delta = array[sl.start] - begin_peak
                 else:
                     delta = array[sl.stop - 1] - end_peak
@@ -5460,7 +5460,7 @@ def pin_to_ground(array, good_slices, fast_slices, hz=1.0):
 
     # Everything not fast must be on the ground
     for g in slices_not(fast_slices, begin_at=0, end_at=len(array)):
-        for n, sl in enumerate(good_slices):
+        for sl in good_slices:
             if is_slice_within_slice(sl, g):
                 delta = nearest_step(np.ma.average(array[sl]))
                 array[sl] -=  delta

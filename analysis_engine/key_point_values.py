@@ -7797,22 +7797,22 @@ class TakeoffTurnOntoRunwayTakeoffRollStartDistance(KeyPointValueNode):
 
         # calculate some distances
         # between the turn onto the runway and the start of takeoff roll
-        # we use the start of Takeoff phase as it proved to be more reliable than the 'Takeoff Turn Onto Runway' KTI
+        # we use the start of Takeoff phase as it was proved to be more reliable than the 'Takeoff Turn Onto Runway' KTI
         roll_distance = great_circle_distance__haversine(to_accel_start_point[0], to_accel_start_point[1],
                                                          to_turn_onto_runway_point[0], to_turn_onto_runway_point[1])
 
         # runway length
-        rwy_length = great_circle_distance__haversine(to_rwy.value['end']['latitude'], to_rwy.value['end']['longitude'],
-                                                      opposite_runway['end']['latitude'], opposite_runway['end']['longitude'])
+        rwy_length = great_circle_distance__haversine(to_rwy_lat, to_rwy_lon,
+                                                      to_threshold[0], to_threshold[1])
 
         # in order to cover the 'straight in' cases where the taxiway extends the runway we will need to see whether our
         # turn onto the runway didn't happen further than the takeoff threshold
-        turn_onto_rwy_distance = great_circle_distance__haversine(to_rwy.value['end']['latitude'], to_rwy.value['end']['longitude'],
+        turn_onto_rwy_distance = great_circle_distance__haversine(to_rwy_lat, to_rwy_lon,
                                                                   to_turn_onto_runway_point[0], to_turn_onto_runway_point[1])
 
         # check whether the takeoff roll didn't start before the runway threshold - straight in case with TO commenced too early
-        to_roll_distance = great_circle_distance__haversine(opposite_runway['end']['latitude'], opposite_runway['end']['longitude'],
-                                                                  to_accel_start_point[0], to_accel_start_point[1])
+        to_roll_distance = great_circle_distance__haversine(to_threshold[0], to_threshold[1],
+                                                            to_accel_start_point[0], to_accel_start_point[1])
 
         threshold_roll_start_distance = great_circle_distance__haversine(to_threshold[0], to_threshold[1],
                                                                          to_accel_start_point[0], to_accel_start_point[1])
@@ -7828,7 +7828,6 @@ class TakeoffTurnOntoRunwayTakeoffRollStartDistance(KeyPointValueNode):
         # this is a 'normal' case - just need a distance
         else:
             self.create_kpv(accel_start[0].index, roll_distance)
-
 
 
 ##############################################################################

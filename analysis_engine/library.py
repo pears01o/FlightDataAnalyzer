@@ -5358,6 +5358,7 @@ def overflow_correction(array, fast=None, hz=1):
     :param hz: array sample rate
     :type hz: float
     '''
+    array = array.astype(np.float64)  # int32 not supported
     good_slices = slices_remove_small_slices(
         slices_remove_small_gaps(np.ma.clump_unmasked(array),
                                  time_limit=10, hz=hz),

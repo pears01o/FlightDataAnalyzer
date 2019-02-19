@@ -74,6 +74,7 @@ class IntegrationError(ValueError):
 def all_deps(cls, available):
     return all(x in available for x in cls.get_dependency_names())
 
+
 def any_deps(cls, available):
     return any(x in available for x in cls.get_dependency_names())
 
@@ -574,6 +575,7 @@ def mapped_array_to_string_array(array):
     string_array.mask = array.mask
     return string_array
 
+
 def ambiguous_runway(rwy):
     # There are a number of runway related KPVs that we only create if we
     # know the actual runway we landed on. Where there is ambiguity the
@@ -622,8 +624,8 @@ def bearings_and_distances(latitudes, longitudes, reference):
     suit the POLARIS project.
     """
 
-    lat_array = latitudes*deg2rad
-    lon_array = longitudes*deg2rad
+    lat_array = latitudes * deg2rad
+    lon_array = longitudes * deg2rad
     lat_ref = radians(reference['latitude'])
     lon_ref = radians(reference['longitude'])
 
@@ -1057,13 +1059,13 @@ def _create_phase_mask(array, hz, offset, a, b, which_side):
         a, b = b, a # Swap them over to make sure a is the smaller.
 
     # Convert times a,b to indices ia, ib and check they are within the array.
-    ia = int((a-offset)*hz)
-    if ia < (a-offset)*hz:
+    ia = int((a - offset) * hz)
+    if ia < (a - offset) * hz:
         ia += 1
     if ia < 0 or ia > length:
         raise ValueError('Phase mask index out of range')
 
-    ib = int((b-offset)*hz) + 1
+    ib = int((b - offset) * hz) + 1
     if ib < 0 or ib > length:
         raise ValueError('Phase mask index out of range')
 
@@ -1079,7 +1081,7 @@ def _create_phase_mask(array, hz, offset, a, b, which_side):
         m[ib:]  = False
 
     # Return the masked array containing reference data and the created mask.
-    return np.ma.MaskedArray(array, mask = m)
+    return np.ma.MaskedArray(array, mask=m)
 
 
 def cycle_counter(array, min_step, max_time, hz, offset=0):
@@ -6802,26 +6804,16 @@ def excluding_transition(array, steps, hz=1, time_limit=1):
     return output
 
 
-def surface_for_synthetic(inc_trans, exc_trans, val_mapping):
+def surface_for_synthetic(inc_trans, exc_trans, values_mapping):
 
     output = MappedArray(np_ma_masked_zeros_like(inc_trans.array),
-                         values_mapping=val_mapping)
-    sections_inc = []
-    sections_exc = []
-    for value in val_mapping:
-        sections_inc.append(runs_of_ones(inc_trans.array == value))
-        sections_exc.append(runs_of_ones(exc_trans.array == value))
-    sections_inc = sorted(list(itertools.chain.from_iterable(sections_inc)))
-    sections_exc = sorted(list(itertools.chain.from_iterable(sections_exc)))
+                         values_mapping=values_mapping)
+    sections_inc = sorted(itertools.chain.from_iterable(runs_of_ones(inc_trans.array == v) for v in values_mapping))
+    sections_exc = sorted(itertools.chain.from_iterable(runs_of_ones(exc_trans.array == v) for v in values_mapping))
 
     # use sections to populate inc and exc positions in order
-    inc_in_order = []
-    exc_in_order = []
-    for s in sections_inc:
-        inc_in_order.append(np.ma.average(inc_trans.array[s]))
-
-    for s in sections_exc:
-        exc_in_order.append(np.ma.average(exc_trans.array[s]))
+    inc_in_order = [np.ma.average(inc_trans.array[s]) for s in sections_inc]
+    exc_in_order = [np.ma.average(exc_trans.array[s]) for s in sections_exc]
 
     # find where we're extending and where retracting, populate self.array with flap_inc on extension and flap_exc
     # on retraction
@@ -6838,9 +6830,10 @@ def surface_for_synthetic(inc_trans, exc_trans, val_mapping):
 
     # fill in the gaps
     for gap in np.ma.clump_masked(output):
-        before = output[max(gap.start - 1, 0)]
-        after = output[min(gap.stop, len(output) - 1)]
-        output[gap] = max(before, after)
+        if gap.start == 0 or gap.stop == len(output):
+            output[gap] = np.ma.masked
+        else:
+            output[gap] = max(output[gap.start - 1], output[gap.stop], key=int)
 
     return output
 

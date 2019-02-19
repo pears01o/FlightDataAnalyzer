@@ -163,21 +163,16 @@ class GoAroundAndClimbout(FlightPhaseNode):
     def derive(self, alt_aal=P('Altitude AAL For Flight Phases'),
                level_flights=S('Level Flight')):
         # Find the ups and downs in the height trace.
-        level_flights = level_flights.get_slices() if level_flights else None
         low_alt_slices = find_low_alts(
             alt_aal.array, alt_aal.frequency, 3000,
             start_alt=500, stop_alt=2000,
-            level_flights=level_flights,
+            level_flights=level_flights.get_slices() if level_flights else None,
             relative_start=True,
             relative_stop=True,
         )
-        dlc_slices = []
-        for low_alt in low_alt_slices:
-            if (alt_aal.array[int(low_alt.start)] and
-                alt_aal.array[int(low_alt.stop - 1)]):
-                dlc_slices.append(low_alt)
-
-        self.create_phases(dlc_slices)
+        self.create_phases(s for s in low_alt_slices if
+                           alt_aal.array[int(s.start)] and
+                           alt_aal.array[int(s.stop - 1)])
 
 
 class Holding(FlightPhaseNode):
@@ -212,7 +207,7 @@ class Holding(FlightPhaseNode):
         # increases.
         turn_bands = np.ma.clump_unmasked(
             np.ma.masked_less(turn_rate[slices_int(to_scan)], 0.6))
-        hold_bands=[]
+        hold_bands = []
         for turn_band in shift_slices(turn_bands, to_scan.start):
             # Reject short periods and check that the average groundspeed was
             # low. The index is reduced by one sample to avoid overruns, and
@@ -267,7 +262,6 @@ class ApproachAndLanding(FlightPhaseNode):
     # Force to remove problem with desynchronising of approaches and landings
     # (when offset > 0.5)
     align_offset = 0
-
 
     @classmethod
     def can_operate(cls, available, ac_type=A('Aircraft Type'), seg_type=A('Segment Type')):
@@ -1107,10 +1101,10 @@ class InitialClimb(FlightPhaseNode):
 
 class LevelFlight(FlightPhaseNode):
     '''
-    Level flight for at least 20 seconds. 
-    
+    Level flight for at least 20 seconds.
+
     This now excludes extended touch and go operations which are level, but
-    below 5ft above the runway. We have seen almost a minute on the runway, 
+    below 5ft above the runway. We have seen almost a minute on the runway,
     so this algorithm does not include a time limit for such actions.
     '''
     def derive(self,

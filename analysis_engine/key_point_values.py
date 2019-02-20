@@ -62,6 +62,7 @@ from analysis_engine.library import (
     most_common_value,
     moving_average,
     nearest_neighbour_mask_repair,
+    nearest_runway,
     np_ma_masked_zeros_like,
     np_ma_zeros_like,
     peak_curvature,
@@ -7283,12 +7284,19 @@ class TakeoffTurnOntoRunwayTakeoffRollStartDistance(KeyPointValueNode):
     UUDD 32R.
     'Runway start' used here is the opposite runway end as our runway database considers the landing threshold as the
     runway starting point, rather than the point where TODA begins.
+
+    Requires Precise Positioning
     '''
 
     units = ut.METER
 
-    def derive(self, precise=A('Precise Positioning'),
-                     lat=P('Latitude Smoothed'),
+    @classmethod
+    def can_operate(cls, available, precise=A('Precise Positioning'),):
+        required = ['Latitude Smoothed', 'Longitude Smoothed', 'FDR Takeoff Runway', 'FDR Takeoff Airport', 'Takeoff', 'Takeoff Acceleration Start']
+
+        return all_of(required, available) and precise.value == True
+
+    def derive(self, lat=P('Latitude Smoothed'),
                      lon=P('Longitude Smoothed'),
                      to_rwy=A('FDR Takeoff Runway'),
                      to_arpt=A('FDR Takeoff Airport'),
@@ -7321,10 +7329,11 @@ class TakeoffTurnOntoRunwayTakeoffRollStartDistance(KeyPointValueNode):
         turn_onto_rwy_distance = great_circle_distance__haversine(to_rwy_lat, to_rwy_lon,
                                                                   to_turn_onto_runway_point[0], to_turn_onto_runway_point[1])
 
-        # check whether the takeoff roll didn't start before the runway threshold - straight in case with TO commenced too early
-        to_roll_distance = great_circle_distance__haversine(to_threshold[0], to_threshold[1],
+        # distance between the acceleration start and the end of the runway
+        to_roll_distance = great_circle_distance__haversine(to_rwy_lat, to_rwy_lon,
                                                             to_accel_start_point[0], to_accel_start_point[1])
 
+        # distance between the roll start and takeoff threshold
         threshold_roll_start_distance = great_circle_distance__haversine(to_threshold[0], to_threshold[1],
                                                                          to_accel_start_point[0], to_accel_start_point[1])
 

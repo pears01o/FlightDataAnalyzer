@@ -13621,6 +13621,71 @@ class TestTakeoffRotation(unittest.TestCase):
         self.assertTrue(False, msg='Test not implemented.')
 
 
+class TestTakeoffTurnOntoRunwayTakeoffRollStartDistance(unittest.TestCase):
+    def setUp(self):
+        self.node_class = TakeoffTurnOntoRunwayTakeoffRollStartDistance
+        self.precise = A('Precise Positioning', value=True)
+        self.to_rwy = A(name='FDR Takeoff Runway',
+                        value={
+                        'end':   {'latitude': 51.146909,
+                                  'longitude': -0.212578},
+                        'start': {'latitude': 51.151041,
+                                  'longitude': -0.182567},
+                        'magnetic_heading': 259.0,
+                        'identifier': '26R',},)
+        self.to_arpt = A(name='FDR Takeoff Airport', value={
+                        'distance': 0.5940540702460043,
+                        'code': {'icao': 'EGKK', 'iata': 'LGW'},
+                        'name': 'London Gatwick',
+                        'longitude': -0.19027799999999323,
+                        'runways': [
+                            {'end': {'latitude': 51.151833,
+                                     'longitude': -0.176806},
+                             'start': {'latitude': 51.147519,
+                                       'longitude': -0.208130},
+                             'magnetic_heading': 79.0,
+                             'identifier': '08L',
+                             'id': 11157}],
+                        'location': {'city': 'London', 'country': 'United Kingdom'},
+                        'latitude': 51.1481, })
+        self.takeoffs = buildsection('Takeoff', 2, 8)
+        self.accel_start = KTI('Takeoff Acceleration Start', items=[KeyTimeInstance(4, 'Takeoff Acceleration Start')])
+
+    def test_can_operate(self):
+        opts = self.node_class.get_operational_combinations(precise=self.precise)
+        self.assertEqual(opts, [('Latitude Smoothed', 'Longitude Smoothed',
+                                 'FDR Takeoff Runway', 'FDR Takeoff Airport',
+                                 'Takeoff', 'Takeoff Acceleration Start')])
+        self.assertTrue(self.node_class.can_operate(opts[0], precise=self.precise))
+        self.assertFalse(self.node_class.can_operate(opts[0], precise=A('Precise Positioning', value=False)))
+
+    def test_derive_early_start(self):
+        lat = P('Latitude Smoothed',  array=np.linspace(51.152137, 51.151983, 10))
+        lon = P('Longitude Smoothed', array=np.linspace(-0.174602, -0.175731, 10))
+        node = self.node_class()
+        node.derive(lat, lon, self.to_rwy, self.to_arpt, self.takeoffs, self.accel_start)
+        self.assertAlmostEqual(node[0].value, -121.58, places=2)
+        self.assertEqual(node[0].index, 4)
+
+    def test_derive_straight_in(self):
+        lat = P('Latitude Smoothed',  array=np.linspace(51.151974, 51.151247, 10))
+        lon = P('Longitude Smoothed', array=np.linspace(-0.175817, -0.181002, 10))
+        takeoffs = buildsection('Takeoff', 1, 8)
+        accel_start = KTI('Takeoff Acceleration Start', items=[KeyTimeInstance(7, 'Takeoff Acceleration Start')])
+        node = self.node_class()
+        node.derive(lat, lon, self.to_rwy, self.to_arpt, takeoffs, accel_start)
+        self.assertAlmostEqual(node[0].value, 217.48, places=2)
+        self.assertEqual(node[0].index, 7)
+
+    def test_derive_normal_takeoff(self):
+        lat = P('Latitude Smoothed',  array=np.linspace(51.151643, 51.151449, 10))
+        lon = P('Longitude Smoothed', array=np.linspace(-0.178138, -0.179547, 10))
+        node = self.node_class()
+        node.derive(lat, lon, self.to_rwy, self.to_arpt, self.takeoffs, self.accel_start)
+        self.assertAlmostEqual(node[0].value, 22.36, places=2)
+        self.assertEqual(node[0].index, 4)
+
+
 class TestElevatorDuringLandingMin(unittest.TestCase,
                                    CreateKPVsWithinSlicesTest):
     def setUp(self):

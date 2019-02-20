@@ -1396,7 +1396,7 @@ class TouchAndGo(KeyTimeInstanceNode):
         for ga in go_around_and_climbouts:
             ga_index = ga.start_edge
             while ga_index < ga.stop_edge:
-                if alt_aal.array[ga_index] == 0.0:
+                if alt_aal.array[int(ga_index)] == 0.0:
                     self.create_kti(ga_index)
                     break
                 ga_index += 1

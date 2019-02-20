@@ -5596,7 +5596,7 @@ class AltitudeAtGearUpSelectionDuringGoAround(KeyPointValueNode):
             for gear_up in gear_up_sel.get(within_slice=go_around.slice):
                 if gear_up.index > pit_index:
                     # Use height between go around minimum and gear up:
-                    gear_up_ht = alt_aal.array[gear_up.index] - pit_value
+                    gear_up_ht = alt_aal.array[int(gear_up.index)] - pit_value
                     self.create_kpv(gear_up.index, gear_up_ht)
 
                 # The else condition below led to creation of a zero KPV in
@@ -19218,7 +19218,7 @@ class EngN2DuringTakeoffForXSecMax(KeyPointValueNode):
         if go_arounds:
             for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
                 for go_around in go_arounds.get_slices():
-                    arrays = eng_n2_max.array[go_around]
+                    arrays = eng_n2_max.array[slices_int(go_around)]
                     if len(arrays) > 0:
                         index, value = max_maintained_value(arrays, samples, eng_n2_max.hz, go_around)
                         if index is not None and value is not None:

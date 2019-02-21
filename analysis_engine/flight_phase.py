@@ -215,8 +215,8 @@ class Holding(FlightPhaseNode):
             # this test.
             hold_sec = turn_band.stop - turn_band.start
             if (hold_sec > HOLDING_MIN_TIME):
-                start = turn_band.start
-                stop = turn_band.stop - 1
+                start = int(turn_band.start)
+                stop = int(turn_band.stop - 1)
                 _, hold_dist = bearing_and_distance(
                     lat.array[start], lon.array[start],
                     lat.array[stop], lon.array[stop])

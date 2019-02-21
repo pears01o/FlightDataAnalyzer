@@ -5,11 +5,7 @@ import sys
 import unittest
 import math
 
-try:
-    from itertools import izip as zip
-except ImportError:
-    pass
-
+from builtins import zip
 from mock import Mock, call, patch
 
 from flightdatautilities import units as ut

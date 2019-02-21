@@ -11,6 +11,7 @@ import numpy as np
 import pytz
 import six
 
+from builtins import zip
 from collections import defaultdict, OrderedDict, namedtuple
 from copy import copy, deepcopy
 from datetime import datetime, timedelta
@@ -21,11 +22,7 @@ from operator import attrgetter
 from scipy import interpolate as scipy_interpolate, optimize
 from scipy.ndimage import filters
 from scipy.signal import medfilt
-
-try:
-    from itertools import izip as zip, izip_longest as zip_longest, tee
-except ImportError:
-    from itertools import zip_longest, tee
+from six.moves import filterfalse, zip_longest
 
 from hdfaccess.parameter import MappedArray
 
@@ -978,7 +975,7 @@ def coreg(y, indep_var=None, force_zero=False):
     y = np.ma.array(data=y.data, mask=mask, dtype=np.float64)
 
     if x.ptp() == 0.0 or y.ptp() == 0.0:
-        # raise ValueError, 'Function coreg called with invariant independent variable'
+        # raise ValueError('Function coreg called with invariant independent variable')
         return None, None, None
 
     # n is the number of useful data pairs for analysis.

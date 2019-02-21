@@ -12333,8 +12333,8 @@ class EngStartTimeMax(KeyPointValueNode):
             eng_2_index, eng_2_time = start_time(eng2_n2.array[:taxi.stop], hz)
 
             '''
-            print (eng_1_index, eng_1_time)
-            print (eng_2_index, eng_2_time )
+            print(eng_1_index, eng_1_time)
+            print(eng_2_index, eng_2_time)
             import matplotlib.pyplot as plt
             plt.plot(eng1_n2.array[:taxi.stop])
             plt.plot(eng2_n2.array[:taxi.stop])

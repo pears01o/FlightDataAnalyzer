@@ -139,9 +139,7 @@ def _segment_type_and_slice(speed_array, speed_frequency,
     vspd_threshold_exceedance = None
 
     if vspeed:
-        vert_spd_start = start * vspeed.frequency
-        vert_spd_stop = stop * vspeed.frequency
-        vert_spd_array = vspeed.array[vert_spd_start:vert_spd_stop]
+        vert_spd_array = vspeed.array[int(start * vspeed.frequency):int(stop * vspeed.frequency)]
         vspd_threshold_exceedance = \
             (np.ma.sum(vert_spd_array > thresholds['vertical_speed_max']) / vspeed.frequency) > thresholds['min_duration'] or \
             (np.ma.sum(vert_spd_array < thresholds['vertical_speed_min']) / vspeed.frequency) > thresholds['min_duration']
@@ -887,7 +885,7 @@ def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None,
     try:
         dt_arrays, _, dt_parameter_origin = get_dt_arrays(hdf, fallback_dt, validation_dt)
         timebase = calculate_timebase(*dt_arrays)
-        fallback_changes = [v for v in dt_parameter_origin.itervalues() if 'fallback' in v]
+        fallback_changes = [v for v in dt_parameter_origin.values() if 'fallback' in v]
     except (KeyError, ValueError):
         # The time parameters are not available/operational
         return fallback_dt

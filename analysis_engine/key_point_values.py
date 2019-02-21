@@ -18744,7 +18744,7 @@ class ControlColumnDualInputOppositeDirectionForceMax(KeyPointValueNode):
         for s in dual_slices:
             # identify max force diff in section, along with its index
             section_diff = capt_offset_removed[s] - fo_offset_removed[s]
-            max_diff_in_section = np.ma.abs(np.ma.max(section_diff))
+            max_diff_in_section = np.ma.max(np.ma.abs(section_diff))
             index = s.start + np.ma.argmax(section_diff)
 
             # find max force on Captain's and FO's CCs

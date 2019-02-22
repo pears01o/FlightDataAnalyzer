@@ -895,6 +895,58 @@ class TestChania(unittest.TestCase):
         self.assertEqual(approaches[0].ils_freq, None)
 
 
+class TestCapeTown(unittest.TestCase):
+    # There is no ILS from this direction.
+    @patch('analysis_engine.approaches.api')
+    def test_cpt(self, api):
+
+        get_handler = Mock()
+        get_handler.get_nearest_airport.return_value = [airports['cape_town']]
+        api.get_handler.return_value = get_handler
+
+        def fetch(par_name):
+            try:
+                return load(root + par_name + '.nod')
+            except:
+                return None
+
+        root = os.path.join(approaches_path, 'Landing_test_21952859_')
+
+        approaches = ApproachInformation()
+        approaches.derive(fetch('Altitude AAL'),
+                          None, # Altitude AGL
+                          A('Aircraft Type', 'aeroplane'),
+                          fetch('Approach And Landing'),
+                          # S(name='Approach And Landing',
+                          #   items=[Section(name='Approach And Landing',
+                          #                  slice=slice(app_start, app_end),
+                          #                  start_edge=app_start,
+                          #                  stop_edge=app_end)]),
+                          fetch('Heading Continuous'),
+                          fetch('Latitude Prepared'),
+                          fetch('Longitude Prepared'),
+                          P('ILS Localizer'),
+                          S('ILS Glideslope'),
+                          None, # ILS Frequency
+                          A(name='AFR Landing Airport', value=None),
+                          A(name='AFR Landing Runway', value=None),
+                          KPV('Latitude At Touchdown', items=[]),
+                          KPV('Longitude At Touchdown', items=[]),
+                          A('Precise Positioning', True),
+                          fetch('Fast'),
+                          None, # Airspeed
+                          None, # Groundspeed
+                          None, # Altitude ADH
+                          None, # Vertical Speed
+                          None, # Roll
+                          fetch('Heading'),)
+        self.assertEqual(approaches[0].airport['name'], 'Cape Town Intl')
+        self.assertEqual(approaches[0].landing_runway['identifier'], '19')
+        self.assertEqual(approaches[0].gs_est, None)
+        self.assertEqual(approaches[0].loc_est, None)
+        self.assertEqual(approaches[0].ils_freq, None)
+
+
 class TestDallasFortWorth(unittest.TestCase):
     
     # A change in runways late on the approach.

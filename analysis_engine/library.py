@@ -8380,6 +8380,7 @@ def nearest_runway(airport, heading, ilsfreq=None, latitude=None, longitude=None
         p3y, p3x = latitude, longitude
         distance = float('inf')
         runway = None
+        close_runways = []
         for r in runways:
             p1x = r['start']['longitude']
             p1y = r['start']['latitude']
@@ -8389,9 +8390,24 @@ def nearest_runway(airport, heading, ilsfreq=None, latitude=None, longitude=None
             if not any(args):
                 continue
             abs_dxt = np.average(np.abs(cross_track_distance(*args)))
+            # if we find more than one runway less than 30m away (30m is half the average runway width), that means we
+            # have landed on a runway crossing. W create a list of such runways and then pick the one which magnetic
+            # heading is closer to the aircraft heading - since we're looking at the lowest point, even with crosswind
+            # the aircraft will likely be post de-crab at this stage.
+            if abs_dxt < 30:
+                close_runways.append(r)
             if abs_dxt < distance:
                 distance = abs_dxt
                 runway = r
+
+        if len(close_runways) > 1:
+            hdg_diff = float('inf')
+            for r in close_runways:
+                diff = abs(heading - r.get('magnetic_heading'))
+                if diff < hdg_diff:
+                    hdg_diff = diff
+                    runway = r
+
         if runway:
             logger.info("Runway '%s' selected: Closest to provided coordinates.", runway['identifier'])
             return runway

@@ -4386,7 +4386,6 @@ def merge_two_parameters(param_one, param_two):
         raise ValueError("merge_two_parameters called with offsets too similar. %s : %.4f and %s : %.4f" \
                          % (param_one.name, param_one.offset, param_two.name, param_two.offset))
 
-
 def merge_sources(*arrays):
     '''
     This simple process merges the data from multiple sensors where they are
@@ -4468,14 +4467,14 @@ def blend_nonequispaced_sensors(array_one, array_two, padding):
     :rtype: masked array
     '''
     assert len(array_one) == len(array_two)
-    both = merge_sources(array_one, array_two)
 
-    new_both = both
+    both = merge_sources(array_one, array_two)
     mask_array = np.ma.getmaskarray(both)
-    for i in range(1, len(both)-1):
-        if mask_array[i]:
-            new_both[i] = (both[i-1]+both[i+1])/2
-    both = new_both
+    mask_array[0] = False
+    mask_array[-1] = False
+
+    mean_array = np.divide(np.roll(both, -1) + np.roll(both, 1), 2.0)
+    both[mask_array] = mean_array[mask_array]
 
     # A simpler technique than trying to append to the averaged array.
     av_pairs = np.ma.empty_like(both)
@@ -4487,9 +4486,7 @@ def blend_nonequispaced_sensors(array_one, array_two, padding):
         av_pairs[1:] = (both[:-1]+both[1:])/2
         av_pairs[0] = av_pairs[1]
         av_pairs[0] = np.ma.masked
-
     return av_pairs
-
 
 def blend_two_parameters(param_one, param_two, mode=None):
     '''

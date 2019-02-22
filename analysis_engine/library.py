@@ -679,7 +679,7 @@ def bump(acc, index):
     :type: Acceleration, from the acc.array.
     """
     dt = BUMP_HALF_WIDTH # Half width of range to scan across for peak acceleration.
-    from_index = max(ceil(index - dt * acc.hz), 0)
+    from_index = int(max(ceil(index - dt * acc.hz), 0))
     to_index = min(int(index + dt * acc.hz)+1, len(acc.array))
     bump_accel = acc.array[from_index:to_index]
 
@@ -1452,7 +1452,7 @@ def closest_unmasked_value(array, index, start_index=None, stop_index=None):
     array.mask = np.ma.getmaskarray(array)
 
     # Normalise indices.
-    index = floor(positive_index(array, index))
+    index = int(floor(positive_index(array, index)))
 
     if not array.mask[index]:
         return Value(index, array[index])
@@ -4095,9 +4095,9 @@ def mask_inside_slices(array, slices):
     '''
     mask = np.zeros(len(array), dtype=np.bool_) # Create a mask of False.
     for slice_ in slices:
-        start_ = math.floor(slice_.start or 0)
+        start_ = int(math.floor(slice_.start or 0))
         if slice_.stop:
-            stop_ = math.ceil(slice_.stop) + 1
+            stop_ = int(math.ceil(slice_.stop) + 1)
         else:
             stop_ = None
         mask[slice(start_, stop_)] = True
@@ -4119,8 +4119,8 @@ def mask_outside_slices(array, slices):
     '''
     mask = np.ones(len(array), dtype=np.bool_) # Create a mask of True.
     for slice_ in slices:
-        start_ = math.ceil(slice_.start or 0)
-        stop_ = math.floor(slice_.stop or -1)
+        start_ = int(math.ceil(slice_.start or 0))
+        stop_ = int(math.floor(slice_.stop or -1))
         mask[slice(start_, stop_)] = False
         # Original version below did not operate correctly with floating point slice ends. Amended temporarily until more comprehensive solution available.
         # Was: mask[slice_] = False
@@ -6235,26 +6235,22 @@ def slice_multiply(_slice, f):
     and to ensure rounding for reductions in frequency does not extend into
     earlier samples than those intended.
     """
-    if _slice.start is None:
-        _start = None
-    else:
-        _start = ceil(_slice.start*f)
+    return slice(None if _slice.start is None else int(ceil(_slice.start * f)),
+                 None if _slice.stop is None else int(_slice.stop * f),
+                 None if _slice.step is None else int(_slice.step * f))
 
-    return slice(_start,
-                 int(_slice.stop*f) if _slice.stop else None,
-                 int(_slice.step*f) if _slice.step else None)
 
-def slices_multiply(_slices, f):
+def slices_multiply(slices, f):
     '''
-    :param _slices: List of slices to rescale
-    :type _slice: slice
+    :param slices: Iterable of slices to rescale
+    :type slices: Iterable
     :param f: Rescale factor
     :type f: float
 
     :returns: List of slices rescaled by factor f
     :rtype: integer
     '''
-    return [slice_multiply(s,f) for s in _slices]
+    return [slice_multiply(s, f) for s in slices]
 
 
 def slice_round(_slice):
@@ -6593,7 +6589,7 @@ def level_off_index(array, frequency, seconds, variance, _slice=None,
     if _slice:
         array = array[slices_int(_slice)]
 
-    samples = ceil(frequency * seconds)
+    samples = int(ceil(frequency * seconds))
 
     if samples > array.size:
         return None
@@ -7767,7 +7763,7 @@ def _value(array, _slice, operator, start_edge=None, stop_edge=None):
             if start_result is not None and start_result is not np.ma.masked:
                 values.append((start_result, start_edge))
         # floor the start position as it will have been floored during the slice
-        value_index = operator(array[search_slice]) + floor(search_slice.start or 0) * (search_slice.step or 1)
+        value_index = int(operator(array[search_slice]) + floor(search_slice.start or 0) * (search_slice.step or 1))
         value = array[value_index]
         values.append((value, value_index))
         if stop_edge:

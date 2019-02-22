@@ -7100,7 +7100,7 @@ class HeadingDuringTakeoff(KeyPointValueNode):
                 # -1.42108547152020037174224853515625E-14 == 360.0
                 # which is an invalid value for Heading
                 if not np.ma.is_masked(value):
-                    self.create_kpv(index, float(np.round(value.data, 8)) % 360.0)
+                    self.create_kpv(index, np.round(float(value), 8) % 360.0)
 
 
 class HeadingTrueDuringTakeoff(KeyPointValueNode):
@@ -7142,7 +7142,7 @@ class HeadingTrueDuringTakeoff(KeyPointValueNode):
                 # -1.42108547152020037174224853515625E-14 == 360.0
                 # which is an invalid value for Heading
                 if not np.ma.is_masked(value):
-                    self.create_kpv(index, float(np.round(value.data, 8)) % 360.0)
+                    self.create_kpv(index, np.round(float(value), 8) % 360.0)
 
 
 class HeadingDuringLanding(KeyPointValueNode):
@@ -7178,7 +7178,7 @@ class HeadingDuringLanding(KeyPointValueNode):
                 # -1.42108547152020037174224853515625E-14 == 360.0
                 # which is an invalid value for Heading
                 if not np.ma.is_masked(value):
-                    self.create_kpv(index, float(np.round(value.data, 8)) % 360.0)
+                    self.create_kpv(index, np.round(float(value), 8) % 360.0)
 
 
 
@@ -7221,7 +7221,7 @@ class HeadingTrueDuringLanding(KeyPointValueNode):
                 # -1.42108547152020037174224853515625E-14 == 360.0
                 # which is an invalid value for Heading
                 if not np.ma.is_masked(value):
-                    self.create_kpv(index, float(np.round(value.data, 8)) % 360.0)
+                    self.create_kpv(index, np.round(float(value), 8) % 360.0)
 
 
 class HeadingAtLowestAltitudeDuringApproach(KeyPointValueNode):
@@ -9705,7 +9705,7 @@ class EngEPRAtTOGADuringTakeoffMax(KeyPointValueNode):
                                              change='entering', phase=takeoff)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             value = value_at_index(eng_epr_max.array, index)
             self.create_kpv(index, value)
 
@@ -9732,7 +9732,7 @@ class EngTPRAtTOGADuringTakeoffMin(KeyPointValueNode):
                                              change='entering', phase=takeoff)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             value = value_at_index(eng_tpr_min.array, index)
             self.create_kpv(index, value)
 
@@ -10823,7 +10823,7 @@ class EngN1AtTOGADuringTakeoff(KeyPointValueNode):
         indexes = find_edges_on_state_change('TOGA', toga.array, change='entering', phase=takeoff)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             value = value_at_index(eng_n1.array, index)
             self.create_kpv(index, value)
 
@@ -12478,16 +12478,16 @@ class HeadingVariationAbove80KtsAirspeedDuringTakeoff(KeyPointValueNode):
                     airspeed.name, toffs.name, toff.slice)
                 continue
             spd = np.ma.masked_less(airspeed.array, 60)
-            first_spd_idx = first_valid_sample(spd[toff.slice.start:ceil(begin) + 1])[0] + toff.slice.start
+            first_spd_idx = first_valid_sample(spd[toff.slice.start:int(ceil(begin) + 1)])[0] + toff.slice.start
             # Pick first heading parameter with valid data in phase.
-            head = first_valid_parameter(head_true, head_mag, phases=(slice(first_spd_idx, ceil(begin)),))
+            head = first_valid_parameter(head_true, head_mag, phases=[slice(first_spd_idx, int(ceil(begin)))])
             if head is None:
                 # We have no valid heading to use.
                 self.warning(
                     "No valid heading data identified in takeoff slice '%s'.",
                     toff.slice)
                 continue
-            datum_heading = np.ma.median(head.array[first_spd_idx:ceil(begin)])
+            datum_heading = np.ma.median(head.array[first_spd_idx:int(ceil(begin))])
 
             end = None
             if nosewheel:

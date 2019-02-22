@@ -385,16 +385,14 @@ def _split_on_eng_params(slice_start_secs, slice_stop_secs, split_params_min,
     '''
     slice_start = slice_start_secs * split_params_frequency
     slice_stop = slice_stop_secs * split_params_frequency
-    split_params_slice = slice(np.round(slice_start, 0), np.round(slice_stop, 0))
+    split_params_slice = slice(int(np.round(slice_start, 0)), int(np.round(slice_stop, 0)))
     split_index, split_value = min_value(split_params_min,
                                          _slice=split_params_slice)
 
     if split_index is None:
         return split_index, split_value
 
-    eng_min_slices = runs_of_ones(
-        split_params_min[slices_int(split_params_slice)] == split_value
-    )
+    eng_min_slices = runs_of_ones(split_params_min[split_params_slice] == split_value)
 
     if not eng_min_slices:
         return py2round(split_index / split_params_frequency), split_value

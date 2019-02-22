@@ -12500,7 +12500,7 @@ class HeadingVariationAbove80KtsAirspeedDuringTakeoff(KeyPointValueNode):
                     toff.slice)
                 continue
 
-            scan = slice(ceil(begin), ceil(end))
+            scan = slice(int(ceil(begin)), int(ceil(end)))
             # The data to test is extended to include aligned endpoints for the
             # 80kt and 1.5deg conditions. This also reduces the computational load as
             # we don't have to work out the deviation from the takeoff runway for all the flight.
@@ -12550,7 +12550,7 @@ class HeadingDeviationFromRunwayAtTOGADuringTakeoff(KeyPointValueNode):
         indexes = find_edges_on_state_change('TOGA', toga.array, phase=takeoff)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             brg = value_at_index(head.array, index)
             if brg in (None, np.ma.masked):
                 self.warning("Heading True Continuous is masked at index '%s'", index)
@@ -13199,7 +13199,7 @@ class FlareDistance20FtToTouchdown(KeyPointValueNode):
             if this_landing:
                 idx_20 = index_at_value(
                     alt_aal.array, 20.0,
-                    _slice=slice(ceil(tdown.index), this_landing[0].slice.start - 1, -1))
+                    _slice=slice(int(ceil(tdown.index)), this_landing[0].slice.start - 1, -1))
                 # Integrate returns an array, so we need to take the max
                 # value to yield the KTP value.
                 if idx_20:
@@ -13562,7 +13562,7 @@ class GroundspeedAtTOGA(KeyPointValueNode):
         indexes = find_edges_on_state_change('TOGA', toga.array, phase=takeoffs)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             self.create_kpv(index, value_at_index(gnd_spd.array, index))
 
 

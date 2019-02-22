@@ -5924,7 +5924,7 @@ def rms_noise(array, ignore_pc=None):
     elif ignore_pc is None or ignore_pc/100.0*len(array)<1.0:
         to_rms = diffs
     else:
-        monitor = slice(0, floor(len(diffs) * (1-ignore_pc/100.0)))
+        monitor = slice(0, int(floor(len(diffs) * (1-ignore_pc/100.0))))
         to_rms = np.ma.sort(np.ma.abs(diffs))[monitor]
     return sqrt(np.ma.mean(np.ma.power(to_rms, 2))) # RMS in one line !
 
@@ -6956,15 +6956,15 @@ def step_values(array, steps, hz=1, step_at='midpoint', rate_threshold=0.5):
     for prev_midpoint, (flap_midpoint, direction), next_midpoint in\
         zip_longest( [0] + flap_changes[0:-1], sorted_transitions,
                      flap_changes[1:]):
-        prev_flap = prev_unmasked_value(stepped_array, floor(flap_midpoint),
-                                        start_index=floor(prev_midpoint))
-        stop_index = ceil(next_midpoint) if next_midpoint else None
-        next_flap = next_unmasked_value(stepped_array, ceil(flap_midpoint),
+        prev_flap = prev_unmasked_value(stepped_array, int(floor(flap_midpoint)),
+                                        start_index=int(floor(prev_midpoint)))
+        stop_index = int(ceil(next_midpoint)) if next_midpoint else None
+        next_flap = next_unmasked_value(stepped_array, int(ceil(flap_midpoint)),
                                         stop_index=stop_index).value
-        is_masked = (array[floor(flap_midpoint)] is np.ma.masked or
-                     array[ceil(flap_midpoint)] is np.ma.masked)
+        is_masked = (array[int(floor(flap_midpoint))] is np.ma.masked or
+                     array[int(ceil(flap_midpoint))] is np.ma.masked)
         if is_masked:
-            new_array[floor(prev_midpoint):floor(prev_flap.index)] = prev_flap.value
+            new_array[int(floor(prev_midpoint)):int(floor(prev_flap.index))] = prev_flap.value
             prev_midpoint = prev_flap.index
 
         if direction == 'increase':
@@ -7013,7 +7013,7 @@ def step_values(array, steps, hz=1, step_at='midpoint', rate_threshold=0.5):
             idx = (idxs and min(idxs)) or flap_midpoint
 
         # floor +1 to ensure transitions start at the next sample
-        new_array[floor(idx)+1:] = next_flap
+        new_array[int(floor(idx))+1:] = next_flap
 
     # Mask edges of array to avoid extrapolation.
     finished_array = np.ma.array(new_array, mask=mask_edges(array))
@@ -7347,9 +7347,9 @@ def straighten(array, estimate, limit, copy):
             # make sure we are close to the estimate at the start of each block
             offset = estimate[clump.start] - start_value
             if offset>0.0:
-                start_value += floor(offset / limit + 0.5) * limit
+                start_value += int(floor(offset / limit + 0.5) * limit)
             else:
-                start_value += ceil(offset / limit - 0.5) * limit
+                start_value += int(ceil(offset / limit - 0.5) * limit)
         else:
             if last_value is not None:
                 # shift array section to be consistent with previous
@@ -7745,10 +7745,10 @@ def _value(array, _slice, operator, start_edge=None, stop_edge=None):
     # have we got sections or slices
     if slice_start and slice_start % 1:
         start_edge = slice_start
-        slice_start = ceil(slice_start)
+        slice_start = int(ceil(slice_start))
     if slice_stop and slice_stop % 1:
         stop_edge = slice_stop
-        slice_stop = floor(slice_stop)
+        slice_stop = int(floor(slice_stop))
 
     values = []
 
@@ -7763,7 +7763,7 @@ def _value(array, _slice, operator, start_edge=None, stop_edge=None):
             if start_result is not None and start_result is not np.ma.masked:
                 values.append((start_result, start_edge))
         # floor the start position as it will have been floored during the slice
-        value_index = int(operator(array[search_slice]) + floor(search_slice.start or 0) * (search_slice.step or 1))
+        value_index = int(operator(array[search_slice]) + int(floor(search_slice.start or 0)) * (search_slice.step or 1))
         value = array[value_index]
         values.append((value, value_index))
         if stop_edge:
@@ -8747,14 +8747,16 @@ def max_maintained_value(arrays, seconds, frequency, phase):
     else:
         return None, None
 
+
 ###############################################################################
-# Python 3 and Numpy 1.15 upgrade helper.
+# Python 3 and Numpy 1.15+ upgrade helpers
+
 
 def py2round(x, d=0):
     '''
-    Provide the same rounding behaivor as the round() method in Python 2
+    Provide the same rounding behaviour as the round() method in Python 2
     '''
-    p = 10**d
+    p = 10 ** d
     return float(math.floor((x * p) + math.copysign(0.5, x))) / p
 
 

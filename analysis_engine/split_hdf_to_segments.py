@@ -424,7 +424,7 @@ def _split_on_dfc(slice_start_secs, slice_stop_secs, dfc_frequency,
     :rtype: int or float or None
     '''
     dfc_slice = slice(slice_start_secs * dfc_frequency,
-                      floor(slice_stop_secs * dfc_frequency) + 1)
+                      int(floor(slice_stop_secs * dfc_frequency)) + 1)
     unmasked_edges = np.ma.flatnotmasked_edges(dfc_diff[slices_int(dfc_slice)])
     if unmasked_edges is None:
         return None

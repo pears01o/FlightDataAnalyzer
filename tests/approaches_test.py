@@ -917,11 +917,6 @@ class TestCapeTown(unittest.TestCase):
                           None, # Altitude AGL
                           A('Aircraft Type', 'aeroplane'),
                           fetch('Approach And Landing'),
-                          # S(name='Approach And Landing',
-                          #   items=[Section(name='Approach And Landing',
-                          #                  slice=slice(app_start, app_end),
-                          #                  start_edge=app_start,
-                          #                  stop_edge=app_end)]),
                           fetch('Heading Continuous'),
                           fetch('Latitude Prepared'),
                           fetch('Longitude Prepared'),

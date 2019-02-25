@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import collections
-import imp
+import importlib.machinery
 import os
 import networkx as nx
 import six
@@ -9,6 +9,7 @@ import unittest
 import yaml
 import sys
 import traceback
+import types
 
 from datetime import datetime
 
@@ -17,8 +18,8 @@ from analysis_engine.dependency_graph import (
     CircularDependency,
     InoperableDependencies,
     any_predecessors_in_requested,
-    dependency_order, 
-    graph_nodes, 
+    dependency_order,
+    graph_nodes,
     graph_adjacencies,
     indent_tree,
     process_order,
@@ -40,9 +41,13 @@ def flatten(l):
 
 
 def import_module(module_name):
-    return imp.load_source('tests.%s' % module_name,
-                           os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                        '%s.py' % module_name))
+    loader = importlib.machinery.SourceFileLoader(
+        'tests.%s' % module_name,
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     '%s.py' % module_name))
+    mod = types.ModuleType(loader.name)
+    loader.exec_module(mod)
+    return mod
 
 
 class MockParam(Node):
@@ -53,16 +58,16 @@ class MockParam(Node):
         # to the tree.
         self.__base__ = DerivedParameterNode
         self.__bases__ = [self.__base__]
-        
+
     def can_operate(self, avail):
         return self.operational
-    
+
     def derive(self, a=P('a')):
         pass
-    
+
     def get_derived(self, args):
         pass
-    
+
     def get_dependency_names(self):
         return self.dependencies
 
@@ -78,21 +83,21 @@ class TestDependencyGraph(unittest.TestCase):
             'Raw4',
             'Raw5',
         ]
-        
+
         # nodes found from all the derived params code (top level, not their dependencies)
         #NOTE: For picturing it, it should show ALL raw params required.
         self.derived_nodes = {
-            'P4' : MockParam(dependencies=['Raw1', 'Raw2']), 
+            'P4' : MockParam(dependencies=['Raw1', 'Raw2']),
             'P5' : MockParam(dependencies=['Raw3', 'Raw4']),
             'P6' : MockParam(dependencies=['Raw3']),
             'P7' : MockParam(dependencies=['P4', 'P5', 'P6']),
             'P8' : MockParam(dependencies=['Raw5']),
         }
         ##########################################################
-    
+
     def tearDown(self):
         pass
-    
+
     def test_indent_tree(self):
         requested = ['P7', 'P8']
         mgr2 = NodeManager({'Start Datetime': datetime.now()}, 10, self.lfl_params,
@@ -121,8 +126,8 @@ class TestDependencyGraph(unittest.TestCase):
             indent_tree(gr, 'P4', label=False, recurse_active=False),
             ['- [P4]',
              '  - [Raw2]',
-             ])        
-        
+             ])
+
         self.assertEqual(
             indent_tree(gr, 'root'),
             ['- root',
@@ -138,7 +143,7 @@ class TestDependencyGraph(unittest.TestCase):
              '  - P8 (DerivedParameterNode)',
              '    - Raw5 (HDFNode)',
             ])
-    
+
     def test_required_available(self):
         nodes = ['a', 'b', 'c']
         required = ['a', 'c']
@@ -147,15 +152,15 @@ class TestDependencyGraph(unittest.TestCase):
         _graph = graph_nodes(mgr)
         gr_all, gr_st, order = process_order(_graph, mgr)
         self.assertEqual(set(required) - set(order), set())
-    
+
     @unittest.skip("Ignoring as graph_nodes does nothing with required nodes")
     def test_required_unavailable(self):
         nodes = ['a', 'b', 'c']
         required = ['a', 'c', 'd']
-        mgr = NodeManager({'Start Datetime': datetime.now()}, 10, nodes, nodes, 
+        mgr = NodeManager({'Start Datetime': datetime.now()}, 10, nodes, nodes,
                           required, {}, {}, {})
         self.assertRaises(ValueError, graph_nodes, mgr)
-    
+
     def test_graph_predecessors(self):
         edges = [('a', 'b'), ('b', 'c1'), ('b', 'c2'), ('b', 'c3'), ('c2', 'd'),
                  ('x', 'y'), ('y', 'z')]
@@ -186,15 +191,15 @@ class TestDependencyGraph(unittest.TestCase):
         # 'x' is not requested, and although 'y' is it has no predecessors available
         self.assertFalse(any_predecessors_in_requested('x', req, gr))
         self.assertFalse(any_predecessors_in_requested('y', req, gr))
-        
-    def test_graph_nodes_using_sample_tree(self): 
+
+    def test_graph_nodes_using_sample_tree(self):
         requested = ['P7', 'P8']
         mgr2 = NodeManager({'Start Datetime': datetime.now()}, 10, self.lfl_params, requested, [],
                            self.derived_nodes, {}, {})
         gr = graph_nodes(mgr2)
         self.assertEqual(len(gr), 11)
         self.assertEqual(sorted(gr.neighbors('root')), sorted(['P8', 'P7']))
-        
+
     def test_graph_requesting_all_dependencies_links_root_to_end_leafs(self):
         # build list of all nodes as required
         requested = self.lfl_params + list(self.derived_nodes.keys())
@@ -203,7 +208,7 @@ class TestDependencyGraph(unittest.TestCase):
         gr = graph_nodes(mgr)
         # should only be linked to end leafs
         self.assertEqual(sorted(gr.neighbors('root')), sorted(['P8', 'P7']))
-        
+
     def test_graph_middle_level_depenency_builds_partial_tree(self):
         requested = ['P5']
         mgr = NodeManager({'Start Datetime': datetime.now()}, 1, self.lfl_params, requested, [],
@@ -211,7 +216,7 @@ class TestDependencyGraph(unittest.TestCase):
         gr = graph_nodes(mgr)
         # should only be linked to P5
         self.assertEqual(gr.neighbors('root'), ['P5'])
-    
+
     def test_graph_nodes_with_duplicate_key_in_lfl_and_derived(self):
         # Test that LFL nodes are used in place of Derived where available.
         # Tests a few of the colours
@@ -222,7 +227,7 @@ class TestDependencyGraph(unittest.TestCase):
             def derive(self, dep=P('DepOne')):
                 pass
         class Four(DerivedParameterNode):
-            # Hack to allow objects rather than classes to be added to the tree. 
+            # Hack to allow objects rather than classes to be added to the tree.
             __base__ = DerivedParameterNode
             __bases__ = [__base__]
             def derive(self, dep=P('DepFour')):
@@ -244,14 +249,14 @@ class TestDependencyGraph(unittest.TestCase):
         draw_graph(gr, 'test_graph_nodes_with_duplicate_key_in_lfl_and_derived')
         self.assertEqual(gr.successors('root'), ['2','4']) # only the two requested are linked
         self.assertEqual(gr.node['root'], {'color': '#ffffff'})
-        
+
     def test_dependency(self):
         requested = ['P7', 'P8']
         mgr = NodeManager({'Start Datetime': datetime.now()}, 10, self.lfl_params, requested, [],
                           self.derived_nodes, {}, {})
         gr = graph_nodes(mgr)
         gr_all, gr_st, order = process_order(gr, mgr)
-        
+
         self.assertEqual(len(gr_st), 11)
         pos = order.index
         self.assertTrue(pos('P8') > pos('Raw5'))
@@ -264,7 +269,7 @@ class TestDependencyGraph(unittest.TestCase):
         self.assertTrue(pos('P4') > pos('Raw1'))
         self.assertTrue(pos('P4') > pos('Raw2'))
         self.assertFalse('root' in order) #don't include the root!
-        
+
         """
 # Sample demonstrating which nodes have predecessors, successors and so on:
 for node in node_mgr.keys():
@@ -296,7 +301,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
                           requested, [], self.derived_nodes, {}, {})
         gr = graph_nodes(mgr)
         gr_all, gr_st, order = process_order(gr, mgr)
-        
+
         self.assertEqual(len(gr_st), 11)
         pos = order.index
         self.assertTrue(pos('P8') > pos('Raw5'))
@@ -313,17 +318,17 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
 
     def test_sample_parameter_module(self):
         """Tests many options:
-        can_operate on SmoothedTrack works with 
+        can_operate on SmoothedTrack works with
         """
         requested = ['Smoothed Track', 'Moment Of Takeoff', 'Vertical Speed',
                      'Slip On Runway']
-        lfl_params = ['Indicated Airspeed', 
-              'Groundspeed', 
+        lfl_params = ['Indicated Airspeed',
+              'Groundspeed',
               'Pressure Altitude',
-              'Heading', 'TAT', 
+              'Heading', 'TAT',
               'Latitude', 'Longitude',
-              'Longitudinal g', 'Lateral g', 'Normal g', 
-              'Pitch', 'Roll', 
+              'Longitudinal g', 'Lateral g', 'Normal g',
+              'Pitch', 'Roll',
               ]
         derived = get_derived_nodes([import_module('sample_derived_parameters')])
         nodes = NodeManager({'Start Datetime': datetime.now()}, 10, lfl_params,
@@ -342,7 +347,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         self.assertEqual(len(nodes.requested), 4)
         self.assertEqual(len(nodes.derived_nodes), 13)
         # remove some hdf params to see inactive nodes
-        
+
     def test_invalid_requirement_raises(self):
         lfl_params = []
         requested = ['Smoothed Track', 'Moment of Takeoff'] #it's called Moment Of Takeoff
@@ -350,7 +355,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         mgr = NodeManager({'Start Datetime': datetime.now()}, 10, lfl_params, requested, [],
                           derived, {}, {})
         self.assertRaises(nx.NetworkXError, dependency_order, mgr, draw=False)
-        
+
     def test_avoiding_possible_circular_dependency(self):
         # Possible circular dependency which can be avoided:
         # Gear Selected Down depends on Gear Down which depends on Gear Selected Down...!
@@ -365,9 +370,9 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
                           derived, {}, {})
         order, _ = dependency_order(mgr, draw=False)
         # As Gear Selected Down depends upon Gear Down
-        
+
         self.assertEqual(order,
-            ['Gear (L) Down', 'Gear Down', 'Gear (L) Red Warning', 
+            ['Gear (L) Down', 'Gear Down', 'Gear (L) Red Warning',
              'Gear Down Selected', 'Airspeed', 'Airspeed At Gear Down Selected'])
 
         # try a bigger cyclic dependency on top of the above one
@@ -403,7 +408,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         root>Altitude At First Gear Up Selection>Gear Up Selection>Gear Up Selected>Gear Up>Gear Up Selected><<< Gear Up Selected CIRCULAR >>>
         '''
         lfl_params = [
-            "Gear (L) Down", 
+            "Gear (L) Down",
             "Gear (L) On Ground",
             "Gear (L) Red Warning",
             "Gear (N) Down",
@@ -424,7 +429,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
     @unittest.skip('Need to improve testcase, exception still being rasie. with a diferent circular dependancy.')
     def test_avoiding_circular_dependency_track_true(self):
         '''
-        <<< Track True Continuous CIRCULAR >>> (197) 
+        <<< Track True Continuous CIRCULAR >>> (197)
         root>Holding Duration>Holding>Latitude Smoothed>Approach Range>Track True Continuous>Track True>Track True Continuous><<< Track True Continuous CIRCULAR >>>
         '''
         lfl_params = ['Altitude STD', 'Airspeed','Heading']
@@ -449,7 +454,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         except CircularDependency as err:
             self.assertFalse(True, msg=err.message)
 
-    @unittest.skip('Need to improve testcase, exception still being rasie. with a diferent circular dependancy.')    
+    @unittest.skip('Need to improve testcase, exception still being rasie. with a diferent circular dependancy.')
     def test_avoiding_circular_dependency_approach_range_helicopter(self):
         '''
         <<< Approach Range CIRCULAR >>> (200)
@@ -462,7 +467,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
             self._get_dependancy_order(requested, aircraft_info, lfl_params)
         except CircularDependency as err:
             self.assertFalse(True, msg=err.message)
-    
+
     @unittest.skip('Need to improve testcase, exception still being rasie. with a diferent circular dependancy.')
     def test_avoiding_circular_dependency_approach_information(self):
         '''
@@ -484,7 +489,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         <<< Approach Information CIRCULAR >>> (60)
         root>Airspeed Top Of Descent To 4000 Ft Min>FDR Landing Airport>Approach Information>Latitude Prepared>Heading True>Magnetic Variation From Runway>FDR Landing Runway>Approach Information><<< Approach Information CIRCULAR >>>
         '''
-        lfl_params = ['Altitude STD', 'Airspeed','Heading', 
+        lfl_params = ['Altitude STD', 'Airspeed','Heading',
                       'Altitude AGL',
                       'Approach And Landing',
                       #'Latitude Prepared (Lat Lon)',
@@ -574,7 +579,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
 
     def test_acceleration_normal_offset_processing_order(self):
         # In the past, the KPV 'Acceleration Normal Offset' got straved out of
-        # the dependency processing order as 'Acceleration Normal Offset Removed' 
+        # the dependency processing order as 'Acceleration Normal Offset Removed'
         # could be derived without it. Test to ensure that the dependency tree
         # order doesn't do that again
         aircraft_info, lfl_params = self._example_recorded_parameters()
@@ -585,12 +590,12 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         self.assertIn('Acceleration Normal Offset Removed', order)
         self.assertLess(order.index('Acceleration Normal Offset'),
                         order.index('Acceleration Normal Offset Removed'))
-        
+
     def test_acceleration_lateral_offset_processing_order(self):
         # In the past, the KPV 'Acceleration Lateral Offset' got straved out of
-        # the dependency processing order as 'Acceleration Lateral Offset Removed' 
+        # the dependency processing order as 'Acceleration Lateral Offset Removed'
         # could be derived without it. Test to ensure that the dependency tree
-        # order doesn't do that again        
+        # order doesn't do that again
         aircraft_info, lfl_params = self._example_recorded_parameters()
         requested = []
         order, _ = self._get_dependancy_order(requested, aircraft_info,
@@ -620,7 +625,7 @@ Node: Start Datetime 	Pre: [] 	Succ: [] 	Neighbors: [] 	Edges: []
         # Magnetic Variation must be derived before Magnetic Variation From Runway
         self.assertLess(order.index('Magnetic Variation'),
                         order.index('Magnetic Variation From Runway'))
-        
+
 
 
 class TestGraphAdjacencies(unittest.TestCase):

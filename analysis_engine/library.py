@@ -7844,7 +7844,7 @@ def value_at_index(array, index, interpolate=True):
     :returns: interpolated value from the array
     '''
 
-    if index < 0.0:  # True if index is None
+    if index is None or index < 0.0:
         return array[0]
     elif index > len(array) - 1:
         return array[-1]

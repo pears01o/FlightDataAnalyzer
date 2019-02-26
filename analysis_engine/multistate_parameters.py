@@ -2646,7 +2646,7 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
                 l, l1, l2, l3, l4, l5, l6, l7, lout)
         right = (rd, r1d, r2d, r3d, r4d, r5d, r6d, r7d, routd,
                  r, r1, r2, r3, r4, r5, r6, r7, rout)
-        pairs = zip(left, right)
+        pairs = list(zip(left, right))
         state = 'Deployed'
 
         def is_deployed(param):

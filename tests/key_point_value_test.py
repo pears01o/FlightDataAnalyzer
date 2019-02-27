@@ -21234,50 +21234,49 @@ class TestDriftAtTouchdown(unittest.TestCase):
         self.assertEqual(node[0].index, 13)
         self.assertEqual(node[0].value, -4.7)
 
+
 class TestDHSelectedAt1500FtLVO(unittest.TestCase, NodeTest):
 
-    def setUp(self):
-        self.node_class = DHSelectedAt1500FtLVO
-        self.alt_aal = P('Altitude AAL', np.ma.concatenate(
-                        (np.ones(30) * 1700.0,
-                        np.linspace(1700, 0, num=15),
-                        np.linspace(0, 1700, num=15),
-                        np.linspace(1700, 0, num=30))))
+	def setUp(self):
+		self.node_class = DHSelectedAt1500FtLVO
 
-        self.dh_selected = P('DH Selected', np.ma.concatenate(
-                            (np.zeros(25),
-                            np.ones(20) * 100,
-                            np.zeros(25),
-                            np.ones(20) * 100)))
+		self.alt_std_desc = AltitudeWhenDescending(
+			items=[KeyTimeInstance(15, '1500 Ft Descending'),
+				   KeyTimeInstance(20, '1500 Ft Descending'),
+				   KeyTimeInstance(28, '1500 Ft Descending'),
+				   KeyTimeInstance(44, '1500 Ft Descending')])
 
-        self.descents = S('Descent')
-        self.descents.create_sections([slice(30, 45, None),
-                                       slice(60, 90, None)])
-        self.series_7x = A('Series', 'Falcon-7X')
-        self.series_8x = A('Series', 'Falcon-8X')
-        self.series_invalid = A('Series', 'Boeing B737-800')
+		self.dh_selected = P('DH Selected', np.ma.concatenate(
+							(np.zeros(25),
+							np.ones(20) * 100,
+							np.zeros(25),
+							np.ones(20) * 100)))
 
-    def test_can_operate(self):
-        req_params = ('Altitude AAL', 'DH Selected', 'Descent')
+		self.series_7x = A('Series', 'Falcon-7X')
+		self.series_8x = A('Series', 'Falcon-8X')
+		self.series_invalid = A('Series', 'Boeing B737-800')
 
-        self.assertFalse(self.node_class.can_operate(
-                         req_params, series=self.series_invalid),
-                         msg='KPV only applies to Falcon 7X/8X')
+	def test_can_operate(self):
+		req_params = ('Altitude When Descending', 'DH Selected')
 
-        self.assertTrue(self.node_class.can_operate(
-                        req_params, series=self.series_7x))
+		self.assertFalse(self.node_class.can_operate(
+						 req_params, series=self.series_invalid),
+						 msg='KPV only applies to Falcon 7X/8X')
 
-        self.assertTrue(self.node_class.can_operate(
-                        req_params, series=self.series_8x))
+		self.assertTrue(self.node_class.can_operate(
+						req_params, series=self.series_7x))
 
-    def test_derive(self):
-        node = self.node_class()
-        node.derive(self.alt_aal, self.dh_selected, self.descents)
-        self.assertEqual(len(node), 2)
-        self.assertEqual(node[0].index, 32)
-        self.assertEqual(node[0].value, 100.0)
-        self.assertEqual(node[1].index, 64)
-        self.assertEqual(node[1].value, 0.0)
+		self.assertTrue(self.node_class.can_operate(
+						req_params, series=self.series_8x))
+
+	def test_derive(self):
+		node = self.node_class()
+		node.derive(self.alt_std_desc, self.dh_selected)
+		self.assertEqual(len(node), 2)
+		self.assertEqual(node[0].index, 28)
+		self.assertEqual(node[0].value, 100.0)
+		self.assertEqual(node[1].index, 44)
+		self.assertEqual(node[1].value, 100.0)
 
 
 class TestTransmitInactivityDuration(unittest.TestCase, NodeTest):

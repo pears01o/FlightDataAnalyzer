@@ -8,10 +8,6 @@ import tempfile
 import unittest
 import csv
 
-try:
-    from itertools import izip as zip
-except ImportError:
-    pass
 from mock import Mock, patch
 
 from numpy.ma.testutils import assert_array_almost_equal, assert_array_equal, assert_almost_equal, assert_equal
@@ -1428,7 +1424,7 @@ class TestAltitudeQNH(unittest.TestCase):
             9911, 9938, 9965, 9993, 10020, 10047, 10074, 10102, 10129, 10156,
             10183, 10210, 10238, 10265, 10292
         ]
-        for expected, got in zip (expected_alt_qnh, node.array):
+        for expected, got in zip(expected_alt_qnh, node.array):
             self.assertEqual(expected, int(got))
 
 
@@ -1741,7 +1737,7 @@ class TestAltitudeRadio(unittest.TestCase):
                    fast=fast, family=A('Family', 'A330'))
 
         sects = np.ma.clump_unmasked(rad.array)
-        self.assertEqual(len(sects), 2)
+        self.assertEqual(len(sects), 3)
         self.assertEqual(sects[0].start, 17)
         self.assertEqual(sects[1].stop, 2763)
         self.assertAlmostEqual(rad.array[2762], 5524, places=0)

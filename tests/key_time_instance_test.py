@@ -107,7 +107,7 @@ class NodeTest(object):
                 self.operational_combination_length,
             )
         else:
-            combinations = map(set, self.node_class.get_operational_combinations(**kwargs))
+            combinations = list(map(set, self.node_class.get_operational_combinations(**kwargs)))
             for combination in map(set, self.operational_combinations):
                 self.assertIn(combination, combinations)
 
@@ -1692,7 +1692,7 @@ class TestFirstFlapExtensionWhileAirborne(unittest.TestCase, NodeTest):
         ]))
 
     def test_corrupt_flap_signal(self):
-        
+
         array = np.ma.array(data=[0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0],
                             mask=[0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0])
         mapping = {int(f): str(f) for f in np.ma.unique(array.data)}
@@ -1703,7 +1703,7 @@ class TestFirstFlapExtensionWhileAirborne(unittest.TestCase, NodeTest):
         node.derive(self.flap_lever, None, airborne)
         self.assertEqual(node, KTI(name=name, items=[
             KeyTimeInstance(index=8.5, name=name),
-        ]))        
+        ]))
 
 
 class TestFlapRetractionWhileAirborne(unittest.TestCase, NodeTest):

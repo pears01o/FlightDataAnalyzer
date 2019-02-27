@@ -5,11 +5,7 @@ import sys
 import unittest
 import math
 
-try:
-    from itertools import izip as zip
-except ImportError:
-    pass
-
+from builtins import zip
 from mock import Mock, call, patch
 
 from flightdatautilities import units as ut
@@ -12400,7 +12396,7 @@ class TestEngTorqueDuringTakeoff5MinRatingMax(unittest.TestCase, NodeTest):
     def test_can_operate_heli(self):
         operational_combinations = [('Eng (*) Torque Max', 'Takeoff 5 Min Rating', 'All Engines Operative')]
         kwargs = {'ac_type': helicopter}
-        combinations = map(set, self.node_class.get_operational_combinations(**kwargs))
+        combinations = list(map(set, self.node_class.get_operational_combinations(**kwargs)))
         for combination in map(set, operational_combinations):
             self.assertIn(combination, combinations)
 
@@ -12486,7 +12482,7 @@ class TestEngTorqueMaximumContinuousPowerMax(unittest.TestCase, NodeTest):
     def test_can_operate_heli(self):
         operational_combinations = [('Eng (*) Torque Max', 'Maximum Continuous Power', 'All Engines Operative')]
         kwargs = {'ac_type': helicopter}
-        combinations = map(set, self.node_class.get_operational_combinations(**kwargs))
+        combinations = list(map(set, self.node_class.get_operational_combinations(**kwargs)))
         for combination in map(set, operational_combinations):
             self.assertIn(combination, combinations)
 

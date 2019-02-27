@@ -1300,7 +1300,7 @@ class Liftoff(KeyTimeInstanceNode):
             dt_pre = 5
             hz = self.frequency
             timebase=np.linspace(-dt_pre*hz, dt_pre*hz, 2*dt_pre*hz+1)
-            plot_period = slice(floor(air.slice.start-dt_pre*hz), floor(air.slice.start-dt_pre*hz+len(timebase)))
+            plot_period = slice(int(floor(air.slice.start-dt_pre*hz)), int(floor(air.slice.start-dt_pre*hz+len(timebase))))
             plt.figure()
             plt.plot(0, 13.0,'vb', markersize=8)
             if vert_spd:
@@ -1500,7 +1500,7 @@ class Touchdown(KeyTimeInstanceNode):
             # With an estimate from the height and perhaps gear switch, set
             # up a period to scan across for accelerometer based
             # indications...
-            period_end = ceil(index_ref + dt_post * hz)
+            period_end = int(ceil(index_ref + dt_post * hz))
             period_start = max(floor(index_ref - dt_pre * hz), 0)
             if alt_rad:
                 # only look for 5ft altitude if Radio Altitude is recorded,
@@ -1614,7 +1614,7 @@ class Touchdown(KeyTimeInstanceNode):
             self.info(name)
             tz_offset = index_ref - period.start
             timebase=np.linspace(-tz_offset, dt_post*hz, tz_offset+(dt_post*hz)+1)
-            plot_period = slice(floor(index_ref-tz_offset), floor(index_ref-tz_offset+len(timebase)))
+            plot_period = slice(int(floor(index_ref-tz_offset)), int(floor(index_ref-tz_offset+len(timebase))))
             plt.figure()
             if alt:
                 plt.plot(timebase, alt.array[plot_period], 'o-r')
@@ -1932,7 +1932,7 @@ class DistanceToTouchdown(KeyTimeInstanceNode):
         for touchdown in touchdowns:
             for d in self.NAME_VALUES['distance']:
                 index = index_at_value(dtl.array, d,
-                                       slice(floor(touchdown.index), last_tdwn_idx, -1))
+                                       slice(int(floor(touchdown.index)), last_tdwn_idx, -1))
                 if index:
                     # may not have travelled far enough to find distance threshold.
                     self.create_kti(index, distance=d)

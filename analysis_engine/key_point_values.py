@@ -21,10 +21,10 @@ from analysis_engine.node import (
 )
 
 from analysis_engine.library import (
-    ambiguous_runway,
     align,
     all_deps,
     all_of,
+    ambiguous_runway,
     any_of,
     bearings_and_distances,
     bump,
@@ -46,8 +46,8 @@ from analysis_engine.library import (
     integrate,
     is_index_within_slice,
     is_index_within_slices,
+    level_off_index,
     lookup_table,
-    nearest_neighbour_mask_repair,
     mask_inside_slices,
     mask_outside_slices,
     max_abs_value,
@@ -58,12 +58,13 @@ from analysis_engine.library import (
     min_value,
     most_common_value,
     moving_average,
-    repair_mask,
+    nearest_neighbour_mask_repair,
     np_ma_masked_zeros_like,
     np_ma_zeros_like,
     peak_curvature,
     prev_unmasked_value,
     rate_of_change_array,
+    repair_mask,
     runs_of_ones,
     runway_deviation,
     runway_distance_from_end,
@@ -75,25 +76,24 @@ from analysis_engine.library import (
     slice_midpoint,
     slice_samples,
     slices_above,
+    slices_and,
     slices_and_not,
     slices_below,
     slices_between,
     slices_duration,
     slices_from_ktis,
-    slices_int,
     slices_from_to,
+    slices_int,
     slices_not,
-    slices_overlap,
     slices_or,
-    slices_and,
+    slices_overlap,
     slices_remove_overlaps,
-    slices_remove_small_slices,
     slices_remove_small_gaps,
+    slices_remove_small_slices,
     trim_slices,
-    level_off_index,
     valid_slices_within_array,
     value_at_index,
-    vstack_params_where_state
+    vstack_params_where_state,
 )
 
 from analysis_engine.settings import (
@@ -7100,7 +7100,7 @@ class HeadingDuringTakeoff(KeyPointValueNode):
                 # -1.42108547152020037174224853515625E-14 == 360.0
                 # which is an invalid value for Heading
                 if not np.ma.is_masked(value):
-                    self.create_kpv(index, float(np.round(value.data, 8)) % 360.0)
+                    self.create_kpv(index, np.round(float(value), 8) % 360.0)
 
 
 class HeadingTrueDuringTakeoff(KeyPointValueNode):
@@ -7142,7 +7142,7 @@ class HeadingTrueDuringTakeoff(KeyPointValueNode):
                 # -1.42108547152020037174224853515625E-14 == 360.0
                 # which is an invalid value for Heading
                 if not np.ma.is_masked(value):
-                    self.create_kpv(index, float(np.round(value.data, 8)) % 360.0)
+                    self.create_kpv(index, np.round(float(value), 8) % 360.0)
 
 
 class HeadingDuringLanding(KeyPointValueNode):
@@ -7178,7 +7178,7 @@ class HeadingDuringLanding(KeyPointValueNode):
                 # -1.42108547152020037174224853515625E-14 == 360.0
                 # which is an invalid value for Heading
                 if not np.ma.is_masked(value):
-                    self.create_kpv(index, float(np.round(value.data, 8)) % 360.0)
+                    self.create_kpv(index, np.round(float(value), 8) % 360.0)
 
 
 
@@ -7221,7 +7221,7 @@ class HeadingTrueDuringLanding(KeyPointValueNode):
                 # -1.42108547152020037174224853515625E-14 == 360.0
                 # which is an invalid value for Heading
                 if not np.ma.is_masked(value):
-                    self.create_kpv(index, float(np.round(value.data, 8)) % 360.0)
+                    self.create_kpv(index, np.round(float(value), 8) % 360.0)
 
 
 class HeadingAtLowestAltitudeDuringApproach(KeyPointValueNode):
@@ -9705,7 +9705,7 @@ class EngEPRAtTOGADuringTakeoffMax(KeyPointValueNode):
                                              change='entering', phase=takeoff)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             value = value_at_index(eng_epr_max.array, index)
             self.create_kpv(index, value)
 
@@ -9732,7 +9732,7 @@ class EngTPRAtTOGADuringTakeoffMin(KeyPointValueNode):
                                              change='entering', phase=takeoff)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             value = value_at_index(eng_tpr_min.array, index)
             self.create_kpv(index, value)
 
@@ -10823,7 +10823,7 @@ class EngN1AtTOGADuringTakeoff(KeyPointValueNode):
         indexes = find_edges_on_state_change('TOGA', toga.array, change='entering', phase=takeoff)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             value = value_at_index(eng_n1.array, index)
             self.create_kpv(index, value)
 
@@ -12333,8 +12333,8 @@ class EngStartTimeMax(KeyPointValueNode):
             eng_2_index, eng_2_time = start_time(eng2_n2.array[:taxi.stop], hz)
 
             '''
-            print (eng_1_index, eng_1_time)
-            print (eng_2_index, eng_2_time )
+            print(eng_1_index, eng_1_time)
+            print(eng_2_index, eng_2_time)
             import matplotlib.pyplot as plt
             plt.plot(eng1_n2.array[:taxi.stop])
             plt.plot(eng2_n2.array[:taxi.stop])
@@ -12478,16 +12478,16 @@ class HeadingVariationAbove80KtsAirspeedDuringTakeoff(KeyPointValueNode):
                     airspeed.name, toffs.name, toff.slice)
                 continue
             spd = np.ma.masked_less(airspeed.array, 60)
-            first_spd_idx = first_valid_sample(spd[toff.slice.start:ceil(begin) + 1])[0] + toff.slice.start
+            first_spd_idx = first_valid_sample(spd[toff.slice.start:int(ceil(begin) + 1)])[0] + toff.slice.start
             # Pick first heading parameter with valid data in phase.
-            head = first_valid_parameter(head_true, head_mag, phases=(slice(first_spd_idx, ceil(begin)),))
+            head = first_valid_parameter(head_true, head_mag, phases=[slice(first_spd_idx, int(ceil(begin)))])
             if head is None:
                 # We have no valid heading to use.
                 self.warning(
                     "No valid heading data identified in takeoff slice '%s'.",
                     toff.slice)
                 continue
-            datum_heading = np.ma.median(head.array[first_spd_idx:ceil(begin)])
+            datum_heading = np.ma.median(head.array[first_spd_idx:int(ceil(begin))])
 
             end = None
             if nosewheel:
@@ -12500,7 +12500,7 @@ class HeadingVariationAbove80KtsAirspeedDuringTakeoff(KeyPointValueNode):
                     toff.slice)
                 continue
 
-            scan = slice(ceil(begin), ceil(end))
+            scan = slice(int(ceil(begin)), int(ceil(end)))
             # The data to test is extended to include aligned endpoints for the
             # 80kt and 1.5deg conditions. This also reduces the computational load as
             # we don't have to work out the deviation from the takeoff runway for all the flight.
@@ -12550,7 +12550,7 @@ class HeadingDeviationFromRunwayAtTOGADuringTakeoff(KeyPointValueNode):
         indexes = find_edges_on_state_change('TOGA', toga.array, phase=takeoff)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             brg = value_at_index(head.array, index)
             if brg in (None, np.ma.masked):
                 self.warning("Heading True Continuous is masked at index '%s'", index)
@@ -13199,7 +13199,7 @@ class FlareDistance20FtToTouchdown(KeyPointValueNode):
             if this_landing:
                 idx_20 = index_at_value(
                     alt_aal.array, 20.0,
-                    _slice=slice(ceil(tdown.index), this_landing[0].slice.start - 1, -1))
+                    _slice=slice(int(ceil(tdown.index)), this_landing[0].slice.start - 1, -1))
                 # Integrate returns an array, so we need to take the max
                 # value to yield the KTP value.
                 if idx_20:
@@ -13562,7 +13562,7 @@ class GroundspeedAtTOGA(KeyPointValueNode):
         indexes = find_edges_on_state_change('TOGA', toga.array, phase=takeoffs)
         for index in indexes:
             # Measure at known state instead of interpolated transition
-            index = ceil(index)
+            index = int(ceil(index))
             self.create_kpv(index, value_at_index(gnd_spd.array, index))
 
 

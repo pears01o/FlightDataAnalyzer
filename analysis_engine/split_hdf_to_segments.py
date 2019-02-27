@@ -139,9 +139,7 @@ def _segment_type_and_slice(speed_array, speed_frequency,
     vspd_threshold_exceedance = None
 
     if vspeed:
-        vert_spd_start = start * vspeed.frequency
-        vert_spd_stop = stop * vspeed.frequency
-        vert_spd_array = vspeed.array[vert_spd_start:vert_spd_stop]
+        vert_spd_array = vspeed.array[int(start * vspeed.frequency):int(stop * vspeed.frequency)]
         vspd_threshold_exceedance = \
             (np.ma.sum(vert_spd_array > thresholds['vertical_speed_max']) / vspeed.frequency) > thresholds['min_duration'] or \
             (np.ma.sum(vert_spd_array < thresholds['vertical_speed_min']) / vspeed.frequency) > thresholds['min_duration']
@@ -387,16 +385,14 @@ def _split_on_eng_params(slice_start_secs, slice_stop_secs, split_params_min,
     '''
     slice_start = slice_start_secs * split_params_frequency
     slice_stop = slice_stop_secs * split_params_frequency
-    split_params_slice = slice(np.round(slice_start, 0), np.round(slice_stop, 0))
+    split_params_slice = slice(int(np.round(slice_start, 0)), int(np.round(slice_stop, 0)))
     split_index, split_value = min_value(split_params_min,
                                          _slice=split_params_slice)
 
     if split_index is None:
         return split_index, split_value
 
-    eng_min_slices = runs_of_ones(
-        split_params_min[slices_int(split_params_slice)] == split_value
-    )
+    eng_min_slices = runs_of_ones(split_params_min[split_params_slice] == split_value)
 
     if not eng_min_slices:
         return py2round(split_index / split_params_frequency), split_value
@@ -428,7 +424,7 @@ def _split_on_dfc(slice_start_secs, slice_stop_secs, dfc_frequency,
     :rtype: int or float or None
     '''
     dfc_slice = slice(slice_start_secs * dfc_frequency,
-                      floor(slice_stop_secs * dfc_frequency) + 1)
+                      int(floor(slice_stop_secs * dfc_frequency)) + 1)
     unmasked_edges = np.ma.flatnotmasked_edges(dfc_diff[slices_int(dfc_slice)])
     if unmasked_edges is None:
         return None
@@ -887,7 +883,7 @@ def calculate_fallback_dt(hdf, fallback_dt=None, validation_dt=None,
     try:
         dt_arrays, _, dt_parameter_origin = get_dt_arrays(hdf, fallback_dt, validation_dt)
         timebase = calculate_timebase(*dt_arrays)
-        fallback_changes = [v for v in dt_parameter_origin.itervalues() if 'fallback' in v]
+        fallback_changes = [v for v in dt_parameter_origin.values() if 'fallback' in v]
     except (KeyError, ValueError):
         # The time parameters are not available/operational
         return fallback_dt

@@ -965,7 +965,7 @@ class AltitudeRadio(DerivedParameterNode):
     def can_operate(cls, available):
         alt_rads = [n for n in cls.get_dependency_names() if n.startswith('Altitude Radio')]
         return 'Fast' in available and any_of(alt_rads, available)
-    
+
     def derive(self,
                source_A=P('Altitude Radio (A)'),
                source_B=P('Altitude Radio (B)'),
@@ -995,18 +995,18 @@ class AltitudeRadio(DerivedParameterNode):
             # correct for overflow, aligning the fast slice to each source
             aligned_fast = fast.get_aligned(source)
 
-            source.array = overflow_correction(source.array, 
-                                               fast=aligned_fast, 
+            source.array = overflow_correction(source.array,
+                                               fast=aligned_fast,
                                                hz=source.frequency)
             osources.append(source)
-        
+
         sources = osources
         # Blend parameters was written around the Boeing 737NG frames where three sources
         # are available with different sample rates and latency. Some airbus aircraft
-        # have three altimeters but one of the sensors can give signals that appear to be 
+        # have three altimeters but one of the sensors can give signals that appear to be
         # valid in the cruise, hence the alternative validity level. Finally, the overflow
-        # correction algorithms can be out of step, giving differences of the order of 
-        # 1,000ft between two sensors. The tolerance threshold ensures these are rejected 
+        # correction algorithms can be out of step, giving differences of the order of
+        # 1,000ft between two sensors. The tolerance threshold ensures these are rejected
         # (a wide tolerance ensures we don't react to normal levels of noise between altimeters).
         self.array = blend_parameters(sources,
                                       offset=self.offset,
@@ -1038,7 +1038,7 @@ class AltitudeRadio(DerivedParameterNode):
             scaling = 0.365 #ft/deg, +ve for altimeters aft of the main wheels.
             offset = -1.5 #ft at pitch=0
             self.array = self.array + (scaling * pitch.array) + offset
-            
+
 
 class AltitudeRadioOffsetRemoved(DerivedParameterNode):
     """
@@ -1710,7 +1710,7 @@ class ControlWheel(DerivedParameterNode):
             self.array = synchro.array
         if pot:
             pot_samples = np.ma.count(pot.array)
-            if pot_samples>synchro_samples:
+            if pot_samples > synchro_samples:
                 self.array = pot.array
 
 
@@ -2009,6 +2009,7 @@ class Brake_TempMin(DerivedParameterNode):
         brakes = vstack_params(*brake_params)
         self.array = np.ma.min(brakes, axis=0)
         self.offset = offset_select('mean', brake_params)
+
 
 ##############################################################################
 # Engine EPR

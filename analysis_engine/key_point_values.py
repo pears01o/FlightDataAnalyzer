@@ -19218,14 +19218,11 @@ class DHSelectedAt1500FtLVO(KeyPointValueNode):
     def can_operate(cls, available, series=A('Series')):
         if not series or series.value not in ('Falcon-7X', 'Falcon-8X'):
             return False
-        return all_of(('Altitude AAL', 'DH Selected'), available)
+        return all_of(('Altitude When Descending', 'DH Selected'), available)
 
-    def derive(self, alt_aal=P('Altitude AAL'), dh_selected=P('DH Selected'),
-               descents=S('Descent')):
+    def derive(self, alt_descending=KTI('Altitude When Descending'),
+               dh_selected=P('DH Selected')):
 
-        for descent in descents:
-            alt_aal_array = mask_outside_slices(alt_aal.array, [descent.slice])
-            approach_index = np.ma.argmax(alt_aal_array <= 1500)
-
-            if approach_index:
-                self.create_kpv(approach_index, dh_selected.array[approach_index])
+        self.create_kpvs_at_ktis(dh_selected.array,
+                                 alt_descending.get(name='1500 Ft Descending'),
+                                 suppress_zeros=True)

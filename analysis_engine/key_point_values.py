@@ -18951,7 +18951,7 @@ class EngN1TakeoffDerate(KeyPointValueNode):
                sage_toffs=KTI('SAGE Takeoff')):
 
         for toff in sage_toffs:
-            index = toff.index
+            index = int(toff.index)
             if mach.array[index] > 0.3:
                 # takeoff point mis-identified; ignore
                 continue
@@ -18985,7 +18985,7 @@ class EngThrustTakeoffDerate(KeyPointValueNode):
             return fnk
 
         for n1 in n1_derates:
-            index = n1.index
+            index = int(n1.index)
             corr_n1 = 100.0 - n1.value
             mach_toff = mach.array[index]
             fnk_90 = corrected_parameter_power_management(90.0, mach_toff)

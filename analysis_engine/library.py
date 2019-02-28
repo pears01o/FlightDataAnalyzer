@@ -3464,7 +3464,7 @@ def pairwise(iterable):
     https://docs.python.org/2/library/itertools.html#recipes
     s -> (s0,s1), (s1,s2), (s2, s3), ...
     '''
-    a, b = tee(iterable)
+    a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
 

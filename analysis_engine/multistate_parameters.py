@@ -14,18 +14,13 @@ from flightdatautilities import aircrafttables as at, dateext, units as ut
 from hdfaccess.parameter import MappedArray
 
 from analysis_engine.node import (
-    A, MultistateDerivedParameterNode,
-    M,
-    P,
-    S,
-    helicopter,
-    helicopter_only,
+    A, M, P, S, helicopter, MultistateDerivedParameterNode
 )
+
 from analysis_engine.library import (
     align,
     all_of,
     any_of,
-    calculate_flap,
     calculate_slat,
     clump_multistate,
     datetime_of_index,
@@ -35,7 +30,6 @@ from analysis_engine.library import (
     index_at_value,
     index_closest_value,
     first_valid_parameter,
-    mask_inside_slices,
     merge_masks,
     merge_two_parameters,
     moving_average,
@@ -50,22 +44,22 @@ from analysis_engine.library import (
     slices_and,
     slices_and_not,
     slices_from_to,
+    slices_int,
     slices_overlap,
     slices_remove_small_gaps,
     slices_remove_small_slices,
     smooth_signal,
     step_values,
     surface_for_synthetic,
-    vstack_params_where_state,
+    vstack_params_where_state
 )
+
 from analysis_engine.settings import (
-    AUTOROTATION_SPLIT,
     MIN_CORE_RUNNING,
     MIN_FAN_RUNNING,
     MIN_FUEL_FLOW_RUNNING,
     REVERSE_THRUST_EFFECTIVE_EPR,
-    REVERSE_THRUST_EFFECTIVE_N1,
-    ROTORS_TURNING,
+    REVERSE_THRUST_EFFECTIVE_N1
 )
 
 logger = logging.getLogger(name=__name__)
@@ -346,58 +340,6 @@ class APURunning(MultistateDerivedParameterNode):
             self.array = np.ma.where(apu_on.array == 1, 'Running', '-')
 
 
-class ASEEngaged(MultistateDerivedParameterNode):
-    '''
-    Determines if *any* of the "ASE (*) Engaged" parameters are recording the
-    state of Engaged.
-
-    This is a discrete with only the Engaged state.
-    '''
-
-    name = 'ASE Engaged'
-    values_mapping = {0: '-', 1: 'Engaged'}
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return ac_type and ac_type.value == 'helicopter' and \
-               any_of(cls.get_dependency_names(), available)
-
-    def derive(self,
-               ase1=M('ASE (1) Engaged'),
-               ase2=M('ASE (2) Engaged'),
-               ase3=M('ASE (3) Engaged')):
-        stacked = vstack_params_where_state(
-            (ase1, 'Engaged'),
-            (ase2, 'Engaged'),
-            (ase3, 'Engaged'),
-        )
-        self.array = stacked.any(axis=0)
-        self.offset = offset_select('mean', [ase1, ase2, ase3])
-
-
-class ASEChannelsEngaged(MultistateDerivedParameterNode):
-    '''
-    '''
-    name = 'ASE Channels Engaged'
-    values_mapping = {0: '-', 1: 'Single', 2: 'Dual', 3: 'Triple'}
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return ac_type and ac_type.value == 'helicopter' and len(available) >= 2
-
-    def derive(self,
-               ase1=M('ASE (1) Engaged'),
-               ase2=M('ASE (2) Engaged'),
-               ase3=M('ASE (3) Engaged')):
-        stacked = vstack_params_where_state(
-            (ase1, 'Engaged'),
-            (ase2, 'Engaged'),
-            (ase3, 'Engaged'),
-        )
-        self.array = stacked.sum(axis=0)
-        self.offset = offset_select('mean', [ase1, ase2, ase3])
-
-
 class Configuration(MultistateDerivedParameterNode):
     '''
     Parameter for aircraft that use configuration. Reflects the actual state
@@ -563,9 +505,9 @@ class Daylight(MultistateDerivedParameterNode):
                start_datetime=A('Start Datetime'),
                duration=A('HDF Duration')):
         # Set default to 'Day'
-        array_len = duration.value * self.frequency
+        array_len = int(duration.value * self.frequency)
         self.array = np.ma.ones(array_len)
-        for step in range(int(array_len)):
+        for step in range(array_len):
             curr_dt = datetime_of_index(start_datetime.value, step, 1)
             lat = latitude.array[step]
             lon = longitude.array[step]
@@ -966,114 +908,6 @@ class Eng_AnyRunning(MultistateDerivedParameterNode, EngRunning):
                ac_type=A('Aircraft Type')):
         self.array = self.determine_running(eng_n1, eng_n2, eng_np, fuel_flow, ac_type)
 
-# Helicopters
-
-class Eng1OneEngineInoperative(MultistateDerivedParameterNode):
-    '''
-    Look for at least 1% difference between Eng 2 N2 speed and the rotor speed to indicate
-    Eng 1 can use OEI limits.
-
-    OEI: One Engine Inoperative
-    '''
-
-    name = 'Eng (1) One Engine Inoperative'
-
-    values_mapping = {
-        0: '-',
-        1: 'Active',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self,
-               eng_2_n2=P('Eng (2) N2'),
-               nr=P('Nr'),
-               autorotation=S('Autorotation')):
-
-        nr_periods = np.ma.masked_less(nr.array, 80)
-        nr_periods = mask_inside_slices(nr_periods, autorotation.get_slices())
-        delta = nr_periods - eng_2_n2.array
-        self.array = np.ma.where(delta > AUTOROTATION_SPLIT, 'Active', '-')
-
-
-class Eng2OneEngineInoperative(MultistateDerivedParameterNode):
-    '''
-    Look for at least 1% difference between Eng 1 N2 speed and the rotor speed to indicate
-    Eng 1 can use OEI limits.
-
-    OEI: One Engine Inoperative
-    '''
-
-    name = 'Eng (2) One Engine Inoperative'
-
-    values_mapping = {
-        0: '-',
-        1: 'Active',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self,
-               eng_1_n2=P('Eng (1) N2'),
-               nr=P('Nr'),
-               autorotation=S('Autorotation')):
-
-        nr_periods = np.ma.masked_less(nr.array, 80)
-        nr_periods = mask_inside_slices(nr_periods, autorotation.get_slices())
-        delta = nr_periods - eng_1_n2.array
-        self.array = np.ma.where(delta > AUTOROTATION_SPLIT, 'Active', '-')
-
-
-class OneEngineInoperative(MultistateDerivedParameterNode):
-    '''
-    Any Engine is running either engine is OEI
-
-    OEI: One Engine Inoperative
-    '''
-
-    values_mapping = {
-        0: '-',
-        1: 'OEI',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self,
-               eng_1_oei=M('Eng (1) One Engine Inoperative'),
-               eng_2_oei=M('Eng (2) One Engine Inoperative'),
-               autorotation=S('Autorotation')):
-
-        oei = vstack_params_where_state((eng_1_oei, 'Active'),
-                                        (eng_2_oei, 'Active')).any(axis=0)
-        for section in autorotation:
-            oei[section.slice] = False
-        self.array = oei
-
-
-class AllEnginesOperative(MultistateDerivedParameterNode):
-    '''
-    Any Engine is running neither is OEI
-
-    OEI: One Engine Inoperative
-    AEO: All Engines Operative
-    '''
-
-    values_mapping = {
-        0: '-',
-        1: 'AEO',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self,
-               any_running=M('Eng (*) Any Running'),
-               eng_oei=M('One Engine Inoperative'),
-               autorotation=S('Autorotation')):
-        aeo = np.ma.logical_not(eng_oei.array == 'OEI')
-        for section in autorotation:
-            aeo[section.slice] = False
-        self.array = np.ma.logical_and(any_running.array == 'Running', aeo)
-
 
 class ThrustModeSelected(MultistateDerivedParameterNode):
     '''
@@ -1207,7 +1041,7 @@ class Flap(MultistateDerivedParameterNode):
 
         if family_name == 'Citation VLJ' and duration:
             self.values_mapping = {0: '0', 15: '15', 30: '30'}
-            self.array = np.ma.zeros(duration * self.frequency)
+            self.array = np.ma.zeros(int(duration * self.frequency))
             for toff in toffs:
                 self.array[toff.slice] = 15
             for land in lands:
@@ -1495,7 +1329,10 @@ class FlapLeverSynthetic(MultistateDerivedParameterNode):
         approach_slices = approach.get_slices() if approach else None
 
         if frame_name == 'E170_EBD_047' and approach_slices is not None:
-            self.array[approach_slices][self.array[approach_slices] == 16] = 32
+            # The Lever 4 and 5 share the same flap/slat config.
+            # On approaches the config is refferred to as Lever 5
+            self.array[self.array == 32] = 16  # ensure lever 4 before approach mod
+            self.array[tuple(approach_slices)][self.array[tuple(approach_slices)] == 16] = 32
 
 
 class Flaperon(MultistateDerivedParameterNode):
@@ -1697,8 +1534,8 @@ class GearDownInTransit(MultistateDerivedParameterNode):
             duration = fallback or 20 * self.frequency
             for gear_up_edge in gear_ups:
                 gear_moving_up = slice(
-                    max(gear_up_edge - duration, 0),
-                    min(gear_up_edge + duration, len(self.array))
+                    int(max(gear_up_edge - duration, 0)),
+                    int(min(gear_up_edge + duration, len(self.array)))
                 )
                 transits = [
                     transit for transit in transits
@@ -1711,7 +1548,7 @@ class GearDownInTransit(MultistateDerivedParameterNode):
                 for idx, run in enumerate(runs):
                     if slice_duration(run, self.frequency) > fallback:
                         stop = run.stop
-                        runs[idx] = slice(math.ceil(stop-fallback), stop)
+                        runs[idx] = slice(int(math.ceil(stop-fallback)), stop)
 
         elif gear_down_sel and (gear_in_transit or gear_red):
             param, state = (gear_in_transit, 'In Transit') if gear_in_transit else (gear_red, 'Warning')
@@ -1719,7 +1556,7 @@ class GearDownInTransit(MultistateDerivedParameterNode):
             for start in gear_sels:
                 stop = min([x for x in transits if x > start] or (None,))
                 if stop is not None:
-                    runs.append(slice(math.ceil(start), stop+1))
+                    runs.append(slice(int(math.ceil(start)), stop+1))
 
         elif gear_up and (gear_in_transit or gear_red):
             param, state = (gear_in_transit, 'In Transit') if gear_in_transit else (gear_red, 'Warning')
@@ -1731,8 +1568,8 @@ class GearDownInTransit(MultistateDerivedParameterNode):
             duration = fallback or 20 * self.frequency
             for gear_up_edge in gear_ups:
                 gear_moving_up = slice(
-                    max(gear_up_edge - duration, 0),
-                    min(gear_up_edge + duration, len(self.array))
+                    int(max(gear_up_edge - duration, 0)),
+                    int(min(gear_up_edge + duration, len(self.array)))
                 )
                 transits = [
                     transit for transit in transits
@@ -1744,7 +1581,7 @@ class GearDownInTransit(MultistateDerivedParameterNode):
                 for idx, run in enumerate(runs):
                     if slice_duration(run, self.frequency) > fallback:
                         stop = run.stop
-                        runs[idx] = slice(math.ceil(stop-fallback), stop)
+                        runs[idx] = slice(int(math.ceil(stop-fallback)), stop)
 
         elif gear_down and gear_down_sel:
             runs = runs_of_ones(nearest_neighbour_mask_repair(gear_down_sel.array) == 'Down')
@@ -1757,20 +1594,20 @@ class GearDownInTransit(MultistateDerivedParameterNode):
 
         elif gear_down and fallback:
             for stop in gear_downs:
-                runs.append(slice(math.ceil(stop-fallback), stop+1))
+                runs.append(slice(int(math.ceil(stop-fallback)), stop+1))
 
         elif gear_up and fallback:
             for start in gear_ups:
-                runs.append(slice(math.ceil(start), start+fallback+1))
+                runs.append(slice(int(math.ceil(start)), start+fallback+1))
 
         elif gear_down_sel and fallback:
             for start in gear_sels:
-                runs.append(slice(math.ceil(start), start+fallback+1))
+                runs.append(slice(int(math.ceil(start)), start+fallback+1))
 
         else:
             pass
 
-        for run in runs:
+        for run in slices_int(runs):
             self.array[run.start:run.stop] = 'Extending'
 
 
@@ -1859,8 +1696,8 @@ class GearUpInTransit(MultistateDerivedParameterNode):
             duration = fallback or 20 * self.frequency
             for gear_down in gear_downs:
                 gear_moving_down = slice(
-                    max(gear_down - duration, 0),
-                    min(gear_down + duration, len(self.array))
+                    int(max(gear_down - duration, 0)),
+                    int(min(gear_down + duration, len(self.array)))
                 )
                 transits = [
                     transit for transit in transits
@@ -1873,7 +1710,7 @@ class GearUpInTransit(MultistateDerivedParameterNode):
                 for idx, run in enumerate(runs):
                     if slice_duration(run, self.frequency) > fallback:
                         stop = run.stop
-                        runs[idx] = slice(math.ceil(stop-fallback), stop)
+                        runs[idx] = slice(int(math.ceil(stop-fallback)), stop)
 
         elif gear_up_sel and (gear_in_transit or gear_red):
             param, state = (gear_in_transit, 'In Transit') if gear_in_transit else (gear_red, 'Warning')
@@ -1881,9 +1718,9 @@ class GearUpInTransit(MultistateDerivedParameterNode):
             for start in gear_sels:
                 stop = min([x for x in transits if x > start] or (None,))
                 if stop is not None:
-                    _slice = slice(math.ceil(start), stop+1)
+                    _slice = slice(int(math.ceil(start)), stop+1)
                     if family and family.value == 'B737 Classic' and fallback and slice_duration(_slice, self.frequency) > fallback:
-                        _slice = slice(math.ceil(start), start+fallback+1)
+                        _slice = slice(int(math.ceil(start)), start+fallback+1)
                     runs.append(_slice)
 
         elif gear_down and (gear_in_transit or gear_red):
@@ -1896,8 +1733,8 @@ class GearUpInTransit(MultistateDerivedParameterNode):
             duration = fallback or 20 * self.frequency
             for gear_down_edge in gear_downs:
                 gear_moving_down = slice(
-                    max(gear_down_edge - duration, 0),
-                    min(gear_down_edge + duration, len(self.array))
+                    int(max(gear_down_edge - duration, 0)),
+                    int(min(gear_down_edge + duration, len(self.array)))
                 )
                 transits = [
                     transit for transit in transits
@@ -1909,7 +1746,7 @@ class GearUpInTransit(MultistateDerivedParameterNode):
                 for idx, run in enumerate(runs):
                     if slice_duration(run, self.frequency) > fallback:
                         stop = run.stop
-                        runs[idx] = slice(math.ceil(stop-fallback), stop)
+                        runs[idx] = slice(int(math.ceil(stop-fallback)), stop)
 
         elif gear_up and gear_up_sel:
             runs = runs_of_ones(nearest_neighbour_mask_repair(gear_up_sel.array) == 'Up')
@@ -1918,24 +1755,24 @@ class GearUpInTransit(MultistateDerivedParameterNode):
 
         elif gear_down and gear_up:
             for start, stop in zip(gear_downs, gear_ups):
-                runs.append(slice(math.ceil(start), stop+1))
+                runs.append(slice(int(math.ceil(start)), stop+1))
 
         elif gear_up and fallback:
             for stop in gear_ups:
-                runs.append(slice(math.ceil(stop-fallback), stop+1))
+                runs.append(slice(int(math.ceil(stop-fallback)), stop+1))
 
         elif gear_down and fallback:
             for start in gear_downs:
-                runs.append(slice(math.ceil(start), start+fallback+1))
+                runs.append(slice(int(math.ceil(start)), start+fallback+1))
 
         elif gear_up_sel and fallback:
             for start in gear_sels:
-                runs.append(slice(math.ceil(start), start+fallback+1))
+                runs.append(slice(int(math.ceil(start)), start+fallback+1))
 
         else:
             pass
 
-        for run in runs:
+        for run in slices_int(runs):
             self.array[run.start:run.stop] = 'Retracting'
 
 
@@ -2368,7 +2205,7 @@ class PilotFlying(MultistateDerivedParameterNode):
             pilot_flying = nearest_neighbour_mask_repair(pilot_flying, repair_gap_size=20*self.frequency, copy=False)
             # use second window to remove spiking between captain and first
             # officer during dual stick periods
-            pilot_flying = second_window(pilot_flying, self.frequency, 2).astype(np.short)
+            pilot_flying = second_window(pilot_flying.raw, self.frequency, 2).astype(np.short)
 
         self.array = pilot_flying
 
@@ -2393,22 +2230,6 @@ class PitchAlternateLaw(MultistateDerivedParameterNode):
             (alt_law_1, 'Engaged'),
             (alt_law_2, 'Engaged'),
         ).any(axis=0)
-
-
-class RotorsRunning(MultistateDerivedParameterNode):
-    '''
-
-    '''
-
-    values_mapping = {
-        0: 'Not Running',
-        1: 'Running',
-    }
-
-    can_operate = helicopter_only
-
-    def derive(self, nr=P('Nr')):
-        self.array = np.ma.where(repair_mask(nr.array) > ROTORS_TURNING, 'Running', 'Not Running')
 
 
 class Slat(MultistateDerivedParameterNode):
@@ -2892,16 +2713,18 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
                 l, l1, l2, l3, l4, l5, l6, l7, lout)
         right = (rd, r1d, r2d, r3d, r4d, r5d, r6d, r7d, routd,
                  r, r1, r2, r3, r4, r5, r6, r7, rout)
-        pairs = zip(left, right)
+        pairs = list(zip(left, right))
         state = 'Deployed'
 
         def is_deployed(param):
+            if not param:
+                return
             array = np_ma_zeros_like(
                 param.array, dtype=np.bool, mask=param.array.mask)
             if state in param.name:
                 if state not in param.array.state:
                     logger.warning("State '%s' not found in param '%s'", state, param.name)
-                    return None
+                    return
                 matching = param.array == state
             elif family and family.value == 'MD-11':
                 matching = param.array >= 15
@@ -2918,15 +2741,11 @@ class SpeedbrakeDeployed(MultistateDerivedParameterNode):
             speedbrake[stepped_array == 20] = 1
             self.array = speedbrake
         else:
-            combined = [a for a in (is_deployed(p) for p in (dep, spoiler) if p) if a is not None]
-
-            for pair in pairs:
-                if not all(pair):
-                    continue
-                arrays = [is_deployed(p) for p in pair]
-                if not all(a is not None for a in arrays):
-                    continue
-                combined.append(np.ma.vstack(arrays).all(axis=0))
+            combined = [a for a in (is_deployed(p) for p in (dep, spoiler)) if a is not None]
+            combined.extend(
+                np.ma.vstack(arrays).all(axis=0) for arrays in
+                ([is_deployed(p) for p in pair] for pair in pairs)
+                if all(a is not None for a in arrays))
 
             if not combined:
                 self.array = np_ma_zeros_like(
@@ -3317,19 +3136,21 @@ class StableApproachStages(object):
             # use Combined descent phase slice as it contains the data from
             # top of descent to touchdown (approach starts and finishes later)
 
-            # Only one aircraft prone to generating erroneous phases due to
-            # weather monitoring behaviour has this model number.
-            # This ensures that a lack of a descent phase within an approach
-            # does not cause a fatal error for that aircraft.
-            if model and model.value == 'BAE 146-301':
-                try:
-                    approach.slice = phase.slice
-                except AttributeError:
-                    logger.warning('Unable to derive stable approach, '
-                                   'no descent phase found within approach.')
-                    pass
-            else:
+            # The following comment assumes that only one aircraft type has this issue, though
+            # it appears to occur on multiple.
+            ## Only one aircraft prone to generating erroneous phases due to
+            ## weather monitoring behaviour has this model number.
+            ## This ensures that a lack of a descent phase within an approach
+            ## does not cause a fatal error for that aircraft.
+            #if model and model.value == 'BAE 146-301':
+            try:
                 approach.slice = phase.slice
+            except AttributeError:
+                logger.warning('Unable to derive stable approach, '
+                               'no descent phase found within approach.')
+                pass
+            #else:
+                #approach.slice = phase.slice
 
             # FIXME: approaches shorter than 10 samples will not work due to
             # the use of moving_average with a width of 10 samples.
@@ -3341,11 +3162,11 @@ class StableApproachStages(object):
                 stop = gnd + 10
             else:
                 stop = approach.slice.stop
-            _slice = slice(approach.slice.start, stop)
+            _slice = slices_int(approach.slice.start, stop)
 
             altitude = self.repair(alt.array, _slice)
-            index_at_50 = index_closest_value(altitude, 50)
-            index_at_200 = index_closest_value(altitude, 200)
+            index_at_50 = int(index_closest_value(altitude, 50))
+            index_at_200 = int(index_closest_value(altitude, 200))
 
             if gear:
                 #== 1. Gear Down ==
@@ -4030,28 +3851,6 @@ class SpeedControl(MultistateDerivedParameterNode):
             (sc1a, 'Auto'), (sc1m, 'Auto'),
             (sc2a, 'Auto'), (sc2m, 'Auto'),
         ).any(axis=0).astype(np.int)
-
-
-class RotorBrakeEngaged(MultistateDerivedParameterNode):
-    ''' Discrete parameter describing when any rotor brake is engaged. '''
-
-    values_mapping = {0: '-', 1: 'Engaged'}
-
-    @classmethod
-    def can_operate(cls, available, ac_type=A('Aircraft Type')):
-        return any_of(cls.get_dependency_names(), available) and \
-               ac_type == helicopter
-
-    def derive(self,
-               brk1=M('Rotor Brake (1) Engaged'),
-               brk2=M('Rotor Brake (2) Engaged')):
-
-        stacked = vstack_params_where_state(
-            (brk1, 'Engaged'),
-            (brk2, 'Engaged'),
-        )
-        self.array = stacked.any(axis=0)
-        self.array.mask = stacked.mask.any(axis=0)
 
 
 class Transmitting(MultistateDerivedParameterNode):

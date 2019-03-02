@@ -8,7 +8,9 @@ from flightdatautilities.array_operations import load_compressed
 from hdfaccess.parameter import MappedArray
 
 from analysis_engine.node import (
-    A, ApproachItem, aeroplane, helicopter, KeyTimeInstance, KTI, load, Parameter, P, Section, S, M,)
+    A, M, P, S, KTI, aeroplane, ApproachItem, helicopter,
+    KeyTimeInstance, load, Parameter, Section
+)
 
 from analysis_engine.key_time_instances import (
     AltitudePeak,
@@ -79,11 +81,10 @@ from analysis_engine.key_time_instances import (
     TopOfDescent,
     TouchAndGo,
     Touchdown,
-    Transmit,
+    Transmit
 )
 
-from derived_parameters_test import NodeTest
-from flight_phase_test import buildsection, buildsections
+from analysis_engine.test_utils import buildsection, buildsections
 
 debug = sys.gettrace() is not None
 
@@ -106,7 +107,7 @@ class NodeTest(object):
                 self.operational_combination_length,
             )
         else:
-            combinations = map(set, self.node_class.get_operational_combinations(**kwargs))
+            combinations = list(map(set, self.node_class.get_operational_combinations(**kwargs)))
             for combination in map(set, self.operational_combinations):
                 self.assertIn(combination, combinations)
 
@@ -856,7 +857,7 @@ class TestTopOfClimb(unittest.TestCase):
         self.assertEqual(phase, expected)
 
     def test_top_of_climb_truncated_start(self):
-        alt_data = np.ma.array([800]*5+range(800,0,-100))
+        alt_data = np.ma.array([800]*5+list(range(800,0,-100)))
         alt = Parameter('Altitude STD Smoothed', np.ma.array(alt_data))
         phase = TopOfClimb()
         in_air = buildsection('Climb Cruise Descent',0,len(alt.array))
@@ -894,7 +895,7 @@ class TestTopOfDescent(unittest.TestCase):
         self.assertEqual(phase, expected)
 
     def test_top_of_descent_truncated_start(self):
-        alt_data = np.ma.array([800]*5+range(800,0,-100))
+        alt_data = np.ma.array([800]*5+list(range(800,0,-100)))
         alt = Parameter('Altitude STD Smoothed', np.ma.array(alt_data))
         phase = TopOfDescent()
         in_air = buildsection('Climb Cruise Descent',0,len(alt.array))
@@ -1691,7 +1692,7 @@ class TestFirstFlapExtensionWhileAirborne(unittest.TestCase, NodeTest):
         ]))
 
     def test_corrupt_flap_signal(self):
-        
+
         array = np.ma.array(data=[0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0],
                             mask=[0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0])
         mapping = {int(f): str(f) for f in np.ma.unique(array.data)}
@@ -1702,7 +1703,7 @@ class TestFirstFlapExtensionWhileAirborne(unittest.TestCase, NodeTest):
         node.derive(self.flap_lever, None, airborne)
         self.assertEqual(node, KTI(name=name, items=[
             KeyTimeInstance(index=8.5, name=name),
-        ]))        
+        ]))
 
 
 class TestFlapRetractionWhileAirborne(unittest.TestCase, NodeTest):

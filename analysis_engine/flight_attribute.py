@@ -194,7 +194,7 @@ class DestinationAirport(FlightAttributeNode):
                 self.set_flight_attr(afr_dest.value)
             return
 
-        value = most_common_value(dest.array, threshold=0.45)
+        value = most_common_value(dest.array, threshold=0.45).decode()
         if value is None or not value.isalpha():
             return
 
@@ -247,7 +247,7 @@ class FlightNumber(FlightAttributeNode):
             value = most_common_value(num.array, threshold=0.45)
             if value is not None:
                 # Only parse valid ASCII characters
-                self.set_flight_attr(re.sub(r'[^\x00-\x7f]', r'', value))
+                self.set_flight_attr(re.sub(r'[^\x00-\x7f]', r'', value.decode()))
 
             return
 
@@ -625,8 +625,8 @@ class TakeoffPilot(FlightAttributeNode, DeterminePilot):
         lift = liftoffs.get_first() if liftoffs else None
         if lift and ap1_eng and ap2_eng:
             # check AP state at the floored index (just before lift)
-            ap1 = ap1_eng.array[lift.index] == 'Engaged'
-            ap2 = ap2_eng.array[lift.index] == 'Engaged'
+            ap1 = ap1_eng.array[int(lift.index)] == 'Engaged'
+            ap2 = ap2_eng.array[int(lift.index)] == 'Engaged'
         else:
             ap1 = ap2 = None
         args = (pilot_flying, pitch_capt, pitch_fo, roll_capt, roll_fo,
@@ -952,8 +952,8 @@ class LandingPilot(FlightAttributeNode, DeterminePilot):
         tdwn = touchdowns.get_last() if touchdowns else None
         if tdwn and ap1_eng and ap2_eng:
             # check AP state at the floored index (just before tdwn)
-            ap1 = ap1_eng.array[tdwn.index] == 'Engaged'
-            ap2 = ap2_eng.array[tdwn.index] == 'Engaged'
+            ap1 = ap1_eng.array[int(tdwn.index)] == 'Engaged'
+            ap2 = ap2_eng.array[int(tdwn.index)] == 'Engaged'
         else:
             ap1 = ap2 = None
         args = (pilot_flying, pitch_capt, pitch_fo, roll_capt, roll_fo,

@@ -2,6 +2,7 @@ import datetime
 import numpy as np
 import os
 import unittest
+import inspect
 
 from mock import patch
 from numpy.ma.testutils import assert_array_equal
@@ -10,45 +11,30 @@ from hdfaccess.parameter import MappedArray
 from flightdatautilities import aircrafttables as at, units as ut
 from flightdatautilities.aircrafttables.constants import AVAILABLE_CONF_STATES
 from flightdatautilities import masked_array_testutils as ma_test
-from flight_phase_test import buildsection, buildsections
+from analysis_engine.test_utils import buildsection, buildsections
+
+from analysis_engine.node import (
+    A, M, P, S, App, Attribute, load, Section
+)
+
 from analysis_engine.library import (
     unique_values,
-    runs_of_ones,
+    runs_of_ones
 )
-from analysis_engine.node import (
-    aeroplane,
-    Attribute,
-    A,
-    App,
-    #ApproachItem,
-    helicopter,
-    #KeyPointValue,
-    #KPV,
-    #KeyTimeInstance,
-    #KTI,
-    load,
-    M,
-    P,
-    Section,
-    S,
-)
+
 from analysis_engine.multistate_parameters import (
-    AllEnginesOperative,
     APEngaged,
     APChannelsEngaged,
     APLateralMode,
     APVerticalMode,
     APUOn,
     APURunning,
-    ASEEngaged,
     Configuration,
     Daylight,
     DualInput,
     ThrustModeSelected,
     EngBleedOpen,
     EngRunning,
-    Eng1OneEngineInoperative,
-    Eng2OneEngineInoperative,
     Eng1Running,
     Eng2Running,
     Eng3Running,
@@ -82,12 +68,9 @@ from analysis_engine.multistate_parameters import (
     KeyVHFFO,
     MasterCaution,
     MasterWarning,
-    OneEngineInoperative,
     PackValvesOpen,
     PilotFlying,
     PitchAlternateLaw,
-    RotorBrakeEngaged,
-    RotorsRunning,
     Slat,
     SlatExcludingTransition,
     SlatFullyExtended,
@@ -112,8 +95,9 @@ from analysis_engine.multistate_parameters import (
     TCASFailure,
     TCASRA,
     ThrustReversers,
-    Transmitting,
+    Transmitting
 )
+
 
 ##############################################################################
 # Test Configuration
@@ -629,63 +613,6 @@ class TestAPChannelsEngaged(unittest.TestCase, NodeTest):
         assert_array_equal(expected.array, eng.array)
 
 
-class TestASEEngaged(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = ASEEngaged
-
-    def test_can_operate(self):
-        self.assertEqual(self.node_class.get_operational_combinations(ac_type=aeroplane), [])
-        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
-        expected = [
-            ('ASE (1) Engaged',),
-            ('ASE (2) Engaged',),
-            ('ASE (3) Engaged',),
-            ('ASE (1) Engaged', 'ASE (2) Engaged'),
-            ('ASE (1) Engaged', 'ASE (3) Engaged'),
-            ('ASE (2) Engaged', 'ASE (3) Engaged'),
-            ('ASE (1) Engaged', 'ASE (2) Engaged', 'ASE (3) Engaged'),
-        ]
-        self.assertEqual(opts, expected)
-
-    def test_single_ase(self):
-        ase1 = M(array=np.ma.array(data=[0,0,1,1,0,0]),
-                values_mapping={1:'Engaged',0:'-'},
-                name='AP (1) Engaged')
-        ase2 = ase3 = None
-
-        node = self.node_class()
-        node.derive(ase1, ase2, ase3)
-
-        expected = M(array=np.ma.array(data=[0,0,1,1,0,0]),
-                     values_mapping={0: '-', 1: 'Engaged'},
-                     name='AP Engaged',
-                     frequency=1,
-                     offset=0.1)
-        np.testing.assert_array_equal(expected.array, node.array)
-
-    def test_dual_ap(self):
-        # Two result in just "Engaged" state still
-        ase1 = M(array=np.ma.array(data=[0,0,1,1,0,0]),
-                values_mapping={1:'Engaged',0:'-'},
-                name='AP (1) Engaged')
-        ase2 = M(array=np.ma.array(data=[0,0,0,1,1,0]),
-                values_mapping={1:'Engaged',0:'-'},
-                name='AP (2) Engaged')
-        ase3 = None
-
-        node = self.node_class()
-        node.derive(ase1, ase2, ase3)
-
-        expected = M(array=np.ma.array(data=[0,0,1,1,1,0]),
-                     values_mapping={0: '-', 1: 'Engaged'},
-                     name='AP Engaged',
-                     frequency=1,
-                     offset=0.1)
-
-        np.testing.assert_array_equal(expected.array, node.array)
-
-
 class TestConfiguration(unittest.TestCase, NodeTest):
 
     def setUp(self):
@@ -773,8 +700,8 @@ class TestConfiguration(unittest.TestCase, NodeTest):
         self.assertEqual(node.values_mapping, AVAILABLE_CONF_STATES)
         self.assertEqual(node.units, None)
         self.assertIsInstance(node.array, MappedArray)
-        values = unique_values(node.array.astype(int))
-        self.assertEqual(values, {0: 4, 10: 4, 13: 4, 16: 1, 20: 4, 26: 1, 30: 4, 90: 4})
+        values = unique_values(node.array)
+        self.assertEqual(values, {'Full': 4, '1+F': 4, '1': 4, '0': 4, '3': 4, '2': 4, '1*': 1, '2*': 1})
 
 
 class TestDaylight(unittest.TestCase):
@@ -1170,129 +1097,6 @@ class TestEng_AnyRunning(unittest.TestCase, NodeTest):
         node = self.node_class()
         node.derive(None, None, eng_np , None)
         self.assertEqual(node.array.raw.tolist(), expected)
-
-
-class TestEng1OneEngineInoperative(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = Eng1OneEngineInoperative
-        n2_data = [0.0]*3 + [100.0]*11 + [98.0]*3 + [100.0]*20 + [0.0]*3
-        self.n2 = P(name='Eng (2) N2', array=np.ma.array(n2_data))
-
-        nr_data = [0.0]*5 + [100.0]*30 + [0.0]*5
-        self.nr = P(name='Nr', array=np.ma.array(nr_data))
-
-        expected_data = [0]*14 + [1]*3 + [0]*23
-        self.expected = self.node_class(name='Eng (1) One Engine Inoperative', array=np.ma.array(expected_data, dtype=int),
-                                        values_mapping=self.node_class.values_mapping)
-
-    def test_can_operate(self):
-        combinations = self.node_class.get_operational_combinations(ac_type=helicopter)
-        expected = [('Eng (2) N2', 'Nr', 'Autorotation')]
-        self.assertEqual(combinations, expected)
-
-    def test_derive(self):
-        node = self.node_class()
-        node.derive(self.n2, self.nr, S(items=[]))
-
-        np.testing.assert_array_equal(node.array, self.expected.array)
-
-    def test_derive_mask(self):
-        self.n2.array.mask = np.ma.getmaskarray(self.n2.array)
-        self.n2.array.mask[20:25] = True
-
-        node = self.node_class()
-        node.derive(self.n2, self.nr, S(items=[]))
-
-        np.testing.assert_array_equal(node.array, self.expected.array)
-
-
-class TestEng2OneEngineInoperative(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = Eng2OneEngineInoperative
-        n2_data = [0.0]*3 + [100.0]*11 + [98.0]*3 + [100.0]*20 + [0.0]*3
-        self.n2 = P(name='Eng (1) N2', array=np.ma.array(n2_data))
-
-        nr_data = [0.0]*5 + [100.0]*30 + [0.0]*5
-        self.nr = P(name='Nr', array=np.ma.array(nr_data))
-
-        expected_data = [0]*14 + [1]*3 + [0]*23
-        self.expected = self.node_class(name='Eng (2) One Engine Inoperative', array=np.ma.array(expected_data, dtype=int),
-                                        values_mapping=self.node_class.values_mapping)
-
-    def test_can_operate(self):
-        combinations = self.node_class.get_operational_combinations(ac_type=helicopter)
-        expected = [('Eng (1) N2', 'Nr', 'Autorotation')]
-        self.assertEqual(combinations, expected)
-
-    def test_derive(self):
-        node = self.node_class()
-        node.derive(self.n2, self.nr, S(items=[]))
-
-        np.testing.assert_array_equal(node.array, self.expected.array)
-
-    def test_derive_mask(self):
-        self.n2.array.mask = np.ma.getmaskarray(self.n2.array)
-        self.n2.array.mask[20:25] = True
-
-        node = self.node_class()
-        node.derive(self.n2, self.nr, S(items=[]))
-
-        np.testing.assert_array_equal(node.array, self.expected.array)
-
-
-class TestOneEngineInoperative(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = OneEngineInoperative
-
-    def test_can_operate(self):
-        combinations = self.node_class.get_operational_combinations(ac_type=helicopter)
-        expected = [('Eng (1) One Engine Inoperative', 'Eng (2) One Engine Inoperative', 'Autorotation')]
-        self.assertEqual(combinations, expected)
-
-    def test_derive(self):
-        data = [0]*10 + [1]*5 + [0]*25
-        eng_1 = M(name='Eng (1) One EngineI noperative', array=np.ma.array(data, dtype=int),
-                       values_mapping=Eng1OneEngineInoperative.values_mapping)
-        eng_2 = M(name='Eng (2) One Engine Inoperative', array=np.ma.array(np.roll(data, 10), dtype=int),
-                       values_mapping=Eng2OneEngineInoperative.values_mapping)
-
-        node = self.node_class()
-        node.derive(eng_1, eng_2, S(items=[]))
-
-        expected_data = [0]*10 + [1]*5 + [0]*5 + [1]*5 + [0]*15
-        expected = self.node_class(name='One Engine Inoperative', array=np.ma.array(expected_data, dtype=int),
-                       values_mapping=self.node_class.values_mapping)
-        np.testing.assert_array_equal(node.array, expected.array)
-
-
-class TestAllEnginesOperative(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = AllEnginesOperative
-
-    def test_can_operate(self):
-        combinations = self.node_class.get_operational_combinations(ac_type=helicopter)
-        expected = [('Eng (*) Any Running', 'One Engine Inoperative', 'Autorotation')]
-        self.assertEqual(combinations, expected)
-
-    def test_derive(self):
-        run_data = [0]*5 + [1]*30 + [0]*5
-        oei_data = [0]*13 + [1]*3 + [0]*24
-        oei = M(name='One Engine Inoperative', array=np.ma.array(oei_data), values_mapping=OneEngineInoperative.values_mapping)
-        any_running = M(name='Eng (*) Any Running', array=np.ma.array(run_data),
-                       values_mapping=Eng_AnyRunning.values_mapping)
-        autorotation = []
-
-        node = self.node_class()
-        node.derive(any_running, oei, S(items=[]))
-
-        expected_data = [0]*5 + [1]*8 + [0]*3 + [1]*19 + [0]*5
-        expected = self.node_class(name='All Engines Operative', array=np.ma.array(expected_data, dtype=int),
-                       values_mapping=self.node_class.values_mapping)
-        np.testing.assert_array_equal(node.array, expected.array)
 
 
 class TestEng_Oil_Press_Warning(unittest.TestCase):
@@ -2549,20 +2353,6 @@ class TestSlat(unittest.TestCase, NodeTest):
         self.assertEqual(node.array.raw.tolist(), [0] * 11 + [25] * 62 + [None])
 
 
-class TestRotorsRunning(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = RotorsRunning
-
-    def test_can_operate(self):
-        self.assertEqual(self.node_class.get_operational_combinations(ac_type=aeroplane), [])
-        self.assertEqual(self.node_class.get_operational_combinations(ac_type=helicopter), [('Nr',)])
-
-    @unittest.SkipTest
-    def test_derive(self):
-        self.assertTrue(False)
-
-
 class TestSlatExcludingTransition(unittest.TestCase, NodeTest):
 
     def setUp(self):
@@ -2840,9 +2630,42 @@ class TestSmokeWarning(unittest.TestCase):
     def setUp(self):
         self.node_class = SmokeWarning
 
+    @unittest.skip("Taking too long generating all 2,097,151 combinations")
     def test_can_operate(self):
         opts = self.node_class.get_operational_combinations()
         self.assertEqual(len(opts), 2**21-1)
+
+    def test_can_operate_simple(self):
+        expected_params = [
+            'Smoke Avionics Warning',
+            'Smoke Avionics (1) Warning',
+            'Smoke Avionics (2) Warning',
+            'Smoke Lavatory Warning',
+            'Smoke Lavatory (1) Warning',
+            'Smoke Lavatory (2) Warning',
+            'Smoke Cabin Warning',
+            'Smoke Cabin Rest (1) Warning',
+            'Smoke Cabin Rest (2) Warning',
+            'Smoke Cargo Warning',
+            'Smoke Cargo Fwd (1) Warning',
+            'Smoke Cargo Fwd (2) Warning',
+            'Smoke Cargo Aft (1) Warning',
+            'Smoke Cargo Aft (2) Warning',
+            'Smoke Cargo Rest (1) Warning',
+            'Smoke Cargo Rest (2) Warning',
+            'Smoke Lower Deck Stowage',
+            'Smoke Avionic Bulk',
+            'Smoke IFEC',
+            'Smoke BCRC',
+            'Smoke Autonomous VCC',
+        ]
+        derived_args = inspect.getargspec(self.node_class.derive).defaults
+        derived_params = [n.name for n in derived_args]
+        self.assertEqual(len(derived_params), len(expected_params))
+        self.assertEqual(sorted(derived_params), sorted(expected_params))
+        for warning in expected_params:
+            self.assertTrue(self.node_class.can_operate([warning]))
+
 
     def test_derive(self):
         one = M('Smoke Avionics (1) Warning', np.ma.array([0, 1, 0, 0, 0, 0]),
@@ -3846,66 +3669,6 @@ class TestSpeedControl(unittest.TestCase, NodeTest):
         )
         assert_array_equal(node.array, expected.array)
 
-
-class TestRotorBrakeEngaged(unittest.TestCase):
-
-    def setUp(self):
-        self.node_class = RotorBrakeEngaged
-        self.values_mapping = {1: 'Engaged', 0: '-'}
-        self.brk1 = M('Rotor Brake (1) Engaged',
-                      np.ma.array(data=[0,0,1,1,0,0]),
-                      values_mapping=self.values_mapping)
-        self.brk2 = M('Rotor Brake (2) Engaged',
-                      np.ma.array(data=[0,0,0,1,1,0]),
-                      values_mapping=self.values_mapping)
-
-    def test_can_operate(self):
-        self.assertEqual(self.node_class.get_operational_combinations(
-            ac_type=aeroplane), [])
-        opts = self.node_class.get_operational_combinations(ac_type=helicopter)
-        for opt in opts:
-            brk1 = 'Rotor Brake (1) Engaged' in opt
-            brk2 = 'Rotor Brake (2) Engaged' in opt
-            self.assertTrue(brk1 or brk2)
-
-    def test_brk1(self):
-        brk1 = self.brk1
-        brk2 = None
-
-        node = self.node_class()
-        node.derive(brk1, brk2)
-
-        expected = M('Rotor Brake Engaged',
-                     np.ma.array(data=[0,0,1,1,0,0]),
-                     values_mapping=self.values_mapping)
-
-        np.testing.assert_array_equal(expected.array, node.array)
-
-    def test_brk2(self):
-        brk1 = None
-        brk2 = self.brk2
-
-        node = self.node_class()
-        node.derive(brk1, brk2)
-
-        expected = M('Rotor Brake Engaged',
-                     np.ma.array(data=[0,0,0,1,1,0]),
-                     values_mapping=self.values_mapping)
-
-        np.testing.assert_array_equal(expected.array, node.array)
-
-    def test_both_brakes(self):
-        brk1 = self.brk1
-        brk2 = self.brk2
-
-        node = self.node_class()
-        node.derive(brk1, brk2)
-
-        expected = M('Rotor Brake Engaged',
-                     np.ma.array(data=[0,0,1,1,1,0]),
-                     values_mapping=self.values_mapping)
-
-        np.testing.assert_array_equal(expected.array, node.array)
 
 
 class TestGearUpInTransit(unittest.TestCase):

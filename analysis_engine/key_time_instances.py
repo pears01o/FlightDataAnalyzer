@@ -5,6 +5,14 @@ import six
 
 from math import ceil, floor
 
+from flightdatautilities import units as ut
+from flightdatautilities.geometry import great_circle_distance__haversine
+
+from analysis_engine.node import (
+    A, M, P, S, KTI, aeroplane, aeroplane_only, App,
+    helicopter, KeyTimeInstanceNode
+)
+
 from analysis_engine.library import (
     all_deps,
     all_of,
@@ -30,18 +38,14 @@ from analysis_engine.library import (
     slices_and,
     slices_and_not,
     slice_duration,
+    slices_int,
     slices_not,
     slices_overlap,
     slices_remove_small_gaps,
-    value_at_index,
+    value_at_index
 )
 
-from analysis_engine.node import (
-    A, App, M, P, S, KTI, KeyTimeInstanceNode,
-    aeroplane, aeroplane_only, helicopter, helicopter_only)
 
-from flightdatautilities import units as ut
-from flightdatautilities.geometry import great_circle_distance__haversine
 
 from analysis_engine.settings import (
     CLIMB_THRESHOLD,
@@ -683,32 +687,6 @@ class ExitHold(KeyTimeInstanceNode):
             self.create_kti(hold.slice.stop)
 
 
-class EnterTransitionFlightToHover(KeyTimeInstanceNode):
-
-    can_operate = helicopter_only
-
-    def derive(self, holds=S('Transition Flight To Hover')):
-        for hold in holds:
-            self.create_kti(hold.slice.start)
-
-class ExitTransitionFlightToHover(KeyTimeInstanceNode):
-
-    can_operate = helicopter_only
-
-    def derive(self, holds=S('Transition Flight To Hover')):
-        for hold in holds:
-            self.create_kti(hold.slice.stop)
-
-
-class ExitTransitionHoverToFlight(KeyTimeInstanceNode):
-
-    can_operate = helicopter_only
-
-    def derive(self, holds=S('Transition Hover To Flight')):
-        for hold in holds:
-            self.create_kti(hold.slice.stop)
-
-
 class EngFireExtinguisher(KeyTimeInstanceNode):
     def derive(self, e1f=P('Eng (1) Fire Extinguisher'),
                e2f=P('Eng (2) Fire Extinguisher'),
@@ -1273,8 +1251,8 @@ class Liftoff(KeyTimeInstanceNode):
                                           to_scan)
                 # and try to augment this with another measure
                 if acc_norm:
-                    idx = np.ma.argmax(acc_norm.array[to_scan])
-                    if acc_norm.array[to_scan][idx] > 1.2:
+                    idx = np.ma.argmax(acc_norm.array[slices_int(to_scan)])
+                    if acc_norm.array[slices_int(to_scan)][idx] > 1.2:
                         index_acc = idx + back_6
 
             if alt_rad:
@@ -1283,15 +1261,15 @@ class Liftoff(KeyTimeInstanceNode):
             if gog:
                 # Try using Gear On Ground switch
                 edges = find_edges_on_state_change(
-                    'Ground', gog.array[to_scan], change='leaving')
+                    'Ground', gog.array[slices_int(to_scan)], change='leaving')
                 if edges:
                     # use the last liftoff point
                     index = edges[-1] + back_6
                     # Check we were within 5ft of the ground when the switch triggered.
                     if alt_rad is None:
                         index_gog = index
-                    elif alt_rad.array[index] < 5.0 or \
-                            alt_rad.array[index] is np.ma.masked:
+                    elif alt_rad.array[int(index)] < 5.0 or \
+                            alt_rad.array[int(index)] is np.ma.masked:
                         index_gog = index
                     else:
                         index_gog = None
@@ -1322,7 +1300,7 @@ class Liftoff(KeyTimeInstanceNode):
             dt_pre = 5
             hz = self.frequency
             timebase=np.linspace(-dt_pre*hz, dt_pre*hz, 2*dt_pre*hz+1)
-            plot_period = slice(floor(air.slice.start-dt_pre*hz), floor(air.slice.start-dt_pre*hz+len(timebase)))
+            plot_period = slice(int(floor(air.slice.start-dt_pre*hz)), int(floor(air.slice.start-dt_pre*hz+len(timebase))))
             plt.figure()
             plt.plot(0, 13.0,'vb', markersize=8)
             if vert_spd:
@@ -1503,7 +1481,7 @@ class Touchdown(KeyTimeInstanceNode):
                     # (i.e. we ignore bounces)
                     index = edges[0] + land.slice.start
                     # Check we were within 10ft of the ground when the switch triggered.
-                    if not alt or alt.array[index] < 10.0:
+                    if not alt or alt.array[int(index)] < 10.0:
                         index_gog = index
 
             if manufacturer and manufacturer.value == 'Saab' and \
@@ -1522,7 +1500,7 @@ class Touchdown(KeyTimeInstanceNode):
             # With an estimate from the height and perhaps gear switch, set
             # up a period to scan across for accelerometer based
             # indications...
-            period_end = ceil(index_ref + dt_post * hz)
+            period_end = int(ceil(index_ref + dt_post * hz))
             period_start = max(floor(index_ref - dt_pre * hz), 0)
             if alt_rad:
                 # only look for 5ft altitude if Radio Altitude is recorded,
@@ -1533,7 +1511,7 @@ class Touchdown(KeyTimeInstanceNode):
             period = slice(period_start, period_end)
 
             if acc_long:
-                drag = np.ma.copy(acc_long.array[period])
+                drag = np.ma.copy(acc_long.array[slices_int(period)])
                 drag = np.ma.where(drag > 0.0, 0.0, drag)
 
                 # Look for inital wheel contact where there is a sudden spike in Ax.
@@ -1572,7 +1550,7 @@ class Touchdown(KeyTimeInstanceNode):
                     index_decel += period.start
 
             if acc_norm:
-                lift = acc_norm.array[period]
+                lift = acc_norm.array[slices_int(period)]
                 mean = np.mean(lift)
                 lift = np.ma.masked_less(lift-mean, 0.0)
                 bump = np_ma_masked_zeros_like(lift)
@@ -1636,7 +1614,7 @@ class Touchdown(KeyTimeInstanceNode):
             self.info(name)
             tz_offset = index_ref - period.start
             timebase=np.linspace(-tz_offset, dt_post*hz, tz_offset+(dt_post*hz)+1)
-            plot_period = slice(floor(index_ref-tz_offset), floor(index_ref-tz_offset+len(timebase)))
+            plot_period = slice(int(floor(index_ref-tz_offset)), int(floor(index_ref-tz_offset+len(timebase))))
             plt.figure()
             if alt:
                 plt.plot(timebase, alt.array[plot_period], 'o-r')
@@ -1814,7 +1792,7 @@ class AltitudeBeforeLevelFlightWhenClimbing(KeyTimeInstanceNode):
         not_level = [slice(0, ordered_level[0].start)] + \
             slices_not(ordered_level)
 
-        for n, level in enumerate(ordered_level):
+        for n, level in enumerate(slices_int(ordered_level)):
             climb_descent = not_level[n]
             level_height = np.ma.median(aal.array[level])
             if level_height < 3000:
@@ -1854,7 +1832,7 @@ class AltitudeBeforeLevelFlightWhenDescending(KeyTimeInstanceNode):
         not_level = [slice(0, ordered_level[0].start)] + \
             slices_not(ordered_level)
 
-        for n, level in enumerate(ordered_level):
+        for n, level in enumerate(slices_int(ordered_level)):
             climb_descent = not_level[n]
             level_height = np.ma.median(aal.array[level])
             if level_height < 3000:
@@ -1954,7 +1932,7 @@ class DistanceToTouchdown(KeyTimeInstanceNode):
         for touchdown in touchdowns:
             for d in self.NAME_VALUES['distance']:
                 index = index_at_value(dtl.array, d,
-                                       slice(floor(touchdown.index), last_tdwn_idx, -1))
+                                       slice(int(floor(touchdown.index)), last_tdwn_idx, -1))
                 if index:
                     # may not have travelled far enough to find distance threshold.
                     self.create_kti(index, distance=d)
@@ -1981,9 +1959,9 @@ class Autoland(KeyTimeInstanceNode):
                family=A('Family')):
         family = family.value if family else None
         for td in touchdowns:
-            if ap.array[td.index] == 'Dual' and family not in self.TRIPLE_FAMILIES:
+            if ap.array[int(td.index)] == 'Dual' and family not in self.TRIPLE_FAMILIES:
                 self.create_kti(td.index)
-            elif ap.array[td.index] == 'Triple':
+            elif ap.array[int(td.index)] == 'Triple':
                 self.create_kti(td.index)
             else:
                 # in Single OR Dual and Triple was required

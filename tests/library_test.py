@@ -34,7 +34,7 @@ import flightdatautilities.masked_array_testutils as ma_test
 from analysis_engine.library import *
 from analysis_engine.node import (A, P, S, load, M, KTI, KeyTimeInstance, Section)
 
-from flight_phase_test import buildsections
+from analysis_engine.test_utils import buildsections
 
 test_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               'test_data')
@@ -279,6 +279,7 @@ class TestFindLowAlts(unittest.TestCase):
         self.assertAlmostEqual(low_alts[2].stop, 7171, places=0)
         self.assertAlmostEqual(low_alts[3].start, 10362, places=0)
         self.assertAlmostEqual(low_alts[3].stop, 10569, places=0)
+
 
     @unittest.skip('Known failure case')
     def test_find_low_alts_2(self):
@@ -934,7 +935,7 @@ class TestAlign(unittest.TestCase):
         slave = P('slave', np.ma.arange(15), frequency=5.0, offset=0.0)
         result = align(slave, master)
         assert_array_equal(result, [0, 5, 10])
-    
+
     def test_align_5hz_reverse(self):
         master = P('master', np.ma.arange(15.0), frequency=5.0, offset=0.0)
         slave = P('slave', array=[1,2,3], frequency=1.0, offset=0.0)
@@ -956,13 +957,13 @@ class TestAlign(unittest.TestCase):
         expected = (master.array/10.0)+2.0
         expected[21:]=np.ma.masked
         assert_array_almost_equal(result, expected)
-    
+
     def test_align_15hz(self):
         master = P('master', array=[1,2,3], frequency=1.0, offset=0.0)
         slave = P('slave', np.ma.arange(45), frequency=15.0, offset=0.0)
         result = align(slave, master)
         assert_array_equal(result, [0, 15, 30])
-    
+
     def test_align_15hz_reverse(self):
         master = P('master', np.ma.arange(30), frequency=15.0, offset=0.0)
         slave = P('slave', [2,3], frequency=1.0, offset=0.0)
@@ -1006,7 +1007,7 @@ class TestAlign(unittest.TestCase):
         self.assertEqual(result.dtype, int)
         np.testing.assert_array_equal(result.data, [1,3,3,4,4,5,5,6,0,0])
         np.testing.assert_array_equal(result.mask, [0,0,0,0,0,0,0,0,1,1])
-    
+
     def test_align_multi_state_10_15(self):
         first = P(frequency=15, offset=0.0,
                   array=np.ma.array([11,12,13,14,15,16,17,18,19,20,21,22,23,24,25], dtype=float))
@@ -1018,18 +1019,18 @@ class TestAlign(unittest.TestCase):
         self.assertEqual(result.dtype, int)
         np.testing.assert_array_equal(result.data, [1,3,3,4,5,5,6,7,7,8,9,9,10,11,0])
         np.testing.assert_array_equal(result.mask, [0] * 14 + [1])
-    
+
     def test_align_multi_state_15_25(self):
         first = P(frequency=25, offset=0.0, array=np.ma.arange(25, dtype=int))
         second = M(frequency=15, offset=0.0,
                    array=np.ma.array([1,3,4,5,6,7,8,9,10,11,12,13,14,15,16], dtype=int))
-        
+
         result = align(second, first)
         # check dtype is int
         self.assertEqual(result.dtype, int)
         np.testing.assert_array_equal(result.data, [1,3,3,4,4,5,6,6,7,7,8,9,9,10,10,11,12,12,13,13,14,15,15,16,0])
         np.testing.assert_array_equal(result.mask, [0] * 24  + [1])
-    
+
     def test_align_multi_state_25_15(self):
         first = P(frequency=15, offset=0.0, array=np.ma.arange(15, dtype=np.int))
         second = M(frequency=25, offset=0.0, array=np.ma.arange(25, dtype=np.int))
@@ -1043,9 +1044,9 @@ class TestAlignStringArrays(unittest.TestCase):
         first = P(frequency=1.0, offset=0.6,
                   array=np.ma.array([11,12,13,14,15], dtype=float))
         second = P(frequency=1.0, offset=0.0,
-                   array=np.ma.array(["0","1","2","3","4"]))
+                   array=np.ma.array([b"0",b"1",b"2",b"3",b"4"]))
 
-        expected = np.ma.array(("1", "2", "3", "4", "0"), mask=[0,0,0,0,1])
+        expected = np.ma.array((b"1", b"2", b"3", b"4", b"0"), mask=[0,0,0,0,1])
         result = align(second, first)
 
         np.testing.assert_array_equal(result, expected)
@@ -1054,10 +1055,11 @@ class TestAlignStringArrays(unittest.TestCase):
         first = P(frequency=10, offset=0.0,
                   array=np.ma.array([11,12,13,14,15,16,17,18,19,20], dtype=float))
         second = P(frequency=5.0, offset=0.0,
-                   array=np.ma.array(["1","3","4","5","6"]))
+                   array=np.ma.array([b"1",b"3",b"4",b"5",b"6"]))
 
         result = align(second, first)
-        expected = np.ma.array(["1","3","3","4","4","5","5","6","0","0"], mask=[0,0,0,0,0,0,0,0,1,1])
+        expected = np.ma.array([b"1",b"3",b"3",b"4",b"4",b"5",b"5",b"6",b"0",b"0"],
+                               mask=[0,0,0,0,0,0,0,0,1,1])
 
         np.testing.assert_array_equal(result, expected)
 
@@ -1252,7 +1254,7 @@ class TestBlendNonequispacedSensors(unittest.TestCase):
         expected = np.ma.array(data=[2.5, 2.5, 2.5, 5.25, 5.75, 3.5, 3.5, 9],
                                mask = [0,   0,   0,    0,    0,   0,   0, 1])
         ma_test.assert_masked_array_equal(expected, result)
-        
+
     def test_blend_alternate_sensors_reverse(self):
         array_1 = np.ma.array([0, 0, 1, 1],dtype=float)
         array_2 = np.ma.array([5, 5, 6, 6],dtype=float)
@@ -1281,7 +1283,7 @@ class TestIncludingTransition(unittest.TestCase):
     flap_map_3 = {0: '0', 15: '15', 30: '30'}
     flap_map_4 = {0: '0', 1: '1', 2: '2', 5: '5', 10: '10', 15: '15', 25: '25', 30: '30', 40: '40'}
     hz=2
-    
+
     @staticmethod
     def _plot(array, flap_inc):
         from analysis_engine.plot_flight import plot_parameter
@@ -1357,14 +1359,14 @@ class TestIncludingTransition(unittest.TestCase):
         flap_inc = including_transition(array, self.flap_map_1)
         self.assertTrue(np.ma.all(flap_inc[0:11] == 0))
         self.assertTrue(np.ma.all(flap_inc[11:29] == 15))
-    
+
     @unittest.skip('Not Implemented')
     def test_including_transition_12(self):
         array = load_compressed(os.path.join(test_data_path, 'calculate_flap_12.npz'))
         flap_inc = including_transition(array, self.flap_map_1)
         # this example wont work with the new algorithm as the flaps didn't
         # transition to position 15 and this is expected - prepending the array
-        # with few values lower than 15 works just fine, therefore in a real-world 
+        # with few values lower than 15 works just fine, therefore in a real-world
         # case the results are as expected
         self.assertEqual(flap_inc.tolist(), [15] * 16 + [30] * 17)
 
@@ -1407,7 +1409,7 @@ class TestIncludingTransition(unittest.TestCase):
         self.assertTrue(np.ma.all(flap_inc[0:11] == 5))
         self.assertTrue(np.ma.all(flap_inc[11:22] == 15))
         self.assertTrue(np.ma.all(flap_inc[22:43] == 20))
-    
+
     def test_including_transition_19(self):
         array = load_compressed(os.path.join(test_data_path, 'calculate_flap_19.npz'))
         flap_inc = including_transition(array, self.flap_map_2)
@@ -2957,7 +2959,7 @@ class TestGroundspeedFromPosition(unittest.TestCase):
         self.assertAlmostEqual(result[3], 30.0, places = 0)
         # and make sure the values are all practically the same
         self.assertAlmostEqual(np.ptp(result), 0.0)
-        
+
 class TestGroundTrack(unittest.TestCase):
     def test_ground_track_basic(self):
         gspd = np.ma.array([60,60,60,60,60,60,60])
@@ -3026,7 +3028,7 @@ class TestGroundTrackPrecise(unittest.TestCase):
         gspd=[]
         duration_test_data_path = os.path.join(test_data_path,
                                                'precise_ground_track_test_data.csv')
-        with open(duration_test_data_path, 'rb') as csvfile:
+        with open(duration_test_data_path, 'rt') as csvfile:
             self.reader = csv.DictReader(csvfile)
             for row in self.reader:
                 # Sources to use from the recorded data file...
@@ -3037,9 +3039,9 @@ class TestGroundTrackPrecise(unittest.TestCase):
                 lon.append(float(row['Longitude']))
                 hdg.append(float(row['Heading']))
                 gspd.append(float(row['Groundspeed']))
-            la, lo = ground_track_precise(np.ma.array(lat), 
-                                          np.ma.array(lon), 
-                                          np.ma.array(gspd), 
+            la, lo = ground_track_precise(np.ma.array(lat),
+                                          np.ma.array(lon),
+                                          np.ma.array(gspd),
                                           np.ma.array(hdg),
                                           1.0)
         self.assertLess(np.min(la), -.0002)
@@ -3054,7 +3056,7 @@ class TestGroundTrackPrecise(unittest.TestCase):
         gspd_data=[]
         duration_test_data_path = os.path.join(test_data_path,
                                                'precise_ground_track_test_data_Dublin.csv')
-        with open(duration_test_data_path, 'rb') as csvfile:
+        with open(duration_test_data_path, 'rt') as csvfile:
             self.reader = csv.DictReader(csvfile)
             for row in self.reader:
                 lat_data.append(float(row['Latitude']))
@@ -3065,7 +3067,7 @@ class TestGroundTrackPrecise(unittest.TestCase):
             self.lon = np.ma.masked_equal(np.ma.array(lon_data), 0.0)
             self.hdg = np.ma.masked_equal(np.ma.array(hdg_data), 0.0)
             self.gspd = np.ma.array(gspd_data)
-            
+
             la, lo = ground_track_precise(self.lat, self.lon, self.gspd,
                                            self.hdg, 1.0)
         # For this test data the worst case adjustment should be very small.
@@ -3074,14 +3076,14 @@ class TestGroundTrackPrecise(unittest.TestCase):
 
     def test_ppgt_svalbard(self):
         # Because Svalbard is a nicer word than Longyearbyen
-        # This taxi out includes de-icing and a turn on the runway 
+        # This taxi out includes de-icing and a turn on the runway
         lat_data=[]
         lon_data=[]
         hdg_data=[]
         gspd_data=[]
         duration_test_data_path = os.path.join(test_data_path,
                                                'precise_ground_track_test_data_Svalbard.csv')
-        with open(duration_test_data_path, 'rb') as csvfile:
+        with open(duration_test_data_path, 'rt') as csvfile:
             self.reader = csv.DictReader(csvfile)
             for row in self.reader:
                 lat_data.append(float(row['Latitude']))
@@ -3092,20 +3094,20 @@ class TestGroundTrackPrecise(unittest.TestCase):
             self.lon = np.ma.masked_equal(np.ma.array(lon_data), 0.0)
             self.hdg = np.ma.masked_equal(np.ma.array(hdg_data), 0.0)
             self.gspd = np.ma.array(gspd_data)
-            
+
             la, lo = ground_track_precise(self.lat, self.lon, self.gspd,
                                            self.hdg, 1.0)
         self.assertTrue(True)
 
 
 class TestGtpBlendCurve(unittest.TestCase):
-    
+
     def test_gtp_blender(self):
         array = np.ma.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         expected = np.ma.array([1.0, 0.8, 0.6, 0.4, 0.2, 0.0])
         result = gtp_blend_curve(array)
         ma_test.assert_masked_array_almost_equal(result, expected)
-        
+
 
 class TestHashArray(unittest.TestCase):
     def test_hash_array(self):
@@ -3978,7 +3980,7 @@ class TestMatchAltitudes(unittest.TestCase):
 
 class TestMaxValue(unittest.TestCase):
     def test_max_value(self):
-        array = np.ma.array(list(range(50,100)) + list(range(100,50,-1)))
+        array = np.ma.concatenate([np.arange(50,100), np.arange(100,50,-1)])
         i, v = max_value(array)
         self.assertEqual(i, 50)
         self.assertEqual(v, 100)
@@ -3993,31 +3995,31 @@ class TestMaxValue(unittest.TestCase):
         ##self.assertEqual(res, (69, 81)) # you can get this if you use slice.stop!
 
     def test_max_value_non_integer_slices_no_limits(self):
-        array = np.ma.arange(5)+10
+        array = np.ma.arange(10, 15)
         i, v, = max_value(array)
         self.assertEqual(i, 4)
         self.assertEqual(v, 14)
 
     def test_max_value_integer_slices(self):
-        array = np.ma.arange(10)+10
+        array = np.ma.arange(10, 20)
         i, v, = max_value(array, slice(2,4))
         self.assertEqual(i, 3)
         self.assertEqual(v, 13)
 
     def test_max_value_non_integer_upper_edge(self):
-        array = np.ma.arange(5)+10
+        array = np.ma.arange(10, 15)
         i, v, = max_value(array, slice(2,3),None,3.7)
         self.assertEqual(i, 3.7)
         self.assertEqual(v, 13.7)
 
     def test_max_value_non_integer_lower_edge(self):
-        array = 20-np.ma.arange(5)
+        array = np.ma.arange(20, 15, -1)
         i, v, = max_value(array, slice(2,3),1.3,None)
         self.assertEqual(i, 1.3)
         self.assertEqual(v, 18.7)
 
     def test_max_value_slice_mismatch(self):
-        array = np.ma.arange(5)+10
+        array = np.ma.arange(10, 15)
         i, v, = max_value(array, slice(100,101))
         self.assertEqual(i, None)
         self.assertEqual(v, None)
@@ -4053,7 +4055,7 @@ class TestAverageValue(unittest.TestCase):
 
 class TestMedianValue(unittest.TestCase):
     def test_median_value(self):
-        array = np.ma.array(list(range(6)) + list(range(4)))
+        array = np.ma.concatenate([np.arange(6), np.arange(4)])
         self.assertEqual(median_value(array), Value(5, 2))
 
         array = np.ma.arange(30)
@@ -4062,7 +4064,7 @@ class TestMedianValue(unittest.TestCase):
 
 class TestMaxAbsValue(unittest.TestCase):
     def test_max_abs_value(self):
-        array = np.ma.array(list(range(-20,30)) + list(range(10,-41, -1)) + list(range(10)))
+        array = np.ma.concatenate([np.arange(-20,30), np.arange(10,-41, -1), np.arange(10)])
         self.assertEqual(max_abs_value(array), (100, -40))
         array = array*-1.0
         self.assertEqual(max_abs_value(array), (100, 40))
@@ -4105,7 +4107,7 @@ class TestMergeMasks(unittest.TestCase):
 
 class TestMergeSources(unittest.TestCase):
     def test_merge_sources_basic(self):
-        p1 = np.ma.array([0]*4)
+        p1 = np.ma.zeros(4)
         p2 = np.ma.array([1,2,3,4])
         result = merge_sources(p1, p2)
         expected = np.ma.array([0,1,0,2,0,3,0,4])
@@ -4114,8 +4116,8 @@ class TestMergeSources(unittest.TestCase):
 
 class TestMergeTwoParameters(unittest.TestCase):
     def test_merge_two_parameters_offset_ordered_forward(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1,2,3,4], frequency=1, offset=0.4)
+        p1 = P(array=np.ma.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ma.arange(1, 5), frequency=1, offset=0.4)
         arr, freq, off = merge_two_parameters(p1, p2)
         self.assertEqual(arr[1], 1.0) # Differs from blend function here.
         self.assertEqual(freq, 2)
@@ -4123,31 +4125,31 @@ class TestMergeTwoParameters(unittest.TestCase):
 
     def test_merge_two_parameters_offset_ordered_backward(self):
         p1 = P(array=[5,10,7,8], frequency=2, offset=0.3)
-        p2 = P(array=[1,2,3,4], frequency=2, offset=0.1)
+        p2 = P(array=np.ma.arange(1, 5), frequency=2, offset=0.1)
         arr, freq, off = merge_two_parameters(p1, p2)
         self.assertEqual(arr[3], 10.0)
         self.assertEqual(freq, 4)
         self.assertAlmostEqual(off, 0.075)
 
     def test_merge_two_parameters_assertion_error(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1]*4, frequency=2, offset=0.2)
+        p1 = P(array=np.ma.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ma.ones(4), frequency=2, offset=0.2)
         self.assertRaises(AssertionError, merge_two_parameters, p1, p2)
 
     def test_merge_two_parameters_array_mismatch_error(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1]*3, frequency=1, offset=0.2)
+        p1 = P(array=np.ma.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ma.ones(3), frequency=1, offset=0.2)
         self.assertRaises(AssertionError, merge_two_parameters, p1, p2)
 
     def test_merge_two_parameters_arrays_biassed_error(self):
-        p1 = P(array=[0]*4, name='One', frequency=1, offset=0.9)
-        p2 = P(array=[1]*4, name='Two', frequency=1, offset=0.9)
+        p1 = P(array=np.ma.zeros(4), name='One', frequency=1, offset=0.9)
+        p2 = P(array=np.ma.ones(4), name='Two', frequency=1, offset=0.9)
         self.assertRaises(ValueError, merge_two_parameters, p1, p2)
 
 
 class TestMinValue(unittest.TestCase):
     def test_min_value(self):
-        array = np.ma.array(list(range(50,100)) + list(range(100,50,-1)))
+        array = np.ma.concatenate([np.arange(50,100), np.arange(100,50,-1)])
         i, v = min_value(array)
         self.assertEqual(i, 0)
         self.assertEqual(v, 50)
@@ -4242,12 +4244,40 @@ class TestBlendParameters(unittest.TestCase):
 
         self.params = (p_alt_a, p_alt_b, p_alt_c)
 
-    def test_blend_parameters_assertion_errors(self):
+    def test_blend_parameters_errors(self):
         p1 = P(array=[0,0,0,1.0,2], frequency=1, offset=0.9)
         p2 = P(array=[1,2,3,4.0,5], frequency=1, offset=0.4)
         self.assertRaises(AssertionError, blend_parameters, (p1, p2), frequency=0.0)
         self.assertRaises(AssertionError, blend_parameters, (None, None))
         self.assertRaises(AssertionError, blend_parameters, (p1, p2), mode='silly')
+        self.assertRaises(ValueError, blend_parameters, (p1, p2), mode='cubic', validity='silly')
+
+    def test_cubic_validities(self):
+        p1 = P('Altitude Radio (A)', array=np.ma.array([1.0]*10))
+        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10, mask=True))
+        p3 = P('Altitude Radio (C)', array=np.ma.array([4.0]*10, mask=True))
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
+        self.assertAlmostEqual(result[5], 1.0)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
+        self.assertEqual(result[5].mask, True)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
+        self.assertEqual(result[5].mask, True)
+
+        p2 = P('Altitude Radio (B)', array=np.ma.array([2.0]*10))
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
+        self.assertAlmostEqual(result[5], 1.5)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
+        self.assertAlmostEqual(result[5], 1.5)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
+        self.assertEqual(result[5].mask, True)
+
+        p3 = P('Altitude Radio (C)', array=np.ma.array([3.0]*10))
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='any_one')
+        self.assertAlmostEqual(result[5], 2.0)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all_but_one')
+        self.assertAlmostEqual(result[5], 2.0)
+        result = blend_parameters((p1, p2, p3), offset=0.0, frequency=1.0, mode='cubic', validity='all')
+        self.assertAlmostEqual(result[5], 2.0)
 
     def test_blend_linear_params_complex_example(self):
         result = blend_parameters(self.params, offset=0.0, frequency=2.0)
@@ -4328,7 +4358,7 @@ class TestBlendParameters(unittest.TestCase):
         p1 = P(array=[5,10,7,8,9], frequency=1, offset=0.1, name='First')
         p2 = P(array=[1,2,3,4,5], frequency=1, offset=0.0, name='Second')
         p1.array.mask = True
-        result = blend_parameters((p1, None, p2), mode='cubic')  # random None parameter too
+        result = blend_parameters((p1, None, p2), mode='cubic', validity='all_but_one')  # random None parameter too
         self.assertAlmostEqual(result[2], 3)
 
     def test_blend_cubic_two_parameters_lower_op_freq(self):
@@ -4337,6 +4367,14 @@ class TestBlendParameters(unittest.TestCase):
         p1.array[5:] = np.ma.masked
         result = blend_parameters((p1, p2), mode='cubic')
         self.assertAlmostEqual(len(result), 4)
+
+    def test_blend_parameters_outside_tolerance(self):
+        p1 = P(array=np.ma.arange(20), frequency=2, name='First')
+        p2 = P(array=np.ma.zeros(10), frequency=1, name='Second')
+        result = blend_parameters((p1, p2), tolerance=9, frequency=1.0)
+        ma_test.assert_masked_array_equal(result, np.ma.array(data=np.arange(10), mask=[0]*5+[1]*5) * 4/3.0)
+        result = blend_parameters((p1, p2), tolerance=9, frequency=1.0, mode='cubic')
+        ma_test.assert_masked_array_almost_equal(result, np.ma.array(data=np.arange(10), mask=[1]+[0]*4+[1]*5) * 4 / 3.0)
 
 
 class TestBlendParametersWeighting(unittest.TestCase):
@@ -4404,13 +4442,13 @@ class TestBlendTwoParameters(unittest.TestCase):
         self.assertEqual(off, 0.05)
 
     def test_blend_two_parameters_assertion_error(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1]*4, frequency=2, offset=0.2)
+        p1 = P(array=np.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ones(4), frequency=2, offset=0.2)
         self.assertRaises(AssertionError, blend_two_parameters, p1, p2)
 
     def test_blend_two_parameters_array_mismatch_error(self):
-        p1 = P(array=[0]*4, frequency=1, offset=0.0)
-        p2 = P(array=[1]*3, frequency=2, offset=0.2)
+        p1 = P(array=np.zeros(4), frequency=1, offset=0.0)
+        p2 = P(array=np.ones(3), frequency=2, offset=0.2)
         self.assertRaises(AssertionError, blend_two_parameters, p1, p2)
 
     def test_blend_two_parameters_param_one_rubbish(self):
@@ -4529,8 +4567,8 @@ class TestMostPointsCost(unittest.TestCase):
 
     def test_mpc_basic(self):
         coefs=[0.0,1.0]
-        x = np.ma.array([0.0, 0.0, 0.0])
-        y = np.ma.array([0.0, 0.0, 0.0])
+        x = np.ma.zeros(3, dtype=np.float64)
+        y = np.ma.zeros(3, dtype=np.float64)
         result = most_points_cost(coefs, x, y)
         self.assertAlmostEqual(result, 0.003, places=3)
 
@@ -4573,6 +4611,15 @@ class TestNearestNeighbourMaskRepair(unittest.TestCase):
         res = nearest_neighbour_mask_repair(array)
         self.assertEqual(len(res), 30)
         self.assertEqual(list(res[19:23]), [19,19,22,22])
+
+    def test_nn_mask_repair_mappedarray(self):
+        ms = M('Test', array=np.ma.array([0]*21 + [1]*9),
+               values_mapping={0:'off', 1:'on'})
+        ms.array[18:22] = np.ma.masked
+        res = nearest_neighbour_mask_repair(ms.array)
+        self.assertEqual(len(res), 30)
+        self.assertEqual(list(res[17:23]),
+                         ['off', 'off', 'off', 'on', 'on', 'on'])
 
     def test_nn_mask_repair_with_masked_edges(self):
         array = np.ma.arange(30)
@@ -4698,6 +4745,21 @@ class TestNpMaZerosLike(unittest.TestCase):
         expected = np.ma.array([0,0,0])
         assert_array_equal(expected, result)
 
+    def test_zeros_like_seperate_mask(self):
+        start_arr = np.ma.array([1, 2, 3], mask=[1, 0, 1])
+        np.testing.assert_array_equal(start_arr.data, [1, 2, 3])
+        np.testing.assert_array_equal(start_arr.mask, [1, 0, 1])
+        new_arr = np_ma_zeros_like(start_arr, mask=start_arr.mask)
+        np.testing.assert_array_equal(new_arr.data, [0, 0, 0,])
+        np.testing.assert_array_equal(new_arr.mask, [1, 0, 1,])
+        self.assertTrue(start_arr.mask is not new_arr.mask)
+        new_arr[0] = 1
+        self.assertTrue(start_arr.mask is not new_arr.mask)
+        np.testing.assert_array_equal(new_arr.data, [1, 0, 0,])
+        np.testing.assert_array_equal(new_arr.mask, [0, 0, 1,])
+        np.testing.assert_array_equal(start_arr.data, [1, 2, 3,])
+        np.testing.assert_array_equal(start_arr.mask, [1, 0, 1,])
+
 
 class TestNpMaConcatenate(unittest.TestCase, M):
     def test_concatenation_of_numeric_arrays(self):
@@ -4726,17 +4788,17 @@ class TestNpMaConcatenate(unittest.TestCase, M):
                array = np.ma.array(data=[1,0,1,0],
                                    mask=False),
                data_type = 'Derived Multi-state',
-               values_mapping = {0: 'No', 1: 'Yes'}
+               values_mapping = {0: b'No', 1: b'Yes'}
                )
         a2 = M(name = 'a2',
-               array = np.ma.array(data=['No','No','Yes','Yes'],
-                                   mask=False),
+               array = np.ma.array(data=[b'No',b'No',b'Yes',b'Yes'],
+                                   mask=False, dtype=np.bytes_),
                data_type = 'Derived Multi-state',
-               values_mapping = {0: 'No', 1: 'Yes'}
+               values_mapping = {0: b'No', 1: b'Yes'}
                )
         result = np_ma_concatenate([a1.array, a2.array])
         self.assertEqual([x for x in result],
-                         ['Yes','No','Yes','No','No','No','Yes','Yes'])
+                         [b'Yes',b'No',b'Yes',b'No',b'No',b'No',b'Yes',b'Yes'])
         self.assertEqual(list(result.raw), [1,0,1,0,0,0,1,1])
 
     def test_single_file(self):
@@ -4790,69 +4852,114 @@ class TestOffsetSelect(unittest.TestCase):
 
 
 class TestOverflowCorrection(unittest.TestCase):
+    '''
+    Overflow correction is applied in two stages, once in validation and
+    once in derived parameters, hence the double call, first without fast
+    and then with.
+    '''
     def test_overflow_correction_a320(self):
         fast = S(items=[Section('Fast', slice(336, 5397), 336, 5397),
                         Section('Fast', slice(5859, 11520), 5859, 11520)])
         radioA = load(os.path.join(
             test_data_path, 'A320_Altitude_Radio_A_overflow.nod'))
-        resA = overflow_correction(radioA, fast, max_val=4095)
+        resA = overflow_correction(overflow_correction(radioA.array, None), fast)
         sects = np.ma.clump_unmasked(resA)
         self.assertEqual(len(sects), 5)
-        self.assertEqual(resA.max(), 8191)
-        self.assertEqual(resA.min(), -1)
-        ##for sect in sects[0::2]:
-            ### takeoffs
-            ##self.assertAlmostEqual(resA[sect.start] / 10., 0, 0)
-        ##for sect in sects[1::2]:
-            ### landings
-            ##self.assertAlmostEqual(resA[sect.stop - 1] / 10., 0, 0)
+        self.assertEqual(resA.max(), 7168)
+        self.assertEqual(resA.min(), -2)
 
         radioB = load(os.path.join(
             test_data_path, 'A320_Altitude_Radio_B_overflow.nod'))
-        resB = overflow_correction(radioB, max_val=4095)
+        resB = overflow_correction(overflow_correction(radioB.array, None), fast)
         sects = np.ma.clump_unmasked(resB)
-        self.assertEqual(len(sects), 5)
-        self.assertEqual(resB.max(), 5917)
+        self.assertEqual(len(sects), 4)
+        self.assertEqual(resB.max(), 5918)
         self.assertEqual(resB.min(), -2)
-        ##for sect in sects[0::2]:
-            ### takeoffs
-            ##self.assertAlmostEqual(resB[sect.start] / 10., 0, 0)
-        ##for sect in sects[1::2]:
-            ### landings
-            ##self.assertAlmostEqual(resB[sect.stop - 1] / 10., 0, 0)
 
     def test_overflow_correction_a340(self):
         fast = S(items=[Section('Fast', slice(2000, 6500), 2000, 6500)])
         radioA = load(os.path.join(
             test_data_path, 'A340_Altitude_Radio_A_overflow.nod'))
-        resA = overflow_correction(radioA, fast, max_val=4095)
+        resA = overflow_correction(overflow_correction(radioA.array, None), fast)
         sects = np.ma.clump_unmasked(resA)
         # 1 section for climb, one for descent
         self.assertEqual(len(sects), 2)
-        self.assertEqual(resA.max(), 7852)
-        self.assertEqual(resA.min(), -2)
-        ##for sect in sects[0::2]:
-            ### takeoffs
-            ##self.assertAlmostEqual(resA[sect.start] / 10., 0, 0)
-        ##for sect in sects[1::2]:
-            ### landings
-            ##self.assertAlmostEqual(resA[sect.stop - 1] / 10., 0, 0)
+        self.assertEqual(resA.max(), 7855)
+        self.assertEqual(resA.min(), 0)
 
         radioB = load(os.path.join(
             test_data_path, 'A340_Altitude_Radio_B_overflow.nod'))
-        resB = overflow_correction(radioB, fast, max_val=4095)
+        resB = overflow_correction(overflow_correction(radioB.array, None), fast)
         sects = np.ma.clump_unmasked(resB)
         # 1 section for climb, one for descent
         self.assertEqual(len(sects), 2)
-        self.assertEqual(resB.max(), 7841)
-        self.assertEqual(resB.min(), -2)
-        ##for sect in sects[0::2]:
-            ### takeoffs
-            ##self.assertAlmostEqual(resB[sect.start] / 10., 0, 0)
-        ##for sect in sects[1::2]:
-            ### landings
-            ##self.assertAlmostEqual(resB[sect.stop - 1] / 10., 0, 0)
+        self.assertEqual(resB.max(), 7844)
+        self.assertEqual(resB.min(), 0)
 
+class TestOverflowCorrectionArray(unittest.TestCase):
+    '''
+    Most functions tested by TestOverflowCorrection above.
+    '''
+    def test_round_near_zero(self):
+        array = np.ma.array([-2060]*20, dtype=float)
+        result = overflow_correction_array(array)
+        self.assertEqual(result[10], -2060 + 2048)
+
+class TestPinToGround(unittest.TestCase):
+    '''
+    Revised version of pin to ground which only corrects multiples of the
+    overflow threshold, not small values which are best resolved by
+    Altitude Radio Offset Removed.
+    '''
+    def setUp(self):
+        self.fast_slices = [slice(3, 15)]
+        self.good_slices = [slice(1, 13)]
+        self.hz = 1.0
+
+    def test_basic(self):
+        array = np.ma.array(data = [4100]*5 + list(range(4100, 5100, 100)),
+                            mask = [1] + [0]*12 + [1]*2, dtype=float)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
+        self.assertEqual(result[2], 4)
+
+    def test_negative(self):
+        array = np.ma.array(data = [-4100]*5 + list(range(-4100, -3000, 100)),
+                            mask = [1] + [0]*12 + [1]*3, dtype=float)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
+        self.assertEqual(result[2], -4)
+
+    def test_small_powers(self):
+        array = np.ma.array(data = [4]*5 + list(range(5, 15)),
+                            mask = [1] + [0]*12 + [1]*2, dtype=float)
+        result = pin_to_ground(array, self.good_slices, self.fast_slices, self.hz)
+        self.assertEqual(result[2], 4)
+
+    def test_short_slice_masked(self):
+        array = np.ma.array(data = [4]*5 + list(range(5, 15)), dtype=float)
+        result = pin_to_ground(array, [slice(10, 13)], self.fast_slices, self.hz)
+        self.assertEqual(result[11].mask, True)
+
+    def test_spreading_corrections(self):
+        '''
+        This checks that corrections of 1024 and 2048 ft are propagated forwards
+        and backwards, and that the "middle" value is taken from the closest in time.
+        '''
+        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10, dtype=float)
+        my_fast_slices = [slice(12, 52)]
+        my_good_slices = [slice(1, 5), slice(10, 15), slice(20, 24), slice(31, 35), slice(40, 45), slice(50, 55), slice(60, 65)]
+        result = pin_to_ground(array, my_good_slices, my_fast_slices, hz=0.1)
+        self.assertEqual(list(result[2::10]), [0, -24, -48, -96, -72, -48, -24])
+
+    def test_avoid_infinite_loop(self):
+        '''
+        An error in coding led to an infinite loop condition which this test detects
+        by making all the slices so short they are suppressed.
+        '''
+        array = np.ma.array([0]*10+[1000]*10+[2000]*10+[4000]*10+[3000]*10+[2000]*10+[1000]*10, dtype=float)
+        my_fast_slices = [slice(12, 52)]
+        my_good_slices = [slice(20,24), slice(31,35), slice(40,45)]
+        result = pin_to_ground(array, my_good_slices, my_fast_slices, hz=1.0)
+        self.assertEqual(True, True) # Simply getting here is a pass!
 
 class TestPeakCurvature(unittest.TestCase):
     # Also known as the "Truck and Trailer" algorithm, this detects the peak
@@ -4871,14 +4978,14 @@ class TestPeakCurvature(unittest.TestCase):
     # artificial data results in multiple maxima.
 
     def test_peak_curvature_basic(self):
-        array = np.ma.array([0]*20+range(20))
+        array = np.ma.concatenate([np.zeros(20), np.arange(20)])
         pc = peak_curvature(array)
         self.assertEqual(pc,18.5)
         #  Very artificial case returns first location of many seconds of
         #  high curvature.
 
     def test_peak_curvature(self):
-        array = np.ma.array([0]*40+range(40))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         pc = peak_curvature(array)
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
@@ -4889,37 +4996,37 @@ class TestPeakCurvature(unittest.TestCase):
         self.assertEqual(pc,None)
 
     def test_peak_curvature_convex(self):
-        array = np.ma.array([0]*40+range(40))*(-1.0)
+        array = np.ma.concatenate([np.zeros(40), np.arange(0, -40, -1)])
         pc = peak_curvature(array, curve_sense='Convex')
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
 
     def test_peak_curvature_convex_big_concave(self):
         # Tests for identification of the convex section with a larger concave angle in the same data segment.
-        array = np.ma.array([0]*40+list(range(40))+list(range(40,-60,-10)))*(-1.0)
+        array = np.ma.concatenate([np.zeros(40), np.arange(0, -40, -1), np.arange(-40, 60, 10)])
         pc = peak_curvature(array, curve_sense='Convex')
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
 
     def test_peak_curvature_concave_big_convex(self):
         # See above !
-        array = np.ma.array([0]*40+list(range(40))+list(range(40,-60,-10)))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40), np.arange(40,-60,-10)])
         pc = peak_curvature(array, curve_sense='Concave')
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
 
     def test_peak_curvature_flat_data(self):
-        array = np.ma.array([34]*40)
+        array = np.ma.ones(40) * 34
         pc = peak_curvature(array)
         self.assertEqual(pc,None)
 
     def test_peak_curvature_short_flat_data(self):
-        array = np.ma.array([34]*4)
+        array = np.ma.ones(4) * 34
         pc = peak_curvature(array)
         self.assertEqual(pc,None)
 
     def test_peak_curvature_bipolar(self):
-        array = np.ma.array([0]*40+range(40))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         pc = peak_curvature(array, curve_sense='Bipolar')
         self.assertGreaterEqual(pc,35)
         self.assertLessEqual(pc,45)
@@ -4934,24 +5041,24 @@ class TestPeakCurvature(unittest.TestCase):
         self.assertLessEqual(pc,15.1)
 
     def test_peak_curvature_with_slice(self):
-        array = np.ma.array([0]*20+[10]*20+[0]*20)
+        array = np.ma.concatenate([np.zeros(20), np.ones(20) * 10, np.zeros(20)])
         pc = peak_curvature(array, slice(10, 50), curve_sense='Bipolar')
         self.assertEqual(pc, 24.5)
 
     def test_peak_curvature_slice_backwards(self):
-        array = np.ma.array([0]*40+range(40))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         pc = peak_curvature(array, slice(75, 10, -1))
         self.assertEqual(pc, 41.5)
 
     def test_peak_curvature_masked_data_no_curve(self):
-        array = np.ma.array([0]*40+range(40))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         array[:4] = np.ma.masked
         array[16:] = np.ma.masked
         pc = peak_curvature(array, slice(0,40))
         self.assertEqual(pc, None)
 
     def test_peak_curvature_masked_data(self):
-        array = np.ma.array([0]*40+range(40))
+        array = np.ma.concatenate([np.zeros(40), np.arange(40)])
         array[:4] = np.ma.masked
         array[66:] = np.ma.masked
         pc = peak_curvature(array, slice(0,78))
@@ -4961,7 +5068,7 @@ class TestPeakCurvature(unittest.TestCase):
         hdg_data=[]
         data_path = os.path.join(test_data_path,
                                  'runway_high_speed_turnoff_test.csv')
-        with open(data_path, 'rb') as csvfile:
+        with open(data_path, 'rt') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 hdg_data.append(float(row['Heading']))
@@ -5049,8 +5156,8 @@ class TestRateOfChangeArray(unittest.TestCase):
         assert_array_almost_equal(sloped.data, answer)
         sloped = rate_of_change_array(test_array, 1.0, width=7)
         assert_array_almost_equal(sloped.data, answer)
-        
-        
+
+
     def test_case_short_data(self):
         test_array = np.ma.array([0,1,2,3,4], dtype=float)
         sloped = rate_of_change_array(test_array, 2.0, 10.0)
@@ -5471,20 +5578,20 @@ class TestRunwayHeading(unittest.TestCase):
         result = runway_heading(rwy.value[0]['runway'])
         self.assertGreater(result, 298)
         self.assertLess(result, 302)
-        
+
     # This case tests handling of a rare database error in open source airport databases.
     def test_database_reversed(self):
         rwy = A(name='Nadi',
                 value=[{'runway': {'end': {'latitude': -17.7727,
                                            'longitude': 177.429},
-                                   'start': {'latitude': -17.7499, 
+                                   'start': {'latitude': -17.7499,
                                              'longitude': 177.44756},
                                    'magnetic_heading': 2.4,
                                    'identifier': '20'}}])
         result = runway_heading(rwy.value[0]['runway'])
         # Runway 20 at Nadi is 37 deg by Google Earth
         self.assertGreater(result, 35)
-        self.assertLess(result, 40) 
+        self.assertLess(result, 40)
 
 
 class TestRunwayLength(unittest.TestCase):
@@ -5564,7 +5671,7 @@ class TestRunwayTouchdown(unittest.TestCase):
         self.assertEqual(tdn_dist, 265)
         self.assertAlmostEqual(coords['latitude'], 33.295982, places=4)
         self.assertAlmostEqual(coords['longitude'], -111.915803, places=4)
-        
+
     def test_runway_touchdown_zero(self):
         # Helipads have zero length, for example Battersea  :o)
         runway = {'start': {'latitude': 51.469955, 'longitude': -0.179543},
@@ -5572,7 +5679,7 @@ class TestRunwayTouchdown(unittest.TestCase):
         tdn_dist, coords = runway_touchdown(runway)
         self.assertEqual(tdn_dist, 0)
         self.assertAlmostEqual(coords['latitude'], 51.469955)
-        self.assertAlmostEqual(coords['longitude'], -0.179543, places=4)        
+        self.assertAlmostEqual(coords['longitude'], -0.179543, places=4)
 
 """
 class TestSectionContainsKti(unittest.TestCase):
@@ -6329,19 +6436,19 @@ class TestSlicesOverlap(unittest.TestCase):
         self.assertRaises(ValueError, slices_overlap, first, slice(1,2,-1))
 
 class TestSlicesOverlapMerge(unittest.TestCase):
-    
+
     def test_slices_overlap_merge_basic(self):
         first = [slice(10,20)]
         second = [slice(15,25)]
         self.assertEqual(slices_overlap_merge(first, second),
                          [slice(10, 25)])
-    
+
     def test_slices_overlap_merge_no_overlap(self):
         first = [slice(10,20)]
         second = [slice(25,35)]
         self.assertEqual(slices_overlap_merge(first, second),
                          [slice(10, 20)])
-    
+
     def test_slices_overlap_merge_no_first(self):
         first = []
         second = [slice(25,35)]
@@ -6352,12 +6459,18 @@ class TestSlicesOverlapMerge(unittest.TestCase):
         second = []
         self.assertEqual(slices_overlap_merge(first, second),
                          [slice(10, 20)])
-        
-    def test_slices_everlap_extend(self):
-        first = [slice(10,20)]
-        second = [slice(25,35)]
+
+    def test_slices_overlap_extend_start(self):
+        first = [slice(20,35)]
+        second = [slice(10,25)]
+        self.assertEqual(slices_overlap_merge(first, second, extend_start=2),
+                             [slice(8, 35)])
+
+    def test_slices_overlap_extend_stop(self):
+        first = [slice(10,25)]
+        second = [slice(20,35)]
         self.assertEqual(slices_overlap_merge(first, second, extend_stop=2),
-                             [slice(10, 22)])
+                             [slice(10, 37)])
 
 class TestSlicesOverlay(unittest.TestCase):
     def test_slices_and(self):
@@ -6405,7 +6518,7 @@ class TestSlicesRemoveOverlaps(unittest.TestCase):
         newlist = slices_remove_overlaps(slices)
         expected = [slice(2, 22)]
         self.assertEqual(expected, newlist)
-    
+
     def test_complex(self):
         slices = [slice(*s) for s in ((538, 570), (571, 582), (605, 606), (539, 540), (541, 544), (545, 546), (547, 558), (559, 561), (562, 563), (564, 582))]
         newlist = slices_remove_overlaps(slices)
@@ -6461,7 +6574,7 @@ class TestSlicesRemoveSmallGaps(unittest.TestCase):
         slicelist = [slice(1, None), slice(4,6), slice(None, 8)]
         newlist = slices_remove_small_gaps(slicelist)
         self.assertEqual(newlist, [slice(None, None, None)])
-    
+
     def test_unsorted_slices(self):
         slicelist = [slice(*s) for s in (
             (2565, 4378), (1911, 2277), (1642, 1817), (631, 796), (820, 892), (2420, 2489),
@@ -6519,6 +6632,15 @@ class TestSlicesNot(unittest.TestCase):
         slice_list = [slice(10,13)]
         self.assertEqual(slices_not(slice_list, begin_at=2, end_at=18),
                          [slice(2,10),slice(13,18)])
+        self.assertEqual(slices_not(slice_list, begin_at=0, end_at=18),
+                         [slice(0,10),slice(13,18)])
+        #self.assertEqual(slices_not(slice_list, begin_at=None, end_at=18),
+                         #[slice(0,10),slice(13,18)])
+
+    def test_slices_not_extended_2(self):
+        slice_list = [slice(None, None, None)]
+        self.assertEqual(slices_not(slice_list, begin_at=0, end_at=10), [])
+        self.assertEqual(slices_not(slice_list, begin_at=None, end_at=10), [])
 
     def test_slices_not_to_none(self):
         slice_list = [slice(10,None),slice(2,3)]
@@ -6681,7 +6803,7 @@ class TestStepValues(unittest.TestCase):
 
     def test_step_values(self):
         # borrowed from TestSlat
-        array = np.ma.array(list(range(25)) + list(range(-5,0)))
+        array = np.ma.concatenate([np.arange(25), np.arange(-5,0)])
         array[1] = np.ma.masked
         array = step_values(array, ( 0, 16, 20, 23))
         self.assertEqual(len(array), 30)
@@ -6707,7 +6829,7 @@ class TestStepValues(unittest.TestCase):
         ##self.assertEqual(list(stepped),
                          ##[0]*3+[1]+[5]*6+[10]+[15]*3+[10]*3+[5]+[1]*5+[0]*3)
         # now this:
-        self.assertEqual(list(stepped),
+        self.assertEqual(stepped.tolist(),
                          [0]*3+[1]+[5]*5+[10]*2+[15]*2+[10]*3+[5]*2+[1]*5+[0]*3)
 
     def test_step_move_start(self):
@@ -6724,7 +6846,7 @@ class TestStepValues(unittest.TestCase):
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_start')
-        self.assertEqual(list(stepped),
+        self.assertEqual(stepped.tolist(),
                          [0]*11+[1]*3+[5]*19+[15]*26+[5]*7+[1]*19+[0]*11)
 
     @unittest.skip('skip was used when creating Flap Lever from Flap Surface '
@@ -6742,7 +6864,7 @@ class TestStepValues(unittest.TestCase):
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_start',
                               skip=True, rate_threshold=0.1)
-        self.assertEqual(list(stepped), [0]*10+[15]*47+[0]*39)
+        self.assertEqual(stepped.tolist(), [0]*10+[15]*47+[0]*39)
 
     def test_step_midpoint_real_data(self):
         array = np.ma.array([0, 0, 0, 0, 0, 0, 0.12, 0.37, 0.5, 0.49, 0.49,
@@ -6753,7 +6875,7 @@ class TestStepValues(unittest.TestCase):
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='midpoint')
-        self.assertEqual(list(stepped),
+        self.assertEqual(stepped.tolist(),
                          [0]*11+[1]*12+[5]*13+[15]*24+[5]*13+[1]*12+[0]*11)
 
     def test_step_excluding_transition_real_data(self):
@@ -6765,7 +6887,7 @@ class TestStepValues(unittest.TestCase):
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='excluding_transition')
-        self.assertEqual(list(stepped), [0]*11+[1]*19+[5]*7+[15]*22+[5]*7+[1]*19+[0]*11)
+        self.assertEqual(stepped.tolist(), [0]*11+[1]*19+[5]*7+[15]*22+[5]*7+[1]*19+[0]*11)
 
 
     def test_step_including_transition_real_data(self):
@@ -6777,13 +6899,13 @@ class TestStepValues(unittest.TestCase):
                              15.38, 15.39, 15.37, 15.37, 15.41, 15.44])
         array = np.ma.concatenate((array, array[::-1]))
         stepped = step_values(array, (0, 1, 5, 15), step_at='including_transition')
-        self.assertEqual(list(stepped),[0]*11+[1]*3+[5]*19+[15]*30+[5]*19+[1]*3+[0]*11)
+        self.assertEqual(stepped.tolist(),[0]*11+[1]*3+[5]*19+[15]*30+[5]*19+[1]*3+[0]*11)
 
     def test_step_including_transition_edge_case(self):
         # This set of values caused problems with a low sample rate flap (767-4 frame)
         array = np.ma.array([0, 1, 1, 1, 1, 0.878, 0.5270, 0.0, 0.0, 0.0, 0.45, 1])
         stepped = step_values(array, (0, 1), hz=0.25, step_at='including_transition')
-        self.assertEqual(list(stepped),[0]+[1]*6+[0]*3+[1]*2)
+        self.assertEqual(stepped.tolist(),[0]+[1]*6+[0]*3+[1]*2)
 
     @unittest.skip("move_stop no longer in use")
     def test_step_trailing_edge_real_data(self):
@@ -6798,7 +6920,7 @@ class TestStepValues(unittest.TestCase):
         self.assertRaises(ValueError, step_values, array, (0, 1, 5, 15),
                           step_at='move_end')
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_stop')
-        self.assertEqual(list(stepped),
+        self.assertEqual(stepped.tolist(),
                          [0]*12+[1]*18+[5]*7+[15]*26+[5]*19+[1]*6+[0]*8)
 
     def test_step_trailing_edge_masked_data(self):
@@ -6810,7 +6932,7 @@ class TestStepValues(unittest.TestCase):
         stepped = step_values(array, (0, 1, 5, 15), step_at='move_stop')
         expected = np.ma.array([5.0]*24+[0.0]*4)
         expected[:4] = np.ma.masked
-        self.assertEqual(list(stepped), list(expected))
+        self.assertEqual(stepped.tolist(), expected.tolist())
 
     def test_flap_transition_real_data(self):
         flap = load(os.path.join(test_data_path,
@@ -6855,7 +6977,6 @@ class TestStepValues(unittest.TestCase):
         flap_angle[480:500] = np.ma.masked
         flap_angle[520:540] = np.ma.masked
         flap_angle[560:580] = np.ma.masked
-
         #flap_angle = np.ma.array([0.004763]*3 + [0.0]*10 + [0.99]*4)
         #flap_angle[3:13] = np.ma.masked
         res = step_values(flap_angle, (0, 1, 5, 15, 20, 25, 30), hz=1,
@@ -7020,12 +7141,12 @@ class TestSmoothSignal(unittest.TestCase):
         self.signal_to_smooth = signal.array[_slices[2]]
 
     def test_smooth_signal_flat(self):
-        expected = [ 
+        expected = [
             0.9668, 0.9844, 1.0371, 1.0547, 1.0723, 1.125, 1.1953, 1.2656,
-            1.3359, 1.3887, 1.4238, 1.4766, 1.5469, 1.6172, 1.6875, 1.7402, 
-            1.7754, 1.8281, 1.8984, 1.9687, 2.039, 2.0918, 2.1094, 2.1269,         
+            1.3359, 1.3887, 1.4238, 1.4766, 1.5469, 1.6172, 1.6875, 1.7402,
+            1.7754, 1.8281, 1.8984, 1.9687, 2.039, 2.0918, 2.1094, 2.1269,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='flat')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7039,7 +7160,7 @@ class TestSmoothSignal(unittest.TestCase):
             1.4062, 1.4282, 1.5161, 1.6479, 1.7358, 1.7578, 1.7798, 1.8677,
             1.9995, 2.0874, 2.1094, 2.1313,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='hanning')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7054,7 +7175,7 @@ class TestSmoothSignal(unittest.TestCase):
             1.7547, 1.7609, 1.7884, 1.8732, 1.994, 2.0788, 2.1062, 2.1094,
             2.1125, 2.1305,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='hamming')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7068,7 +7189,7 @@ class TestSmoothSignal(unittest.TestCase):
             1.4062, 1.4282, 1.5161, 1.6479, 1.7358, 1.7578, 1.7798, 1.8677,
             1.9995, 2.0874, 2.1094, 2.1313,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='bartlett')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7082,7 +7203,7 @@ class TestSmoothSignal(unittest.TestCase):
             1.4062, 1.424, 1.5119, 1.6521, 1.74, 1.7578, 1.7756, 1.8635,
             2.0037, 2.0916, 2.1094, 2.1271,
         ]
-        smoothed_signal = smooth_signal(self.signal_to_smooth, 
+        smoothed_signal = smooth_signal(self.signal_to_smooth,
                                         window_len=5, window='blackman')
         sig_rounded = [round(l,4) for l in smoothed_signal]
         uniques = [i for i in sorted(Counter(sig_rounded))]
@@ -7128,7 +7249,7 @@ class TestSubslice(unittest.TestCase):
         new = slice(2, 4)
         res = subslice(orig, new)
         self.assertEqual(res, slice(4, 6))
-        fifty = range(50)
+        fifty = list(range(50))
         self.assertEqual(fifty[orig][new], fifty[res])
 
         # test basic starting from zero
@@ -7136,13 +7257,13 @@ class TestSubslice(unittest.TestCase):
         new = slice(0, 4)
         res = subslice(orig, new)
         self.assertEqual(res, slice(2, 6))
-        fifty = range(50)
+        fifty = list(range(50))
         self.assertEqual(fifty[orig][new], fifty[res])
 
         orig = slice(10,20,2)
         new = slice(2, 4, 1)
         res = subslice(orig, new)
-        thirty = range(30)
+        thirty = list(range(30))
         self.assertEqual(thirty[orig][new], thirty[res])
         self.assertEqual(res, slice(14, 18, 2))
 
@@ -7150,7 +7271,7 @@ class TestSubslice(unittest.TestCase):
         orig = slice(100,200,10)
         new = slice(1, 5, 2)
         sub = subslice(orig, new)
-        two_hundred = range(0,200)
+        two_hundred = list(range(0,200))
         self.assertEqual(two_hundred[orig][new], two_hundred[sub])
         self.assertEqual(sub, slice(110, 150, 20))
 
@@ -7158,14 +7279,14 @@ class TestSubslice(unittest.TestCase):
         orig = slice(200,100,-10)
         new = slice(1, 5, 2)
         sub = subslice(orig, new)
-        two_hundred = range(201)
+        two_hundred = list(range(201))
         self.assertEqual(two_hundred[orig][new], two_hundred[sub])
         self.assertEqual(sub, slice(190, 150, -20))
 
         orig = slice(100,200,10)
         new = slice(5, 1, -2)
         sub = subslice(orig, new)
-        two_hundred = range(201)
+        two_hundred = list(range(201))
         self.assertEqual(two_hundred[orig][new], two_hundred[sub])
         self.assertEqual(sub, slice(150, 110, -20))
         self.assertEqual(two_hundred[sub], [150, 130]) #fix
@@ -7174,7 +7295,7 @@ class TestSubslice(unittest.TestCase):
         orig = slice(0,200,10)
         new = slice(1, 5, -2)
         sub = subslice(orig, new)
-        two_hundred = range(201)
+        two_hundred = list(range(201))
         self.assertEqual(two_hundred[orig][new], two_hundred[sub])
         self.assertEqual(two_hundred[sub], []) # invalid returns no data
         self.assertEqual(sub, slice(10, 50, -20))
@@ -7183,7 +7304,7 @@ class TestSubslice(unittest.TestCase):
         orig = slice(None,100,10)
         new = slice(5, 1, -2)
         sub = subslice(orig, new)
-        two_hundred = range(200)
+        two_hundred = list(range(200))
         self.assertEqual(two_hundred[orig][new], two_hundred[sub])
         self.assertEqual(two_hundred[sub], [50,30])
         self.assertEqual(sub, slice(50, 10, -20))
@@ -7191,7 +7312,7 @@ class TestSubslice(unittest.TestCase):
         orig = slice(0,10,2)
         new = slice(None, 4)
         sub = subslice(orig, new)
-        two_hundred = range(5)
+        two_hundred = list(range(5))
         self.assertEqual(two_hundred[orig][new], two_hundred[sub])
         self.assertEqual(two_hundred[sub], [0,2,4]) # also tests outside of range
         self.assertEqual(sub, slice(0, 8, 2))
@@ -7200,7 +7321,7 @@ class TestSubslice(unittest.TestCase):
         orig = slice(None,200,10)
         new = slice(1, 5, -2)
         sub = subslice(orig, new)
-        two_hundred = range(201)
+        two_hundred = list(range(201))
         self.assertEqual(two_hundred[orig][new], two_hundred[sub])
         self.assertEqual(two_hundred[sub], [])
         self.assertEqual(sub, slice(10, 50, -20))
@@ -7209,7 +7330,7 @@ class TestSubslice(unittest.TestCase):
         orig = slice(0,10,2)
         new = slice(1, None)
         sub = subslice(orig, new)
-        two_hundred = range(5)
+        two_hundred = list(range(5))
         self.assertEqual(two_hundred[orig][new], two_hundred[sub])
         self.assertEqual(two_hundred[sub], [2,4])
         self.assertEqual(sub, slice(2, 10, 2))
@@ -7476,8 +7597,9 @@ class TestAlt2Press(unittest.TestCase):
     def test_01(self):
         # Truth values from NASA RP 1046
         Value = alt2press(np.ma.array([5000]))
-        Truth = 843.0725884 # mBar
-        self.assertAlmostEqual(Value, Truth)
+        Truth = np.ma.array([843.0725884]) # mBar
+        #self.assertAlmostEqual(Value, Truth)
+        ma_test.assert_masked_array_almost_equal(Value, Truth)
 
     def test_02(self):
         # Truth values from aerospaceweb
@@ -7610,8 +7732,7 @@ class TestDelay(unittest.TestCase):
     def test_excessive(self):
         array=np.ma.arange(5)
         result = delay(array,20)
-        expected = np.ma.array(data=[0,0,0,0,0],
-                               mask=[1,1,1,1,1])
+        expected = np.ma.array(np.zeros(5), mask=True)
         ma_test.assert_masked_array_approx_equal(result, expected)
 
 class TestDp2Cas(unittest.TestCase):
@@ -7696,7 +7817,7 @@ class TestAlt2Sat(unittest.TestCase):
         ma_test.assert_masked_array_almost_equal(value, truth)
 
 class TestAltDev2Alt(unittest.TestCase):
-    
+
     def test_on_ISA(self):
         alt = np.ma.array([0.0, 3000.0, 30000.0])
         dev = np.ma.array([0.0, 0.0, 0.0])
@@ -7713,15 +7834,15 @@ class TestAltDev2Alt(unittest.TestCase):
 
 
 class TestFromIsa(unittest.TestCase):
-    
+
     def test_from_ISA(self):
         self.assertEqual(from_isa(0.0, 15.0), 0.0)
         self.assertEqual(from_isa(0.0, 0.0), -15.0)
         self.assertAlmostEqual(from_isa(5000.0, 0.0), -5.094)
         self.assertAlmostEqual(from_isa(5000.0, -30), -35.094)
         self.assertEqual(from_isa(40000.0, 0.0), None)
-                
-        
+
+
 class TestLevelOffIndex(unittest.TestCase):
     def test_level_off_index_index_array_too_small(self):
         self.assertEqual(level_off_index(np.ma.arange(5), 1, 10, 1), None)
@@ -8436,7 +8557,7 @@ class TestMaxMaintainedValue(unittest.TestCase):
         go_arounds=load(os.path.join(test_data_path,
                                      'ebe456663820_go_arounds.nod'))
         phase = go_arounds.get_slices()[0]
-        array = eng_torq_max.array[phase]
+        array = eng_torq_max.array[slices_int(phase)]
         expected = (
             (10, 2922, 148.697),
             (20, 2920, 146.5),
@@ -8447,6 +8568,81 @@ class TestMaxMaintainedValue(unittest.TestCase):
             index, value = max_maintained_value(array, sec, hz, phase)
             self.assertAlmostEqual(index, idx, places=0)
             self.assertAlmostEqual(value, val, places=3)
+
+
+###############################################################################
+# Python 3 and Numpy 1.15 upgrade helper.
+
+class TestPy2Round(unittest.TestCase):
+    def test_py2round(self):
+        test_range = np.arange(0, 100, 0.1).tolist()
+        rounded = [py2round(n) for n in test_range]
+        expected = [float(0)]*5
+        for n in range(1,100):
+            expected += [float(n)]*10
+        expected += [float(100)]*5
+        self.assertEqual(len(rounded), len(expected))
+        self.assertEqual(rounded, expected)
+
+
+class TestSlicesInt(unittest.TestCase):
+    def test_single_slice(self):
+        self.assertEqual(slices_int(slice(None, None, None)),
+                         slice(None, None, None))
+        self.assertEqual(slices_int(slice(1, 2, 3)), slice(1, 2, 3))
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)), slice(1, 2, 3))
+        self.assertEqual(slices_int(slice(1, 2.2, 3)), slice(1, 2, 3))
+        self.assertEqual(slices_int(slice(1, 2.2, None)), slice(1, 2, None))
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).start, 1)
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).stop, 2)
+        self.assertEqual(slices_int(slice(1.1, 2.2, 3.3)).step, 3)
+        self.assertEqual(slices_int(slice(None, None, None)).start, None)
+        self.assertEqual(slices_int(slice(None, None, None)).stop, None)
+        self.assertEqual(slices_int(slice(None, None, None)).step, None)
+
+    def test_list_of_slices(self):
+        self.assertEqual(slices_int([slice(None,None,None),]),
+                         [slice(None,None,None),])
+        self.assertEqual(slices_int((slice(None,None,None),)),
+                         [slice(None,None,None),])
+        mixed_slices = [
+            slice(1629.0, 2299.0),
+            slice(3722, 4708),
+            slice(4726, 4807.0),
+            slice(5009.0, 5071),
+            slice(5168, 6883.0, 2),
+            slice(8433.0, 9058, 2.5)
+        ]
+        expected_slices = [
+            slice(1629, 2299),
+            slice(3722, 4708),
+            slice(4726, 4807),
+            slice(5009, 5071),
+            slice(5168, 6883, 2),
+            slice(8433, 9058, 2)
+        ]
+        self.assertEqual(slices_int(mixed_slices), expected_slices)
+
+    def test_create_slice_single_arg(self):
+        self.assertEqual(slices_int(1.5), slice(1))
+
+    def test_create_slice_two_args(self):
+        self.assertEqual(slices_int(1.5, 10.9), slice(1, 10))
+        self.assertEqual(slices_int(1.5, None), slice(1, None))
+        self.assertEqual(slices_int(None, None), slice(None, None))
+
+    def test_create_slice_three_args(self):
+        self.assertEqual(slices_int(1.5, 10.9, 2.2), slice(1, 10, 2))
+        self.assertEqual(slices_int(1.5, 10.9, None), slice(1, 10, None))
+        self.assertEqual(slices_int(None, None, None), slice(None, None, None))
+
+
+class TestNpMaZeros(unittest.TestCase):
+    def test_np_ma_zeros(self):
+        self.assertEqual(np_ma_zeros(None), np.ma.zeros(None))
+        np.testing.assert_equal(np_ma_zeros(10), np.ma.zeros(10))
+        np.testing.assert_equal(np_ma_zeros(10.6), np.ma.zeros(10))
+
 
 if __name__ == '__main__':
     suite = unittest.TestSuite()

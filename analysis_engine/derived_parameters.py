@@ -6094,6 +6094,8 @@ class AccelerationNormalHighLimitWithFlapsDown(DerivedParameterNode):
     If the landing weight is higher than MTOW the threshold is 1.5g.
     '''
 
+    units = ut.G
+
     @classmethod
     def can_operate(cls, available,
                     family=A('Family'),):

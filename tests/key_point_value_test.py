@@ -39,6 +39,7 @@ from analysis_engine.key_point_values import (
     AOAWithFlapDuringClimbMax,
     AOAWithFlapDuringDescentMax,
     AOAWithFlapMax,
+    AOADiscrepancyMax,
     APDisengagedDuringCruiseDuration,
     APUOnDuringFlightDuration,
     APUFireWarningDuration,
@@ -5530,6 +5531,26 @@ class TestAOADuringGoAroundMax(unittest.TestCase, CreateKPVsWithinSlicesTest):
     @unittest.skip('Test not implemented.')
     def test_derive(self):
         pass
+
+
+class TestAOADiscrepancyMax(unittest.TestCase, NodeTest):
+
+    def setUp(self):
+        self.node_class = AOADiscrepancyMax
+        self.operational_combinations = [('AOA (L)', 'AOA (R)', 'Airborne')]
+        self.function = max_value
+
+    def test_derive(self):
+        aoa_l_arr = np.sin(np.arange(1,20))
+        aoa_r_arr = np.cos(np.arange(1,20))
+        aoa_l = P('AOA (L)', array=aoa_l_arr)
+        aoa_r = P('AOA (R)', array=aoa_r_arr)
+        airs = buildsection('Airborne', 3, 15)
+        node = self.node_class()
+        node.derive(aoa_l, aoa_r, airs)
+        self.assertEqual(len(node), 1)
+        self.assertAlmostEqual(node[0].value, 1.41, places=2)
+        self.assertEqual(node[0].index, 14)
 
 
 ##############################################################################

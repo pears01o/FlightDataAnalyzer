@@ -4439,6 +4439,22 @@ class AOAWithFlapDuringDescentMax(KeyPointValueNode):
         self.create_kpvs_within_slices(aoa_flap, descends, max_value)
 
 
+class AOADiscrepancyMax(KeyPointValueNode):
+    '''
+    Maximum recorded AoA discrepancy.
+    '''
+
+    name = 'AoA Discrepancy Max'
+    units = ut.DEGREE
+
+    def derive(self,
+               aoa_l=P('AOA (L)'),
+               aoa_r=P('AOA (R)'),
+               airs=S('Airborne'),):
+        diff = aoa_l.array - aoa_r.array
+        self.create_kpvs_within_slices(diff, airs, max_abs_value)
+
+
 ##############################################################################
 class ThrustReversersDeployedDuration(KeyPointValueNode):
     '''

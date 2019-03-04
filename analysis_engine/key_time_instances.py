@@ -1394,7 +1394,7 @@ class TouchAndGo(KeyTimeInstanceNode):
     """
     def derive(self, alt_aal=P('Altitude AAL'), go_around_and_climbouts=S('Go Around And Climbout')):
         for ga in go_around_and_climbouts:
-            ga_index = ga.start_edge
+            ga_index = int(ga.start_edge)
             while ga_index < ga.stop_edge:
                 if alt_aal.array[ga_index] == 0.0:
                     self.create_kti(ga_index)

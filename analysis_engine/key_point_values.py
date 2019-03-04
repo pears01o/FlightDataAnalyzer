@@ -19149,7 +19149,7 @@ class EngN2DuringTakeoffForXSecMax(KeyPointValueNode):
                         self.create_kpv(index, value, durations=duration)
         if go_arounds:
             for samples, duration in zip(seconds, self.NAME_VALUES['durations']):
-                for go_around in go_arounds.get_slices():
+                for go_around in slices_int(go_arounds.get_slices()):
                     arrays = eng_n2_max.array[go_around]
                     if len(arrays) > 0:
                         index, value = max_maintained_value(arrays, samples, eng_n2_max.hz, go_around)

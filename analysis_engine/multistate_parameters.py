@@ -509,7 +509,7 @@ class Daylight(MultistateDerivedParameterNode):
                start_datetime=A('Start Datetime'),
                duration=A('HDF Duration')):
         # Set default to 'Day'
-        array_len = duration.value * self.frequency
+        array_len = int(duration.value * self.frequency)
         array = np.ma.ones(array_len)
         for step in range(int(array_len)):
             curr_dt = datetime_of_index(start_datetime.value, step, 1)

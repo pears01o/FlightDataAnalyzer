@@ -226,7 +226,8 @@ class APVerticalMode(MultistateDerivedParameterNode):
                altitude_mode=M('Altitude Mode'),
                expedite_climb_mode=M('Expedite Climb Mode'),
                expedite_descent_mode=M('Expedite Descent Mode'),
-               vert_spd_engaged=M('Vertical Speed Engaged')):
+               vert_spd_engaged=M('Vertical Speed Engaged'),
+               pitch_mode=M('Pitch Mode'),):
         parameter = next(p for p in (climb_mode_active,
                                      longitudinal_mode_selected,
                                      ils_glideslope_capture_active,
@@ -282,6 +283,26 @@ class APVerticalMode(MultistateDerivedParameterNode):
             self.array[expedite_climb_mode.array == 'Activated'] = 'EXPED CLB'
         if expedite_descent_mode:
             self.array[expedite_descent_mode.array == 'Activated'] = 'EXPED DES'
+        if pitch_mode:
+            states = pitch_mode.state.keys()
+            if 'FLARE' in states:
+                self.array[pitch_mode.array == 'FLARE'] = 'FLARE'
+            if 'FINAL DES' in states:
+                self.array[pitch_mode.array == 'FINAL DES'] = 'FINAL'
+            if 'V/S' in states:
+                self.array[pitch_mode.array == 'V/S'] = 'V/S'
+            if 'DES' in states:
+                self.array[pitch_mode.array == 'DES'] = 'DES'
+            if 'CLB' in states:
+                self.array[pitch_mode.array == 'CLB'] = 'CLB'
+            if 'ALT' in states:
+                self.array[pitch_mode.array == 'ALT'] = 'ALT'
+            if 'ALT*' in states:
+                self.array[pitch_mode.array == 'ALT*'] = 'ALT CAPT'
+            if 'G/S' in states:
+                self.array[pitch_mode.array == 'G/S'] = 'GS'
+            if 'G/S*' in states:
+                self.array[pitch_mode.array == 'G/S*'] = 'GS CAPT'
 
 
 class APUOn(MultistateDerivedParameterNode):

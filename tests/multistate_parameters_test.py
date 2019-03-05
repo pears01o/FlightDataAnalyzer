@@ -256,6 +256,21 @@ class TestAPVerticalMode(unittest.TestCase):
             5: 'Vertical Speed Engaged',
             6: 'Unused Mode',
         }
+        self._pitch_mode_values_mapping = {
+            0: '-',
+            1: 'FLARE',
+            3: 'FINAL DES',
+            8: 'FPA',
+            9: 'V/S',
+            10: 'GO AROUND',
+            11: 'TAKE OFF',
+            14: 'DES',
+            15: 'CLB',
+            16: 'ALT',
+            32: 'ALT*',
+            64: 'G/S',
+            128: 'G/S*'
+        }
 
     def test_can_operate(self):
         # Avoid exploding long list of combinations.
@@ -359,15 +374,20 @@ class TestAPVerticalMode(unittest.TestCase):
             array=np.ma.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 4, 4, 5, 5, 0, 0]),
             values_mapping=self._longitudinal_mode_selected_values_mapping,
         )
+        pitch_mode = M(
+            'Pitch Mode',
+            array=np.ma.array([15, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 4, 4, 5, 5, 32, 32]),
+            values_mapping=self._pitch_mode_values_mapping,
+        )
         node = APVerticalMode()
         node.derive(at_active, climb_active, longitudinal_mode_selected,
                     ils_glideslope_capture_active, ils_glideslope_active,
                     flare_mode, open_climb_mode, open_descent_mode,
                     altitude_capture_mode, altitude_mode,
-                    expedite_climb_mode, expedite_descent_mode, None)
+                    expedite_climb_mode, expedite_descent_mode, None, pitch_mode)
         self.assertTrue(
             all(node.array ==
-                ['-', '-',
+                ['CLB', 'CLB',
                  'CLB', 'CLB',
                  'GS CAPT', 'GS CAPT',
                  'GS', 'GS',
@@ -379,11 +399,11 @@ class TestAPVerticalMode(unittest.TestCase):
                  'ALT', 'ALT',
                  'EXPED CLB', 'EXPED CLB',
                  'EXPED DES', 'EXPED DES',
-                 'ALT CSTR', 'ALT CSTR',
+                 'FLARE', 'FLARE',
                  'FINAL', 'FINAL',
                  'LAND', 'LAND',
                  'V/S', 'V/S',
-                 '-', '-']))
+                 'ALT CAPT', 'ALT CAPT']))
 
 
 class TestAPEngaged(unittest.TestCase, NodeTest):
